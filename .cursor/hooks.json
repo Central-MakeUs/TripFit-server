@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/block-dangerous.sh",
+        "matcher": "git push --force|git push -f |rm -rf",
+        "failClosed": true
+      }
+    ]
+  }
+}

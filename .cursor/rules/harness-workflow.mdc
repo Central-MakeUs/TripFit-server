@@ -1,0 +1,23 @@
+---
+description: 계획·승인·실행·검증 워크플로우
+alwaysApply: true
+---
+
+# Harness Workflow
+
+## Before Coding
+
+- 큰 변경·새 기능: Plan 모드 또는 `specify` 스킬로 `docs/specs/`에 스펙 먼저
+- `AGENTS.md`, `docs/architecture.md` 확인
+- 모호하면 질문 후 진행
+
+## While Coding
+
+- 요청 범위만 수정 (drive-by 리팩터링 금지)
+- 기존 Gradle·패키지 컨벤션 유지
+- `./gradlew test`로 검증
+
+## After Coding
+
+- 변경 요약과 검증 방법을 사용자에게 전달
+- 반복 실수는 `.cursor/rules/`에 규칙으로 추가 제안

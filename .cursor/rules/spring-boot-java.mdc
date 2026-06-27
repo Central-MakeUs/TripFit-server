@@ -1,0 +1,29 @@
+---
+description: Spring Boot·Java 코딩 규칙
+globs: **/*.java
+alwaysApply: false
+---
+
+# Spring Boot / Java
+
+## Structure
+
+- 레이어: controller → service → repository (자세한 구조는 `docs/architecture.md`)
+- 새 클래스는 `com.tripfit.tripfit` 하위 적절한 패키지에 배치
+
+## Style
+
+- Java 21 기능 사용 가능 (records, pattern matching 등)
+- Lombok 도입 전까지는 명시적 getter/setter 또는 record
+- `@SpringBootApplication` 외 설정은 `@Configuration` 클래스로 분리
+
+## API (추가 시)
+
+- REST: `@RestController` + `@RequestMapping`
+- 검증: Jakarta Validation (`@Valid`, `@NotNull` 등)
+- 예외: `@ControllerAdvice`로 공통 에러 응답
+
+## Tests
+
+- JUnit 5 + `@SpringBootTest` / 단위 테스트 적절히 선택
+- 테스트 클래스명: `{ClassName}Test`
