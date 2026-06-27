@@ -36,6 +36,11 @@ com.tripfit.tripfit
 - `./gradlew test`로 CI·로컬 검증
 - 새 API·서비스는 해당 레이어 테스트 추가 권장
 
+## Data Model
+
+- ERD·테이블 정의: [erd.md](architecture/erd.md)
+- DB 네이밍: snake_case, 단수형 테이블명
+
 ## Specs
 
 기능 설계 문서는 `docs/specs/{feature-name}.md`에 작성합니다. `specify` 스킬 템플릿 참고.
