@@ -43,8 +43,8 @@ com.tripfit.tripfit
 
 ## Data Model
 
-- ERD·테이블 정의: [erd.md](architecture/erd.md)
-- DB 네이밍: snake_case, 단수형 테이블명
+- ERD·테이블 정의: [erd.md](architecture/erd.md) — MVP 6테이블 (`user`, `user_condition`, `trip`, `trip_member`, `member_schedule`, `recommendation`)
+- DB: PostgreSQL, snake_case 단수형 테이블명, Soft Delete (`deleted_at`)
 
 ## Specs
 
