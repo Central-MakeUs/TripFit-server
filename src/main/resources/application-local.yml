@@ -1,9 +1,14 @@
+# 1단계(현재): ERD 탐색 — Hibernate update, Flyway 비활성
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/tripfit?createDatabaseIfNotExist=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
     password: ""
+  flyway:
+    enabled: false
   jpa:
+    hibernate:
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:

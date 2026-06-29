@@ -5,13 +5,33 @@ spring:
     name: tripfit
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      max-lifetime: 1800000
+      keepalive-time: 300000
+      connection-timeout: 30000
+  flyway:
+    locations: classpath:db/migration
   jpa:
-    hibernate:
-      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
-        globally_quoted_identifiers: true
+        format_sql: false
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
 
 springdoc:
   api-docs:

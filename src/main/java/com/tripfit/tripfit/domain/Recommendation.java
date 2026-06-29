@@ -29,7 +29,7 @@ public class Recommendation {
 	@JoinColumn(name = "trip_id", nullable = false)
 	private Trip trip;
 
-	@Column(nullable = false)
+	@Column(name = "recommendation_rank", nullable = false)
 	private Integer rank;
 
 	@Column(nullable = false)

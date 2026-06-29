@@ -1,0 +1,36 @@
+# EC2 B — MySQL 전용 서버
+# 사용: cp .env.example .env → 값 설정 → docker compose up -d
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: tripfit-mysql
+    restart: unless-stopped
+    command:
+      - mysqld
+      - --binlog-expire-logs-seconds=86400
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --max_connections=200
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      TZ: Asia/Seoul
+    ports:
+      # VPC 내부 전용 권장. public 바인딩은 dev 임시용만.
+      - "${MYSQL_BIND:-127.0.0.1}:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mysql_data:

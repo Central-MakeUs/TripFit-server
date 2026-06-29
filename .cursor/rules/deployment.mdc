@@ -1,0 +1,67 @@
+---
+description: Docker/EC2 배포 시 스키마·설정 실수 방지
+globs:
+  - "**/application*.yml"
+  - "**/docker-compose.yml"
+  - "**/Dockerfile"
+  - "**/db/migration/**"
+  - "**/domain/**"
+---
+
+# Deployment Rules
+
+## 스키마 전략 (단계별)
+
+현재는 **1단계(ERD 탐색)**. Flyway 강제 적용은 ERD 확정 후.
+
+| 단계 | 시점 | ddl-auto | Flyway | 프로필 |
+|------|------|----------|--------|--------|
+| 1 (현재) | ERD 탐색 | update | off | local, dev |
+| 2 | ERD 고정 직전 | update | baseline only | dev 전환 |
+| 3 | 운영 | validate | full migration | prod |
+
+**Flyway 전환 조건 (3단계 진입):**
+- User/Member/Account 구조 확정
+- 핵심 도메인 ~80% 확정, FK·컬럼 변경 빈도 감소
+
+**Flyway 운영 규칙 (3단계 이후):**
+- `V1__init_schema.sql` — 배포 후 **immutable** (수정 금지)
+- `V2`부터 **append only** — rollback 없음, 수정은 새 migration으로
+- `baseline-on-migrate: true`, `validate-on-migrate: true` (prod)
+
+## MySQL / JPA 주의
+
+- `globally_quoted_identifiers: true` **사용 금지** (TEXT quoting 등과 조합 시 DDL 실패 유발)
+- 스키마 drift 원인은 보통 **단일 설정이 아니라** TEXT quoting + 예약어(`user`, `rank`) + dialect + naming strategy **조합**
+- 예약어 컬럼: `@Column(name = "...")` (`rank` → `recommendation_rank`)
+- 테이블명 `user`: MySQL 예약어 — **향후 `users`/`member` 등으로 rename 검토** (기술 부채)
+- Flyway SQL에서 `` `user` `` 백틱 필수
+
+## 프로필 요약
+
+| 프로필 | 용도 | ddl-auto | Flyway |
+|--------|------|----------|--------|
+| local | 로컬 개발 | update | off |
+| dev | EC2/docker-compose | update | off |
+| prod | 운영 (ERD 확정 후) | validate | on |
+| test | `./gradlew test` | create-drop | off (H2) |
+
+## Docker 배포 (dev)
+
+```bash
+docker compose up -d --build
+./scripts/verify-deploy.sh
+```
+
+- **EC2 2대 분리**: `deploy/app`, `deploy/mysql` + [ec2-split-deployment.md](../../docs/architecture/ec2-split-deployment.md)
+
+- 스키마 실험 중 DB 리셋: `docker compose down -v` (운영 데이터 있을 때 **금지**)
+- 운영(3단계): `SPRING_PROFILES_ACTIVE=prod`, `VERIFY_FLYWAY=true ./scripts/verify-deploy.sh`
+
+## 공통 안정 설정
+
+- Hikari pool: `application.yml` (max 10, keepalive 300s, max-lifetime 30m)
+- MySQL healthcheck + `depends_on: service_healthy`
+- binlog: `--binlog-expire-logs-seconds=86400`
+- 로그 rotation: json-file max 10m × 3
+- Actuator: health만 노출 / prod Swagger OFF
