@@ -1,0 +1,16 @@
+.git
+.gitignore
+.gradle
+build
+out
+.idea
+*.iml
+*.ipr
+*.iws
+.vscode
+.cursor
+.DS_Store
+.env
+*.md
+docs
+.dev
