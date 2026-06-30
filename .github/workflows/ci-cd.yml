@@ -1,7 +1,9 @@
-name: CD
+name: CI/CD
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 env:
@@ -9,7 +11,28 @@ env:
   IMAGE_NAME: tripfit-server
 
 jobs:
-  build-push-deploy:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+
+      - name: Build JAR
+        run: ./gradlew bootJar --no-daemon -x test
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -46,24 +69,31 @@ jobs:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           GHCR_IMAGE: ${{ steps.image.outputs.full }}:latest
           GHCR_USER: ${{ github.repository_owner }}
+          SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+          SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GHCR_PAT,GHCR_IMAGE,GHCR_USER
+          envs: GHCR_PAT,GHCR_IMAGE,GHCR_USER,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD
           script: |
             set -euo pipefail
             if [[ -n "${GHCR_PAT:-}" ]]; then
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             fi
             cd "${{ secrets.EC2_DEPLOY_PATH }}"
+            ghcr_image="${GHCR_IMAGE:-}"
+            db_user="${SPRING_DATASOURCE_USERNAME:-}"
+            db_pass="${SPRING_DATASOURCE_PASSWORD:-}"
             if [[ -f .env ]]; then
               set -a
               # shellcheck disable=SC1091
               source .env
               set +a
             fi
-            export GHCR_IMAGE
+            export GHCR_IMAGE="${ghcr_image:-$GHCR_IMAGE}"
+            export SPRING_DATASOURCE_USERNAME="${db_user:?SPRING_DATASOURCE_USERNAME secret is required}"
+            export SPRING_DATASOURCE_PASSWORD="${db_pass:?SPRING_DATASOURCE_PASSWORD secret is required}"
             docker compose pull app
             docker compose up -d app
             app_port="${APP_PORT:-8080}"

@@ -16,6 +16,10 @@ if [[ -f .env ]]; then
 fi
 
 : "${GHCR_IMAGE:?GHCR_IMAGE is required (set in deploy/app/.env)}"
+: "${SPRING_DATASOURCE_USERNAME:?SPRING_DATASOURCE_USERNAME is required (export or GitHub Secrets)}"
+: "${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required (export or GitHub Secrets)}"
+
+export SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
 
 APP_PORT="${APP_PORT:-8080}"
 
