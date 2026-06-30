@@ -16,6 +16,7 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 │   ├── harness-workflow.mdc
 │   ├── spring-boot-java.mdc
 │   ├── figma-product.mdc
+│   ├── client-platform.mdc
 │   ├── deployment.mdc
 │   └── testing.mdc
 └── skills/                ← 반복 워크플로 스킬
@@ -44,6 +45,7 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 | `harness-workflow.mdc` | ✅ true | — | 계획 → 승인 → 구현 → 검증 전체 워크플로 |
 | `spring-boot-java.mdc` | false | `**/*.java` | 레이어·엔티티·API·예외 처리 컨벤션 |
 | `figma-product.mdc` | false | controller, service, domain, specs | Figma·용어집·BR 규칙 기반 도메인 가이드 |
+| `client-platform.mdc` | false | controller, dto, config, specs | React 앱·스토어·API·인증 전제 |
 | `deployment.mdc` | false | yml, Docker, migration, domain | ddl-auto/Flyway 단계, MySQL·배포 주의사항 |
 | `testing.mdc` | false | `**/*Test.java` | JUnit 5·프로필·테스트 네이밍 |
 
@@ -91,6 +93,7 @@ docs/specs/        → 기능별 설계 산출물 (specify 스킬 결과)
 
 ## 유지보수 체크리스트
 
+- [ ] 클라이언트·스토어 전제 변경 시 `docs/product/platform.md` + `client-platform.mdc` 동기화
 - [ ] 새 도메인 enum·상태 추가 시 `figma-product.mdc` 또는 glossary 동기화
 - [ ] Flyway 단계 전환 시 `deployment.mdc` 단계 표 업데이트
 - [ ] 반복되는 코드 리뷰 코멘트 → 해당 `rules/*.mdc`에 한 줄 규칙으로 승격

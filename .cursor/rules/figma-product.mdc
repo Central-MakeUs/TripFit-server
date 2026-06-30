@@ -9,7 +9,8 @@ alwaysApply: false
 API·도메인 작업 전 **순서대로** 확인:
 
 1. `docs/product/mvp.md` — 이번 작업이 MVP 범위인지
-2. `docs/product/design/figma-wireframe-v1.md` — 화면 맵, 상태, 리소스 초안
+2. `docs/product/platform.md` — React 앱·스토어 목표, API/인증 전제
+3. `docs/product/design/figma-wireframe-v1.md` — 화면 맵, 상태, 리소스 초안
 3. `docs/product/glossary.md` — 용어 (여행방, 방장, 응답률 등)
 4. `docs/product/business-rules/` — BR-* 규칙
 5. Figma: [Wireframe ver1](https://www.figma.com/design/xEqgeZYrv8h4kQLr2Bkzh0/TripFit-%EA%B0%9C%EB%B0%9C-%EC%86%8C%EC%8A%A4%EC%9A%A9?node-id=2-13589)

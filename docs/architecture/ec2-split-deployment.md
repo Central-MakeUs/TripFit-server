@@ -20,7 +20,7 @@ flowchart LR
     end
   end
 
-  Client -->|443/8080| App
+  Client -->|443 api.tripfit.online| App
   App -->|3306 private IP| MySQL
 ```
 
@@ -45,7 +45,7 @@ flowchart LR
 | 항목 | 권장 | 이유 |
 |------|------|------|
 | VPC | 1개 (App·DB 동일 VPC) | private IP 통신, SG 단순화 |
-| EC2 A subnet | Public (ALB 또는 직접 8080) | 외부 HTTP 진입 |
+| EC2 A subnet | Public | 외부 API 진입 (`api.tripfit.online` → 443) |
 | EC2 B subnet | **Private** (NAT 없이도 App→DB만 필요) | DB public 노출 방지 |
 | DB 접속 IP | **EC2 B private IP** | SG source를 App SG로 제한 가능 |
 | Public IP (DB) | **사용하지 않음** | 3306 인터넷 노출 = 실무에서 금지에 가깝 |

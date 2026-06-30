@@ -14,22 +14,25 @@ docs/
 │   └── ec2-split-deployment.md
 ├── product/
 │   ├── mvp.md                ← MVP In/Out 범위
+│   ├── platform.md           ← React·스토어·API 전제 (Agent)
 │   ├── prd.md                ← 제품 요구 원본
 │   ├── glossary.md           ← 도메인 용어
 │   ├── design/               ← Figma 와이어프레임 요약
 │   ├── business-rules/       ← BR-* 규칙
 │   └── flows/                ← 사용자 플로우
 ├── specs/                    ← 기능 스펙 (implement 전)
+├── decisions/                ← 인프라·도메인 확정 (예: 002 Vercel+API 분리)
 └── prompts/notebooklm/       ← 기획 문서 재생성 프롬프트
 ```
 
 ## 읽는 순서 (기능 구현 시)
 
 1. `product/mvp.md` — 범위 확인
-2. `product/prd.md` + `business-rules/` — 상세 요구
-3. `architecture.md` + `architecture/erd.md` — 레이어·스키마
-4. `specs/{feature}.md` — 이번 작업 스펙 (`.cursor/skills/specify`로 작성)
-5. 구현 후 `docs/`와 코드 동기화
+2. `product/platform.md` — 클라이언트(Vercel)·API(`api.tripfit.online`) 전제
+3. `product/prd.md` + `business-rules/` — 상세 요구
+4. `architecture.md` + `architecture/erd.md` — 레이어·스키마
+5. `specs/{feature}.md` — 이번 작업 스펙 (`.cursor/skills/specify`로 작성)
+6. 구현 후 `docs/`와 코드 동기화
 
 ## 런타임 vs 문서
 

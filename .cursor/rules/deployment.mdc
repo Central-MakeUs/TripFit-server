@@ -23,6 +23,12 @@ globs:
 CI/CD: `.github/workflows/ci-cd.yml` — `main` push 시 GHCR push → EC2 A SSH deploy.  
 `.env`·Secrets 커밋 금지. `deploy/app/.env.example`는 placeholder만.
 
+## 도메인 (확정)
+
+- **프론트** `tripfit.online` → Vercel (이 repo에 frontend Docker **없음**)
+- **API** `api.tripfit.online` → EC2 `deploy/app/` (Nginx + Certbot + app)
+- `docs/decisions/002-domain-split-vercel-api.md` — Agent 재확인·`FRONTEND_IMAGE` 추가 **금지**
+
 ## 스키마 전략 (단계별)
 
 현재는 **1단계(ERD 탐색)**. Flyway 강제 적용은 ERD 확정 후.

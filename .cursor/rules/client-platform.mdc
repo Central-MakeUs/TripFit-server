@@ -1,0 +1,43 @@
+---
+description: React 앱·스토어 런칭 맥락 — API·인증·클라이언트 계약
+globs: **/controller/**,**/dto/**,**/config/**,docs/specs/**
+alwaysApply: false
+---
+
+# Client Platform (React → Play / App Store)
+
+이 저장소는 **백엔드만**. 클라이언트는 **React(프론트 2명)**, 최종 **Play·App Store** 앱 배포 목표.
+
+작업 전: `docs/product/platform.md`, `docs/decisions/002-domain-split-vercel-api.md` 확인.
+
+## API · 도메인
+
+- Base URL: `https://api.tripfit.online` (운영), 로컬: `http://localhost:8080`
+- JSON REST, `/api/v1/...` — 앱·Vercel 웹 공용
+- DTO·에러 body는 앱에서 파싱 가능하게 — magic string 남발 금지
+- 스펙(`docs/specs/`)에 요청/응답·HTTP 상태·에러 케이스 명시
+
+## 인증 · 링크 · 알림
+
+| 기능 | 규칙 |
+|------|------|
+| 소셜 로그인 | 모바일 OAuth·딥링크 고려 — S 유형 스펙 필수 |
+| 초대 링크 | PRD·플로우 따름. Universal/App Link는 `[미정]`이면 추측 구현 금지 |
+| 푸시 (FCM/APNs) | MVP P1 — **스펙 없으면** 엔티티·발송 API 추가 금지 |
+| 결제·수익화 | `mvp.md` Out — 명시 없으면 구현 금지 |
+
+## CORS · 보안
+
+- API 호스트: `api.tripfit.online` — UI 호스트 `tripfit.online`(Vercel)와 **분리**
+- 네이티브 앱: CORS 해당 없음
+- Vercel·로컬 dev 웹: `config/`에서 `https://tripfit.online` 등 origin 최소 허용
+- 시크릿·OAuth client secret은 env — 코드·커밋 금지
+
+## 프론트 협업
+
+- API 변경은 OpenAPI(springdoc) 반영 권장
+- 화면 용어: `glossary.md` / Figma — API 필드명과 혼동하지 않기
+
+## 미정
+
+앱 패키징(RN/Capacitor 등)은 `platform.md` · `docs/decisions/` 참고 — Agent가 임의 선택 금지.

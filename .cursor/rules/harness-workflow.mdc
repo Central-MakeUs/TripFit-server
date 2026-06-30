@@ -13,11 +13,11 @@ alwaysApply: true
 | **M — 중간** | 기존 API 필드 추가, 버그 수정, 설정 조정 | `AGENTS.md` + 관련 `docs/product/` 확인 |
 | **T — 작은 수정** | 오타, 로그, 단일 테스트 수정 | 요청 범위만 — 스펙 생략 가능 |
 
-**S로 분류하는 신호:** DB 스키마 변경, 3개 이상 파일, BR-* 규칙 영향, 프로필/배포 변경.
+**S로 분류하는 신호:** DB 스키마 변경, 3개 이상 파일, BR-* 규칙 영향, 프로필/배포 변경, **인증·푸시·딥링크·결제** 등 클라이언트 연동 API.
 
 ## Before Coding
 
-1. `AGENTS.md` → `docs/architecture.md` → (도메인 시) `docs/product/mvp.md`
+1. `AGENTS.md` → `docs/architecture.md` → `docs/product/platform.md` → `docs/decisions/002-domain-split-vercel-api.md`(도메인) → `docs/product/mvp.md`
 2. S 유형: Plan 모드 또는 `specify` 스킬로 스펙 작성 → **사용자 승인 후** 구현
 3. 모호한 요구·충돌하는 문서(PRD vs 와이어프레임) → 질문 후 진행
 4. 구현 전 변경 파일 목록을 머릿속으로 확정 (drive-by 리팩터링 금지)
@@ -40,3 +40,13 @@ alwaysApply: true
 - 사용자 요청 없는 `git commit` / `git push`
 - `git push --force` (main/master), `rm -rf`, 운영 DB 파괴 명령
 - `.env`·API 키를 코드·커밋에 포함
+
+## 도메인·배포 (확정 — 재질문 금지)
+
+| 도메인 | 호스팅 | 이 repo |
+|--------|--------|---------|
+| `tripfit.online` | Vercel (프론트) | **없음** — `FRONTEND_IMAGE`·frontend 컨테이너 추가 금지 |
+| `api.tripfit.online` | EC2 Nginx + Spring Boot | `deploy/app/`, `deploy/nginx/` |
+
+- API base URL: `https://api.tripfit.online`
+- 상세: `docs/decisions/002-domain-split-vercel-api.md`, `deploy/README.md`
