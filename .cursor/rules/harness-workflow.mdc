@@ -5,19 +5,38 @@ alwaysApply: true
 
 # Harness Workflow
 
+## 작업 분류 (시작 전 30초)
+
+| 유형 | 예시 | 필수 선행 |
+|------|------|-----------|
+| **S — 스펙 필요** | 새 API, 새 엔티티, 인증, 배포 구조 변경 | `specify` 스킬 → `docs/specs/` |
+| **M — 중간** | 기존 API 필드 추가, 버그 수정, 설정 조정 | `AGENTS.md` + 관련 `docs/product/` 확인 |
+| **T — 작은 수정** | 오타, 로그, 단일 테스트 수정 | 요청 범위만 — 스펙 생략 가능 |
+
+**S로 분류하는 신호:** DB 스키마 변경, 3개 이상 파일, BR-* 규칙 영향, 프로필/배포 변경.
+
 ## Before Coding
 
-- 큰 변경·새 기능: Plan 모드 또는 `specify` 스킬로 `docs/specs/`에 스펙 먼저
-- `AGENTS.md`, `docs/architecture.md` 확인
-- 모호하면 질문 후 진행
+1. `AGENTS.md` → `docs/architecture.md` → (도메인 시) `docs/product/mvp.md`
+2. S 유형: Plan 모드 또는 `specify` 스킬로 스펙 작성 → **사용자 승인 후** 구현
+3. 모호한 요구·충돌하는 문서(PRD vs 와이어프레임) → 질문 후 진행
+4. 구현 전 변경 파일 목록을 머릿속으로 확정 (drive-by 리팩터링 금지)
 
 ## While Coding
 
-- 요청 범위만 수정 (drive-by 리팩터링 금지)
-- 기존 Gradle·패키지 컨벤션 유지
-- `./gradlew test`로 검증
+- 요청 범위만 수정
+- 패키지: `com.tripfit.tripfit.{config|domain|repository|service|controller|dto}`
+- 기존 Gradle·탭 인덴트·네이밍 컨벤션 유지
+- 핵심 로직 변경 시 `./gradlew test` 실행
 
 ## After Coding
 
-- 변경 요약과 검증 방법을 사용자에게 전달
-- 반복 실수는 `.cursor/rules/`에 규칙으로 추가 제안
+- 변경 요약 + 검증 방법(`./gradlew test` 등)을 사용자에게 전달
+- 스펙이 있었다면 완료 기준 체크리스트 대조
+- 같은 실수가 2회 이상이면 `.cursor/rules/` 추가를 **제안** (자동 추가는 하지 않음)
+
+## 금지 (AGENTS.md와 동일)
+
+- 사용자 요청 없는 `git commit` / `git push`
+- `git push --force` (main/master), `rm -rf`, 운영 DB 파괴 명령
+- `.env`·API 키를 코드·커밋에 포함

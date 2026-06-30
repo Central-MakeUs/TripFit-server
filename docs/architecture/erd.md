@@ -10,7 +10,7 @@
   - **Soft Delete** 원칙 — `deleted_at`으로 데이터 보존
   - PK는 `bigint` Auto-increment ID
   - 비즈니스 규칙(BR-*)을 데이터 제약으로 반영
-- **대상 DB**: **PostgreSQL**
+- **대상 DB**: **MySQL 8.0** (런타임). 논리 모델은 DB 중립적으로 유지하며, 예약어 컬럼·백틱 등 MySQL 제약은 구현 시 반영
 
 ## 2. Mermaid ERD
 

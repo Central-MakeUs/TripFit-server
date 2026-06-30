@@ -4,7 +4,7 @@
     "beforeShellExecution": [
       {
         "command": ".cursor/hooks/block-dangerous.sh",
-        "matcher": "git push --force|git push -f |rm -rf",
+        "matcher": "git push --force|git push -f |rm -rf|git reset --hard|docker compose down -v|docker-compose down -v",
         "failClosed": true
       }
     ]

@@ -6,23 +6,36 @@ alwaysApply: false
 
 # Figma Product Context
 
-API·도메인 작업 전 아래를 확인:
+API·도메인 작업 전 **순서대로** 확인:
 
-1. `docs/product/design/figma-wireframe-v1.md` — 화면 맵, 상태, 리소스 초안
-2. `docs/product/glossary.md` — 용어 (여행방, 방장, 응답률 등)
-3. `docs/product/business-rules/` — BR-* 규칙 준수
-4. Figma 원본: [Wireframe ver1](https://www.figma.com/design/xEqgeZYrv8h4kQLr2Bkzh0/TripFit-%EA%B0%9C%EB%B0%9C-%EC%86%8C%EC%8A%A4%EC%9A%A9?node-id=2-13589)
+1. `docs/product/mvp.md` — 이번 작업이 MVP 범위인지
+2. `docs/product/design/figma-wireframe-v1.md` — 화면 맵, 상태, 리소스 초안
+3. `docs/product/glossary.md` — 용어 (여행방, 방장, 응답률 등)
+4. `docs/product/business-rules/` — BR-* 규칙
+5. Figma: [Wireframe ver1](https://www.figma.com/design/xEqgeZYrv8h4kQLr2Bkzh0/TripFit-%EA%B0%9C%EB%B0%9C-%EC%86%8C%EC%8A%A4%EC%9A%A9?node-id=2-13589)
 
 ## 네이밍
 
-- API·DB: `trip_room`, `trip_member` 등 snake_case
-- UI 라벨 한글과 혼동 시 glossary 기준
+| 계층 | 규칙 | 예 |
+|------|------|-----|
+| DB·JPA | snake_case, 단수 테이블 | `trip`, `trip_member` |
+| Java | PascalCase / camelCase | `Trip`, `tripMember` |
+| API path | kebab-case 또는 snake | `/api/v1/trip-rooms` |
+| UI 한글 | glossary 기준 | "여행방" ≠ 임의 영문 |
 
-## 상태값 (여행방)
+## 상태 매핑 (여행방)
 
-`응답대기중` | `조율중` | `일정 확정` — enum 설계 시 동일 의미 유지
+| UI (와이어프레임) | 코드 (`TripStatus`) | 비고 |
+|-------------------|---------------------|------|
+| 응답대기중 | `ONGOING` (초안) | enum·UI 매핑 `[미정]` — 추측 추가 금지 |
+| 조율중 | — | BR·PRD 확인 후 확정 |
+| 일정 확정 | `CONFIRMED` | |
+| — | `CANCELED` | 취소 플로우 |
 
-## 주의
+`TripStatus` 변경 시 이 표 + glossary + 스펙 동시 업데이트.
 
-- 와이어프레임만으로 확정되지 않은 정책은 `[미정]` 유지, 추측 구현 금지
-- PRD·mvp.md와 충돌 시 PRD 우선
+## 구현 원칙
+
+- 와이어프레임·PRD에 없는 정책 → `[미정]` 유지, 임의 비즈니스 로직 금지
+- PRD vs mvp.md 충돌 → **PRD 우선**, mvp는 범위 컷
+- BR-* 위반 코드 → 스펙에 예외 사유 없으면 구현하지 않음

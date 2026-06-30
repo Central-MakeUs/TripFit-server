@@ -1,0 +1,63 @@
+name: Bug
+description: 버그·오동작 보고
+title: "[bug] "
+labels:
+  - "type: bug"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        재현 단계를 모르면 비워두고 Agent에게 로그·코드 기반으로 채워 달라고 요청해도 됩니다.
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 환경
+      options:
+        - local
+        - dev (EC2)
+        - prod
+        - test / CI
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 방법
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 / 스크린샷
+      description: docker logs, stack trace 등
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 영역
+      options:
+        - api
+        - domain
+        - deploy
+        - infra
+        - other

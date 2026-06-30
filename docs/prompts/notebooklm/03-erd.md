@@ -31,7 +31,7 @@
 #### 1. 개요
 - 데이터 모델 설계 목적
 - 설계 원칙 (snake_case, soft delete 사용 여부, ID 타입 등)
-- 대상 DB 가정: PostgreSQL (자료에 다르면 자료 기준 + 이유)
+- 대상 DB 가정: MySQL 8.0 (TripFit 런타임과 동일. 예약어 `user` 등은 문서에 주석으로 표시)
 
 #### 2. Mermaid ERD
 - `erDiagram` 문법으로 전체 관계도 작성

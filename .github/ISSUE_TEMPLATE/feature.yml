@@ -1,0 +1,86 @@
+name: Feature
+description: 새 API, 엔티티, 비즈니스 기능 (S/M 유형)
+title: "[area] "
+labels:
+  - "type: feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **큰 기능(S 유형)** 은 merge 전 [`docs/specs/`](../../docs/specs/) 스펙 링크가 필요합니다.
+        Cursor Agent에게 "이 이슈 구현해줘"라고 하면 스펙·이슈 본문을 채워 줄 수 있습니다.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 영역 (area)
+      options:
+        - api
+        - domain
+        - deploy
+        - docs
+        - infra
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: MVP 우선순위
+      options:
+        - P0
+        - P1
+        - P2
+        - Out of MVP
+    validations:
+      required: true
+
+  - type: dropdown
+    id: size
+    attributes:
+      label: 작업 크기
+      description: S=스펙 필수, M=중간, T=작은 수정
+      options:
+        - S (스펙 필요)
+        - M
+        - T
+    validations:
+      required: true
+
+  - type: input
+    id: spec
+    attributes:
+      label: 스펙 문서 (해당 시)
+      description: "예: docs/specs/trip-room-create.md — 없으면 Agent가 작성 가능"
+      placeholder: docs/specs/...
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: 목표 (한 문장)
+      description: 이 기능이 해결하는 문제. Agent에게 요청하면 초안 작성 가능.
+      placeholder: 방장이 여행방을 생성하고 초대 코드를 받을 수 있다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 요구사항 / 완료 기준
+      description: Must Have 체크리스트. 비워두고 Agent에게 "이슈 본문 채워줘" 요청 가능.
+      placeholder: |
+        - [ ] API POST /api/v1/trips
+        - [ ] ./gradlew test 통과
+        - [ ] BR-TRIP-xxx 준수
+
+  - type: input
+    id: business_rules
+    attributes:
+      label: 관련 BR
+      placeholder: BR-TRIP-001, BR-USER-002 (없으면 N/A)
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 비고 / 미정 사항
+      placeholder: "[미정] 항목, 의존 이슈 #번호"

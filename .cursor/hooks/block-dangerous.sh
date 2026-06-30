@@ -1,5 +1,5 @@
 #!/bin/bash
-# Blocks destructive shell commands (force push, rm -rf).
+# Blocks destructive shell commands for TripFit project hooks.
 # Hook input: JSON with "command" field on stdin.
 
 input=$(cat)
@@ -13,11 +13,13 @@ except Exception:
     print('')
 " <<< "$input")
 
-if echo "$command" | grep -qE 'git push (--force|-f)|rm -rf'; then
+# Patterns: force push, recursive delete, hard reset, prod DB wipe
+if echo "$command" | grep -qE \
+  'git push (--force|-f)|rm -rf|git reset --hard|docker compose down -v|docker-compose down -v'; then
   echo '{
     "permission": "deny",
-    "user_message": "위험한 명령이 차단되었습니다 (force push, rm -rf).",
-    "agent_message": "This command was blocked by project hook block-dangerous.sh."
+    "user_message": "위험한 명령이 차단되었습니다 (force push, rm -rf, hard reset, docker compose down -v).",
+    "agent_message": "Blocked by .cursor/hooks/block-dangerous.sh. Use safer alternatives or ask the user explicitly."
   }'
   exit 2
 fi

@@ -134,20 +134,30 @@ FLUSH PRIVILEGES;
 
 파일: `deploy/app/docker-compose.yml`
 
-변경 포인트:
+**GHCR 이미지 pull** (EC2 A에서 build 없음). CI/CD가 `main` push 시 이미지를 push하고 SSH로 `docker compose pull && up` 합니다.
 
-| 항목 | 단일 EC2 (기존) | 분리 후 |
-|------|-----------------|---------|
-| DB host | `mysql` (compose service name) | `MYSQL_HOST=10.0.1.20` (EC2 B private IP) |
-| depends_on mysql | 있음 | **없음** — DB는 원격 |
-| build context | `.` | `../..` (repo 루트 Dockerfile) |
+| 항목 | 단일 EC2 (루트 compose) | EC2 A 분리 |
+|------|-------------------------|------------|
+| DB host | `mysql` (service name) | `MYSQL_HOST=<EC2 B private IP>` |
+| App 이미지 | `build: .` | `GHCR_IMAGE` pull |
+| depends_on mysql | 있음 | **없음** — DB 원격 |
+| 배포 스크립트 | `docker compose up -d --build` | `scripts/ec2-deploy-app.sh` 또는 CI SSH |
 
 **배포 (EC2 A)**
 
 ```bash
 cd deploy/app
-cp .env.example .env   # MYSQL_HOST = EC2 B private IP
-docker compose up -d --build
+cp .env.example .env   # MYSQL_HOST, GHCR_IMAGE, DB 계정 설정
+export SPRING_DATASOURCE_USERNAME=...
+export SPRING_DATASOURCE_PASSWORD=...
+# private GHCR: export GHCR_PAT=... GHCR_USERNAME=...
+../../scripts/ec2-deploy-app.sh
+```
+
+**검증 (EC2 A — MySQL 컨테이너 없음)**
+
+```bash
+../../scripts/verify-deploy-app.sh
 ```
 
 **환경변수 분리 원칙**
@@ -295,22 +305,25 @@ JDBC URL 패턴 동일 → **2 EC2 Docker 분리는 RDS로 가는 중간 단계*
 
 ```
 deploy/
+├── README.md
 ├── mysql/
 │   ├── docker-compose.yml    # EC2 B
 │   └── .env.example
 └── app/
-    ├── docker-compose.yml    # EC2 A
+    ├── docker-compose.yml    # EC2 A (GHCR pull)
     └── .env.example
 
-docker-compose.yml            # 로컬 단일 EC2 / 개발용 (기존 유지)
-scripts/verify-deploy.sh      # 단일 호스트 검증 (분리 시 App 서버에서 health 위주)
+docker-compose.yml            # 로컬 단일 호스트 (app build + mysql)
+scripts/
+├── verify-deploy.sh          # 루트 compose (app + mysql 컨테이너)
+├── verify-deploy-app.sh      # EC2 A 분리 (app + 원격 MySQL)
+└── ec2-deploy-app.sh         # EC2 A pull + up + readiness
 ```
 
 **분리 환경 검증 (EC2 A)**
 
 ```bash
-curl -fsS http://localhost:8080/actuator/health/readiness
-mysql -h "$MYSQL_HOST" -u "$SPRING_DATASOURCE_USERNAME" -p -e "SELECT 1"
+./scripts/verify-deploy-app.sh
 ```
 
 ---
