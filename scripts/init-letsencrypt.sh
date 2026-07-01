@@ -34,6 +34,10 @@ if [[ -f .env ]]; then
   set +a
 fi
 
+: "${SPRING_DATASOURCE_USERNAME:?SPRING_DATASOURCE_USERNAME is required (export before running)}"
+: "${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required (export before running)}"
+export SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
+
 if [[ "$STAGING" != "0" ]]; then
   STAGING_ARG="--staging"
   log "STAGING mode (fake LE certs)"
@@ -69,8 +73,11 @@ docker compose run --rm --entrypoint sh certbot -c "
     -subj '/CN=${PRIMARY_DOMAIN}'
 "
 
-log "[3/6] start nginx (+ app dependency)"
-docker compose up -d nginx
+log "[3/6] ensure stack is up (app must stay healthy for nginx)"
+docker compose up -d
+if docker inspect tripfit-nginx >/dev/null 2>&1; then
+  docker exec tripfit-nginx nginx -s reload
+fi
 
 log "[4/6] remove dummy certificate"
 docker compose run --rm --entrypoint sh certbot -c "
