@@ -1,6 +1,6 @@
 package com.tripfit.tripfit.auth.controller;
 
-import com.tripfit.tripfit.auth.config.AuthorizedUser;
+import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
 import com.tripfit.tripfit.auth.dto.LoginRequest;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.dto.LogoutRequest;

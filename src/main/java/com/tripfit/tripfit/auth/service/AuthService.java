@@ -1,8 +1,9 @@
 package com.tripfit.tripfit.auth.service;
 
-import com.tripfit.tripfit.auth.client.OAuthProfile;
-import com.tripfit.tripfit.auth.client.SocialTokenVerifier;
-import com.tripfit.tripfit.auth.client.SocialTokenVerifierRegistry;
+import com.tripfit.tripfit.auth.jwt.JwtService;
+import com.tripfit.tripfit.auth.oauth.OAuthProfile;
+import com.tripfit.tripfit.auth.oauth.SocialTokenVerifier;
+import com.tripfit.tripfit.auth.oauth.SocialTokenVerifierRegistry;
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;

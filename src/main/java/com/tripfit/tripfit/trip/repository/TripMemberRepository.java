@@ -1,6 +1,8 @@
 package com.tripfit.tripfit.trip.repository;
 
 import com.tripfit.tripfit.trip.domain.TripMember;
+import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
+import com.tripfit.tripfit.trip.repository.projection.TripMemberPreviewProjection;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;

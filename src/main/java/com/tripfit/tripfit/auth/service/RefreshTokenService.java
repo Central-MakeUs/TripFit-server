@@ -1,6 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
-import com.tripfit.tripfit.auth.config.JwtProperties;
+import com.tripfit.tripfit.auth.jwt.JwtProperties;
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.repository.RefreshTokenRepository;

@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.tripfit.tripfit.auth.service.AuthService;
-import com.tripfit.tripfit.auth.service.JwtService;
+import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import org.junit.jupiter.api.BeforeEach;

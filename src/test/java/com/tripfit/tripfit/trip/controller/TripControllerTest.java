@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.tripfit.tripfit.auth.config.AuthorizedUserArgumentResolver;
-import com.tripfit.tripfit.auth.config.JwtAuthentication;
+import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
+import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.TripMemberRole;

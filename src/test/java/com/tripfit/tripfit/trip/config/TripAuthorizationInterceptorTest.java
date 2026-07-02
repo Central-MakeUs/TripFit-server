@@ -6,7 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.tripfit.tripfit.auth.config.JwtAuthentication;
+import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;

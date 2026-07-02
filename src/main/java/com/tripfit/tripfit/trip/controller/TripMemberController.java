@@ -1,6 +1,6 @@
 package com.tripfit.tripfit.trip.controller;
 
-import com.tripfit.tripfit.auth.config.AuthorizedUser;
+import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
 import com.tripfit.tripfit.common.api.ApiResponse;
 import com.tripfit.tripfit.trip.config.TripMemberOnly;
 import com.tripfit.tripfit.trip.dto.MemberPersonalSummaryResponse;

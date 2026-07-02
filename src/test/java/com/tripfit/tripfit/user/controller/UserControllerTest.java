@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.tripfit.tripfit.auth.config.JwtAuthentication;
+import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -40,7 +40,7 @@ class UserControllerTest {
     mockMvc =
         MockMvcBuilders.standaloneSetup(userController)
             .setCustomArgumentResolvers(
-                new com.tripfit.tripfit.auth.config.AuthorizedUserArgumentResolver())
+                new com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver())
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
   }

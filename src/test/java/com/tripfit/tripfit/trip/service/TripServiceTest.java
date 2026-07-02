@@ -23,7 +23,7 @@ import com.tripfit.tripfit.trip.dto.TripListScope;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.RecommendationRepository;
-import com.tripfit.tripfit.trip.repository.TripMemberCountProjection;
+import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
@@ -43,7 +43,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -80,7 +79,6 @@ class TripServiceTest {
   @Mock
   private RecommendationRepository recommendationRepository;
 
-  @InjectMocks
   private TripService tripService;
 
   private User owner;
@@ -94,6 +92,27 @@ class TripServiceTest {
     owner = user(OWNER_ID, "홍", "길동");
     member = user(MEMBER_ID, "김", "철수");
     trip = ongoingTrip();
+
+    TripServiceSupport support =
+        new TripServiceSupport(tripRepository, tripMemberRepository, userRepository);
+    TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
+    TripMemberQueryService tripMemberQueryService =
+        new TripMemberQueryService(
+            tripMemberRepository,
+            regularScheduleRepository,
+            personalScheduleRepository,
+            support);
+    TripCommandService tripCommandService =
+        new TripCommandService(
+            tripRepository,
+            tripMemberRepository,
+            userProfileService,
+            scheduleService,
+            recommendationRepository,
+            support,
+            tripQueryService);
+    tripService =
+        new TripService(tripCommandService, tripQueryService, tripMemberQueryService);
   }
 
   @Test

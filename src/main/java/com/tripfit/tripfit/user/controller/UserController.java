@@ -1,6 +1,6 @@
 package com.tripfit.tripfit.user.controller;
 
-import com.tripfit.tripfit.auth.config.AuthorizedUser;
+import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
 import com.tripfit.tripfit.common.api.ApiResponse;
 import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
 import com.tripfit.tripfit.user.dto.UpdateOnboardingRequest;
