@@ -53,12 +53,12 @@
 
 ### Must Have
 
-- [ ] C1: calendar 검증 = 요청 구간 ⊆ `[today, today+2y−1]` · today 이전 포함 시 400 (#17 A1 amend)
-- [ ] C1 칩: `scope=ongoing` 문서·OpenAPI에 마이페이지 인덱싱 용도 명시 (신설 API 없음)
-- [ ] C2: live · 희망 기간
-- [ ] C3: #38
-- [ ] CANCELED: schedule-calendar 거부
-- [ ] `./gradlew test`
+- [x] C1: calendar 검증 = 요청 구간 ⊆ `[today, today+2y−1]` · today 이전 포함 시 400 (#17 A1 amend)
+- [x] C1 칩: `scope=ongoing` 문서·OpenAPI에 마이페이지 인덱싱 용도 명시 (신설 API 없음)
+- [x] C2: live · 희망 기간 (현행 유지)
+- [ ] C3: snapshot — **#38**
+- [x] CANCELED: schedule-calendar 거부
+- [x] `./gradlew test`
 
 ### Out of Scope
 
@@ -88,7 +88,7 @@
 ## 완료 기준
 
 - [x] 제품·잔여 **Approved**
-- [ ] 코드·테스트 · #17 A1 amend
+- [x] 코드·테스트 · #17 A1 amend (#37 범위 · C3 snapshot은 #38)
 - [ ] #38 Implemented와 C3 연동
 
 ## 변경 이력
@@ -97,3 +97,4 @@
 |------|------|
 | 2026-07-21 | Draft · 재확정 C1/C2/C3 |
 | 2026-07-21 | **Approved** — R1=A · R2=A · R3=A |
+| 2026-07-21 | **#37 구현** — C1 윈도우 · CANCELED 거부 · OpenAPI · `./gradlew test` |

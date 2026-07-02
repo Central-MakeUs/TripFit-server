@@ -54,7 +54,8 @@ public class TripController {
 
   @Operation(
       summary = "내 여행방 목록",
-      description = "D5 scope=ongoing|all · TripHomeCardResponse · status는 TripStatus(ONGOING|CONFIRMED|ALL)")
+      description = "D5 scope=ongoing|all · TripHomeCardResponse · status는 TripStatus(ONGOING|CONFIRMED|ALL). "
+          + "scope=ongoing: 마이페이지 달력 여행 칩·startRange 월 인덱싱용 재사용(#37 R3)")
   @GetMapping
   ResponseEntity<ApiResponse<TripListResponse>> listTrips(
       @AuthorizedUser UUID userId,

@@ -24,7 +24,6 @@ import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -36,8 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ScheduleService {
 
-  // calendar 조회 최대 기간 — schedule-calendar-resolve A1=730일
-  public static final int MAX_CALENDAR_RANGE_DAYS = 730;
+  // 마이페이지 calendar 윈도우 — #37 C1: today ~ today+2y−1
+  public static final int CALENDAR_WINDOW_YEARS = 2;
 
   private final RegularScheduleRepository regularScheduleRepository;
 
@@ -317,9 +316,12 @@ public class ScheduleService {
     }
   }
 
+  // #37 C1·R2: 요청 구간 ⊆ [today, today+2y−1] · today 이전 포함 시 400
   private void validateCalendarDateRange(LocalDate startDate, LocalDate endDate) {
     validateDateRange(startDate, endDate);
-    if (ChronoUnit.DAYS.between(startDate, endDate) > MAX_CALENDAR_RANGE_DAYS) {
+    LocalDate today = LocalDate.now();
+    LocalDate windowEnd = today.plusYears(CALENDAR_WINDOW_YEARS).minusDays(1);
+    if (startDate.isBefore(today) || endDate.isAfter(windowEnd)) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }

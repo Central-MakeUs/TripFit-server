@@ -26,8 +26,8 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
-| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A·A1=730일 | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
-| [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Approved** (#37) · **Wave 2 Must** | 마이페이지 today+2년 · 방=희망 기간 · ONGOING 칩 | #17 · #12 |
+| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A · **A1→#37** (today~+2년) | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) · #37 |
+| [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · CANCELED 거부 · ONGOING 칩 | #17 · #12 |
 | [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) | **Approved** (#38) · **Wave 2 Must** | CONFIRMED/TERMINATED snapshot · R-model A | #27 · #17 · #37 |
 | [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 · **#39** JOINED/confirm | 여행방 CRUD·홈 목록·Pin · schedule/confirm | #17 · #22 · #39 |
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
@@ -60,7 +60,7 @@
 | **#27** | trip-home-schedulers | Open |
 | **#22** | schedule-participation-onboarding (Draft — late-join · 방장 A · memberFillRate) | Open |
 | **#35** | trip-join-capacity-hold (Draft — wave 4) | Open |
-| **#37** | trip-schedule-calendar-window | Open · **Approved** · Wave 2 Must |
+| **#37** | trip-schedule-calendar-window | Open · **Approved** · **본 브랜치 구현** · Wave 2 Must |
 | **#38** | trip-schedule-snapshot | Open · **Approved** · Wave 2 Must |
 
 ## 완료 후

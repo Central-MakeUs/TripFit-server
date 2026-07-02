@@ -4,7 +4,7 @@
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008  
 > related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](trip-room-api.md), [`trip-recommendation.md`](trip-recommendation.md)  
 > deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 → 마이페이지 today+2년** [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)** C1) · **CONFIRMED/TERMINATED snapshot** [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)  
-> 상태: **Implemented** (#17) — S1·R2=A · sparse · **A1=구간 길이≤730일** (현행 코드). **제품 재확정(2026-07-21):** A1을 C1 윈도우(today~+2년)로 amend 예정 — #37  
+> 상태: **Implemented** (#17) — S1·R2=A · sparse. **A1:** #37에서 today~+2년 윈도우로 amend (**Implemented** on feat/37)  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 
 ## 목표
@@ -365,7 +365,7 @@ function combineRegularsImpossibleWins(regulars):
 
 | ID | 항목 | 선택지 / 질문 | 제안 | 상태 |
 |----|------|---------------|------|------|
-| **A1** | calendar **기간 상한** | **#17:** 길이≤730. **#37 C1 재확정:** 구간 ⊆ today~+2y−1 | `MAX_CALENDAR_*` amend | **재정의 Draft #37** |
+| **A1** | calendar **기간 상한** | **#37 C1 Approved·구현:** 구간 ⊆ today~+2y−1 | `CALENDAR_WINDOW_YEARS=2` | **Implemented (#37)** |
 | **A2** | `personal-summary` vs `schedule-calendar` | T1 대체 | **T1 확정** (#12) · **personal-summary 삭제** |
 | **A3** | **타임존·날짜 경계** | `LocalDate` only vs zone 포함 | **캘린더 일자(존 없음)** — 요청/응답 모두 date | 합의 권장 (문서에 박기) |
 | **A4** | **`holidayRest`를 calendar에 반영?** | wave 2 Out / 공휴일 테이블 후 반영 | **wave 2 Out** — 요일만. 공휴일은 #13·후속 | 확정 방향(문서) · 프론트에 “공휴일≠휴무 자동” 고지 |
