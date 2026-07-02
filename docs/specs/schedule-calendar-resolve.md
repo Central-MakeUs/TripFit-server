@@ -3,8 +3,8 @@
 > wave: 2  
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008  
 > related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](trip-room-api.md), [`trip-recommendation.md`](trip-recommendation.md)  
-> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 재정의** → [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**) · **TERMINATED snapshot** → [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)  
-> 상태: **Implemented** (#17) — 병합 S1+R2=A · sparse · effective-only · **A1=730일(약 2년)** 확정 (**후속 Draft #37·#38이 A1·만료 조회 재정의 예정**)  
+> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 → 마이페이지 today+2년** [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)** C1) · **CONFIRMED/TERMINATED snapshot** [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)  
+> 상태: **Implemented** (#17) — S1·R2=A · sparse · **A1=구간 길이≤730일** (현행 코드). **제품 재확정(2026-07-21):** A1을 C1 윈도우(today~+2년)로 amend 예정 — #37  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 
 ## 목표
@@ -24,7 +24,7 @@
 | 4 | 응답 깊이 | 본인·그룹 **모두 effective만** (원본 레이어 없음, 납작한 day) |
 | 5 | 용어 | 합친 결과 = **`effective`** (중첩 wrapper 없음) |
 | 6 | 동일 요일 regular 복수 | **R2=A** — 슬롯별 **IMPOSSIBLE 우선** |
-| 7 | calendar 기간 상한 **A1** | **`ChronoUnit.DAYS.between(start,end) ≤ 730`** (약 2년). 초과 시 400 `INVALID_INPUT`. **후속:** [#37](https://github.com/Central-MakeUs/TripFit-server/issues/37) [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) |
+| 7 | calendar 기간 상한 **A1** | **현행 코드:** `DAYS.between(start,end) ≤ 730`. **제품 재확정(#37 C1):** 요청 구간 ⊆ **`today`~`today+2y−1`**. 여행방 기간은 희망 기간(#37 C2) — 본 A1과 무관 |
 
 ### S1이란 (클라이언트 관점)
 
@@ -365,7 +365,7 @@ function combineRegularsImpossibleWins(regulars):
 
 | ID | 항목 | 선택지 / 질문 | 제안 | 상태 |
 |----|------|---------------|------|------|
-| **A1** | calendar **기간 상한** | **확정: 730일 (약 2년)** — #17 Implemented | `MAX_CALENDAR_RANGE_DAYS=730` | **확정** · **재정의 Draft #37** |
+| **A1** | calendar **기간 상한** | **#17:** 길이≤730. **#37 C1 재확정:** 구간 ⊆ today~+2y−1 | `MAX_CALENDAR_*` amend | **재정의 Draft #37** |
 | **A2** | `personal-summary` vs `schedule-calendar` | T1 대체 | **T1 확정** (#12) · **personal-summary 삭제** |
 | **A3** | **타임존·날짜 경계** | `LocalDate` only vs zone 포함 | **캘린더 일자(존 없음)** — 요청/응답 모두 date | 합의 권장 (문서에 박기) |
 | **A4** | **`holidayRest`를 calendar에 반영?** | wave 2 Out / 공휴일 테이블 후 반영 | **wave 2 Out** — 요일만. 공휴일은 #13·후속 | 확정 방향(문서) · 프론트에 “공휴일≠휴무 자동” 고지 |
@@ -423,3 +423,4 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-14 | **Approved** · A1=730일 · 본인 calendar · #17 |
 | 2026-07-17 | A2 T1 확정 · members calendar → #12 |
 | 2026-07-21 | deferred — #37 조회 윈도우 · #38 TERMINATED snapshot (A1 현행 유지) |
+| 2026-07-21 | **제품 재확정** — A1→마이페이지 today+2년(#37 C1) · 방=희망 기간 · #38 CONFIRMED∪TERMINATED |
