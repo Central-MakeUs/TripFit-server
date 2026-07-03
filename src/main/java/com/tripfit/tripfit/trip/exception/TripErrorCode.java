@@ -18,8 +18,8 @@ public enum TripErrorCode implements ErrorCode {
   @Schema(description = "초대 코드 없음")
   INVITE_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, "INVITE_CODE_NOT_FOUND", "초대 코드를 찾을 수 없습니다."),
 
-  @Schema(description = "ONGOING이 아닌 방 수정·제출")
-  TRIP_NOT_ONGOING(HttpStatus.CONFLICT, "TRIP_NOT_ONGOING", "조율 중인 여행방만 수정·제출할 수 있습니다."),
+  @Schema(description = "ONGOING이 아닌 방 수정·내보내기·일정 확인")
+  TRIP_NOT_ONGOING(HttpStatus.CONFLICT, "TRIP_NOT_ONGOING", "조율 중인 여행방만 수정·내보내기·일정 확인할 수 있습니다."),
 
   @Schema(description = "CONFIRMED 방 신규 join")
   TRIP_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "TRIP_ALREADY_CONFIRMED", "일정이 확정된 여행방에는 참여할 수 없습니다."),

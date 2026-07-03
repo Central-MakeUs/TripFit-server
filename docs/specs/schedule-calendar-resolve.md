@@ -24,7 +24,7 @@
 | 4 | 응답 깊이 | 본인·그룹 **모두 effective만** (원본 레이어 없음, 납작한 day) |
 | 5 | 용어 | 합친 결과 = **`effective`** (중첩 wrapper 없음) |
 | 6 | 동일 요일 regular 복수 | **R2=A** — 슬롯별 **IMPOSSIBLE 우선** |
-| 7 | calendar 기간 상한 **A1** | **현행 코드:** `DAYS.between(start,end) ≤ 730`. **제품 재확정(#37 C1):** 요청 구간 ⊆ **`today`~`today+2y−1`**. 여행방 기간은 희망 기간(#37 C2) — 본 A1과 무관 |
+| 7 | calendar 기간 상한 **A1** | **현행 (#37 C1):** 요청 구간 ⊆ **`today`~`today+2y−1`** · today 이전 포함 시 400. (구: 길이 ≤730일 — 폐기). 여행방 기간은 희망 기간(#37 C2) — 본 A1과 무관 |
 
 ### S1이란 (클라이언트 관점)
 
@@ -189,7 +189,7 @@ null(미설정) 슬롯 → 합성에서 무시 (의견 없음). 해당 슬롯에
 | GET | `/api/v1/users/schedule/calendar` | JWT |
 
 **Query:** `startDate`, `endDate` (ISO date, 필수). `end < start` → 400.  
-**기간 상한:** `DAYS.between(start,end) ≤ 730` (약 2년). 초과 → 400 `INVALID_INPUT`.
+**기간 윈도우 (#37 C1):** 요청 구간 ⊆ `[today, today+2년−1]`. today 이전 포함·윈도우 밖 → 400 `INVALID_INPUT`.
 
 **응답**
 
@@ -387,7 +387,7 @@ function combineRegularsImpossibleWins(regulars):
 
 | # | 항목 | 비고 |
 |---|------|------|
-| 1 | A1 기간 상한 | **확정 730일** |
+| 1 | A1 기간 상한 | **Implemented (#37)** — today~+2y−1 (구 730일 길이 폐기) |
 | 2 | A2 summary → calendar | **T1 확정** (#12) |
 | 3 | A6 추천 uncertain | #13 |
 | 4 | A7 source | Nice |
