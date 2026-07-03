@@ -80,7 +80,7 @@ user/schedule/
 | GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성 |
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
 | GET/PATCH | `/api/v1/users/schedule/personal` | 조회 / **upsert + `deletedDates`** (#22 Hidden **1단계 해제**) |
-| GET | `/api/v1/users/schedule/calendar` | effective 달력 · 최대 730일 (#17) · Hidden **1단계 해제** |
+| GET | `/api/v1/users/schedule/calendar` | effective 달력 · **today~+2년** (#37) · Hidden **1단계 해제** |
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 effective · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
 
 > 폐기: `/schedule/availability`, per-slot TBD, `note` · ~~BR-USER-006 regular 선행 403~~ (#22 D-BR006-5) · ~~`members/personal-summary`~~
