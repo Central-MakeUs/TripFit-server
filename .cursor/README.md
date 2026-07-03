@@ -47,7 +47,7 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 
 | 파일 | 요약 | SSOT 범위 |
 |------|------|-----------|
-| `harness-workflow.mdc` | ⛔ 문서 정합 · ErrorCode/AOP · DB · 레거시 · Before/While/After | **코어 STOP·코딩 흐름** |
+| `harness-workflow.mdc` | ⛔ 문서 정합 · ErrorCode/AOP · DB · **레거시(교체=같은 PR 삭제)** · Before/While/After | **코어 STOP·코딩 흐름** |
 | `harness-wave.mdc` | Wave Must/Nice/Out 단정 금지 · `[미정]`→#2 · 희망기간/조회윈도우/A1 | Wave·용어 |
 | `harness-follow-up.mdc` | 💡 후속 제안 · ✅ Defer 이슈 분리 · 💡 ERD 적극 제안 | 완료 후·범위 미루기 |
 | `superpowers-workflow.mdc` | 스킬 트리거 · harness 우선순위 | Superpowers 연동 |
