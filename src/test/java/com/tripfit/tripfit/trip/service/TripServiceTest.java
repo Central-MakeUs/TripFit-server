@@ -11,9 +11,11 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.config.TripActivityAspect;
+import com.tripfit.tripfit.trip.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.domain.TripMemberScheduleSnapshot;
 import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
@@ -24,6 +26,7 @@ import com.tripfit.tripfit.trip.dto.TripListScope;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.RecommendationRepository;
+import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
@@ -78,6 +81,9 @@ class TripServiceTest {
   @Mock
   private RecommendationRepository recommendationRepository;
 
+  @Mock
+  private TripMemberScheduleSnapshotRepository snapshotRepository;
+
   private TripService tripService;
 
   private User owner;
@@ -105,6 +111,7 @@ class TripServiceTest {
             tripMemberRepository,
             regularScheduleRepository,
             personalScheduleRepository,
+            snapshotRepository,
             support);
     TripJoinService tripJoinService =
         new TripJoinService(tripMemberRepository, tripQueryService, userSummaryService);
@@ -687,6 +694,38 @@ class TripServiceTest {
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(TripErrorCode.TRIP_NOT_ONGOING);
+  }
+
+  @Test
+  void getMemberScheduleCalendar_whenTerminated_readsSnapshots() {
+    trip.setStatus(TripStatus.TERMINATED);
+    TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(ownerMembership));
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
+        .thenReturn(List.of(ownerMembership));
+    TripMemberScheduleSnapshot snap =
+        TripMemberScheduleSnapshot.create(
+            trip,
+            owner,
+            LocalDate.of(2026, 8, 3),
+            ScheduleStatus.IMPOSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            false,
+            LocalDateTime.now());
+    when(snapshotRepository.findByTrip_IdOrderByUser_IdAscScheduleDateAsc(TRIP_ID))
+        .thenReturn(List.of(snap));
+
+    var response = tripService.getMemberScheduleCalendar(TRIP_ID, OWNER_ID);
+
+    assertThat(response.readOnly()).isTrue();
+    assertThat(response.members()).hasSize(1);
+    assertThat(response.members().getFirst().days()).hasSize(1);
+    assertThat(response.members().getFirst().days().getFirst().morningStatus())
+        .isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    verify(regularScheduleRepository, never()).findByUserIdOrderByCreatedAtAsc(any());
   }
 
   @Test

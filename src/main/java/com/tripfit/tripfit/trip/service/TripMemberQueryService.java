@@ -1,8 +1,10 @@
 package com.tripfit.tripfit.trip.service;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.trip.domain.SlotStatuses;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
+import com.tripfit.tripfit.trip.domain.TripMemberScheduleSnapshot;
 import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse;
@@ -12,6 +14,7 @@ import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse.TripMemberItemResponse;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
@@ -22,9 +25,11 @@ import com.tripfit.tripfit.user.schedule.service.ScheduleCalendarResolver;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,16 +42,20 @@ class TripMemberQueryService {
 
   private final PersonalScheduleRepository personalScheduleRepository;
 
+  private final TripMemberScheduleSnapshotRepository snapshotRepository;
+
   private final TripServiceSupport support;
 
   TripMemberQueryService(
       TripMemberRepository tripMemberRepository,
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
+      TripMemberScheduleSnapshotRepository snapshotRepository,
       TripServiceSupport support) {
     this.tripMemberRepository = tripMemberRepository;
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
+    this.snapshotRepository = snapshotRepository;
     this.support = support;
   }
 
@@ -86,25 +95,39 @@ class TripMemberQueryService {
         memberCount, joinedMemberCount, respondedCount, memberFillRate, items);
   }
 
-  // #37 C2/C3: 희망 기간 live resolve · CANCELED 거부(R1). CONFIRMED/TERMINATED snapshot은 #38
+  // #37·#38: CANCELED 거부 · ONGOING live · CONFIRMED/TERMINATED snapshot
   @Transactional(readOnly = true)
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
     support.requireActiveMember(tripId, userId);
     Trip trip = support.requireActiveTrip(tripId);
-    if (support.effectiveStatus(trip) == TripStatus.CANCELED) {
+    TripStatus status = support.effectiveStatus(trip);
+    if (status == TripStatus.CANCELED) {
       throw new TripFitException(TripErrorCode.TRIP_CANCELED);
     }
+
     LocalDate startDate = trip.getStartRange();
     LocalDate endDate = trip.getEndRange();
-
     List<TripMember> members =
         tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
             .sorted(Comparator.comparing(TripMember::getJoinedAt))
             .toList();
-
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
+    boolean readOnly = status == TripStatus.CONFIRMED || status == TripStatus.TERMINATED;
+    List<MemberCalendar> memberCalendars =
+        readOnly
+            ? buildFromSnapshots(tripId, members, displayNames)
+            : buildLive(members, displayNames, startDate, endDate);
+
+    return new MemberScheduleCalendarResponse(startDate, endDate, readOnly, memberCalendars);
+  }
+
+  private List<MemberCalendar> buildLive(
+      List<TripMember> members,
+      Map<UUID, String> displayNames,
+      LocalDate startDate,
+      LocalDate endDate) {
     List<MemberCalendar> memberCalendars = new ArrayList<>();
     for (TripMember member : members) {
       UUID memberUserId = member.getUser().getId();
@@ -117,7 +140,6 @@ class TripMemberQueryService {
               endDate);
       List<CalendarDayResponse> resolved =
           ScheduleCalendarResolver.resolve(regulars, personals, startDate, endDate);
-
       List<CalendarDay> days =
           resolved.stream()
               .map(
@@ -128,7 +150,6 @@ class TripMemberQueryService {
                       d.eveningStatus(),
                       d.uncertain()))
               .toList();
-
       memberCalendars.add(
           new MemberCalendar(
               memberUserId,
@@ -137,7 +158,45 @@ class TripMemberQueryService {
               member.getStatus(),
               days));
     }
+    return memberCalendars;
+  }
 
-    return new MemberScheduleCalendarResponse(startDate, endDate, memberCalendars);
+  private List<MemberCalendar> buildFromSnapshots(
+      UUID tripId,
+      List<TripMember> members,
+      Map<UUID, String> displayNames) {
+    Map<UUID, List<TripMemberScheduleSnapshot>> byUser =
+        snapshotRepository.findByTrip_IdOrderByUser_IdAscScheduleDateAsc(tripId).stream()
+            .collect(
+                Collectors.groupingBy(
+                    s -> s.getUser().getId(),
+                    LinkedHashMap::new,
+                    Collectors.toList()));
+
+    List<MemberCalendar> memberCalendars = new ArrayList<>();
+    for (TripMember member : members) {
+      UUID memberUserId = member.getUser().getId();
+      List<CalendarDay> days =
+          byUser.getOrDefault(memberUserId, List.of()).stream()
+              .map(
+                  s -> {
+                    SlotStatuses slots = s.getSlotStatuses();
+                    return new CalendarDay(
+                        s.getScheduleDate(),
+                        slots.getMorningStatus(),
+                        slots.getAfternoonStatus(),
+                        slots.getEveningStatus(),
+                        s.isUncertain());
+                  })
+              .toList();
+      memberCalendars.add(
+          new MemberCalendar(
+              memberUserId,
+              displayNames.get(memberUserId),
+              member.getRole(),
+              member.getStatus(),
+              days));
+    }
+    return memberCalendars;
   }
 }
