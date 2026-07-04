@@ -11,8 +11,6 @@ spring:
       max-lifetime: 1800000
       keepalive-time: 300000
       connection-timeout: 30000
-  flyway:
-    locations: classpath:db/migration
   jpa:
     open-in-view: false
     properties:

@@ -12,8 +12,6 @@ fi
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}"
 MYSQL_DATABASE="${MYSQL_DATABASE:-tripfit}"
 APP_PORT="${APP_PORT:-8080}"
-# dev/local(1단계): false — prod(3단계): true
-VERIFY_FLYWAY="${VERIFY_FLYWAY:-false}"
 
 EXPECTED_TABLES=(
   user
@@ -49,23 +47,6 @@ check_app_health() {
   fi
 }
 
-check_flyway() {
-  if [[ "$VERIFY_FLYWAY" != "true" ]]; then
-    log "SKIP flyway check (dev phase; VERIFY_FLYWAY=true for prod)"
-    return 0
-  fi
-
-  local version
-  version="$(docker exec tripfit-mysql mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" -Nse \
-    "SELECT version FROM ${MYSQL_DATABASE}.flyway_schema_history ORDER BY installed_rank DESC LIMIT 1;" 2>/dev/null || true)"
-  if [[ "$version" == "1" ]]; then
-    log "OK flyway schema version: $version"
-  else
-    log "FAIL flyway schema version (expected 1, got: ${version:-none})"
-    failures=$((failures + 1))
-  fi
-}
-
 check_tables() {
   local tables
   tables="$(docker exec tripfit-mysql mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" -Nse \
@@ -94,19 +75,18 @@ check_foreign_keys() {
 }
 
 check_app_logs() {
-  if docker logs tripfit-app 2>&1 | rg -qi "error executing ddl|schema-validation|flyway.*failed|application run failed|unsupported database"; then
+  if docker logs tripfit-app 2>&1 | rg -qi "error executing ddl|schema-validation|application run failed|unsupported database"; then
     log "FAIL suspicious errors found in app logs"
     failures=$((failures + 1))
   else
-    log "OK no schema/flyway errors in app logs"
+    log "OK no schema errors in app logs"
   fi
 }
 
-log "starting deployment verification (VERIFY_FLYWAY=${VERIFY_FLYWAY})"
+log "starting deployment verification"
 check_container_running tripfit-mysql
 check_container_running tripfit-app
 check_app_health
-check_flyway
 check_tables
 check_foreign_keys
 check_app_logs

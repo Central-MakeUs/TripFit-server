@@ -1,6 +1,15 @@
 # TripFit 배포 (`deploy/`)
 
-Docker Compose 기반 배포 설정. **역할별로 분리**되어 있습니다.
+Docker Compose 기반 배포 설정. **배포 운영 SSOT** — 절차·환경변수·검증 스크립트는 이 문서를 기준으로 합니다.
+
+| 관련 문서 | 용도 |
+|-----------|------|
+| [`docs/decisions/002-domain-split-vercel-api.md`](../docs/decisions/002-domain-split-vercel-api.md) | 도메인 분리 확정 |
+| [`docs/architecture.md`](../docs/architecture.md) | 프로필·ddl-auto·레이어 |
+| [`docs/architecture/ec2-split-deployment.md`](../docs/architecture/ec2-split-deployment.md) | VPC·SG·1→2 EC2 심화 |
+| [`.cursor/rules/deployment.mdc`](../.cursor/rules/deployment.mdc) | 에이전트 배포 가드레일 |
+
+역할별로 분리되어 있습니다.
 
 ## 도메인 구조 (확정)
 

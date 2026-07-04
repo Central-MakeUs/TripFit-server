@@ -10,7 +10,7 @@ description: 요구사항을 정리하고 docs/specs/에 스펙 파일을 생성
 ## When to Use
 
 - 새 REST API·엔티티·인증 흐름
-- DB 스키마·Flyway 단계 전환
+- DB 스키마 변경 (엔티티·컬럼·관계)
 - 3개 이상 파일에 걸친 리팩터
 - BR-* / PRD 해석이 엇갈릴 때
 

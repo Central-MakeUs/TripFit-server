@@ -7,7 +7,7 @@
 
 | 쓴다 | 안 쓴다 |
 |------|---------|
-| DB·마이그레이션 전략 전환 (예: Flyway 3단계) | 일반 API·CRUD 기능 |
+| DB·스키마 전략 전환 (예: ddl-auto 정책 변경, RDS 전환) | 일반 API·CRUD 기능 |
 | 인증·보안 방식 확정 | 버그 수정, 필드 추가 |
 | 배포 구조 변경 (단일 EC2 → 분리, RDS 전환 검토) | S/M/T 중 **T** 작은 수정 |
 | 스키마·테이블 rename 등 기술 부채 결정 | 스펙(`docs/specs/`)으로 충분한 작업 |
@@ -16,7 +16,7 @@
 
 ## 파일 이름
 
-`NNN-짧은-제목.md` — 예: `001-flyway-prod-cutover.md`
+`NNN-짧은-제목.md` — 예: `003-rds-mysql-cutover.md`
 
 번호는 순서대로. 이미 긴 가이드가 있으면 중복 작성하지 않고 링크만 — 예: [ec2-split-deployment.md](../architecture/ec2-split-deployment.md)
 

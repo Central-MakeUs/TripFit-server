@@ -18,7 +18,37 @@ com.tripfit.tripfit
 └── dto/          # request/response (API 계약)
 ```
 
-레이어 규칙: `docs/architecture.md` — Controller는 HTTP만, Service가 트랜잭션·규칙, Repository는 DB만.
+레이어·DDD: `docs/architecture.md` — Controller는 HTTP만, Application Service는 조율·트랜잭션, Domain에 BR.
+
+## DDD (구현 시)
+
+- 애그리거트 루트만 `JpaRepository` — `User`, `Trip` (상세: `architecture.md`)
+- **BR-*** · 상태 전이 → Entity 메서드 또는 `domain/` Domain Service. Service에만 if/else 로직 쌓지 않음
+- 애그리거트 간 참조는 ID. 다른 루트 Entity를 필드로 직접 보유하지 않음 (`@ManyToOne`은 필요 최소, 조회는 ID 기반)
+- Domain 예외 → Application에서 catch 또는 `GlobalExceptionHandler`가 `ErrorCode`로 envelope 변환
+- 한 유스케이스 = Application Service public 메서드 1개 + `@Transactional` (읽기만이면 `readOnly = true`)
+
+```java
+// ✅ Domain — BR·상태 전이
+public void confirm() {
+    if (this.status != TripStatus.ONGOING) {
+        throw new TripFitException(ErrorCode.TRIP_INVALID_STATUS);
+    }
+    this.status = TripStatus.CONFIRMED;
+}
+
+// ✅ Application — 조율만
+@Transactional
+public TripResponse confirmTrip(Long tripId, Long userId) {
+    Trip trip = tripRepository.findById(tripId).orElseThrow(...);
+    trip.confirm(); // 권한 검증은 Domain 또는 Service 선행
+    return TripResponse.from(trip);
+}
+
+// ❌ Service에 BR 전부 — Anemic
+if (trip.getStatus() != ONGOING) throw ...
+trip.setStatus(CONFIRMED);
+```
 
 ## Entity Conventions
 
@@ -44,8 +74,9 @@ public TripResponse toResponse() { ... }
 ## API (추가 시)
 
 - `@RestController` + `@RequestMapping("/api/v1/...")` (버전 prefix 통일)
-- 요청 검증: Jakarta Validation (`@Valid`, `@NotNull`, `@NotBlank`)
-- 예외: `@RestControllerAdvice` + 공통 에러 응답 body
+- 응답 envelope: `docs/architecture/api-response.md` (**Draft** — 합의 후 `ApiResponse<T>`, `ErrorCode` 구현)
+- 요청 검증: Jakarta Validation (`@Valid`, ...) → HTTP 400 + `INVALID_INPUT` + `errors[].message`
+- 예외: `@RestControllerAdvice` + `{ code, message }` (Body에 HTTP status 중복 금지)
 - 문서: springdoc — 컨트롤러에 `@Operation`, `@Tag` (기존 `OpenApiConfig` 참고)
 
 ## Configuration

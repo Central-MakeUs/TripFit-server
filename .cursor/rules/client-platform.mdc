@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Client Platform (React → Play / App Store)
 
+도메인·BR·와이어프레임 매핑은 **`figma-product.mdc`** 참고.
+
 이 저장소는 **백엔드만**. 클라이언트는 **React(프론트 2명)**, 최종 **Play·App Store** 앱 배포 목표.
 
 작업 전: `docs/product/platform.md`, `docs/decisions/002-domain-split-vercel-api.md` 확인.
@@ -14,6 +16,7 @@ alwaysApply: false
 
 - Base URL: `https://api.tripfit.online` (운영), 로컬: `http://localhost:8080`
 - JSON REST, `/api/v1/...` — 앱·Vercel 웹 공용
+- 응답 envelope **초안**: [`docs/architecture/api-response.md`](../../docs/architecture/api-response.md) — `data`, `message`, `code` (Body에 status 없음). 확정 전 임의 형식 구현 금지
 - DTO·에러 body는 앱에서 파싱 가능하게 — magic string 남발 금지
 - 스펙(`docs/specs/`)에 요청/응답·HTTP 상태·에러 케이스 명시
 

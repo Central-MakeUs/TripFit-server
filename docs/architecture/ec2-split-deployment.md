@@ -1,5 +1,8 @@
 # EC2 2대 분리 배포 가이드 (App / MySQL)
 
+> **빠른 시작·환경변수·검증 스크립트:** [`deploy/README.md`](../deploy/README.md) (배포 SSOT)  
+> 이 문서는 VPC·SG·RDS 전환·1→2 EC2 마이그레이션 **심화 가이드**입니다.
+
 > 현재: EC2 1대에서 Spring Boot + MySQL (Docker Compose)  
 > 목표: EC2 A (App) + EC2 B (MySQL), 원격 JDBC 연결
 
@@ -303,22 +306,7 @@ JDBC URL 패턴 동일 → **2 EC2 Docker 분리는 RDS로 가는 중간 단계*
 
 ## 10. 프로젝트 파일 맵
 
-```
-deploy/
-├── README.md
-├── mysql/
-│   ├── docker-compose.yml    # EC2 B
-│   └── .env.example
-└── app/
-    ├── docker-compose.yml    # EC2 A (GHCR pull)
-    └── .env.example
-
-docker-compose.yml            # 로컬 단일 호스트 (app build + mysql)
-scripts/
-├── verify-deploy.sh          # 루트 compose (app + mysql 컨테이너)
-├── verify-deploy-app.sh      # EC2 A 분리 (app + 원격 MySQL)
-└── ec2-deploy-app.sh         # EC2 A pull + up + readiness
-```
+배포 파일·스크립트 목록은 [`deploy/README.md`](../../deploy/README.md)를 참고하세요.
 
 **분리 환경 검증 (EC2 A)**
 

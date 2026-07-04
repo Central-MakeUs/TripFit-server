@@ -15,7 +15,7 @@ alwaysApply: false
 
 ## 프로필
 
-- 테스트는 `application-test.yml` — H2, `ddl-auto: create-drop`, Flyway off
+- 테스트는 `application-test.yml` — H2, `ddl-auto: create-drop`
 - `@ActiveProfiles("test")` 또는 `@SpringBootTest` 기본 test 프로필 사용
 - MySQL·운영 DB에 테스트가 붙지 않도록 `@DataJpaTest` 등은 test 프로필 확인
 

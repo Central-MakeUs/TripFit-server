@@ -37,15 +37,26 @@
 | **인증** | 소셜 로그인·토큰은 **모바일 OAuth/딥링크** 가능하게 스펙에 명시. 세부는 S 유형 스펙 + 필요 시 `docs/decisions/` |
 | **초대 링크** | 카카오 공유·딥링크 — Universal Link / App Link fallback은 스펙·프론트와 합의. 임의 URL 스킴 구현 금지 |
 | **CORS** | Vercel(`https://tripfit.online`) 등 웹 origin — API는 `api.tripfit.online`. 네이티브 앱은 CORS 없음 |
-| **에러 응답** | 일관된 body (코드 + 메시지). 앱에서 파싱 가능한 구조 유지 |
+| **에러 응답** | [`api-response.md`](../architecture/api-response.md) **초안** — Body: `data`, `message`, `code` (HTTP status는 헤더만) |
 | **푸시 알림** | MVP P1(리마인드). FCM/APNs는 **별도 스펙** 없으면 토큰 테이블·발송 로직 추가 금지 |
 | **결제·수익화** | MVP Out unless `mvp.md`·스펙에 명시. Agent가 임의 결제 API 추가 금지 |
 
 ### 프론트와의 계약
 
-- API 요청/응답·에러 코드는 **`docs/specs/`** 에 적고 프론트 2명과 맞출 것
+- **API 응답 envelope (초안)**: [`docs/architecture/api-response.md`](../architecture/api-response.md) — **프론트에 아직 규약 없음**. 백엔드 제안안으로 합의 후 확정
+- API 요청/응답·`data` shape·`code`는 **`docs/specs/`** + 프론트 2명과 맞출 것
 - 화면·한글 라벨은 `docs/product/design/`, `glossary.md` — 백엔드 enum 이름과 혼동 금지
-- OpenAPI(springdoc)는 API 추가 시 동기화 권장 — 앱 팀의 계약서 역할
+- OpenAPI(springdoc)는 **첫 API 공개·envelope 확정 후** 동기화
+
+### 프론트 합의 제안 — API 응답 (논의용 5줄)
+
+아래는 **백엔드 제안 초안**. 프론트 피드백 반영 후 `api-response.md` 상태를 `확정`으로 바꾼다.
+
+1. Body 후보: `data`, `message`, `code` — **Body에 `status`/`success` 없음** (성공 여부는 `response.ok`).
+2. 성공 시 **`body.data`** 사용. 단순 조회는 `{ "data": ... }` 만으로도 OK (`message` 선택).
+3. 실패 시 **`body.message`** 표시, **`body.code`** 로 분기 (`TRIP_NOT_FOUND`, `TOKEN_EXPIRED` 등).
+4. 400 검증: `INVALID_INPUT` + **`errors: [{ field, message }]`**.
+5. 목록(제안): `data.items` + `data.pageInfo`. Base URL: `https://api.tripfit.online`, `/api/v1/...`.
 
 ## 단계별 우선순위 (Agent)
 
@@ -60,7 +71,8 @@
 | `mvp.md` | 기능 In/Out |
 | `prd.md` | 앱 설치·온보딩 등 사용자 시나리오 |
 | `design/figma-wireframe-v1.md` | 화면·상태 |
-| `architecture.md` | 서버 레이어 |
+| `architecture.md` | 서버 레이어·DDD |
+| `architecture/api-response.md` | REST JSON envelope **초안** (프론트 합의용) |
 | `.cursor/rules/client-platform.mdc` | API·인증 작업 시 자동 규칙 |
 
 ## 미정 항목

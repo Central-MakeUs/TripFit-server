@@ -34,10 +34,23 @@
 |--------|------|------|------|
 | | | | |
 
-요청/응답 예시 (해당 시):
+요청/응답 예시 — envelope **초안**: [`docs/architecture/api-response.md`](../../architecture/api-response.md) (프론트 합의 전)
+
+성공 (단순):
 
 ```json
-{}
+{
+  "data": {}
+}
+```
+
+실패 (404):
+
+```json
+{
+  "code": "TRIP_NOT_FOUND",
+  "message": "여행방을 찾을 수 없습니다."
+}
 ```
 
 ## 데이터 모델

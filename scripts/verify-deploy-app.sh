@@ -24,7 +24,6 @@ CERTBOT_DOMAIN="${CERTBOT_DOMAIN:-api.tripfit.online}"
 VERIFY_TLS="${VERIFY_TLS:-false}"
 MYSQL_HOST="${MYSQL_HOST:-}"
 MYSQL_PORT="${MYSQL_PORT:-3306}"
-VERIFY_FLYWAY="${VERIFY_FLYWAY:-false}"
 
 failures=0
 
@@ -101,7 +100,7 @@ check_remote_mysql() {
 }
 
 check_app_logs() {
-  if docker logs tripfit-app 2>&1 | rg -qi "error executing ddl|schema-validation|flyway.*failed|application run failed|unsupported database|communications link failure"; then
+  if docker logs tripfit-app 2>&1 | rg -qi "error executing ddl|schema-validation|application run failed|unsupported database|communications link failure"; then
     log "FAIL suspicious errors in app logs"
     failures=$((failures + 1))
   else
@@ -109,7 +108,7 @@ check_app_logs() {
   fi
 }
 
-log "starting EC2 A verification (nginx + app API, VERIFY_FLYWAY=${VERIFY_FLYWAY})"
+log "starting EC2 A verification (nginx + app API)"
 check_container_running tripfit-certbot
 check_container_running tripfit-nginx
 check_container_running tripfit-app
@@ -118,10 +117,6 @@ check_nginx_tls
 check_app_health
 check_remote_mysql
 check_app_logs
-
-if [[ "$VERIFY_FLYWAY" == "true" ]]; then
-  log "WARN VERIFY_FLYWAY=true on split deploy — use verify-deploy.sh on DB host or manual flyway check"
-fi
 
 if [[ "$failures" -gt 0 ]]; then
   log "verification failed ($failures issue(s))"
