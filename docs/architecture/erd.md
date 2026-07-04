@@ -120,6 +120,24 @@ erDiagram
 
 **인덱스:** `UNIQUE (provider, social_id)`
 
+### `refresh_token` (리프레시 토큰)
+
+Phase 1 인증 Must Have. P2 RTR·Redis는 [`docs/specs/auth-token-lifecycle-p2.md`](../specs/auth-token-lifecycle-p2.md) 참고.
+
+- **관련 결정:** [`004-auth-token-lifecycle-p2.md`](../decisions/004-auth-token-lifecycle-p2.md)
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | bigint | N | PK | |
+| user_id | bigint | N | FK → user.id | |
+| token | varchar(255) | N | | opaque token. UNIQUE |
+| family_id | char(36) | N | | UUID — login 체인 (P2 RTR) |
+| revoked_at | timestamptz | Y | | P2 rotation. Phase 1 logout은 row delete |
+| expires_at | timestamptz | N | | |
+| created_at | timestamptz | N | | |
+
+**인덱스:** `UNIQUE (token)`, `INDEX (user_id)`, `INDEX (family_id)`
+
 ### `user_condition` (근무·연차 조건)
 
 개인 근무 패턴 및 연차 제약. 온보딩·내 일정 관리에서 수집.
@@ -228,6 +246,7 @@ erDiagram
 | From | To | 관계 | 설명 |
 |------|-----|------|------|
 | user | trip_member | 1:N | 사용자는 여러 여행방 참여 |
+| user | refresh_token | 1:N | 사용자당 refresh token (Phase 1+) |
 | trip | trip_member | 1:N | 여행방에 여러 참여자 |
 | trip_member | member_schedule | 1:N | 참여자별 슬롯 일정 |
 | trip | recommendation | 1:N | 여행방당 TOP 3 후보 |
@@ -239,7 +258,7 @@ erDiagram
 
 | MVP 기능 | 테이블 |
 |----------|--------|
-| 소셜 로그인·프로필 | `user` |
+| 소셜 로그인·프로필 | `user`, `refresh_token` |
 | 근무/연차 조건 | `user_condition` |
 | 여행방 생성·초대 | `trip`, `trip_member` |
 | 오전/오후/저녁 일정 응답 | `member_schedule` |
