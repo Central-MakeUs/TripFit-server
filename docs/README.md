@@ -22,6 +22,8 @@ docs/
 │   ├── business-rules/       ← BR-* 규칙
 │   └── flows/                ← 사용자 플로우
 ├── specs/                    ← 기능 스펙 (implement 전)
+│   ├── auth-social-login-mvp.md      ← 소셜 로그인·JWT (단일 POST /auth/login)
+│   └── auth-apple-server-notifications.md  ← Apple S2S webhook (스토어 제출 전)
 ├── decisions/                ← 인프라·도메인 확정 (002 Vercel+API, 003 DDD 전술)
 └── prompts/notebooklm/       ← 기획 문서 재생성 프롬프트
 ```
