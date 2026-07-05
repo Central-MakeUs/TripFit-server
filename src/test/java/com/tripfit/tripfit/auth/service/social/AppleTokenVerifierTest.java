@@ -1,0 +1,39 @@
+package com.tripfit.tripfit.auth.service.social;
+
+import com.tripfit.tripfit.auth.config.OAuthProperties;
+import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.common.exception.TripFitException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class AppleTokenVerifierTest {
+
+	private AppleTokenVerifier appleTokenVerifier;
+
+	@BeforeEach
+	void setUp() {
+		OAuthProperties oAuthProperties = new OAuthProperties();
+		oAuthProperties.setAppleClientId("test-apple-client-id");
+		appleTokenVerifier = new AppleTokenVerifier(oAuthProperties);
+	}
+
+	@Test
+	void verify_invalidToken_throwsAuthInvalidToken() {
+		assertThatThrownBy(() -> appleTokenVerifier.verify("not-a-valid-jwt"))
+				.isInstanceOf(TripFitException.class)
+				.extracting(exception -> ((TripFitException) exception).getErrorCode())
+				.isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
+	}
+
+	@Test
+	void verify_missingClientId_throwsAuthInvalidToken() {
+		AppleTokenVerifier verifierWithoutClientId = new AppleTokenVerifier(new OAuthProperties());
+
+		assertThatThrownBy(() -> verifierWithoutClientId.verify("not-a-valid-jwt"))
+				.isInstanceOf(TripFitException.class)
+				.extracting(exception -> ((TripFitException) exception).getErrorCode())
+				.isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
+	}
+}

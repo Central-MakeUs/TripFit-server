@@ -38,3 +38,4 @@ out/
 
 ### Docker ###
 .env
+.DS_Store

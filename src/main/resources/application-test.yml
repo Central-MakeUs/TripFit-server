@@ -7,3 +7,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+
+tripfit:
+  jwt:
+    secret: test-jwt-secret-key-at-least-32-characters
+    access-expiration-seconds: 7200
+    refresh-expiration-days: 30
+  oauth:
+    google-client-id: test-google-client-id
+    google-client-id-ios: test-google-ios-client-id
+    google-client-id-android: test-google-android-client-id
+    apple-client-id: test-apple-client-id
