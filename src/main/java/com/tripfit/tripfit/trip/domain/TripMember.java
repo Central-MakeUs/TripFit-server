@@ -1,7 +1,7 @@
-package com.tripfit.tripfit.domain;
+package com.tripfit.tripfit.trip.domain;
 
-import com.tripfit.tripfit.domain.enums.TripMemberRole;
-import com.tripfit.tripfit.domain.enums.TripMemberStatus;
+import com.tripfit.tripfit.common.domain.BaseTimeEntity;
+import com.tripfit.tripfit.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

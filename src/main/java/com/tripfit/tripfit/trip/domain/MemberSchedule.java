@@ -1,7 +1,6 @@
-package com.tripfit.tripfit.domain;
+package com.tripfit.tripfit.trip.domain;
 
-import com.tripfit.tripfit.domain.enums.ScheduleStatus;
-import com.tripfit.tripfit.domain.enums.TimeSlot;
+import com.tripfit.tripfit.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -1,5 +1,6 @@
-package com.tripfit.tripfit.domain;
+package com.tripfit.tripfit.user.domain;
 
+import com.tripfit.tripfit.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

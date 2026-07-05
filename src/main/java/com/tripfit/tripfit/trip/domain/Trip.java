@@ -1,6 +1,7 @@
-package com.tripfit.tripfit.domain;
+package com.tripfit.tripfit.trip.domain;
 
-import com.tripfit.tripfit.domain.enums.TripStatus;
+import com.tripfit.tripfit.common.domain.SoftDeleteEntity;
+import com.tripfit.tripfit.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

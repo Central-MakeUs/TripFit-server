@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.domain.enums;
+package com.tripfit.tripfit.user.domain;
 
 public enum SocialProvider {
 	KAKAO,

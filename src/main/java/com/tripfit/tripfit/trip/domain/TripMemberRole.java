@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.domain.enums;
+package com.tripfit.tripfit.trip.domain;
 
 public enum TripMemberRole {
 	OWNER,

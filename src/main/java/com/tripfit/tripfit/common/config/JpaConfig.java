@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.config;
+package com.tripfit.tripfit.common.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

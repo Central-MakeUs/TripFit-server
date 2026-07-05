@@ -1,6 +1,6 @@
-package com.tripfit.tripfit.domain;
+package com.tripfit.tripfit.user.domain;
 
-import com.tripfit.tripfit.domain.enums.SocialProvider;
+import com.tripfit.tripfit.common.domain.SoftDeleteEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

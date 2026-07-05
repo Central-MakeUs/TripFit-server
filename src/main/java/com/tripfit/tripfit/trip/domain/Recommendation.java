@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.domain;
+package com.tripfit.tripfit.trip.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
