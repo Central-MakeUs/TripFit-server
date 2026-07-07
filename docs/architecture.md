@@ -3,13 +3,13 @@
 ## Overview
 
 Spring Boot 4.x 기반 단일 모듈 Gradle 프로젝트.  
-**기능 중심 Vertical Slice** + 슬라이스 내부 **Controller / Service / Repository** 레이어를 사용합니다. DDD는 적용하지 않으며, JPA 연관관계를 자유롭게 활용합니다.
+**도메인 기반 레이어드 아키텍처**로 `auth`, `user`, `trip`, `common` 단위로 코드를 묶고, 각 도메인 내부는 **Controller / DTO / Service / Domain / Repository** (+ 필요 시 Client) 레이어를 사용합니다. 풀 DDD는 적용하지 않으며, JPA 연관관계를 자유롭게 활용합니다.
 
 > 아키텍처 결정: [`decisions/003-architecture-guide.md`](decisions/003-architecture-guide.md)
 
-## Package Layout (Vertical Slice)
+## Package Layout (Domain-Driven Layered)
 
-기능(슬라이스) 단위로 코드를 묶고, 슬라이스 내부에서 controller → service → domain → repository 레이어를 둡니다.  
+도메인 단위로 코드를 묶고, 도메인 내부에서 controller → dto → service → domain → repository 레이어를 둡니다.  
 공통 설정·예외·베이스 엔티티는 `common/`에 둡니다.
 
 ```
@@ -21,11 +21,14 @@ com.tripfit.tripfit
 │   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
 │   └── exception/                  # ErrorCode, CommonErrorCode, TripFitException, GlobalExceptionHandler
 ├── auth/
-│   ├── exception/                 # AuthErrorCode
-│   ├── controller/                # AuthController, dto/
-│   ├── service/                    # AuthService, JwtService, social/, security/
-│   ├── config/
-│   └── repository/                 # RefreshToken, RefreshTokenRepository
+│   ├── config/                     # JwtProperties, OAuthProperties, SecurityConfig
+│   ├── controller/                 # AuthController
+│   ├── dto/                        # LoginRequest, LoginResponse, ...
+│   ├── service/                    # AuthService, JwtService, RefreshTokenService
+│   ├── domain/                     # RefreshToken
+│   ├── repository/                 # RefreshTokenRepository
+│   ├── client/                     # SocialTokenVerifier*, OAuthProfile, TokenRevocationChecker
+│   └── exception/                  # AuthErrorCode
 ├── user/
 │   ├── domain/                     # User, UserCondition, SocialProvider
 │   └── repository/                 # UserRepository
@@ -33,15 +36,17 @@ com.tripfit.tripfit
     └── domain/                     # Trip, TripMember, MemberSchedule, Recommendation, enums
 ```
 
-새 기능 추가 시 `com.tripfit.tripfit.{feature}/` 슬라이스를 만들고, 위 내부 레이어 규칙을 따릅니다.
+새 기능 추가 시 `com.tripfit.tripfit.{domain}/` 아래에 위 레이어 규칙을 따릅니다.
 
-## Layer Rules (슬라이스 내부)
+## Layer Rules (도메인 내부)
 
 - **controller**: HTTP 입출력·DTO 변환만. 비즈니스 로직·트랜잭션 금지.
-- **service**: 유스케이스 조율, `@Transactional`, Repository·외부 API 호출.
+- **dto**: API 요청·응답 타입. `controller/dto/` 중첩 금지.
+- **service**: 유스케이스 조율, `@Transactional`, Repository·client 호출.
 - **domain**: JPA `@Entity`, enum. `@ManyToOne` 등 연관관계 사용 가능.
-- **repository**: `JpaRepository`, 기술 영속화 엔티티(토큰 등).
-- **common**: 슬라이스 간 공유 설정·예외·베이스 엔티티.
+- **repository**: `JpaRepository`만. Entity는 `domain/`에 둔다.
+- **client**: 외부 OAuth·HTTP adapter (auth 등).
+- **common**: 도메인 간 공유 설정·예외·베이스 엔티티.
 
 ### JPA
 

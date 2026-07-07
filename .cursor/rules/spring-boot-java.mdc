@@ -6,36 +6,43 @@ alwaysApply: false
 
 # Spring Boot / Java
 
-## Package Layout (Vertical Slice)
+## Package Layout (Domain-Driven Layered Architecture)
+
+최상위는 **도메인 단위**(`auth`, `trip`, `user`, `common`)로 분리하고, 각 도메인 내부는 **계층형 레이어**를 일관되게 유지한다.
 
 ```
 com.tripfit.tripfit
-├── common/              # api, config, domain(베이스), exception
-├── {feature}/           # auth, user, trip, ...
-│   ├── controller/      # @RestController, dto/
-│   ├── service/         # @Transactional 비즈니스 로직, 외부 연동
-│   ├── domain/          # JPA @Entity, enum (없으면 생략)
-│   ├── repository/      # JpaRepository, 기술 영속화 Entity
-│   └── config/          # (슬라이스 전용 설정)
+├── TripfitApplication.java
+├── {domain}/                    # auth, trip, user
+│   ├── controller/              # @RestController (HTTP만)
+│   ├── dto/                     # 요청·응답 DTO (controller와 형제)
+│   ├── service/                 # @Transactional 유스케이스 조율
+│   ├── repository/              # JpaRepository
+│   ├── domain/                  # JPA @Entity, enum, 값 타입
+│   ├── client/                  # 외부 API·OAuth 검증 등 (auth 등 필요 시)
+│   ├── exception/               # 도메인별 ErrorCode (auth 등)
+│   └── config/                  # 도메인 전용 설정 (auth 등)
+└── common/                      # api, config, domain(베이스), exception
 ```
 
 가이드: `docs/decisions/003-architecture-guide.md`, `docs/architecture.md`  
-**DDD 미적용** — JPA 연관관계·객체 그래프 탐색 허용.
+**풀 DDD 미적용** — JPA 연관관계·객체 그래프 탐색 허용.
 
 ## 레이어 (최소 규칙)
 
 - **controller**: HTTP·DTO만. `@Transactional`·비즈니스 로직 금지.
+- **dto**: API 요청·응답 record/class. `controller/dto/` 중첩 금지.
 - **service**: 유스케이스 조율, `@Transactional` (읽기만이면 `readOnly = true`).
-- **domain**: JPA Entity·enum.
-- **repository**: JpaRepository, `RefreshToken` 등 기술 영속화 Entity.
-- 예외 → `GlobalExceptionHandler`가 `ErrorCode` 인터페이스로 envelope 변환. 공통은 `CommonErrorCode`, 슬라이스별은 `{feature}/exception/{Feature}ErrorCode`.
+- **domain**: JPA Entity·enum·도메인 값 타입.
+- **repository**: `JpaRepository`만. Entity는 `domain/`에 둔다.
+- **client**: 외부 OAuth·HTTP 연동, 토큰 검증 adapter. service에서 호출.
+- 예외 → `GlobalExceptionHandler`가 `ErrorCode` 인터페이스로 envelope 변환. 공통은 `CommonErrorCode`, 도메인별은 `{domain}/exception/{Domain}ErrorCode`.
 
 ## Entity Conventions
 
-- 공통: `common/domain/BaseTimeEntity`, `SoftDeleteEntity`
-- 비즈니스 Entity: `{feature}/domain/`
-- 기술 영속화: `{feature}/repository/` (예: `RefreshToken`)
-- Enum: `domain/` 패키지, `@Enumerated(EnumType.STRING)`
+- 공통 베이스: `common/domain/BaseTimeEntity`, `SoftDeleteEntity`
+- 비즈니스 Entity: `{domain}/domain/`
+- Enum: `{domain}/domain/`, `@Enumerated(EnumType.STRING)`
 - JPA `@ManyToOne` 등 연관관계 사용 가능 — 기본 `LAZY`
 - 테이블·컬럼: snake_case. 예약어 컬럼은 `@Column(name = "...")` 명시
 
@@ -50,7 +57,14 @@ return TripResponse.from(trip);
 
 - Java 21 (records, pattern matching) 사용 가능
 - Lombok 미사용
-- 공통 설정: `common/config/`, 슬라이스 전용: `{feature}/config/`
+- 공통 설정: `common/config/`, 도메인 전용: `{domain}/config/`
+
+## Comments
+
+- 메서드/함수 바로 위에는 Javadoc 대신 `//` 한 줄 주석으로 기능을 간결한 한국어로 설명
+- 복잡한 내부 로직은 코드 블록 안에서 `// 1.`, `// 2.`, `// 3.` 형태로 흐름을 순서대로 설명
+- `catch` 등 예외 처리 블록에는 왜 해당 예외를 처리하는지 의도를 한국어로 명시
+- 주석은 코드 바깥 설명문보다 코드 가까이에 두고, 짧고 명확하게 유지
 
 ## API (추가 시)
 
@@ -69,5 +83,6 @@ return TripResponse.from(trip);
 ## Tests
 
 - JUnit 5, `{ClassName}Test`
+- `src/test/java/` 패키지는 main과 **동일한 도메인·레이어 구조** 유지
 - 통합: `@SpringBootTest` + `test` 프로필 (H2)
-- 단위: service·도메인 — Mockito로 Repository mock
+- 단위: service·domain — Mockito로 Repository mock

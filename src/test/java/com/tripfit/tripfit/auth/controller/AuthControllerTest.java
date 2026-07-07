@@ -1,9 +1,9 @@
 package com.tripfit.tripfit.auth.controller;
 
 import com.tripfit.tripfit.user.domain.SocialProvider;
-import com.tripfit.tripfit.auth.controller.dto.LoginResponse;
-import com.tripfit.tripfit.auth.controller.dto.RefreshResponse;
-import com.tripfit.tripfit.auth.controller.dto.UserSummaryResponse;
+import com.tripfit.tripfit.auth.dto.LoginResponse;
+import com.tripfit.tripfit.auth.dto.RefreshResponse;
+import com.tripfit.tripfit.auth.dto.UserSummaryResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.common.exception.TripFitException;

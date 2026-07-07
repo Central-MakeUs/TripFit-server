@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.auth.controller.dto;
+package com.tripfit.tripfit.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

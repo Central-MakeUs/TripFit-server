@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.auth.repository;
+package com.tripfit.tripfit.auth.domain;
 
 import com.tripfit.tripfit.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;

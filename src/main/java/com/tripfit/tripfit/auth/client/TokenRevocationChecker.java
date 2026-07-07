@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.auth.service.security;
+package com.tripfit.tripfit.auth.client;
 
 public interface TokenRevocationChecker {
 

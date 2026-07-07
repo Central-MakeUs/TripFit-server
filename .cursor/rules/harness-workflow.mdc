@@ -27,7 +27,7 @@ alwaysApply: true
 - **요청 범위만** 수정 — 인접 코드·주석·포맷 "개선" 금지, 깨지지 않은 것 리팩터 금지
 - 요청 밖 기능·단일 사용 추상화·불필요한 설정 추가 금지
 - 기존 스타일 유지 (Gradle·탭 인덴트·네이밍). 내 변경으로 생긴 unused import/변수만 정리
-- 패키지: `com.tripfit.tripfit` — vertical slice (`{feature}/controller|service|domain|repository`, 공통 `common/`)
+- 패키지: `com.tripfit.tripfit` — 도메인 기반 레이어드 (`{domain}/controller|dto|service|domain|repository|client`, 공통 `common/`). 상세: `.cursor/rules/spring-boot-java.mdc`
 - 핵심 로직 변경 시 `./gradlew test` 실행
 - 변경한 모든 줄은 사용자 요청에 직접 연결되어야 한다
 
@@ -36,6 +36,7 @@ alwaysApply: true
 - 변경 요약 + 검증 방법(`./gradlew test` 등)을 사용자에게 전달
 - 스펙이 있었다면 완료 기준 체크리스트 대조
 - 커밋·PR 제안 시: `.github/README.md` — `{Type}: {한글}` (Type 대문자), base `main`, **Create a merge commit** (Squash merge 금지)
+- **커밋 요청 시:** 변경을 **주제별로 나눠 최대 3개** 커밋으로 만든다 (예: 구현 / 테스트 / 문서·하네스). 한 주제에 묶일 수 있으면 1개로 충분. 인위적 분할·의미 없는 쪼개기 금지
 - 같은 실수가 2회 이상이면 `.cursor/rules/` 추가를 **제안** (자동 추가는 하지 않음)
 - 요청 밖 dead code를 발견하면 삭제하지 말고 언급만 한다
 
