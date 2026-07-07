@@ -24,10 +24,11 @@ docs/
 │   └── flows/                ← 사용자 플로우
 ├── specs/                    ← 기능 스펙 (implement 전)
 │   ├── auth-social-login.md              ← wave 1 소셜 로그인·JWT
+│   ├── user-onboarding.md                ← wave 1 이름·온보딩 boolean·PATCH API
 │   ├── auth-token-rotation.md            ← wave 4 RTR + Redis (Draft)
 │   ├── auth-apple-server-notifications.md  ← Apple S2S webhook (스토어 제출 전)
 │   └── user-profile-image-s3-mirror.md   ← wave 4 프로필 이미지 S3 미러링 B안 (Draft)
-├── decisions/                ← 인프라·아키텍처 확정 (003 architecture guide, 004 token lifecycle, 005 social verifier strategy, 006 profile image storage, …)
+├── decisions/                ← 인프라·아키텍처 확정 (003 architecture guide, …, 007 user onboarding, …)
 └── prompts/notebooklm/       ← 기획 문서 재생성 프롬프트
 ```
 

@@ -7,7 +7,9 @@
 > 승인: 2026-06-30 (팀 — DB 변경 허용 조건 포함)  
 > 범위: login / refresh / logout baseline (RTR·Redis **미포함**)  
 > 결정: [안 B] [`docs/decisions/001-auth-mobile-token-verification.md`](../decisions/001-auth-mobile-token-verification.md)  
-> 후속 (wave 4): RTR + Redis — [`docs/decisions/004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](auth-token-rotation.md)
+> 후속 (wave 4): RTR + Redis — [`docs/decisions/004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](auth-token-rotation.md)  
+> 프로필 이미지: wave 1 **A안** URL passthrough — [`docs/decisions/006-profile-image-url-storage.md`](../decisions/006-profile-image-url-storage.md) · wave 4 B안(S3) — [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md)  
+> 온보딩·이름: [`docs/decisions/007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md) · [`user-onboarding.md`](user-onboarding.md)
 
 ## 목표
 
@@ -21,7 +23,7 @@ React 앱(최종 Play·App Store)에서 Google / Kakao / Apple 로그인 후 Tri
 - **배포 형태**: 하이브리드 앱(WebView) — React 화면을 앱 껍데기에 띄움 (`docs/product/platform.md`)
 - **인증 플로우**: 앱 SDK가 id_token / access_token을 획득 → **백엔드가 토큰을 검증**하는 REST API (서버 리다이렉트 OAuth2 플로우 아님)
 - **API 형태**: provider별 엔드포인트 분리 **하지 않음** — `POST /api/v1/auth/login` 단일 엔드포인트 + `provider` enum
-- **확장 예정**: Google 캘린더 연동 (MVP+1) — 본 스펙에서는 테이블·API 확장 여지만 고려
+- **확장 예정**: Google 캘린더 연동 — OAuth·토큰 저장은 **별도 스펙** (온보딩 UI·boolean만 [`user-onboarding.md`](user-onboarding.md))
 - **계정 연결**(BR-USER-003, Kakao+Google 통합): wave 4 — **Out of Scope**
 - **Apple S2S Notification**: MVP 로그인과 별도 — 스토어 제출 전 [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md)
 
@@ -37,7 +39,11 @@ React 앱(최종 Play·App Store)에서 Google / Kakao / Apple 로그인 후 Tri
 | `docs/specs/auth-apple-server-notifications.md` | Apple 계정 변경 webhook (스토어 제출 전) |
 | `docs/decisions/004-auth-token-rotation.md` | **확정** — RTR + Redis (wave 4) |
 | `docs/decisions/005-auth-social-verifier-strategy.md` | **확정** — `SocialTokenVerifier` Strategy + Registry 설계 |
+| `docs/decisions/006-profile-image-url-storage.md` | **확정** — 프로필 이미지 A안(wave 1 URL passthrough) · B안(wave 4 S3) |
 | `docs/specs/auth-token-rotation.md` | wave 4 구현 스펙 (Draft) |
+| `docs/specs/user-profile-image-s3-mirror.md` | wave 4 프로필 이미지 S3 미러링 (Draft) |
+| `docs/decisions/007-user-profile-onboarding.md` | **확정** — 이름(성/이름)·boolean 온보딩 상태 |
+| `docs/specs/user-onboarding.md` | wave 1 프로필·온보딩 PATCH API |
 
 ## wave 1 vs wave 4
 
@@ -45,6 +51,7 @@ React 앱(최종 Play·App Store)에서 Google / Kakao / Apple 로그인 후 Tri
 |--|-------------------|---------------------------|
 | **Refresh rotation (RTR)** | 미적용 — refresh row 유지 | refresh마다 token 교체 + reuse detection |
 | **Redis** | 미사용 | access JWT용 **도입 확정** (blacklist vs whitelist `[미정]`) |
+| **프로필 이미지** | **A안** — provider URL → `profile_image_url` 그대로 저장 | **B안** — S3 미러링 후 TripFit URL ([`006`](../decisions/006-profile-image-url-storage.md)) |
 | **refresh 응답** | `accessToken`만 | + `refreshToken` (새 opaque token) |
 | **준비 (wave 1 코드)** | `jti`, `family_id`, `TokenRevocationChecker` NoOp | wave 4에서 Redis·RTR 구현체 교체 |
 
@@ -173,7 +180,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 - [ ] `POST /api/v1/auth/refresh` — refresh token → 새 access JWT
 - [ ] `POST /api/v1/auth/logout` — refresh token 무효화
 - [ ] Google / Kakao / Apple 3종 provider 지원 (`SocialProvider` enum 기존 값 사용)
-- [ ] 신규 로그인 시 `user` 레코드 생성 (nickname 기본값: provider별 fallback)
+- [ ] 신규 로그인 시 `user` 레코드 생성 (`first_name`/`last_name` null, onboarding boolean default `false`) — [`user-onboarding.md`](user-onboarding.md)
 - [ ] 기존 `(provider, social_id)` 조합이면 동일 user 반환 (재로그인 = upsert)
 - [ ] Access JWT: HS256 또는 RS256, `sub` = `user.id`, **`jti` = UUID (wave 4 Redis 대비)**, 만료 2시간
 - [ ] Refresh token: DB 저장, **`family_id` 포함 (wave 4 RTR 대비)**, 만료 30일, 로그아웃 시 삭제
@@ -196,7 +203,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 - 자체 이메일/비밀번호 회원가입
 - 계정 연결 — BR-USER-003 (Kakao + Google → 하나의 user)
 - `user_identity` 테이블 분리
-- Google / Naver 캘린더 OAuth 연동 API
+- Google Calendar OAuth 연동 API 본체 — [`user-onboarding.md`](user-onboarding.md) Deferred; boolean·온보딩 PATCH만 wave 1
 - Apple Sign In **Server-to-Server Notification** — 스토어 제출 전 별도 스펙 [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md)
 - FCM/APNs 디바이스 토큰
 - 비회원(게스트) 세션 — BR-USER-002 `[미정]`
@@ -262,9 +269,15 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
     "expiresIn": 7200,
     "user": {
       "id": 1,
+      "email": "user@example.com",
+      "firstName": "길동",
+      "lastName": "홍",
       "nickname": "홍길동",
-      "profileImageUrl": "https://...",
-      "provider": "GOOGLE"
+      "profileImageUrl": "https://lh3.googleusercontent.com/...",
+      "provider": "GOOGLE",
+      "isGoogleCalendarConnected": false,
+      "isPreScheduleRegistered": false,
+      "isOptionalOnboardingCompleted": false
     }
   }
 }
@@ -349,8 +362,14 @@ Authorization: Bearer <accessToken>
 | id | PK |
 | provider | `GOOGLE` \| `KAKAO` \| `APPLE` |
 | social_id | provider 고유 사용자 ID (`sub` 또는 Kakao `id`) |
-| nickname | 표시명 |
-| profile_image_url | nullable |
+| email | nullable — Apple relay 등 |
+| first_name | nullable — 유저 입력 **이름** (필수, PATCH profile) |
+| last_name | nullable — 유저 입력 **성** (필수, PATCH profile) |
+| nickname | nullable — 소셜 provider 표시명 (prefill). **fallback 없음** — [`007`](../decisions/007-user-profile-onboarding.md) |
+| profile_image_url | nullable — **wave 1(A안):** Google/Kakao provider CDN URL. Apple null. **wave 4(B안):** TripFit S3 — [`006`](../decisions/006-profile-image-url-storage.md) |
+| is_google_calendar_connected | boolean, default false — OAuth 연동 시만 true |
+| is_pre_schedule_registered | boolean, default false — `user_condition` 저장 시만 true |
+| is_optional_onboarding_completed | boolean, default false — 선택 온보딩 전체 완료 |
 | created_at, updated_at, deleted_at | Soft delete |
 
 **UNIQUE** `(provider, social_id)` — 한 provider당 하나의 user. 계정 연결 전까지 1 provider = 1 user.
@@ -386,7 +405,24 @@ Authorization: Bearer <accessToken>
 | providerUserId | 식별 기준 (`social_id`에 매핑) |
 | email | nullable — Apple relay email 등. **UNIQUE 키로 사용 금지** |
 | nickname | nullable |
-| profileImageUrl | nullable |
+| profileImageUrl | nullable — verifier가 추출한 **provider 외부 URL** (A안 passthrough). Apple null |
+
+### 프로필 이미지 저장 (A안 / B안)
+
+[`docs/decisions/006-profile-image-url-storage.md`](../decisions/006-profile-image-url-storage.md) SSOT.
+
+| | wave 1 (A안, **확정**) | wave 4 (B안, 예정) |
+|--|------------------------|---------------------|
+| 저장 값 | provider URL 그대로 | TripFit S3( CDN ) URL |
+| 구현 | `AuthService` upsert passthrough | `ProfileImageMirrorService` + S3 — [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) |
+| API 필드 | `profileImageUrl` 동일 | 동일 (값만 TripFit 도메인) |
+| Apple | null (id_token에 없음) | 동일 |
+
+**wave 1 upsert 규칙**
+
+- 신규·재로그인: `OAuthProfile.profileImageUrl`이 non-blank면 `user.profile_image_url`에 **그대로** 저장
+- 미러링·다운로드·S3 업로드 **하지 않음**
+- provider가 URL을 바꾸면 재로그인 시 덮어씀
 
 ### Flyway / ddl-auto
 
@@ -400,6 +436,9 @@ Authorization: Bearer <accessToken>
 - 앱에서 `id_token` 전달 권장
 - 검증: `aud` = Google OAuth client ID (iOS / Android 각각 — env로 관리)
 - `sub` → `social_id`
+- `email` → id_token `email` (nullable)
+- `name` → `nickname` (소셜 prefill, 표시 SSOT 아님)
+- `picture` → `profileImageUrl` → `profile_image_url` (**A안:** URL passthrough)
 
 ### Kakao
 
@@ -407,20 +446,22 @@ Authorization: Bearer <accessToken>
 - 서버: Kakao REST API `GET /v2/user/me` (Authorization: Bearer)
 - 응답 `id` (Long) → `social_id` (String 변환)
 - nickname: `kakao_account.profile.nickname`
+- profileImageUrl: `kakao_account.profile.profile_image_url` → DB **A안** passthrough
 
 ### Apple
 
 - 앱에서 `id_token` (identity token) 전달
 - JWK endpoint: `https://appleid.apple.com/auth/keys` — `kid` rotation 대응 (캐시 + miss 시 재fetch)
-- `sub` → `social_id` (email 아님)
+- **`sub` → `social_id` (email·nickname·실명 아님)** — TripFit 사용자 식별의 SSOT. Apple은 동일 Apple ID에 대해 항상 동일한 `sub`를 발급하므로, 표시 이름이 없어도 `(provider, social_id)`로 upsert·재로그인 매칭 가능
 - `aud` = Apple Services ID (또는 앱 bundle ID — 프론트·백엔드 합의 필요)
-- email: 최초 1회만 올 수 있음 → nullable 저장 고려 없음 (user 테이블에 email 컬럼 없음, MVP에서 생략)
+- email: 최초 1회만 올 수 있음 → nullable 저장 (**UNIQUE 키로 사용 금지**)
+- nickname·profileImageUrl: id_token에 **없음** → `nickname` null, profileImageUrl null. 이름은 유저 입력(`first_name`/`last_name`) — [`user-onboarding.md`](user-onboarding.md)
 
 ## 비즈니스 규칙
 
 | BR | 적용 내용 | 구현 위치 (예정) |
 |----|-----------|------------------|
-| BR-USER-001 | 여행방 생성 등 방장 기능은 로그인 필수 | `JwtAuthenticationFilter` + trip API에서 `@AuthorizedUser` |
+| BR-USER-001 | 여행방 생성 등 — JWT + **이름(first/last) 입력 완료** | `JwtAuthenticationFilter` + trip API + [`user-onboarding.md`](user-onboarding.md) |
 | BR-USER-003 | 소셜 계정 연동·해제 | **Out of Scope** — wave 4에서 `user_identity` 스펙으로 분리 |
 
 ## 패키지 구조
@@ -445,6 +486,7 @@ com.tripfit.tripfit
 │   ├── client/                     # SocialTokenVerifier*, OAuthProfile, TokenRevocationChecker
 │   └── exception/                  # AuthErrorCode
 └── user/
+    ├── controller/                 # UserController (profile·onboarding PATCH) — [`user-onboarding.md`](../specs/user-onboarding.md)
     ├── domain/                     # User, SocialProvider
     └── repository/                 # UserRepository
 ```
@@ -509,12 +551,14 @@ com.tripfit.tripfit
 | 앱 패키징 (RN / Capacitor / Expo) | `[미정]` | SDK별 token 획득 방식은 프론트 결정 — `docs/decisions/` 확정 후 스펙 보완 |
 | Google client ID (iOS vs Android) | `[미정]` | login 요청에 `platform` 필드 추가 여부 — 프론트 합의 |
 | Apple `aud` 값 (bundle ID vs Services ID) | `[미정]` | 프론트 Sign In with Apple 설정과 일치 필요 |
-| nickname 기본값 정책 | `[미정]` | provider 프로필 없을 때 `"사용자{n}"` 등 |
+| nickname 정책 | **확정 (amend)** | 소셜 prefill만, **fallback 폐기** — [`007`](../decisions/007-user-profile-onboarding.md) |
+| 온보딩 상태 | **확정** | boolean 3개 + first/last null — [`user-onboarding.md`](user-onboarding.md) |
+| profileImageUrl 저장 | **확정 (wave 1 A안)** | provider URL passthrough — [`006`](../decisions/006-profile-image-url-storage.md) |
+| profileImageUrl S3 미러 | **wave 4 예정 (B안)** | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md), Issue #9 |
 | Refresh token rotation (RTR) | **wave 4 확정** | [`004`](../decisions/004-auth-token-rotation.md) — wave 1 Out |
 | Redis (access JWT) | **wave 4 확정** | blacklist vs whitelist `[미정]` |
 | JWT 서명 알고리즘 HS256 vs RS256 | `[미정]` | 단일 서버 MVP는 HS256으로 시작 가능 |
-| 캘린더 연동 token 저장 | Out | MVP+1에서 `calendar_integration` 또는 `user_identity` 스펙으로 |
-| ERD `user` 테이블 email 컬럼 | Out | 계정 연결·알림 필요 시 추가 |
+| Google Calendar OAuth API | **Deferred** | 연동 본체 별도 스펙; wave 1은 boolean·`PATCH /users/me/onboarding` — [`user-onboarding.md`](user-onboarding.md) |
 
 ## 구현 단계 제안 (이슈 분할 참고)
 
@@ -532,4 +576,4 @@ com.tripfit.tripfit
 | 2026-06-30 | 초안 (안 B 채택) |
 | 2026-06-30 | DB 변경 허용 정책 추가, Approved, decisions `001` 연결 |
 | 2026-07-06 | 하이브리드 앱·스토어 심사 주의사항·단일 login 엔드포인트·프론트 합의 체크리스트 추가 |
-| 2026-07-06 | wave 1 명시, RTR+Redis wave 4 분리 (`004`, `auth-token-rotation`), `jti`·`family_id`·NoOp revocation |
+| 2026-07-08 | 온보딩·이름(성/이름)·boolean 3개 — [`007`](../decisions/007-user-profile-onboarding.md), [`user-onboarding.md`](user-onboarding.md); nickname fallback 폐기 |
