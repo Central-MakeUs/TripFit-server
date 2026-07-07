@@ -2,6 +2,7 @@ package com.tripfit.tripfit.auth.service;
 
 import com.tripfit.tripfit.auth.config.JwtProperties;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
+import com.tripfit.tripfit.auth.service.AccessTokenClaims;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,14 @@ class JwtServiceTest {
 		String token = jwtService.createAccessToken(42L);
 		Long userId = jwtService.parseUserId(token);
 		assertThat(userId).isEqualTo(42L);
+	}
+
+	@Test
+	void parseAccessToken_returnsUserIdAndJti() {
+		String token = jwtService.createAccessToken(42L);
+		AccessTokenClaims claims = jwtService.parseAccessToken(token);
+		assertThat(claims.userId()).isEqualTo(42L);
+		assertThat(claims.jti()).isNotBlank();
 	}
 
 	@Test
