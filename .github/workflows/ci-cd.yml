@@ -88,8 +88,9 @@ jobs:
             cd "${{ secrets.EC2_DEPLOY_PATH }}"
             repo_root="$(cd ../.. && pwd)"
             echo "syncing deploy config from ${repo_root}"
-            git -C "$repo_root" fetch origin main
-            git -C "$repo_root" merge --ff-only origin/main
+            # Deploy host repo should mirror origin/main exactly.
+            git -C "$repo_root" fetch --prune origin main
+            git -C "$repo_root" checkout -B main origin/main
             ghcr_image="${GHCR_IMAGE:-}"
             db_user="${SPRING_DATASOURCE_USERNAME:-}"
             db_pass="${SPRING_DATASOURCE_PASSWORD:-}"
