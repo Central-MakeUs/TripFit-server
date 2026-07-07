@@ -255,14 +255,16 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 
 ```json
 {
-  "accessToken": "<jwt>",
-  "refreshToken": "<opaque-uuid-or-random>",
-  "expiresIn": 7200,
-  "user": {
-    "id": 1,
-    "nickname": "홍길동",
-    "profileImageUrl": "https://...",
-    "provider": "GOOGLE"
+  "data": {
+    "accessToken": "<jwt>",
+    "refreshToken": "<opaque-uuid-or-random>",
+    "expiresIn": 7200,
+    "user": {
+      "id": 1,
+      "nickname": "홍길동",
+      "profileImageUrl": "https://...",
+      "provider": "GOOGLE"
+    }
   }
 }
 ```
@@ -285,8 +287,10 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 
 ```json
 {
-  "accessToken": "<jwt>",
-  "expiresIn": 7200
+  "data": {
+    "accessToken": "<jwt>",
+    "expiresIn": 7200
+  }
 }
 ```
 
@@ -423,11 +427,12 @@ Authorization: Bearer <accessToken>
 ```
 com.tripfit.tripfit
 ├── common/
-│   ├── api/ErrorResponse.java
+│   ├── api/ApiResponse.java, ErrorResponse.java, FieldError.java
 │   ├── config/          # JpaConfig, WebConfig, OpenApiConfig
 │   ├── domain/          # BaseTimeEntity, SoftDeleteEntity
 │   └── exception/
 ├── auth/
+│   ├── exception/         # AuthErrorCode
 │   ├── controller/      # AuthController, dto/
 │   ├── service/           # AuthService, JwtService, RefreshTokenService, social/, security/
 │   ├── config/            # JwtProperties, OAuthProperties, SecurityConfig, AppConfig

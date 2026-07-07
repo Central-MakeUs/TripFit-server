@@ -16,12 +16,13 @@ Spring Boot 4.x 기반 단일 모듈 Gradle 프로젝트.
 com.tripfit.tripfit
 ├── TripfitApplication.java
 ├── common/
-│   ├── api/                        # ErrorResponse 등 공유 DTO
+│   ├── api/                        # ApiResponse, ErrorResponse, FieldError
 │   ├── config/                     # JPA, Web, OpenAPI
 │   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
-│   └── exception/                  # ErrorCode, TripFitException, GlobalExceptionHandler
+│   └── exception/                  # ErrorCode, CommonErrorCode, TripFitException, GlobalExceptionHandler
 ├── auth/
-│   ├── controller/                 # AuthController, dto/
+│   ├── exception/                 # AuthErrorCode
+│   ├── controller/                # AuthController, dto/
 │   ├── service/                    # AuthService, JwtService, social/, security/
 │   ├── config/
 │   └── repository/                 # RefreshToken, RefreshTokenRepository
@@ -52,7 +53,7 @@ com.tripfit.tripfit
 
 ## API Response
 
-JSON envelope 초안 (프론트 합의 전): [`architecture/api-response.md`](architecture/api-response.md).  
+JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (확정).  
 확정 전에는 스펙·구현이 **제안안 기준** — 프론트와 맞춘 뒤 SSOT로 승격.
 
 ## Configuration

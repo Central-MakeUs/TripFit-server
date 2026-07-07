@@ -1,26 +1,22 @@
-# API 응답 규약 (초안)
+# API 응답 규약
 
-> **상태: Draft — 프론트·백엔드 합의 전**  
-> 프론트 repo에는 **아직 API 응답 형식이 정해져 있지 않음**. 이 문서는 백엔드가 제안하는 **합의용 초안**이다.  
-> 확정 전까지는 구현·스펙 작성의 **기준 후보**로만 사용하고, 프론트 2명과 맞춘 뒤 상태를 `확정`으로 바꾼다.
+> **상태: 확정**  
+> 백엔드 REST API의 JSON envelope SSOT. Controller·`GlobalExceptionHandler`·`docs/specs/`는 이 문서를 따른다.
 
 백엔드 구현·Agent 작업 시 참고: `.cursor/rules/spring-boot-java.mdc`, `client-platform.mdc`  
 프론트 협의 맥락: `docs/product/platform.md`
 
-## 합의가 필요한 항목
+## 확정 항목
 
-| 항목 | 이 초안 | 프론트와 확인할 것 |
-|------|---------|-------------------|
-| Body 필드 | `data`, `message`, `code` (Body에 **`status` 없음**) | 필드명·필수 여부 |
-| 성공 시 `message` | **선택** — 단순 조회는 `{ "data": ... }` 만으로도 OK | 항상 넣을지 |
-| `success` 필드 | **사용 안 함** — `response.ok`(HTTP status)로 판단 | 동의 여부 |
-| 검증 오류 | 400 + `errors[]` (`field`, `message`) | 폼 에러 UI와 맞는지 |
-| 목록·페이지네이션 | `data.items` + `data.pageInfo` | offset vs cursor — **`[미정]`** |
-| fetch 래퍼 | 아래 참고안 | TanStack Query 등 실제 스택에 맞게 재작성 |
+| 항목 | 규약 |
+|------|------|
+| Body 필드 | `data`, `message`, `code` (Body에 **`status` 없음**) |
+| 성공 시 `message` | **선택** — 단순 조회·로그인 등은 `{ "data": ... }` 만으로도 OK |
+| `success` 필드 | **사용 안 함** — `response.ok`(HTTP status)로 판단 |
+| 검증 오류 | 400 + `INVALID_INPUT` + `errors[]` (`field`, `message`) |
+| 목록·페이지네이션 | `data.items` + `data.pageInfo` — offset vs cursor **`[미정]`** |
 
-**확정 절차:** 프론트 피드백 반영 → 이 문서 상태 `확정` → 첫 REST API 구현 → OpenAPI 공유.
-
-## 기본 원칙 (제안)
+## 기본 원칙
 
 1. **성공·실패는 HTTP Status Code로 판단** — Body에 `status`·`success` **넣지 않음** (헤더와 중복·모순 방지)
 2. **HTTP Status는 REST 의미대로** (200, 201, 400, 401, 403, 404, 409, 500)
@@ -38,7 +34,7 @@
 | `code` | 선택 | ✅ 권장 | `SCREAMING_SNAKE_CASE` enum 문자열 |
 | `errors` | — | 400 검증 시 | `{ field, message }[]` |
 
-## Envelope 구조 (제안)
+## Envelope 구조
 
 ### 성공 — 단건·조회 (가장 단순)
 
@@ -122,7 +118,7 @@ HTTP `400 Bad Request` + Body:
 
 합의 전에는 목록 API pagination **구현·가정 금지** (`docs/specs/`에 명시 후 진행).
 
-## HTTP Status 사용 기준 (제안)
+## HTTP Status 사용 기준
 
 | 상황 | HTTP Status | `code` 예시 |
 |------|-------------|-------------|
@@ -152,16 +148,15 @@ switch (body.code) {
 }
 ```
 
-## `code` 네이밍 (제안)
+## `code` 네이밍
 
 - `SCREAMING_SNAKE_CASE`
 - 공통: `COMMON_SUCCESS`, `INVALID_INPUT`, `UNAUTHORIZED`, `FORBIDDEN`, `INTERNAL_ERROR`
 - 도메인: `{리소스}_{상황}` — 예: `TRIP_NOT_FOUND`, `TRIP_ALREADY_CONFIRMED`
 
-## 백엔드 구현 가이드 (합의 후 적용)
+## 백엔드 구현 가이드
 
-**첫 REST API 또는 envelope 확정 전**에는 `ApiResponse`·`GlobalExceptionHandler` 구현을 미루어도 됨.  
-확정 후 아래 구조를 따른다:
+아래 구조를 따른다:
 
 ```
 com.tripfit.tripfit
@@ -171,12 +166,15 @@ com.tripfit.tripfit
 │   │   ├── FieldError.java        # field, message
 │   │   ├── PageResponse.java      # items + pageInfo (목록용)
 │   │   ├── PageInfo.java
-│   │   └── ErrorResponse.java     # (현재 구현)
+│   │   └── ErrorResponse.java     # code, message, errors? (실패 전용)
 │   └── exception/
-│       ├── ErrorCode.java
+│       ├── ErrorCode.java           # interface
+│       ├── CommonErrorCode.java
 │       ├── TripFitException.java
 │       └── GlobalExceptionHandler.java
-└── {feature}/controller/dto/    # 슬라이스별 요청·응답 DTO
+└── {feature}/
+    ├── exception/                   # AuthErrorCode, TripErrorCode, ...
+    └── controller/dto/
 ```
 
 - HTTP status는 **ResponseEntity / @ResponseStatus** 로만 설정 — Body에 duplicate 하지 않음

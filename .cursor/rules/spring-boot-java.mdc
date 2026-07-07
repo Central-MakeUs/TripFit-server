@@ -28,7 +28,7 @@ com.tripfit.tripfit
 - **service**: 유스케이스 조율, `@Transactional` (읽기만이면 `readOnly = true`).
 - **domain**: JPA Entity·enum.
 - **repository**: JpaRepository, `RefreshToken` 등 기술 영속화 Entity.
-- 예외 → `GlobalExceptionHandler`가 `ErrorCode`로 envelope 변환.
+- 예외 → `GlobalExceptionHandler`가 `ErrorCode` 인터페이스로 envelope 변환. 공통은 `CommonErrorCode`, 슬라이스별은 `{feature}/exception/{Feature}ErrorCode`.
 
 ## Entity Conventions
 
@@ -55,7 +55,7 @@ return TripResponse.from(trip);
 ## API (추가 시)
 
 - `@RestController` + `@RequestMapping("/api/v1/...")`
-- 응답 envelope: `docs/architecture/api-response.md` (Draft)
+- 응답 envelope: `docs/architecture/api-response.md` (확정)
 - 요청 검증: Jakarta Validation (`@Valid`)
 - 예외: `@RestControllerAdvice` + `{ code, message }`
 - 문서: springdoc — `@Operation`, `@Tag`
