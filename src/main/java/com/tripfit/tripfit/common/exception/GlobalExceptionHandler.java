@@ -1,7 +1,10 @@
 package com.tripfit.tripfit.common.exception;
 
 import com.tripfit.tripfit.common.api.ErrorResponse;
+import com.tripfit.tripfit.common.api.FieldError;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -19,7 +22,15 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException exception) {
+		ErrorCode errorCode = CommonErrorCode.INVALID_INPUT;
+		List<FieldError> errors = toFieldErrors(exception.getBindingResult());
 		return ResponseEntity.badRequest()
-				.body(new ErrorResponse(ErrorCode.AUTH_INVALID_REQUEST.getCode(), ErrorCode.AUTH_INVALID_REQUEST.getMessage()));
+				.body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), errors));
+	}
+
+	private List<FieldError> toFieldErrors(BindingResult bindingResult) {
+		return bindingResult.getFieldErrors().stream()
+				.map(error -> new FieldError(error.getField(), error.getDefaultMessage()))
+				.toList();
 	}
 }

@@ -6,6 +6,7 @@ import com.tripfit.tripfit.auth.controller.dto.LogoutRequest;
 import com.tripfit.tripfit.auth.controller.dto.RefreshRequest;
 import com.tripfit.tripfit.auth.controller.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.service.AuthService;
+import com.tripfit.tripfit.common.api.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,16 +30,16 @@ public class AuthController {
 
 	@Operation(summary = "소셜 로그인")
 	@PostMapping("/login")
-	ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+	ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
 		LoginResponse response = authService.login(request.provider(), request.token());
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponse.of(response));
 	}
 
 	@Operation(summary = "액세스 토큰 재발급")
 	@PostMapping("/refresh")
-	ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+	ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request) {
 		RefreshResponse response = authService.refresh(request.refreshToken());
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(ApiResponse.of(response));
 	}
 
 	@Operation(summary = "로그아웃")

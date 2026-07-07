@@ -1,7 +1,7 @@
 package com.tripfit.tripfit.auth.service.social;
 
 import com.tripfit.tripfit.auth.config.OAuthProperties;
-import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ class AppleTokenVerifierTest {
 		assertThatThrownBy(() -> appleTokenVerifier.verify("not-a-valid-jwt"))
 				.isInstanceOf(TripFitException.class)
 				.extracting(exception -> ((TripFitException) exception).getErrorCode())
-				.isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
+				.isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
 	}
 
 	@Test
@@ -34,6 +34,6 @@ class AppleTokenVerifierTest {
 		assertThatThrownBy(() -> verifierWithoutClientId.verify("not-a-valid-jwt"))
 				.isInstanceOf(TripFitException.class)
 				.extracting(exception -> ((TripFitException) exception).getErrorCode())
-				.isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
+				.isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
 	}
 }

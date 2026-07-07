@@ -1,7 +1,7 @@
 package com.tripfit.tripfit.auth.service;
 
 import com.tripfit.tripfit.auth.config.JwtProperties;
-import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +33,6 @@ class JwtServiceTest {
 		assertThatThrownBy(() -> jwtService.parseUserId("invalid-token"))
 				.isInstanceOf(TripFitException.class)
 				.extracting(exception -> ((TripFitException) exception).getErrorCode())
-				.isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
+				.isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
 	}
 }

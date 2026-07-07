@@ -4,7 +4,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.auth.controller.dto.LoginResponse;
 import com.tripfit.tripfit.auth.controller.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.controller.dto.UserSummaryResponse;
-import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.auth.service.AuthService;
@@ -47,8 +47,8 @@ class AuthControllerTest {
 				new LoginResponse(
 						"access-jwt",
 						"refresh-token",
-						7200L,
-						new UserSummaryResponse(1L, "홍길동", null, SocialProvider.GOOGLE)
+						3600L,
+						new UserSummaryResponse(1L, "user@example.com", SocialProvider.GOOGLE)
 				)
 		);
 
@@ -58,14 +58,14 @@ class AuthControllerTest {
 								{"provider":"GOOGLE","token":"google-id-token"}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accessToken").value("access-jwt"))
-				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
-				.andExpect(jsonPath("$.user.id").value(1));
+				.andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
+				.andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
+				.andExpect(jsonPath("$.data.user.id").value(1));
 	}
 
 	@Test
 	void refresh_returnsAccessToken() throws Exception {
-		when(authService.refresh("refresh-token")).thenReturn(new RefreshResponse("new-access-jwt", 7200L));
+		when(authService.refresh("refresh-token")).thenReturn(new RefreshResponse("new-access-jwt", 3600L));
 
 		mockMvc.perform(post("/api/v1/auth/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -73,7 +73,7 @@ class AuthControllerTest {
 								{"refreshToken":"refresh-token"}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accessToken").value("new-access-jwt"));
+				.andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"));
 	}
 
 	@Test
@@ -87,8 +87,20 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void login_missingToken_returns400WithFieldErrors() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"provider":"GOOGLE","token":""}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+				.andExpect(jsonPath("$.errors[0].field").value("token"));
+	}
+
+	@Test
 	void login_invalidToken_returns401() throws Exception {
-		doThrow(new TripFitException(ErrorCode.AUTH_INVALID_TOKEN))
+		doThrow(new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN))
 				.when(authService).login(any(), any());
 
 		mockMvc.perform(post("/api/v1/auth/login")

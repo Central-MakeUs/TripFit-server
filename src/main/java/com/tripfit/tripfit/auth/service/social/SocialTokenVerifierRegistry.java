@@ -1,7 +1,7 @@
 package com.tripfit.tripfit.auth.service.social;
 
 import com.tripfit.tripfit.user.domain.SocialProvider;
-import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +24,7 @@ public class SocialTokenVerifierRegistry {
 	public SocialTokenVerifier getVerifier(SocialProvider provider) {
 		SocialTokenVerifier verifier = verifiers.get(provider);
 		if (verifier == null) {
-			throw new TripFitException(ErrorCode.AUTH_INVALID_REQUEST);
+			throw new TripFitException(AuthErrorCode.AUTH_INVALID_REQUEST);
 		}
 		return verifier;
 	}

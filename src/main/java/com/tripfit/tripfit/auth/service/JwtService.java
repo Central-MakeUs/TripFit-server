@@ -8,7 +8,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.tripfit.tripfit.auth.config.JwtProperties;
-import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import org.springframework.stereotype.Service;
 
@@ -53,18 +53,18 @@ public class JwtService {
 		try {
 			SignedJWT signedJwt = SignedJWT.parse(accessToken);
 			if (!signedJwt.verify(new MACVerifier(secretBytes))) {
-				throw new TripFitException(ErrorCode.AUTH_INVALID_TOKEN);
+				throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
 			}
 			JWTClaimsSet claims = signedJwt.getJWTClaimsSet();
 			Date expiration = claims.getExpirationTime();
 			if (expiration == null || expiration.before(new Date())) {
-				throw new TripFitException(ErrorCode.AUTH_EXPIRED);
+				throw new TripFitException(AuthErrorCode.AUTH_EXPIRED);
 			}
 			return Long.parseLong(claims.getSubject());
 		} catch (ParseException | JOSEException exception) {
-			throw new TripFitException(ErrorCode.AUTH_INVALID_TOKEN);
+			throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
 		} catch (NumberFormatException exception) {
-			throw new TripFitException(ErrorCode.AUTH_INVALID_TOKEN);
+			throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
 		}
 	}
 

@@ -2,7 +2,7 @@ package com.tripfit.tripfit.auth.service;
 
 import com.tripfit.tripfit.auth.config.JwtProperties;
 import com.tripfit.tripfit.auth.repository.RefreshToken;
-import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.auth.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
@@ -33,9 +33,9 @@ public class RefreshTokenService {
 	@Transactional(readOnly = true)
 	public RefreshToken validate(String tokenValue) {
 		RefreshToken refreshToken = refreshTokenRepository.findByToken(tokenValue)
-				.orElseThrow(() -> new TripFitException(ErrorCode.AUTH_INVALID_REFRESH));
+				.orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH));
 		if (refreshToken.isRevoked() || refreshToken.isExpired()) {
-			throw new TripFitException(ErrorCode.AUTH_INVALID_REFRESH);
+			throw new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH);
 		}
 		return refreshToken;
 	}
