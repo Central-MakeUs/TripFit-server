@@ -425,22 +425,28 @@ Authorization: Bearer <accessToken>
 
 ## 패키지 구조
 
+> SSOT: [`docs/architecture.md`](../architecture.md), [`decisions/003-architecture-guide.md`](../decisions/003-architecture-guide.md), [`decisions/005-auth-social-verifier-strategy.md`](../decisions/005-auth-social-verifier-strategy.md)
+
 ```
 com.tripfit.tripfit
 ├── common/
-│   ├── api/ApiResponse.java, ErrorResponse.java, FieldError.java
-│   ├── config/          # JpaConfig, WebConfig, OpenApiConfig
-│   ├── domain/          # BaseTimeEntity, SoftDeleteEntity
-│   └── exception/
+│   ├── api/                        # ApiResponse, ErrorResponse, FieldError
+│   ├── config/                     # JpaConfig, WebConfig, OpenApiConfig
+│   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
+│   └── exception/                  # ErrorCode, GlobalExceptionHandler
 ├── auth/
-│   ├── exception/         # AuthErrorCode
-│   ├── controller/      # AuthController, dto/
-│   ├── service/           # AuthService, JwtService, RefreshTokenService, social/, security/
-│   ├── config/            # JwtProperties, OAuthProperties, SecurityConfig, AppConfig
-│   └── repository/        # RefreshToken, RefreshTokenRepository
+│   ├── config/                     # JwtProperties, SecurityConfig, JwtAuthenticationFilter,
+│   │                               # AuthorizedUser, AuthorizedUserArgumentResolver
+│   ├── controller/                 # AuthController
+│   ├── dto/                        # LoginRequest, LoginResponse, ...
+│   ├── service/                    # AuthService, JwtService, RefreshTokenService
+│   ├── domain/                     # RefreshToken
+│   ├── repository/                 # RefreshTokenRepository
+│   ├── client/                     # SocialTokenVerifier*, OAuthProfile, TokenRevocationChecker
+│   └── exception/                  # AuthErrorCode
 └── user/
-    ├── domain/            # User, SocialProvider
-    └── repository/        # UserRepository
+    ├── domain/                     # User, SocialProvider
+    └── repository/                 # UserRepository
 ```
 
 ## 환경 변수 (`.env` — 커밋 금지)
