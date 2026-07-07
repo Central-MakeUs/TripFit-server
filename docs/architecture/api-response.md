@@ -172,9 +172,9 @@ com.tripfit.tripfit
 │       ├── CommonErrorCode.java
 │       ├── TripFitException.java
 │       └── GlobalExceptionHandler.java
-└── {feature}/
+└── {domain}/
     ├── exception/                   # AuthErrorCode, TripErrorCode, ...
-    └── controller/dto/
+    └── dto/
 ```
 
 - HTTP status는 **ResponseEntity / @ResponseStatus** 로만 설정 — Body에 duplicate 하지 않음
