@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.trip.domain;
 
 import com.tripfit.tripfit.common.domain.BaseTimeEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,28 +22,35 @@ import java.time.LocalDate;
 		name = "member_schedule",
 		uniqueConstraints = @UniqueConstraint(columnNames = {"trip_member_id", "schedule_date", "time_slot"})
 )
+@Schema(description = "참여자별 날짜·시간대 일정 응답")
 public class MemberSchedule extends BaseTimeEntity {
 
+	@Schema(description = "일정 응답 레코드 ID", example = "1")
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Schema(description = "응답한 여행방 참여자")
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "trip_member_id", nullable = false)
 	private TripMember tripMember;
 
+	@Schema(description = "해당 날짜", example = "2026-08-03")
 	@Column(nullable = false)
 	private LocalDate scheduleDate;
 
+	@Schema(description = "시간대 (오전/오후/저녁)")
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private TimeSlot timeSlot;
 
+	@Schema(description = "가용성 (가능/불가/미정)")
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private ScheduleStatus status;
 
 	// [제안] API에서 타인 노출 금지 (BR-TRIP-004)
+	@Schema(description = "개인 메모. API에서 본인만 조회 (BR-TRIP-004)", nullable = true, example = "반차 사용 예정")
 	@Column
 	private String note;
 

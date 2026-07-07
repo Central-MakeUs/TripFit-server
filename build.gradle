@@ -35,3 +35,19 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// 로컬: docker compose up -d (MySQL) → ./gradlew bootRun
+tasks.named('bootRun') {
+	if (file('.env').exists()) {
+		file('.env').eachLine { line ->
+			def trimmed = line.trim()
+			if (trimmed.isEmpty() || trimmed.startsWith('#')) {
+				return
+			}
+			def separator = trimmed.indexOf('=')
+			if (separator > 0) {
+				environment trimmed.substring(0, separator).trim(), trimmed.substring(separator + 1).trim()
+			}
+		}
+	}
+}
