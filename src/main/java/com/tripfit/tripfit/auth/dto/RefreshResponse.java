@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.auth.controller.dto;
+package com.tripfit.tripfit.auth.dto;
 
 public record RefreshResponse(
 		String accessToken,

@@ -1,16 +1,16 @@
 package com.tripfit.tripfit.auth.service;
 
-import com.tripfit.tripfit.auth.repository.RefreshToken;
+import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.domain.SocialProvider;
-import com.tripfit.tripfit.auth.controller.dto.LoginResponse;
-import com.tripfit.tripfit.auth.controller.dto.RefreshResponse;
+import com.tripfit.tripfit.auth.dto.LoginResponse;
+import com.tripfit.tripfit.auth.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.repository.UserRepository;
-import com.tripfit.tripfit.auth.service.social.OAuthProfile;
-import com.tripfit.tripfit.auth.service.social.SocialTokenVerifier;
-import com.tripfit.tripfit.auth.service.social.SocialTokenVerifierRegistry;
+import com.tripfit.tripfit.auth.client.OAuthProfile;
+import com.tripfit.tripfit.auth.client.SocialTokenVerifier;
+import com.tripfit.tripfit.auth.client.SocialTokenVerifierRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

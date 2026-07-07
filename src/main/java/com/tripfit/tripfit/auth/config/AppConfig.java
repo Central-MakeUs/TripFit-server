@@ -10,6 +10,7 @@ import org.springframework.web.client.RestClient;
 public class AppConfig {
 
 	@Bean
+	// 외부 OAuth 제공자 호출에 사용할 공용 RestClient를 생성함
 	RestClient restClient() {
 		return RestClient.create();
 	}

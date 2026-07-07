@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.auth.service.social;
+package com.tripfit.tripfit.auth.client;
 
 import com.tripfit.tripfit.auth.config.OAuthProperties;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
