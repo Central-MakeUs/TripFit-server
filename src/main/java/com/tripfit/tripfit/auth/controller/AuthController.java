@@ -1,10 +1,12 @@
 package com.tripfit.tripfit.auth.controller;
 
+import com.tripfit.tripfit.auth.config.AuthorizedUser;
 import com.tripfit.tripfit.auth.dto.LoginRequest;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.dto.LogoutRequest;
 import com.tripfit.tripfit.auth.dto.RefreshRequest;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;
+import com.tripfit.tripfit.auth.dto.UserSummaryResponse;
 import com.tripfit.tripfit.auth.service.AuthService;
 import com.tripfit.tripfit.common.api.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,5 +53,13 @@ public class AuthController {
 	ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
 		authService.logout(request.refreshToken());
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+	}
+
+	// Bearer JWT로 인증된 현재 사용자 프로필을 반환함
+	@Operation(summary = "현재 사용자 조회")
+	@GetMapping("/me")
+	ResponseEntity<ApiResponse<UserSummaryResponse>> me(@AuthorizedUser Long userId) {
+		UserSummaryResponse response = authService.getCurrentUser(userId);
+		return ResponseEntity.ok(ApiResponse.of(response));
 	}
 }

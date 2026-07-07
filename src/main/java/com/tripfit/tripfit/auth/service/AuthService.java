@@ -81,6 +81,14 @@ public class AuthService {
 		refreshTokenService.delete(refreshTokenValue);
 	}
 
+	// JWT에 담긴 userId로 현재 로그인 사용자 프로필을 조회함
+	@Transactional(readOnly = true)
+	public UserSummaryResponse getCurrentUser(Long userId) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
+		return toUserSummary(user);
+	}
+
 	// 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함
 	private User upsertUser(OAuthProfile profile) {
 		return userRepository.findByProviderAndSocialId(profile.provider(), profile.providerUserId())
