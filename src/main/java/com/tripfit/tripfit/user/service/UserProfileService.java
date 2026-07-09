@@ -3,6 +3,7 @@ package com.tripfit.tripfit.user.service;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
 import com.tripfit.tripfit.user.dto.UpdateOnboardingRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -27,6 +28,12 @@ public class UserProfileService {
     user.setFirstName(request.firstName().trim());
     user.setLastName(request.lastName().trim());
     return UserSummaryMapper.toSummary(user);
+  }
+
+  // JWT 사용자의 마이페이지에서 성·이름을 수정함
+  @Transactional
+  public UserSummaryResponse updateMyPage(Long userId, UpdateMyPageRequest request) {
+    return updateProfile(userId, new UpdateProfileRequest(request.firstName(), request.lastName()));
   }
 
   // JWT 사용자의 선택 온보딩 boolean을 partial update함

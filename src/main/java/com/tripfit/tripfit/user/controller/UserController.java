@@ -2,6 +2,7 @@ package com.tripfit.tripfit.user.controller;
 
 import com.tripfit.tripfit.auth.config.AuthorizedUser;
 import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
 import com.tripfit.tripfit.user.dto.UpdateOnboardingRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -36,6 +37,19 @@ public class UserController {
       @RequestBody
       UpdateProfileRequest request) {
     UserSummaryResponse response = userProfileService.updateProfile(userId, request);
+    return ResponseEntity.ok(ApiResponse.of(response));
+  }
+
+  // JWT 사용자의 마이페이지에서 성·이름을 수정함
+  @Operation(summary = "마이페이지 이름 수정", description = "Authorization: Bearer {accessToken} 필수")
+  @PatchMapping("/my-page")
+  ResponseEntity<ApiResponse<UserSummaryResponse>> updateMyPage(
+      @AuthorizedUser
+      Long userId,
+      @Valid
+      @RequestBody
+      UpdateMyPageRequest request) {
+    UserSummaryResponse response = userProfileService.updateMyPage(userId, request);
     return ResponseEntity.ok(ApiResponse.of(response));
   }
 

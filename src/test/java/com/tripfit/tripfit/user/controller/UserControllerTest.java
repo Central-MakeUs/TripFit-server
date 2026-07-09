@@ -92,6 +92,49 @@ class UserControllerTest {
   }
 
   @Test
+  void patchMyPage_returnsUpdatedUser() throws Exception {
+    when(userProfileService.updateMyPage(eq(1L), any()))
+        .thenReturn(
+            new UserSummaryResponse(
+                1L,
+                "user@example.com",
+                "철수",
+                "김",
+                "홍길동",
+                null,
+                SocialProvider.GOOGLE,
+                false,
+                false,
+                true));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me/my-page")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"firstName":"철수","lastName":"김"}
+                        """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.firstName").value("철수"))
+        .andExpect(jsonPath("$.data.lastName").value("김"));
+  }
+
+  @Test
+  void patchMyPage_blankLastName_returns400() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me/my-page")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"firstName":"길동","lastName":""}
+                        """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+  }
+
+  @Test
   void patchOnboarding_skipOnly_returnsUpdatedUser() throws Exception {
     when(userProfileService.updateOnboarding(eq(1L), any()))
         .thenReturn(

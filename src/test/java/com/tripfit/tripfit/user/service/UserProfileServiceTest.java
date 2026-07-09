@@ -8,6 +8,7 @@ import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
 import com.tripfit.tripfit.user.dto.UpdateOnboardingRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -47,6 +48,20 @@ class UserProfileServiceTest {
     assertThat(user.getLastName()).isEqualTo("홍");
     assertThat(response.firstName()).isEqualTo("길동");
     assertThat(response.lastName()).isEqualTo("홍");
+  }
+
+  @Test
+  void updateMyPage_savesFirstAndLastName() {
+    user.setFirstName("길동");
+    user.setLastName("홍");
+    when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    UserSummaryResponse response =
+        userProfileService.updateMyPage(1L, new UpdateMyPageRequest("철수", "김"));
+
+    assertThat(user.getFirstName()).isEqualTo("철수");
+    assertThat(user.getLastName()).isEqualTo("김");
+    assertThat(response.firstName()).isEqualTo("철수");
+    assertThat(response.lastName()).isEqualTo("김");
   }
 
   @Test
