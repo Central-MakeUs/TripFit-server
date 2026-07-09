@@ -14,24 +14,23 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 @Component
 public class AuthorizedUserArgumentResolver implements HandlerMethodArgumentResolver {
 
-	@Override
-	public boolean supportsParameter(MethodParameter parameter) {
-		return parameter.hasParameterAnnotation(AuthorizedUser.class)
-				&& Long.class.equals(parameter.getParameterType());
-	}
+  @Override
+  public boolean supportsParameter(MethodParameter parameter) {
+    return parameter.hasParameterAnnotation(AuthorizedUser.class)
+        && Long.class.equals(parameter.getParameterType());
+  }
 
-	@Override
-	// SecurityContext에 설정된 JWT userId를 컨트롤러 Long 파라미터로 주입함
-	public Object resolveArgument(
-			MethodParameter parameter,
-			ModelAndViewContainer mavContainer,
-			NativeWebRequest webRequest,
-			WebDataBinderFactory binderFactory
-	) {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
-			throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
-		}
-		return userId;
-	}
+  @Override
+  // SecurityContext에 설정된 JWT userId를 컨트롤러 Long 파라미터로 주입함
+  public Object resolveArgument(
+      MethodParameter parameter,
+      ModelAndViewContainer mavContainer,
+      NativeWebRequest webRequest,
+      WebDataBinderFactory binderFactory) {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
+      throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
+    }
+    return userId;
+  }
 }

@@ -28,93 +28,96 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
-	@Mock
-	private AuthService authService;
+  @Mock
+  private AuthService authService;
 
-	private MockMvc mockMvc;
+  private MockMvc mockMvc;
 
-	@BeforeEach
-	void setUp() {
-		AuthController authController = new AuthController(authService);
-		mockMvc = MockMvcBuilders.standaloneSetup(authController)
-				.setControllerAdvice(new GlobalExceptionHandler())
-				.build();
-	}
+  @BeforeEach
+  void setUp() {
+    AuthController authController = new AuthController(authService);
+    mockMvc = MockMvcBuilders.standaloneSetup(authController)
+        .setControllerAdvice(new GlobalExceptionHandler())
+        .build();
+  }
 
-	@Test
-	void login_returnsTokens() throws Exception {
-		when(authService.login(eq(SocialProvider.GOOGLE), eq("google-id-token"))).thenReturn(
-				new LoginResponse(
-						"access-jwt",
-						"refresh-token",
-						7200L,
-						new UserSummaryResponse(
-								1L,
-								"user@example.com",
-								"홍길동",
-								"https://example.com/profile.png",
-								SocialProvider.GOOGLE
-						)
-				)
-		);
+  @Test
+  void login_returnsTokens() throws Exception {
+    when(authService.login(eq(SocialProvider.GOOGLE), eq("google-id-token"))).thenReturn(
+        new LoginResponse(
+            "access-jwt",
+            "refresh-token",
+            7200L,
+            new UserSummaryResponse(
+                1L,
+                "user@example.com",
+                "홍길동",
+                "https://example.com/profile.png",
+                SocialProvider.GOOGLE)));
 
-		mockMvc.perform(post("/api/v1/auth/login")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"provider":"GOOGLE","token":"google-id-token"}
-								"""))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
-				.andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
-				.andExpect(jsonPath("$.data.user.id").value(1));
-	}
+    mockMvc.perform(
+        post("/api/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"provider":"GOOGLE","token":"google-id-token"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
+        .andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
+        .andExpect(jsonPath("$.data.user.id").value(1));
+  }
 
-	@Test
-	void refresh_returnsAccessToken() throws Exception {
-		when(authService.refresh("refresh-token")).thenReturn(new RefreshResponse("new-access-jwt", 7200L));
+  @Test
+  void refresh_returnsAccessToken() throws Exception {
+    when(authService.refresh("refresh-token"))
+        .thenReturn(new RefreshResponse("new-access-jwt", 7200L));
 
-		mockMvc.perform(post("/api/v1/auth/refresh")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"refreshToken":"refresh-token"}
-								"""))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"));
-	}
+    mockMvc.perform(
+        post("/api/v1/auth/refresh")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"refreshToken":"refresh-token"}
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"));
+  }
 
-	@Test
-	void logout_returns204() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/logout")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"refreshToken":"refresh-token"}
-								"""))
-				.andExpect(status().isNoContent());
-	}
+  @Test
+  void logout_returns204() throws Exception {
+    mockMvc.perform(
+        post("/api/v1/auth/logout")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"refreshToken":"refresh-token"}
+                """))
+        .andExpect(status().isNoContent());
+  }
 
-	@Test
-	void login_missingToken_returns400WithFieldErrors() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/login")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"provider":"GOOGLE","token":""}
-								"""))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("INVALID_INPUT"))
-				.andExpect(jsonPath("$.errors[0].field").value("token"));
-	}
+  @Test
+  void login_missingToken_returns400WithFieldErrors() throws Exception {
+    mockMvc.perform(
+        post("/api/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"provider":"GOOGLE","token":""}
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+        .andExpect(jsonPath("$.errors[0].field").value("token"));
+  }
 
-	@Test
-	void login_invalidToken_returns401() throws Exception {
-		doThrow(new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN))
-				.when(authService).login(any(), any());
+  @Test
+  void login_invalidToken_returns401() throws Exception {
+    doThrow(new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN))
+        .when(authService).login(any(), any());
 
-		mockMvc.perform(post("/api/v1/auth/login")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"provider":"GOOGLE","token":"bad-token"}
-								"""))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
-	}
+    mockMvc.perform(
+        post("/api/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"provider":"GOOGLE","token":"bad-token"}
+                """))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+  }
 }

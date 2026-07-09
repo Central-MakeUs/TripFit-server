@@ -6,12 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "여행방 진행 상태")
 public enum TripStatus {
 
-	@Schema(description = "진행 중 (일정 조율·응답 수집)")
-	ONGOING,
+  @Schema(description = "진행 중 (일정 조율·응답 수집)")
+  ONGOING,
 
-	@Schema(description = "일정 확정 완료")
-	CONFIRMED,
+  @Schema(description = "일정 확정 완료")
+  CONFIRMED,
 
-	@Schema(description = "취소됨")
-	CANCELED
+  @Schema(description = "취소됨")
+  CANCELED
 }

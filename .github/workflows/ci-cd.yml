@@ -24,6 +24,9 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - name: Check code format
+        run: ./gradlew spotlessCheck --no-daemon
+
       - name: Run tests
         run: ./gradlew test --no-daemon
 

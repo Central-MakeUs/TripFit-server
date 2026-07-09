@@ -4,7 +4,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 
 public interface SocialTokenVerifier {
 
-	SocialProvider getProvider();
+  SocialProvider getProvider();
 
-	OAuthProfile verify(String token);
+  OAuthProfile verify(String token);
 }

@@ -8,46 +8,49 @@ import java.util.List;
 @ConfigurationProperties(prefix = "tripfit.oauth")
 public class OAuthProperties {
 
-	private String googleClientId = "";
-	private String googleClientIdIos = "";
-	private String googleClientIdAndroid = "";
-	private String appleClientId = "";
+  private String googleClientId = "";
 
-	public List<String> getGoogleClientIds() {
-		return Arrays.stream(new String[] {googleClientId, googleClientIdIos, googleClientIdAndroid})
-				.filter(id -> id != null && !id.isBlank())
-				.toList();
-	}
+  private String googleClientIdIos = "";
 
-	public String getGoogleClientId() {
-		return googleClientId;
-	}
+  private String googleClientIdAndroid = "";
 
-	public void setGoogleClientId(String googleClientId) {
-		this.googleClientId = googleClientId;
-	}
+  private String appleClientId = "";
 
-	public String getGoogleClientIdIos() {
-		return googleClientIdIos;
-	}
+  public List<String> getGoogleClientIds() {
+    return Arrays.stream(new String[] {googleClientId, googleClientIdIos, googleClientIdAndroid})
+        .filter(id -> id != null && !id.isBlank())
+        .toList();
+  }
 
-	public void setGoogleClientIdIos(String googleClientIdIos) {
-		this.googleClientIdIos = googleClientIdIos;
-	}
+  public String getGoogleClientId() {
+    return googleClientId;
+  }
 
-	public String getGoogleClientIdAndroid() {
-		return googleClientIdAndroid;
-	}
+  public void setGoogleClientId(String googleClientId) {
+    this.googleClientId = googleClientId;
+  }
 
-	public void setGoogleClientIdAndroid(String googleClientIdAndroid) {
-		this.googleClientIdAndroid = googleClientIdAndroid;
-	}
+  public String getGoogleClientIdIos() {
+    return googleClientIdIos;
+  }
 
-	public String getAppleClientId() {
-		return appleClientId;
-	}
+  public void setGoogleClientIdIos(String googleClientIdIos) {
+    this.googleClientIdIos = googleClientIdIos;
+  }
 
-	public void setAppleClientId(String appleClientId) {
-		this.appleClientId = appleClientId;
-	}
+  public String getGoogleClientIdAndroid() {
+    return googleClientIdAndroid;
+  }
+
+  public void setGoogleClientIdAndroid(String googleClientIdAndroid) {
+    this.googleClientIdAndroid = googleClientIdAndroid;
+  }
+
+  public String getAppleClientId() {
+    return appleClientId;
+  }
+
+  public void setAppleClientId(String appleClientId) {
+    this.appleClientId = appleClientId;
+  }
 }

@@ -13,20 +13,20 @@ import java.util.List;
 @EnableConfigurationProperties({JwtProperties.class, OAuthProperties.class})
 public class AppConfig implements WebMvcConfigurer {
 
-	private final AuthorizedUserArgumentResolver authorizedUserArgumentResolver;
+  private final AuthorizedUserArgumentResolver authorizedUserArgumentResolver;
 
-	public AppConfig(AuthorizedUserArgumentResolver authorizedUserArgumentResolver) {
-		this.authorizedUserArgumentResolver = authorizedUserArgumentResolver;
-	}
+  public AppConfig(AuthorizedUserArgumentResolver authorizedUserArgumentResolver) {
+    this.authorizedUserArgumentResolver = authorizedUserArgumentResolver;
+  }
 
-	@Bean
-	// 외부 OAuth 제공자 호출에 사용할 공용 RestClient를 생성함
-	RestClient restClient() {
-		return RestClient.create();
-	}
+  @Bean
+  // 외부 OAuth 제공자 호출에 사용할 공용 RestClient를 생성함
+  RestClient restClient() {
+    return RestClient.create();
+  }
 
-	@Override
-	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-		resolvers.add(authorizedUserArgumentResolver);
-	}
+  @Override
+  public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+    resolvers.add(authorizedUserArgumentResolver);
+  }
 }

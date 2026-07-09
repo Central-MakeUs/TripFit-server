@@ -10,30 +10,30 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AppleTokenVerifierTest {
 
-	private AppleTokenVerifier appleTokenVerifier;
+  private AppleTokenVerifier appleTokenVerifier;
 
-	@BeforeEach
-	void setUp() {
-		OAuthProperties oAuthProperties = new OAuthProperties();
-		oAuthProperties.setAppleClientId("test-apple-client-id");
-		appleTokenVerifier = new AppleTokenVerifier(oAuthProperties);
-	}
+  @BeforeEach
+  void setUp() {
+    OAuthProperties oAuthProperties = new OAuthProperties();
+    oAuthProperties.setAppleClientId("test-apple-client-id");
+    appleTokenVerifier = new AppleTokenVerifier(oAuthProperties);
+  }
 
-	@Test
-	void verify_invalidToken_throwsAuthInvalidToken() {
-		assertThatThrownBy(() -> appleTokenVerifier.verify("not-a-valid-jwt"))
-				.isInstanceOf(TripFitException.class)
-				.extracting(exception -> ((TripFitException) exception).getErrorCode())
-				.isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
-	}
+  @Test
+  void verify_invalidToken_throwsAuthInvalidToken() {
+    assertThatThrownBy(() -> appleTokenVerifier.verify("not-a-valid-jwt"))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
+  }
 
-	@Test
-	void verify_missingClientId_throwsAuthInvalidToken() {
-		AppleTokenVerifier verifierWithoutClientId = new AppleTokenVerifier(new OAuthProperties());
+  @Test
+  void verify_missingClientId_throwsAuthInvalidToken() {
+    AppleTokenVerifier verifierWithoutClientId = new AppleTokenVerifier(new OAuthProperties());
 
-		assertThatThrownBy(() -> verifierWithoutClientId.verify("not-a-valid-jwt"))
-				.isInstanceOf(TripFitException.class)
-				.extracting(exception -> ((TripFitException) exception).getErrorCode())
-				.isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
-	}
+    assertThatThrownBy(() -> verifierWithoutClientId.verify("not-a-valid-jwt"))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
+  }
 }

@@ -4,9 +4,9 @@ import org.springframework.http.HttpStatus;
 
 public interface ErrorCode {
 
-	HttpStatus getHttpStatus();
+  HttpStatus getHttpStatus();
 
-	String getCode();
+  String getCode();
 
-	String getMessage();
+  String getMessage();
 }

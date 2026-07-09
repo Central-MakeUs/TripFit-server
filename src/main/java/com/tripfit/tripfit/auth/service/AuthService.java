@@ -18,118 +18,117 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
 
-	private final SocialTokenVerifierRegistry verifierRegistry;
-	private final UserRepository userRepository;
-	private final JwtService jwtService;
-	private final RefreshTokenService refreshTokenService;
+  private final SocialTokenVerifierRegistry verifierRegistry;
 
-	public AuthService(
-			SocialTokenVerifierRegistry verifierRegistry,
-			UserRepository userRepository,
-			JwtService jwtService,
-			RefreshTokenService refreshTokenService
-	) {
-		this.verifierRegistry = verifierRegistry;
-		this.userRepository = userRepository;
-		this.jwtService = jwtService;
-		this.refreshTokenService = refreshTokenService;
-	}
+  private final UserRepository userRepository;
 
-	// 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함
-	@Transactional
-	public LoginResponse login(SocialProvider provider, String token) {
-		// 1. 소셜 제공자별 검증기를 찾아 외부 토큰을 검증함
-		SocialTokenVerifier verifier = verifierRegistry.getVerifier(provider);
-		OAuthProfile profile = verifier.verify(token);
+  private final JwtService jwtService;
 
-		// 2. 소셜 프로필 기준으로 사용자를 조회하거나 신규 저장함
-		User user = upsertUser(profile);
+  private final RefreshTokenService refreshTokenService;
 
-		// 3. 로그인 세션에 필요한 액세스 토큰과 리프레시 토큰을 발급함
-		String accessToken = jwtService.createAccessToken(user.getId());
-		RefreshToken refreshToken = refreshTokenService.create(user.getId());
-		return new LoginResponse(
-				accessToken,
-				refreshToken.getToken(),
-				jwtService.getAccessExpirationSeconds(),
-				toUserSummary(user)
-		);
-	}
+  public AuthService(
+      SocialTokenVerifierRegistry verifierRegistry,
+      UserRepository userRepository,
+      JwtService jwtService,
+      RefreshTokenService refreshTokenService) {
+    this.verifierRegistry = verifierRegistry;
+    this.userRepository = userRepository;
+    this.jwtService = jwtService;
+    this.refreshTokenService = refreshTokenService;
+  }
 
-	// 리프레시 토큰으로 새로운 액세스 토큰을 재발급함
-	@Transactional
-	public RefreshResponse refresh(String refreshTokenValue) {
-		try {
-			// 1. 리프레시 토큰의 존재 여부와 만료 여부를 검증함
-			RefreshToken refreshToken = refreshTokenService.validate(refreshTokenValue);
+  // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함
+  @Transactional
+  public LoginResponse login(SocialProvider provider, String token) {
+    // 1. 소셜 제공자별 검증기를 찾아 외부 토큰을 검증함
+    SocialTokenVerifier verifier = verifierRegistry.getVerifier(provider);
+    OAuthProfile profile = verifier.verify(token);
 
-			// 2. 검증된 사용자 ID로 새 액세스 토큰을 생성함
-			String accessToken = jwtService.createAccessToken(refreshToken.getUserId());
-			return new RefreshResponse(accessToken, jwtService.getAccessExpirationSeconds());
-		} catch (TripFitException exception) {
-			if (exception.getErrorCode() == AuthErrorCode.AUTH_INVALID_REFRESH) {
-				// 만료된 리프레시 토큰으로 재시도한 경우 저장소에서 정리함
-				refreshTokenService.deleteExpired(refreshTokenValue);
-			}
-			throw exception;
-		}
-	}
+    // 2. 소셜 프로필 기준으로 사용자를 조회하거나 신규 저장함
+    User user = upsertUser(profile);
 
-	// 로그아웃 요청에 해당하는 리프레시 토큰을 삭제함
-	@Transactional
-	public void logout(String refreshTokenValue) {
-		refreshTokenService.delete(refreshTokenValue);
-	}
+    // 3. 로그인 세션에 필요한 액세스 토큰과 리프레시 토큰을 발급함
+    String accessToken = jwtService.createAccessToken(user.getId());
+    RefreshToken refreshToken = refreshTokenService.create(user.getId());
+    return new LoginResponse(
+        accessToken,
+        refreshToken.getToken(),
+        jwtService.getAccessExpirationSeconds(),
+        toUserSummary(user));
+  }
 
-	// JWT에 담긴 userId로 현재 로그인 사용자 프로필을 조회함
-	@Transactional(readOnly = true)
-	public UserSummaryResponse getCurrentUser(Long userId) {
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
-		return toUserSummary(user);
-	}
+  // 리프레시 토큰으로 새로운 액세스 토큰을 재발급함
+  @Transactional
+  public RefreshResponse refresh(String refreshTokenValue) {
+    try {
+      // 1. 리프레시 토큰의 존재 여부와 만료 여부를 검증함
+      RefreshToken refreshToken = refreshTokenService.validate(refreshTokenValue);
 
-	// 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함
-	private User upsertUser(OAuthProfile profile) {
-		return userRepository.findByProviderAndSocialId(profile.provider(), profile.providerUserId())
-				.map(existing -> updateFromProfile(existing, profile))
-				.orElseGet(() -> userRepository.save(createUserFromProfile(profile)));
-	}
+      // 2. 검증된 사용자 ID로 새 액세스 토큰을 생성함
+      String accessToken = jwtService.createAccessToken(refreshToken.getUserId());
+      return new RefreshResponse(accessToken, jwtService.getAccessExpirationSeconds());
+    } catch (TripFitException exception) {
+      if (exception.getErrorCode() == AuthErrorCode.AUTH_INVALID_REFRESH) {
+        // 만료된 리프레시 토큰으로 재시도한 경우 저장소에서 정리함
+        refreshTokenService.deleteExpired(refreshTokenValue);
+      }
+      throw exception;
+    }
+  }
 
-	// 소셜 프로필로 신규 사용자 엔티티를 생성함
-	private User createUserFromProfile(OAuthProfile profile) {
-		return new User(
-				profile.providerUserId(),
-				profile.provider(),
-				profile.email(),
-				profile.nickname(),
-				profile.profileImageUrl()
-		);
-	}
+  // 로그아웃 요청에 해당하는 리프레시 토큰을 삭제함
+  @Transactional
+  public void logout(String refreshTokenValue) {
+    refreshTokenService.delete(refreshTokenValue);
+  }
 
-	// 재로그인 시 소셜 프로필에서 전달된 필드만 최신 값으로 갱신함
-	// profileImageUrl: A안 — provider URL passthrough (006). B안 S3 미러는 wave 4.
-	private User updateFromProfile(User user, OAuthProfile profile) {
-		if (profile.email() != null && !profile.email().isBlank()) {
-			user.setEmail(profile.email());
-		}
-		if (profile.nickname() != null && !profile.nickname().isBlank()) {
-			user.setNickname(profile.nickname());
-		}
-		if (profile.profileImageUrl() != null && !profile.profileImageUrl().isBlank()) {
-			user.setProfileImageUrl(profile.profileImageUrl());
-		}
-		return user;
-	}
+  // JWT에 담긴 userId로 현재 로그인 사용자 프로필을 조회함
+  @Transactional(readOnly = true)
+  public UserSummaryResponse getCurrentUser(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
+    return toUserSummary(user);
+  }
 
-	// 인증 응답에 필요한 최소 사용자 정보를 DTO로 변환함
-	private UserSummaryResponse toUserSummary(User user) {
-		return new UserSummaryResponse(
-				user.getId(),
-				user.getEmail(),
-				user.getNickname(),
-				user.getProfileImageUrl(),
-				user.getProvider()
-		);
-	}
+  // 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함
+  private User upsertUser(OAuthProfile profile) {
+    return userRepository.findByProviderAndSocialId(profile.provider(), profile.providerUserId())
+        .map(existing -> updateFromProfile(existing, profile))
+        .orElseGet(() -> userRepository.save(createUserFromProfile(profile)));
+  }
+
+  // 소셜 프로필로 신규 사용자 엔티티를 생성함
+  private User createUserFromProfile(OAuthProfile profile) {
+    return new User(
+        profile.providerUserId(),
+        profile.provider(),
+        profile.email(),
+        profile.nickname(),
+        profile.profileImageUrl());
+  }
+
+  // 재로그인 시 소셜 프로필에서 전달된 필드만 최신 값으로 갱신함
+  // profileImageUrl: A안 — provider URL passthrough (006). B안 S3 미러는 wave 4.
+  private User updateFromProfile(User user, OAuthProfile profile) {
+    if (profile.email() != null && !profile.email().isBlank()) {
+      user.setEmail(profile.email());
+    }
+    if (profile.nickname() != null && !profile.nickname().isBlank()) {
+      user.setNickname(profile.nickname());
+    }
+    if (profile.profileImageUrl() != null && !profile.profileImageUrl().isBlank()) {
+      user.setProfileImageUrl(profile.profileImageUrl());
+    }
+    return user;
+  }
+
+  // 인증 응답에 필요한 최소 사용자 정보를 DTO로 변환함
+  private UserSummaryResponse toUserSummary(User user) {
+    return new UserSummaryResponse(
+        user.getId(),
+        user.getEmail(),
+        user.getNickname(),
+        user.getProfileImageUrl(),
+        user.getProvider());
+  }
 }

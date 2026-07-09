@@ -25,58 +25,59 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class AuthSecurityIntegrationTest {
 
-	@Autowired
-	private WebApplicationContext webApplicationContext;
+  @Autowired
+  private WebApplicationContext webApplicationContext;
 
-	@Autowired
-	private JwtService jwtService;
+  @Autowired
+  private JwtService jwtService;
 
-	@MockitoBean
-	private AuthService authService;
+  @MockitoBean
+  private AuthService authService;
 
-	private MockMvc mockMvc;
-	private String accessToken;
+  private MockMvc mockMvc;
 
-	@BeforeEach
-	void setUp() {
-		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
-				.apply(SecurityMockMvcConfigurers.springSecurity())
-				.build();
-		accessToken = jwtService.createAccessToken(1L);
-		when(authService.getCurrentUser(1L)).thenReturn(
-				new UserSummaryResponse(
-						1L,
-						"user@example.com",
-						"홍길동",
-						"https://example.com/profile.png",
-						SocialProvider.GOOGLE
-				)
-		);
-	}
+  private String accessToken;
 
-	@Test
-	void getMe_withoutBearer_returns401() throws Exception {
-		mockMvc.perform(get("/api/v1/auth/me"))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
-	}
+  @BeforeEach
+  void setUp() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+        .apply(SecurityMockMvcConfigurers.springSecurity())
+        .build();
+    accessToken = jwtService.createAccessToken(1L);
+    when(authService.getCurrentUser(1L)).thenReturn(
+        new UserSummaryResponse(
+            1L,
+            "user@example.com",
+            "홍길동",
+            "https://example.com/profile.png",
+            SocialProvider.GOOGLE));
+  }
 
-	@Test
-	void getMe_withValidBearer_returnsUserSummary() throws Exception {
-		mockMvc.perform(get("/api/v1/auth/me")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.email").value("user@example.com"))
-				.andExpect(jsonPath("$.data.nickname").value("홍길동"))
-				.andExpect(jsonPath("$.data.profileImageUrl").value("https://example.com/profile.png"))
-				.andExpect(jsonPath("$.data.provider").value("GOOGLE"));
-	}
+  @Test
+  void getMe_withoutBearer_returns401() throws Exception {
+    mockMvc.perform(get("/api/v1/auth/me"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+  }
 
-	@Test
-	void getMe_withInvalidBearer_returns401() throws Exception {
-		mockMvc.perform(get("/api/v1/auth/me")
-						.header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token"))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
-	}
+  @Test
+  void getMe_withValidBearer_returnsUserSummary() throws Exception {
+    mockMvc.perform(
+        get("/api/v1/auth/me")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.email").value("user@example.com"))
+        .andExpect(jsonPath("$.data.nickname").value("홍길동"))
+        .andExpect(jsonPath("$.data.profileImageUrl").value("https://example.com/profile.png"))
+        .andExpect(jsonPath("$.data.provider").value("GOOGLE"));
+  }
+
+  @Test
+  void getMe_withInvalidBearer_returns401() throws Exception {
+    mockMvc.perform(
+        get("/api/v1/auth/me")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+  }
 }
