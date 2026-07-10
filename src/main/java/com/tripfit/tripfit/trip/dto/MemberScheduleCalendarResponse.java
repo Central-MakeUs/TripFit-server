@@ -23,7 +23,7 @@ public record MemberScheduleCalendarResponse(
       @Schema(description = "표시 이름 (동명이인 시 접미사)") String displayName,
       @Schema(description = "방 내 역할 (방장 OWNER / 일반 MEMBER)") TripMemberRole role,
       @Schema(
-          description = "멤버십 상태. JOINED=일정 확인 전, RESPONDED=일정 확인 완료") TripMemberStatus memberStatus,
+          description = "멤버십 상태. JOINED=방장 create 직후만, RESPONDED=방장 confirm 후·멤버 join 시") TripMemberStatus memberStatus,
       @Schema(description = "effective가 있는 날짜만 포함 (sparse)") List<CalendarDay> days
   ) {
   }

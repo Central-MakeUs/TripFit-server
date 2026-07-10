@@ -18,7 +18,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Trip Members", description = "여행방 참여자 목록·달력·내보내기")
+@Tag(
+    name = "Trip Members",
+    description = """
+        참여자 목록·그룹 달력·내보내기. 전제=방 입장(RESPONDED+입장조건).
+        JOINED(방장 confirm 전)는 호출 불가(SCHEDULE_CONFIRM_REQUIRED).
+        """)
 @RestController
 @RequestMapping("/api/v1/trips/{tripId}/members")
 @SecurityRequirement(name = "bearer-jwt")
@@ -37,7 +42,7 @@ public class TripMemberController {
       description = """
           목적: 여행방 참여자 목록을 조회한다.
           호출 시점: 방 멤버 화면.
-          전제: 멤버이며 방 입장 가능.
+          전제: 멤버이며 방 입장 가능(RESPONDED + 입장 조건). JOINED면 403.
           결과: 상태·역할·Pin·모집률 등. 동명이인은 표시명에 `(2)`처럼 번호가 붙는다.
           """)
   @GetMapping

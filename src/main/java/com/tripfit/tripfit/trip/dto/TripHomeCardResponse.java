@@ -9,7 +9,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "홈 여행방 카드 1건. GET /trips 목록 items")
+@Schema(
+    description = """
+        홈 여행방 카드. GET /trips.
+        inviteCode 없음(공유는 입장 후 상세). myMemberStatus=JOINED면 탭 시 상세 말고 confirm 플로우.
+        """)
 // @formatter:off
 public record TripHomeCardResponse(
     @Schema(description = "여행방 ID") UUID tripId,
@@ -46,7 +50,7 @@ public record TripHomeCardResponse(
 
     @Schema(
         description =
-            "본인 멤버십 상태. JOINED=일정 확인 전(방 입장 불가), RESPONDED=일정 확인 완료(방 입장 가능)")
+            "본인 멤버십 상태. JOINED=방장 create 직후만(입장 불가·공유 불가), RESPONDED=방장 confirm 후·멤버 join 시(입장 가능)")
     TripMemberStatus myMemberStatus,
 
     @Schema(description = "일정 확인 완료(RESPONDED) 멤버 수") int respondedCount,
