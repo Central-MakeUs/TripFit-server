@@ -130,11 +130,31 @@ public enum VacationApplyPeriod {
 }
 ```
 
+## OpenAPI 설명 어노테이션 (전부)
+
+springdoc OpenAPI 3. **설명 문자열이 들어가는 어노테이션은 종류와 무관하게 동일 규칙**을 쓴다.
+
+| 어노테이션 | 위치 |
+|------------|------|
+| `@Schema(description)` | Entity · DTO · enum · ErrorCode · envelope |
+| `@Operation(summary/description)` | Controller |
+| `@Parameter(description)` | Controller 쿼리·path |
+| `@Tag(name/description)` | Controller |
+| 기타 (`@ApiResponse` description 등) | 있으면 동일 |
+
+**독자:** 프론트·신규 서버 개발자. 구현 메모·이슈 트래커용 문자열이 아니다.
+
+**전 어노테이션 공통 금지**
+
+- GitHub 이슈 번호 (`#39` …)
+- BR/스펙 ID (`BR-USER-007`, `D5`, `D-JOIN-ENTRY`, `C1` 단독 등)
+- `docs/specs/...` 경로만 나열
+- `구 XXX 대체` 같은 레거시 메모
+- Bearer/JWT 문구 (`@Operation` — 자물쇠·`security`로만)
+
+**허용:** 도메인 용어의 **의미**, HTTP 상태·`ErrorCode` 상수명, idempotent/정렬/쿼리 의미
+
 ## OpenAPI @Schema (Entity · DTO · enum)
-
-springdoc OpenAPI 3 — `io.swagger.v3.oas.annotations.media.Schema`
-
-**독자:** 프론트·신규 서버 개발자. Swagger UI만으로 필드 의미·null·파생 여부를 이해할 수 있어야 한다. 구현 메모·이슈 트래커용 문자열이 아니다.
 
 | 대상 | `@Schema` 위치 | 필수 |
 |------|----------------|------|
@@ -143,24 +163,37 @@ springdoc OpenAPI 3 — `io.swagger.v3.oas.annotations.media.Schema`
 | `{domain}/dto/` record·class | record/class + **각 컴포넌트·필드** | ✓ (API 노출 DTO) |
 | `common/api/` envelope | record + 필드 | ✓ |
 | verifier 경계 record (`OAuthProfile` 등) | record + 필드 | ✓ |
-| Controller | `@Tag`, `@Operation` (아래 양식) | API 추가 시 |
+| Controller | `@Tag`, `@Operation`, `@Parameter` (아래 양식) | API 추가 시 |
 
 **작성 규칙**
 
 - 설명은 **한국어**. Entity는 컬럼 의미·제약(nullable, UNIQUE, FK). API DTO는 **FE가 쓰는 의미** · null 의미 · 단위/범위
 - API 필드: `example`, `nullable`, `requiredMode = REQUIRED` (validation `@NotNull`/`@NotBlank`와 일치)
 - **클래스 `@Schema`:** 무엇인지 + 주로 쓰이는 API 경로 (이슈 번호 금지)
-- **enum 상수:** 화면/도메인 의미 한 줄
 - Entity는 Swagger UI에 직접 안 나와도 **코드·ERD SSOT**로 동일하게 작성
 - Javadoc 대신 `@Schema` 우선 (필드 의미). 메서드·API 흐름 주석은 아래 **Comments** 절
 - 계약 값·정책 SSOT: `docs/architecture/erd.md`, 해당 `docs/specs/` — 불일치 시 문서 먼저. **스펙 경로·스펙 ID는 `@Schema` 문자열에 넣지 않음**
 
-**Swagger `@Schema` 금지**
+### 상태성 enum `@Schema` (JOINED/RESPONDED · TripStatus 등)
 
-- GitHub 이슈 번호 (`#39` …)
-- BR/스펙 ID (`BR-USER-007`, `D5`, `D-JOIN-ENTRY`, `C1` 단독 등)
-- `docs/specs/...` 경로 나열
-- `구 XXX 대체` 같은 레거시 메모
+상수마다 **의미 / 언제 / 가능·불가**를 빈 줄로 구분한다. 클래스 `@Schema`는 “무엇인지 + 값 한 줄 요약”만.
+
+```java
+@Schema(description = """
+		여행방 안에서의 멤버 진행 상태 (JOINED | RESPONDED).
+		""")
+public enum TripMemberStatus {
+	@Schema(description = """
+			의미: 방장이 방을 만들었지만, 아직 이 방 일정 확인을 끝내지 않은 상태.
+
+			언제: POST /trips 직후 ~ POST .../schedule/confirm 전. 일반 멤버는 이 값이 되지 않음.
+
+			불가: 방 상세·멤버·달력·Pin·초대 공유.
+			""")
+	JOINED,
+	// ...
+}
+```
 
 ### 파생·조회 시 계산 필드 (DB 컬럼 없음)
 
@@ -169,9 +202,9 @@ Entity·`user` 테이블에 **저장되지 않는** API 필드(예: `hasPreSched
 | 위치 | 필수 내용 |
 |------|-----------|
 | **DTO `@Schema(description)`** | 어떤 조건인지 · **저장 안 함** · **true/false가 바뀌는 트리거**(어떤 CRUD) · **값이 클라이언트에 실리는 API**(login/me 등). 스펙 ID·이슈 번호 금지 |
-| **계산 Service** (`UserSummaryService` 등) | 클래스·public 메서드 `//` — **어디서 호출되는지**, EXISTS/집계 **How**, 이슈/BR **Why** (코드 주석에는 이슈·BR 허용) |
+| **계산 Service** (`UserSummaryService` 등) | 클래스·public 메서드 `//` — **어디서 호출되는지**, EXISTS/집계 **How**, 정책 **Why(평문)** |
 | **Repository** | EXISTS·집계 메서드 — **파생 필드 SSOT 조회**임을 한 줄 (`existsByUserId` 등) |
-| **스펙** | `docs/specs/` 해당 정책 ID (예: D-JOIN-3, D-BR006-C) — **스펙 문서·코드 주석용**, Swagger 아님 |
+| **스펙** | `docs/specs/` 해당 정책 ID — **스펙 문서용**, Swagger·역할 `//` 본문 아님 |
 
 - ❌ DTO 필드명만으로 “알아서 파생값” 가정 — OpenAPI·프론트 계약 깨짐
 - 일정 CRUD 응답에 `user` 요약이 **없으면** `@Schema` 또는 Service 주석에 **me 재조회 필요** 명시
@@ -331,21 +364,52 @@ ResponseEntity<...> updateProfile(
 
 ## Comments
 
-1인 개발·Swagger(springdoc) 전제. **필드 의미는 `@Schema`**, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT.  
-`//`는 **(1) 메서드가 하는 일(역할)** + **(2) Why·정책·다단계 How** 를 담는다. 메서드명만으로 “무엇을 하는지”가 안 보이면 주석 누락이다.
+**독자:** 신규 서버 개발자. `//`는 구현자 메모·이슈 트래커용 약어가 아니라 **메서드가 하는 일**을 평문으로 남긴다.  
+필드 의미는 `@Schema`, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT.  
+`//`는 **(1) 메서드 역할(평문 한 줄)** + **(2) Why·정책·다단계 How** 를 담는다. 메서드명만으로 “무엇을 하는지”가 안 보이면 주석 누락이다.  
+**새 Service/Support public 메서드에 역할 `//` 없으면 미완료** — 다음 커밋으로 미루지 않는다.
+
+### 역할 줄 템플릿
+
+```text
+// {행위} — {핵심 전제·결과 한 조각}
+```
+
+예: `// 방장 일정 확인을 끝내 JOINED→RESPONDED로 바꾼다 — 이미 RESPONDED면 동일 상세 반환(idempotent)`
 
 ### 쓰지 않음
 
 - `@Operation`/`@Parameter`·record 필드명과 **완전히 동일한** 문장 반복
 - 단순 `@param`/`@return` Javadoc
-- Controller에서 Service 비즈니스 로직·BR을 장황히 반복
+- Controller에서 Service 비즈니스 로직을 장황히 반복
+- 역할 줄 본문을 `#13`, `BR-TRIP-005`, `D5`, `R-freeze` **약어만으로** 대체
+
+### 역할 줄 · 본문 금지 / 허용
+
+| | 역할 `//` (메서드 위) | 본문 Why / `// 1.` | `// TODO` · `// FIXME` |
+|--|----------------------|-------------------|------------------------|
+| **금지** | `#n`·`BR-*`·스펙 ID만으로 설명 | 약어만으로 Why 대체 | 방향 없는 `TODO` |
+| **허용** | 도메인 용어의 **의미** (`JOINED`=일정 확인 전) | 평문 정책·에러코드명 | 말미에 스펙 경로·`#n` — `// TODO: … — docs/specs/….md (#13)` |
+
+### stub / 미구현
+
+역할 줄과 TODO를 **분리**한다. 역할 = 유스케이스 의미, TODO = 남은 작업.
+
+```java
+// 방장이 추천 모드로 TOP3 후보를 생성한다 (미구현 stub)
+@Transactional
+public void generateRecommendations(...) {
+  // TODO: 기존 추천 hard DELETE 후 TOP3 INSERT, lastRecommendationMode 갱신
+  // 상세: docs/specs/trip-recommendation.md (#13)
+}
+```
 
 ### 레이어별 초점
 
 | 레이어 | 주석 대상 |
 |--------|-----------|
 | **Controller** | 접근 권한(`@AuthorizedUser`, `@TripMemberOnly` 등)·인터셉터·`@Valid` 검증. **유스케이스 역할 주석 금지**(Service에 둠) |
-| **Service / facade** | **public 메서드마다** 역할 `//` 한 줄(아래 필수). BR·분기 Why · 다단계 `// 1.` |
+| **Service / facade** | **public 메서드마다** 역할 `//` 한 줄(아래 필수). 분기 Why · 다단계 `// 1.` |
 | **Support / Helper / Resolver** | 공유 검증·매핑·가드의 **역할 `//`** + 정책·에러코드·배치 vs lazy Why |
 | **Interceptor / Aspect / Filter / ArgumentResolver / Scheduler** | 엔트리(`preHandle`·advice·`runForDate` 등) **역할 `//`** + 교차 관심사 Why |
 | **client** | Service와 동일 — 역할 `//` + 단계·catch 의도 |
@@ -363,13 +427,22 @@ ResponseEntity<...> updateProfile(
 | **비자명 `private` 헬퍼** | live/snapshot 빌더·윈도우 검증·복합 매핑 등 — 역할 `//` |
 | **생략 가능** | 생성자 · getter/setter · 이름만으로 자명한 1라이너 (`findUser`, `normalizeX`, 단순 DTO `toXxx`) |
 
+**Before (금지)**
+
 ```java
+// #13 stub — 추천 생성 (BR-TRIP-005 hard DELETE·TOP3)
 // 방장 JOINED → RESPONDED. 이미 RESPONDED면 idempotent (#39)
+```
+
+**After (필수 양식)**
+
+```java
+// 방장 일정 확인을 끝내 JOINED→RESPONDED로 바꾼다 — 이미 RESPONDED면 동일 상세 반환(idempotent)
 @Transactional
 @TripActivity(tripIdParam = "tripId")
 public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) { ... }
 
-// 멤버 목록 조회 — fillRate·displayName 포함
+// 멤버 목록 조회 — 모집률·동명이인 displayName 포함
 public TripMembersResponse listMembers(UUID tripId, UUID userId) { ... }
 
 // facade: 참여자 내보내기 → TripCommandService
@@ -381,17 +454,17 @@ public TripMembersResponse removeMember(...) {
 ### 다단계 · Why (본문)
 
 - 본문이 **2단계 이상**이면 `// 1.` `// 2.` `// 3.` 로 **How** 순서 표시 (역할 한 줄과 **병행**)
-- 정책·BR·에러코드 선택은 단계 옆·직후 **Why** 짧게 — Why만/How만 강제하지 않음
+- 정책·에러코드 선택은 단계 옆·직후 **Why** 짧게(평문) — Why만/How만 강제하지 않음
 - 외부 API·복잡 Stream·TX 경계·`catch` 의도(Why)
 - 어조: 간결한 개발자체 (`~함`, `~을 위해 분기`)
 
 ### 기술 부채
 
-- `// TODO:` / `// FIXME:` + 개선 방향 (wave·이슈 번호 병기)
+- `// TODO:` / `// FIXME:` + **남은 작업(평문)** + 말미에 스펙 경로·이슈 번호(선택)
 
 ### Javadoc (`/** */`)
 
-- **메서드 역할은 `//`만.** 클래스 한 줄 요약 Javadoc은 허용하되, 메서드 위 `/** */`·`@param`/`@return` 남발 금지
+- **메서드 역할은 `//`만.** 클래스 한 줄 요약 Javadoc은 허용하되, 메서드 위 `/** */`·`@param`/`@return` 남발 금지. 클래스 Javadoc도 `#n`·`BR-*`만으로 쓰지 말 것.
 
 ## API (추가 시)
 
