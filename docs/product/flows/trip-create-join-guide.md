@@ -10,11 +10,13 @@
 
 TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 후:
 
-- **방장:** 먼저 `POST /trips`로 방·멤버(`JOINED`)를 만들고 → **일정 확인 플로우** → `confirm`으로 `RESPONDED`가 된 뒤에야 방 안 이용  
-- **참여자:** 일정 확인 플로우 → `POST /trips/join`으로 **그때** 멤버(`RESPONDED`) 등록  
+- **방장:** `POST /trips`(`JOINED`) → 일정 플로우 → `confirm`(`RESPONDED`) **이후에야** 방 안·초대 공유  
+- **참여자:** 일정 플로우 → `POST /trips/join` → **곧바로 `RESPONDED`** (중간 JOINED 없음)
 
-전역 `canEnterRoom`만으로는 부족하고, **해당 trip에서 일정 확인 완료(`RESPONDED`)** 가 추가로 필요하다.  
-방장은 `canEnterRoom`이 true여도 **신규 방 최초 확인 플로우는 강제**된다.
+전역 `canEnterRoom`만으로는 부족하고, **해당 trip에서 `RESPONDED`** 가 추가로 필요하다.
+
+> **프론트 주의:** create 응답에 `inviteCode` 없음. 홈에 JOINED 카드가 보여도 상세/공유로 바로 가지 말고 confirm 플로우로.  
+> 용어·오해표: [`glossary.md`](../glossary.md) · 스펙 필독: [`trip-room-api.md`](../../specs/trip-room-api.md)
 
 ---
 
@@ -24,8 +26,8 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 |------|------|
 | **여행방 (`trip`)** | 조율 단위. 이름·희망 기간·일수·정원·초대코드 등 |
 | **방장 (`OWNER`)** | 방을 만든 사람. **생성 시** 멤버 INSERT |
-| **`JOINED`** | 멤버 row는 있으나 **이 방 일정 확인 미완료** → **방 입장(상세 등) 불가** (주로 방장) |
-| **`RESPONDED`** | 이 방 일정 확인·가입 완료 → 방 입장 가능 (전역 `canEnterRoom`도 만족해야 함) |
+| **`JOINED`** | **방장 전용** — create 직후·confirm 전. 멤버 row 있으나 **방 입장·초대 공유 불가**. 멤버는 이 상태를 쓰지 않음 |
+| **`RESPONDED`** | 방장(confirm 후)·멤버(`POST /join` 시 즉시). **방 입장** 가능 (전역 `canEnterRoom`도 필요). **초대 공유는 방장+RESPONDED** |
 | **참여자 (`MEMBER`)** | join 완료 후 `RESPONDED`. 링크·일정만으로는 미등록 |
 | **초대 코드** | 6자 Crockford Base32. 링크 `https://tripfit.online/room/{inviteCode}` |
 | **일정 데이터** | User **전역** (`regular` + `personal`). 방마다 복사하지 않음 (BR-USER-008) |
@@ -33,7 +35,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | **`canEnterRoom`** | 정기≥1 **또는** 개별≥1 **또는** `is_all_free` (전역) |
 | **`needsScheduleConfirm`** | (API 파생) `status=JOINED` → 클라가 일정 플로우 강제 |
 
-용어표([`glossary.md`](../glossary.md))는 **승인 후** JOINED 의미를 반영해 amend.
+용어표([`glossary.md`](../glossary.md)) — JOINED=방장 전용 · RESPONDED=입장/공유 가능.
 
 ---
 
@@ -62,7 +64,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 단계 | 하는 일 |
 |------|---------|
 | 생성 폼 | 이름 ≤15자, 기간(생성 후 불변), `durationNights`+`durationDays`(또는 미정), 인원 **1~10**, destination 선택 |
-| `POST /trips` | `trip`(`ONGOING`) + owner **`JOINED`** + 6자 `inviteCode` + `last_activity_at` 초기화. **아직 방 안 입장 아님** |
+| `POST /trips` | `trip`(`ONGOING`) + owner **`JOINED`** + DB에 6자 `invite_code` 발급. **응답에 inviteCode 미포함**(입장 전). **아직 방 안 입장·공유 아님** |
 | 정기→개별 | **이 방용 확인 플로우**. 전역 일정이 있어도 **매번** 노출 |
 | 수정 | 정기 CRUD / 개별 bulk upsert — User 전역 |
 | Skip | row≥1 유지 · 둘 다 0행이면 confirm 시 서버가 `is_all_free=true` |
@@ -83,7 +85,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 ### 생성·확인 후
 
-- `RESPONDED`가 되면 초대 공유·방 안 활동 (공유를 JOINED 단계부터 허용할지는 Open Question)
+- **`RESPONDED` 이후에만** 방 상세·초대 공유·방 안 활동 (`GET /trips/{id}`의 `inviteCode` 사용). **JOINED(confirm 전)에는 공유 불가** — 방 입장 자체가 막힘
 - 인원 가득·종료 시 공유 UI 비노출 + join 409 (D8) — 현행과 동일
 
 ---
@@ -94,7 +96,6 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 - 소셜 로그인 필수 — **비회원 참여 없음** (BR-USER-002)
 - 이름 완료 필수
-- join 전 미리보기(이슈 미배정 · 구 #19)는 여전히 Out 가능
 
 ### 단계
 
@@ -279,7 +280,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 |------|------|
 | 설계 대안·Open Q | [`trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) |
 | JOINED 단계 초대·PATCH | 미정 |
-| join 전 미리보기 · 내보내기 · 푸시 · 카카오 공유 · hold | 미리보기 **Out**(이슈 미배정) · #20 **Nice** · #21·#19 Wave3 · #35 Wave4 |
+| 내보내기 · 푸시 · 카카오·링크 공유 · hold | #20 **Nice** · #21·#19 Wave3 · #35 Wave4 |
 | 이 문서를 정식 SSOT로 승격 | 스펙 Approved 후 현행 guide와 교체 |
 
 ---

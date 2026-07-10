@@ -39,7 +39,7 @@
 
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
-| [`kakao-invite-share.md`](kakao-invite-share.md) | **Draft** (#19) | 카카오톡 초대 링크 공유 · D3 URL | trip-room-api D3 · #12 |
+| [`kakao-invite-share.md`](kakao-invite-share.md) | **Approved** (#19) | 카카오·링크 공유 A/B/C · create에 inviteCode 없음 · 신규 API 없음 | trip-room-api D3 · #12 |
 | (알림) | Draft 예정 (#21) | FCM/APNs · BR-NOTI-001~004 | #12 · #13 · 참여 완료 정의 |
 
 ## wave 4
@@ -62,7 +62,7 @@
 | #17 | schedule-calendar-resolve (본인 calendar) | Closed |
 | #12 | trip-room-api | Closed / Implemented |
 | #13 | trip-recommendation | Open |
-| **#19** | kakao-invite-share | Open · **Wave 3 Must** (구 join 미리보기 → 이슈 미배정) |
+| **#19** | kakao-invite-share | **Approved** · Wave 3 Must · create inviteCode 미노출 Implemented |
 | #20 | trip-member-remove | Implemented · **Wave 2 Nice** |
 | **#21** | 알림 (Draft 예정) | Open · **Wave 3 Must** |
 | **#26** | trip-last-activity-at | Implemented |

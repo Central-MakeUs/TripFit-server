@@ -228,7 +228,7 @@
 | 항목 | 제안 |
 |------|------|
 | 홈 `scope=ongoing` | JOINED 방장 방 **노출** (미완료 카드 배지 UX는 FE) |
-| 초대 공유 | JOINED여도 코드 발급됨 → **공유 허용**할지 **RESPONDED 후만**할지 **[미정]** |
+| 초대 공유 | **RESPONDED 후만**(방장). JOINED=입장 불가→공유 불가. create 응답에 `inviteCode` 미노출 — [`kakao-invite-share.md`](kakao-invite-share.md) S-1·S-2 |
 | Pin / PATCH trip | JOINED 방장에게 PATCH 허용? → 메타만 허용·상세 거절 등 **[미정]** |
 
 ---
@@ -263,9 +263,9 @@
 
 1. **confirm 시점 `canEnterRoom`:** confirm API에서 강제 vs confirm은 status만 바꾸고 다음 상세에서 `SCHEDULE_ENTRY_REQUIRED`?
 2. **Skip + row0:** confirm에서 `is_all_free=true` (현행 create/join과 동일)로 둘지?
-3. **JOINED 방장의 초대 공유·PATCH·DELETE** 허용 범위?
+3. ~~**JOINED 방장의 초대 공유**~~ → **RESPONDED 후만**(2026-07-22). PATCH/DELETE는 JOINED 허용(현행 `@TripOwnerOnly`)
 4. **`membersPreview` / 멤버 목록에 JOINED 노출?**
-5. **멤버도 언젠가 JOINED를 쓰는지** (예: hold #35와 결합) vs 멤버는 계속 RESPONDED-only?
+5. ~~**멤버도 언젠가 JOINED**~~ → 현행 **멤버는 RESPONDED만**(join 시). hold(#35)와 결합 시 재논의
 6. **이미 RESPONDED인 방 재입장** 시 일정 플로우 재노출? (요청은 “생성/최초 입장” 강제 — **재입장 프리패스**로 보는 게 자연스러움)
 7. **기존 운영 데이터:** 전원 RESPONDED면 마이그레이션 불필요(상용 데이터 없음 · ddl-auto). 코드 경로만 전환.
 
