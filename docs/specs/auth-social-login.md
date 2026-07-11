@@ -348,14 +348,13 @@ Authorization: Bearer <accessToken>
 | 금지 (별도 스펙·승인 필요) | 이유 |
 |---------------------------|------|
 | `user_identity` 분리·`user` 구조 대규모 개편 | BR-USER-003 계정 연결 — wave 4 |
-| `user` 테이블 rename (`users` 등) | 도메인 전역 영향 — decisions + 팀 합의 |
 | Flyway/`V*__*.sql` 마이그레이션 추가 | **작성 금지** — ddl-auto + DB 리셋 (`harness-workflow`) |
 
 **후속**: 스키마를 바꿨으면 구현 PR 전에 `docs/architecture/erd.md` 동기화. DB는 폐기·재생성으로 맞춤.
 
-### 기존 — 기본 유지 (`user`)
+### 기존 — 기본 유지 (`users`)
 
-`user` 테이블 (`docs/architecture/erd.md` 기준). **필요 시 위 정책에 따라 컬럼·제약 추가 가능.**
+`users` 테이블 (`docs/architecture/erd.md` 기준 · Java `User`). **필요 시 위 정책에 따라 컬럼·제약 추가 가능.** 구 테이블명 `user` → **`users`** (예약어 회피, 2026-07-21).
 
 | 컬럼 | 설명 |
 |------|------|

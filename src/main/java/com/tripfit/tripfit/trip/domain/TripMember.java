@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -28,9 +27,8 @@ import org.hibernate.type.SqlTypes;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(
-    name = "trip_member",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"trip_id", "user_id"}))
+// active UNIQUE(trip_id,user_id)는 app 강제 — soft-deleted row 재가입 허용 (MySQL partial unique 미지원)
+@Table(name = "trip_member")
 @Schema(description = "여행방 참여자. trip–user 매핑 및 응답 상태")
 public class TripMember extends SoftDeleteEntity {
 
@@ -65,9 +63,16 @@ public class TripMember extends SoftDeleteEntity {
   @Column(nullable = false)
   private TripMemberStatus status;
 
-  @Schema(description = "방 참여 시각", example = "2026-07-07T12:00:00")
+  @Schema(description = "방 참여 시각 (멤버 row 생성)", example = "2026-07-07T12:00:00")
   @Column(nullable = false)
   private LocalDateTime joinedAt;
+
+  @Schema(
+      description = "일정 확인·가입 완료 시각. JOINED면 null, RESPONDED면 set (confirm/join)",
+      nullable = true,
+      example = "2026-07-07T12:05:00")
+  @Column(name = "responded_at")
+  private LocalDateTime respondedAt;
 
   @Schema(description = "홈 화면 고정 여부 (참여자별 · 진행 중 캐러셀)", example = "false")
   @Column(name = "is_pinned", nullable = false)
@@ -85,6 +90,10 @@ public class TripMember extends SoftDeleteEntity {
     this.role = role;
     this.status = status;
     this.joinedAt = joinedAt;
+    // join 경로: INSERT 즉시 RESPONDED → responded_at = joined_at
+    if (status == TripMemberStatus.RESPONDED) {
+      this.respondedAt = joinedAt;
+    }
   }
 
   // Pin ON/OFF — pinned_at 동기화 (D5)
@@ -96,6 +105,7 @@ public class TripMember extends SoftDeleteEntity {
   // JOINED → RESPONDED (#39 schedule confirm)
   public void markResponded() {
     this.status = TripMemberStatus.RESPONDED;
+    this.respondedAt = LocalDateTime.now();
   }
 
   // end_range 경과 시 Pin 자동 해제

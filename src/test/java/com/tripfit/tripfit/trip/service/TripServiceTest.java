@@ -160,6 +160,7 @@ class TripServiceTest {
     verify(tripMemberRepository).save(memberCaptor.capture());
     assertThat(memberCaptor.getValue().getRole()).isEqualTo(TripMemberRole.OWNER);
     assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.JOINED);
+    assertThat(memberCaptor.getValue().getRespondedAt()).isNull();
     assertThat(response.myMemberStatus()).isEqualTo(TripMemberStatus.JOINED);
     assertThat(response.needsScheduleConfirm()).isTrue();
   }
@@ -212,6 +213,7 @@ class TripServiceTest {
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
 
     assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+    assertThat(joined.getRespondedAt()).isNotNull();
     assertThat(owner.isAllFree()).isTrue();
     assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.RESPONDED);
   }

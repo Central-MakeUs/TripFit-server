@@ -24,9 +24,9 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
-    name = "user",
+    name = "users",
     uniqueConstraints = @UniqueConstraint(columnNames = {"provider", "social_id"}))
-@Schema(description = "TripFit 서비스 사용자. 식별 키는 (provider, social_id)")
+@Schema(description = "TripFit 서비스 사용자. 식별 키는 (provider, social_id). 테이블명 users (MySQL 예약어 회피)")
 public class User extends SoftDeleteEntity {
 
   @Schema(

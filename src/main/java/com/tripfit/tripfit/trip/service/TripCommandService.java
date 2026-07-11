@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-// trip 생성·join·변경·submit 등 쓰기 유스케이스 — submit은 #22에서 regular EXISTS 게이트 제거(D-BR006-5)
+// trip 생성·join·confirm·변경 등 쓰기 유스케이스 (#39 JOINED→confirm, #22 D-BR006-5)
 class TripCommandService {
 
   private final TripRepository tripRepository;

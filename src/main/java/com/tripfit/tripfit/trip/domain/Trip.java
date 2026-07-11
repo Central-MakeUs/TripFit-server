@@ -125,7 +125,7 @@ public class Trip extends SoftDeleteEntity {
     this.lastActivityAt = LocalDateTime.now();
   }
 
-  // {@link TripActivityAspect} — join · patch · submit · 추천 · 확정 (#26)
+  // {@link TripActivityAspect} — join · patch · confirm · 추천 · 확정 (#26 · #39)
   public void touchLastActivity() {
     this.lastActivityAt = LocalDateTime.now();
   }

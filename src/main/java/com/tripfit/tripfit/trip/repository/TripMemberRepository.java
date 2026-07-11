@@ -81,7 +81,7 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
                      ORDER BY CASE WHEN tm.role = 'OWNER' THEN 0 ELSE 1 END, tm.joined_at DESC
                    ) AS rn
             FROM trip_member tm
-            INNER JOIN user u ON u.id = tm.user_id
+            INNER JOIN users u ON u.id = tm.user_id
             WHERE tm.trip_id IN (:tripIds) AND tm.deleted_at IS NULL
           ) ranked
           WHERE ranked.rn <= 4

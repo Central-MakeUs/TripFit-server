@@ -125,7 +125,7 @@ public class ScheduleService {
     userSummaryService.markAllFreeIfSchedulesCleared(findUser(userId));
   }
 
-  // D-BR006-5: regular 없이 personal-only 허용 — 구 REGULAR_SCHEDULE_REQUIRED 403 없음
+  // D-BR006-5: regular 없이 personal-only 허용 (구 REGULAR_SCHEDULE_REQUIRED 게이트 제거됨)
   @Transactional(readOnly = true)
   public PersonalScheduleResponse getPersonal(
       UUID userId,
