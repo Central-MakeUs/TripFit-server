@@ -2,7 +2,7 @@
 
 > wave: 2  
 > 상태: **Draft**  
-> MVP: In scope (여행방 일정 조회 UX)  
+> MVP: In scope · **Wave 2 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))  
 > GitHub: **[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**  
 > 선행: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17 Implemented), [`trip-room-api.md`](trip-room-api.md) (#12)  
 > related: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md)  
@@ -19,7 +19,8 @@
 | **W1** | 조회는 **해당 여행방의 시작일이 있는 달**을 기준으로 **+2년**까지 |
 | **W1-예** | 일수 공식 예시 SSOT: 앵커 `2026-07-20` → 조회 범위 **`2026-07-20` ~ `2028-07-19`** (`end = start.plusYears(2).minusDays(1)`) |
 
-> **구현 착수 전** §충돌 **X1**(앵커가 “달 1일”인지 `startRange` 당일인지)을 해소해야 한다. 본 Draft는 제품 문장·예시를 **둘 다 확정안 원문**으로 보존한다.
+> **구현 착수 전** §충돌 **X1**(앵커가 “달 1일”인지 `startRange` 당일인지)을 해소해야 한다. 본 Draft는 제품 문장·예시를 **둘 다 확정안 원문**으로 보존한다.  
+> **용어만 고정 (2026-07-21):** 희망 기간 · 조회 윈도우 · A1(730일)은 **별 축** — [`glossary.md`](../product/glossary.md). X1 선택은 **Approved 시**.
 
 ## 배경
 
