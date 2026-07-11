@@ -2,7 +2,8 @@
 
 > wave: 2  
 > implements: BR-TRIP-001, BR-TRIP-008, BR-TRIP-009, BR-TRIP-013, BR-USER-001, BR-USER-002, BR-USER-009, BR-USER-010  
-> deferred: **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), 카카오 공유 SDK ([#21](https://github.com/Central-MakeUs/TripFit-server/issues/21)), join 전 미리보기 ([#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)), 참여자 내보내기 ([#20](https://github.com/Central-MakeUs/TripFit-server/issues/20)), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **TERMINATED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)  
+> deferred: **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), 카카오 공유 SDK ([#21](https://github.com/Central-MakeUs/TripFit-server/issues/21)), join 전 미리보기 ([#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **TERMINATED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)  
+> related Implemented: 참여자 내보내기 → [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) [`trip-member-remove.md`](trip-member-remove.md)
 > 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·참여 = #22 확정** (2026-07-21) · **D5 홈 2뷰 amend** (2026-07-19) · **D5 구현 후속 defer #26·#27** (2026-07-19)  
 > 선행: [`auth-social-login.md`](auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)  
 > 후속: [`trip-recommendation.md`](trip-recommendation.md)
@@ -121,7 +122,6 @@
 | 추천·확정·취소 | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) |
 | **참여·`is_all_free`·온보딩·sparse** | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (wave 1) |
 | join 전 미리보기 | [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) |
-| 참여자 내보내기 | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) |
 | 카카오 공유·푸시 | [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21) (wave 3) |
 | `cancel_reason` VOC | wave 4 |
 
@@ -332,14 +332,16 @@ trip `startRange`~`endRange` 기간 (현행). 멤버 **전원** × effective day
 | HTTP | code | 조건 |
 |------|------|------|
 | 400 | `INVALID_INPUT` | BR-TRIP-001/008 위반, name **15자** 초과, `memberCount` **1~10** 밖, 잘못된 `scope`/`status` |
+| 400 | `CANNOT_REMOVE_OWNER` | 방장 내보내기 (#20) |
 | 403 | `PROFILE_NAME_REQUIRED` | BR-USER-001 |
-| 403 | `TRIP_FORBIDDEN` | owner 아닌 PATCH/DELETE |
+| 403 | `TRIP_FORBIDDEN` | owner 아닌 PATCH/DELETE · 멤버 내보내기 |
 | 403 | `TRIP_ACCESS_DENIED` | 비참여자 |
 | 403 | `SCHEDULE_CONFIRM_REQUIRED` | `JOINED` — 방 안 API (#39) |
 | 403 | `SCHEDULE_ENTRY_REQUIRED` | canEnterRoom 불만족 (#22 D-JOIN-ENTRY) |
 | 404 | `TRIP_NOT_FOUND` | 없음 또는 soft deleted |
 | 404 | `INVITE_CODE_NOT_FOUND` | 잘못된 초대 코드 |
-| 409 | `TRIP_NOT_ONGOING` | ONGOING 아닌 trip PATCH (D4) |
+| 404 | `TRIP_MEMBER_NOT_FOUND` | 대상 멤버 없음·이미 soft-deleted (#20) |
+| 409 | `TRIP_NOT_ONGOING` | ONGOING 아닌 trip PATCH/내보내기 (D4 · #20) |
 | 409 | `TRIP_ALREADY_CONFIRMED` | CONFIRMED trip **신규** join |
 | 409 | `TRIP_CANCELED` | CANCELED trip **신규** join |
 | 409 | `TRIP_TERMINATED` | TERMINATED trip **신규** join · `end_range` 경과 |
@@ -431,7 +433,7 @@ trip `startRange`~`endRange` 기간 (현행). 멤버 **전원** × effective day
 |------|------|
 | TERMINATED 전환 시점 | **#27 Approved** — DB UPDATE 매일 00:05 KST · effectiveStatus lazy는 배치 전까지 · [`trip-home-schedulers.md`](trip-home-schedulers.md) |
 | PATCH `startRange`/`endRange` | 정책서 vs 화면정의서 충돌 |
-| 참여자 내보내기 | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) · [`trip-member-remove.md`](trip-member-remove.md) | Nice · 구현 중 |
+| 참여자 내보내기 | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) · [`trip-member-remove.md`](trip-member-remove.md) | Nice · **Implemented** |
 | join 전 미리보기 | D7 · 별도 이슈 |
 | User 전역 일정 수정 → 참여 trip `last_activity_at` | **#26 L2 확정 — touch 안 함** · [`trip-last-activity-at.md`](trip-last-activity-at.md) |
 | 그룹 `schedule-calendar` OpenAPI 공개 | **완료** · ~~personal-summary~~ 삭제 |
@@ -440,6 +442,7 @@ trip `startRange`~`endRange` 기간 (현행). 멤버 **전원** × effective day
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-21 | 에러 표 — `#20` `CANNOT_REMOVE_OWNER`·`TRIP_MEMBER_NOT_FOUND` · Out of Scope에서 #20 제거 |
 | 2026-07-21 | 참여자 내보내기 → [`trip-member-remove.md`](trip-member-remove.md) (#20 Approved) |
 | 2026-07-21 | **#39** — D1 amend: create=`JOINED` · `schedule/confirm` · RESPONDED 게이트 |
 | 2026-07-21 | schedule-calendar OpenAPI 공개 · personal-summary 삭제 · D2 갱신 |
