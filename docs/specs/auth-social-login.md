@@ -349,9 +349,9 @@ Authorization: Bearer <accessToken>
 |---------------------------|------|
 | `user_identity` 분리·`user` 구조 대규모 개편 | BR-USER-003 계정 연결 — wave 4 |
 | `user` 테이블 rename (`users` 등) | 도메인 전역 영향 — decisions + 팀 합의 |
-| Flyway `V1__init_schema.sql` 수정 | immutable — 변경은 `V2__` append만 |
+| Flyway/`V*__*.sql` 마이그레이션 추가 | **작성 금지** — ddl-auto + DB 리셋 (`harness-workflow`) |
 
-**후속**: 스키마를 바꿨으면 구현 PR 전에 `docs/architecture/erd.md` 동기화를 검토한다. prod Flyway 전환 시 변경분을 `V2__...` migration으로 정리한다.
+**후속**: 스키마를 바꿨으면 구현 PR 전에 `docs/architecture/erd.md` 동기화. DB는 폐기·재생성으로 맞춤.
 
 ### 기존 — 기본 유지 (`user`)
 
@@ -424,10 +424,10 @@ Authorization: Bearer <accessToken>
 - 미러링·다운로드·S3 업로드 **하지 않음**
 - provider가 URL을 바꾸면 재로그인 시 덮어씀
 
-### Flyway / ddl-auto
+### 스키마 반영 (ddl-auto)
 
-- **현재 1단계(ERD 탐색)**: `ddl-auto: update`로 `refresh_token` 반영
-- **3단계(prod) 전환 시**: `V2__add_refresh_token.sql` append (V1 immutable 규칙 준수)
+- Hibernate `ddl-auto: update`(local/dev/prod) / `create-drop`(test)로 엔티티 반영
+- **SQL 마이그레이션 파일 없음·작성 금지.** 스키마 불일치 시 DB volume 삭제 후 재기동 (`harness-workflow` ⛔ DB 스키마)
 
 ## Provider별 구현 메모
 

@@ -43,7 +43,7 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 
 | 파일 | `alwaysApply` | glob | 요약 |
 |------|---------------|------|------|
-| `harness-workflow.mdc` | ✅ true | — | 계획 → 승인 → 구현 → 검증 전체 워크플로 |
+| `harness-workflow.mdc` | ✅ true | — | 계획 → 승인 → 구현 → 검증 · **구현 후 후속 제안** |
 | `superpowers-workflow.mdc` | ✅ true | — | Superpowers 스킬 트리거·하네스 우선순위 |
 | `spring-boot-java.mdc` | false | `**/*.java` | 레이어·enum·Entity·OpenAPI JWT·API·예외·**주석(Comments)** 컨벤션 |
 | `figma-product.mdc` | false | domain, service, specs | 도메인·BR·와이어프레임 (API 계약은 client-platform) |
@@ -79,7 +79,7 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 | `executing-plans` | Approved 스펙 다단계 구현 (#12 등) |
 | `writing-plans` | specify **대체 ❌** · 큰 작업 계획만 |
 
-**워크플로:** `wave 확인 → (brainstorming) → specify/Approved → 구현 → ./gradlew test → verification → gh issue/PR`
+**워크플로:** `wave 확인 → (brainstorming) → specify/Approved → 구현 → ./gradlew test → verification → (후속 제안) → gh issue/PR`
 
 상세: `.cursor/rules/superpowers-workflow.mdc`
 

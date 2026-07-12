@@ -5,7 +5,7 @@
 > 관련 BR: 해당 없음  
 > wave: 1  
 > implements: PK/FK UUID 통일, JWT `sub` UUID, Cursor 규칙  
-> deferred: Flyway 도입, UUID v7, BINARY(16) 저장
+> deferred: UUID v7, BINARY(16) 저장 (Flyway·데이터 보존 마이그레이션은 **도입하지 않음** — harness ⛔ DB)
 
 ## 목표
 
@@ -23,7 +23,7 @@
 |------|------|
 | 저장 | MySQL `CHAR(36)`, Java `java.util.UUID` |
 | 생성 | UUID v4 — Hibernate `@UuidGenerator` (또는 `GenerationType.UUID`) |
-| 기존 데이터 | local/dev/prod **폐기·재생성** (`docker compose down -v` 등). Flyway 미도입 유지 |
+| 기존 데이터 | local/dev/prod **폐기·재생성** (`docker compose down -v` 등). SQL 마이그레이션 없음 |
 | API | `id`·path param·JWT `sub` → **UUID 문자열**. 프론트 미연결로 breaking OK |
 | 규칙 | `.cursor/rules/spring-boot-java.mdc` Entity 섹션 + `erd.md` 설계 원칙 |
 
@@ -47,7 +47,7 @@
 
 ### Out of Scope
 
-- Flyway / 데이터 보존 마이그레이션
+- SQL 마이그레이션 / 데이터 보존 마이그레이션 (harness 금지)
 - UUID v7 (시간순)
 - BINARY(16) 저장
 - 테이블 rename (`user` → `users` 등)
@@ -76,7 +76,7 @@ id, user_id, owner_id, trip_id 등 → char(36) UUID
 ```
 
 - Soft delete / enum 정책 변경 없음
-- 스키마 적용: Hibernate `ddl-auto` (Flyway 미도입). **기존 DB는 volume 삭제 후 재생성**
+- 스키마 적용: Hibernate `ddl-auto`. **기존 DB는 volume 삭제 후 재생성** (마이그레이션 스크립트 없음)
 
 ### 로컬/배포 리셋
 

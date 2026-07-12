@@ -2,8 +2,8 @@
 
 > wave: 2  
 > implements: BR-TRIP-001, BR-TRIP-008, BR-TRIP-009, BR-TRIP-013, BR-USER-001, BR-USER-002, BR-USER-009, BR-USER-010  
-> deferred: BR-USER-006, BR-USER-007, D1·submit·members schedule-calendar → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), 카카오 공유 SDK ([#21](https://github.com/Central-MakeUs/TripFit-server/issues/21)), join 전 미리보기 ([#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)), 참여자 내보내기 ([#20](https://github.com/Central-MakeUs/TripFit-server/issues/20))  
-> 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·submit `#22` deferred** (2026-07-17) · **D5 홈 2뷰 amend** (2026-07-20)  
+> deferred: BR-USER-006, BR-USER-007, D1·submit·members schedule-calendar → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), 카카오 공유 SDK ([#21](https://github.com/Central-MakeUs/TripFit-server/issues/21)), join 전 미리보기 ([#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)), 참여자 내보내기 ([#20](https://github.com/Central-MakeUs/TripFit-server/issues/20)), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **TERMINATED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)  
+> 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·submit `#22` deferred** (2026-07-17) · **D5 홈 2뷰 amend** (2026-07-20) · **D5 구현 후속 defer #26·#27** (2026-07-20)  
 > 선행: [`auth-social-login.md`](auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (submit·참여 완료)  
 > 후속: [`trip-recommendation.md`](trip-recommendation.md)
 
@@ -13,7 +13,7 @@
 
 ## 배경
 
-- **구현 상태:** Controller·Service·invite_code·Pin 토글 존재. **홈 목록은 단일 `GET /trips`(pin → `updatedAt`)만** — D5 amend(2뷰·`last_activity_at`·`pinned_at`) 미반영
+- **구현 상태:** D5 홈 2뷰(`scope`·필터·`last_activity_at`·`pinned_at`)·`TripHomeCardResponse`/`TripDetailResponse` 분리·`membersPreview` 배치 조회 반영. **`last_activity_at` 전체 hook·Pin/TERMINATED 스케줄러는 #26·#27 deferred**
 - **참여:** 소셜 로그인 필수 (BR-USER-002), 비회원 없음. **초대는 카카오·OS 링크 공유**(딥링크/Universal Link에 `inviteCode` 포함) — 코드 수동 입력은 보조
 - **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](schedule-unified.md)
 - **참여 완료·submit:** **`[미定]`** — [#22](https://github.com/Central-MakeUs/TripFit-server/issues/22). (구) D1·BR-USER-007 확정 **철회**
@@ -54,24 +54,19 @@
 | 파라미터 | 값 | 의미 |
 |----------|-----|------|
 | `status` | 생략/`ALL` | 전체 (종료=`TERMINATED` 포함) |
-| `status` | `ONGOING` | 조율 중 — **effectiveStatus** 기준 |
-| `status` | `CONFIRMED` | 일정 확정 |
+| `status` | `ONGOING` | 조율 중 — **TripStatus** · effectiveStatus |
+| `status` | `CONFIRMED` | 일정 확정 — **TripStatus** (별도 filter enum 없음) |
 | `ownerOnly` | `true`/`false`(기본) | `true`면 본인 `role=OWNER` 방만 |
 
-**최근 활동 (`trip.last_activity_at`)** — 아래 이벤트 시 갱신:
+**최근 활동 (`trip.last_activity_at`)** — D5 Must: 컬럼·정렬·create 시 초기값. **갱신 이벤트 전체 목록·AOP는 [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26) deferred** — [#12](https://github.com/Central-MakeUs/TripFit-server/issues/12) 구현은 create/join/patch/submit **최소 touch**만.
 
-- 일정 제출 / 일정 수정
-- 신규 참여 (`join`)
-- 추천 일정 생성 (#13)
-- 일정 확정 (#13)
-- 여행방 정보 수정 (`PATCH /trips/{id}`)
-- 여행방 생성 시 초기값 = `created_at`
+- (기획 SSOT — #26에서 확정) 일정 제출/수정 · join · 추천(#13) · 확정(#13) · PATCH · 생성=`created_at`
 
 **Pin (`trip_member`):**
 
 - `is_pinned` + `pinned_at` (Pin ON 시 `now()`, OFF 시 `null`)
 - **진행 중 캐러셀에서만** 정렬 우선순위 적용
-- `end_range < today` 이면 Pin **자동 해제** (`is_pinned=false`, `pinned_at=null`) — 조회 시 lazy 또는 동등 보장
+- `end_range < today` Pin **자동 해제** — **[#27](https://github.com/Central-MakeUs/TripFit-server/issues/27) 스케줄러 deferred** ([#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)는 조회 시 lazy Pin 해제 **미구현**)
 - Pin 토글: `PATCH /trips/{id}/pin` (기존)
 
 **프론트 전용 (API 범위 밖):**
@@ -87,12 +82,11 @@
 
 - [ ] `POST /api/v1/trips` — 방장 생성 (BR-TRIP-001: 이름 **≤15자**, BR-USER-001 이름 필수)
 - [ ] 생성 시 `trip_member` OWNER + `JOINED`, `invite_code` UNIQUE(6자) 발급, `status=ONGOING`, `last_activity_at` 초기화
-- [ ] `GET /api/v1/trips` — **D5** `scope=ongoing|all` · 필터·정렬 (§홈 목록) · 카드용 `myRole`·`membersPreview`
-- [ ] `trip.last_activity_at` 컬럼 + 활동 이벤트 시 갱신 (D5)
+- [ ] `GET /api/v1/trips` — **D5** `scope=ongoing|all` · 필터·정렬 (§홈 목록) · **`TripHomeCardResponse`** (`myRole`·`membersPreview`)
+- [ ] `trip.last_activity_at` 컬럼 + create/join/patch/submit **최소** 갱신 (D5) — 전체 hook → **#26**
 - [ ] `trip_member.pinned_at` 컬럼 · Pin ON/OFF 시 설정/해제 (D5)
-- [ ] Pin 자동 해제: `end_range < today` → `is_pinned=false`, `pinned_at=null` (D5 Must)
-- [ ] `GET /api/v1/trips/{tripId}` — 상세 (참여자만)
-- [ ] `PATCH /api/v1/trips/{tripId}` — 방장만 · **`status=ONGOING`만** (D4) · `last_activity_at` 갱신
+- [ ] `GET /api/v1/trips/{tripId}` — 상세 **`TripDetailResponse`** (참여자만 · `membersPreview` 없음)
+- [ ] `PATCH /api/v1/trips/{tripId}` — 방장만 · **`status=ONGOING`만** (D4) · `last_activity_at` 갱신 (최소)
 - [ ] `durationDays` ≤ 기간 일수 검증 (BR-TRIP-008)
 - [ ] `POST /api/v1/trips/join` — `{ inviteCode }` → MEMBER + `JOINED` (이미 참여 시 idempotent — BR-USER-010) · `last_activity_at` 갱신
 - [ ] join 거부: CONFIRMED/CANCELED/TERMINATED **신규** → 409; 인원 가득 → 409 (D4·D8)
@@ -104,7 +98,14 @@
 
 ### Nice to Have
 
-- (없음 — Pin 자동 해제는 D5 Must로 승격)
+- (없음)
+
+### Deferred (#12 범위 밖 — docs·이슈 필수)
+
+| 항목 | 이슈·스펙 |
+|------|-----------|
+| `last_activity_at` 전체 갱신·AOP | [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26) · [`trip-last-activity-at.md`](trip-last-activity-at.md) |
+| TERMINATED DB 전환 · Pin 자동 해제 스케줄러 | [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27) · [`trip-home-schedulers.md`](trip-home-schedulers.md) |
 
 ### Out of Scope
 
@@ -139,10 +140,12 @@
 | 이름 | 필수 | 기본 | 설명 |
 |------|------|------|------|
 | `scope` | N | `all` | `ongoing` = 진행 중 캐러셀 · `all` = 전체 여행 보기 |
-| `status` | N | `ALL` | **`scope=all`만** · `ALL` \| `ONGOING` \| `CONFIRMED` (effectiveStatus). `TERMINATED` 단독 필터 없음 — `ALL`에 포함 |
+| `status` | N | `ALL` | **`scope=all`만** · `ALL` \| **TripStatus** `ONGOING` \| `CONFIRMED`. `CANCELED`/`TERMINATED` 단독 필터 400 — `ALL`에 포함 |
 | `ownerOnly` | N | `false` | **`scope=all`만** · `true`면 본인이 생성(OWNER)한 방만 |
 
-`scope=ongoing`일 때 `status`·`ownerOnly`는 **무시** (또는 400 — 구현 시 무시 권장).
+`scope=ongoing`일 때 `status`·`ownerOnly`는 **무시** (구현: `TripListQuery.parse`에서 무시).
+
+**쿼리 파싱:** Controller는 `TripListQuery.parse(scope, status, ownerOnly)` record 사용 (`trip/dto/TripListScope` enum).
 
 **정렬**
 
@@ -190,9 +193,9 @@
 }
 ```
 
-### TripSummary (목록·상세 공통 필드)
+### TripHomeCardResponse (홈 목록 전용)
 
-홈 카드(진행 중·전체)와 상세가 공유. `membersPreview`는 목록·상세 모두 포함(최대 4 + overflow).
+`GET /trips` 카드 한 건. **`membersPreview` 포함** (최대 4 + overflow). 상세용 `inviteCode` 등은 **미포함**.
 
 ```json
 {
@@ -204,7 +207,6 @@
   "durationDays": 4,
   "targetMemberCount": 6,
   "status": "ONGOING",
-  "inviteCode": "A2B3C4",
   "confirmedStartDate": null,
   "confirmedEndDate": null,
   "lastRecommendationMode": null,
@@ -226,6 +228,35 @@
 ```
 
 **`membersPreview` 정렬:** 방장(OWNER) 먼저 → 나머지 `joined_at` **내림차순**. 최대 **4**명. 초과 시 `membersPreviewOverflow = memberCount - 4`.
+
+**조회 구현 (#12):** trip id 목록 기준 **배치 native query** (`ROW_NUMBER` — trip당 4명, OWNER 우선·`joined_at DESC`). N+1 금지.
+
+### TripDetailResponse (상세·join·patch·pin)
+
+`GET/PATCH/join/pin` 응답. **`inviteCode` 포함** · **`membersPreview` 없음** (멤버 UI는 `GET .../members`).
+
+```json
+{
+  "tripId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "제주 3박4일",
+  "destination": "제주",
+  "startRange": "2026-08-01",
+  "endRange": "2026-08-10",
+  "durationDays": 4,
+  "targetMemberCount": 6,
+  "status": "ONGOING",
+  "inviteCode": "A2B3C4",
+  "confirmedStartDate": null,
+  "confirmedEndDate": null,
+  "lastRecommendationMode": null,
+  "lastActivityAt": "2026-07-20T12:00:00",
+  "pinned": false,
+  "myRole": "OWNER",
+  "myMemberStatus": "JOINED",
+  "respondedCount": 2,
+  "memberCount": 4
+}
+```
 
 **진행률/응답률:** `respondedCount / memberCount` — 참여 완료 기준은 [#22](https://github.com/Central-MakeUs/TripFit-server/issues/22) (현재 enum `RESPONDED`).
 
@@ -334,10 +365,10 @@ submit·ONGOING 게이트: **`[미定]`** (#22)
 - [ ] `GET /trips?scope=all` — Pin 무시 · `last_activity_at DESC` · TERMINATED 포함
 - [ ] `GET /trips?scope=all&status=ONGOING` · `&status=CONFIRMED` · `&ownerOnly=true` 동시 적용
 - [ ] Pin ON → `pinned_at` 설정 · Pin OFF → `pinned_at` null
-- [ ] `end_range < today` 멤버십 → Pin 자동 해제
-- [ ] join / patch → `last_activity_at` 갱신
+- [ ] join / patch / submit → `last_activity_at` 갱신 (최소)
 - [ ] 참여자 join → MEMBER JOINED
-- [ ] `membersPreview` — OWNER 먼저 · 나머지 joinedAt DESC · 최대 4 + overflow
+- [ ] `membersPreview` — OWNER 먼저 · 나머지 joinedAt DESC · 최대 4 + overflow · 배치 조회
+- [ ] 상세/join/patch/pin → `TripDetailResponse` (`membersPreview` 없음)
 
 ### 엣지 · 실패 (#22로 submit·calendar 시나리오 이관)
 
@@ -351,7 +382,7 @@ submit·ONGOING 게이트: **`[미定]`** (#22)
 ## 완료 기준
 
 - [ ] `./gradlew test` 통과
-- [ ] OpenAPI 반영 (`scope`·필터·TripSummary 확장)
+- [ ] OpenAPI 반영 (`scope`·필터·`TripHomeCardResponse` / `TripDetailResponse`)
 - [ ] BR-TRIP-010 hook — #13과 통합 테스트 1건 이상
 - [ ] #12 이슈 체크리스트 동기화 (D5 amend)
 
@@ -359,11 +390,11 @@ submit·ONGOING 게이트: **`[미定]`** (#22)
 
 | 항목 | 비고 |
 |------|------|
-| TERMINATED 전환 시점 | `end_range` 경과 조건 확정 · 배치 vs lazy (목록 필터는 **effectiveStatus**) |
+| TERMINATED 전환 시점 | **effectiveStatus** (조회 시 lazy) — DB UPDATE·Pin job → **#27** |
 | PATCH `startRange`/`endRange` | 정책서 vs 화면정의서 충돌 |
 | 참여자 내보내기 | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) | wave 2 Out |
 | join 전 미리보기 | D7 · 별도 이슈 |
-| User 전역 일정 수정 → 참여 trip `last_activity_at` | BR-USER-008 연동 범위 — **이번 D5에서는 trip 이벤트만** (일정 수정은 trip submit·personal 변경 API 경로에서 갱신). User-only schedule PATCH가 trip 활동에 치는지는 #22/#11과 재확인 |
+| User 전역 일정 수정 → 참여 trip `last_activity_at` | **#26** — [#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)는 trip 이벤트 최소 touch만 |
 
 ## 변경 이력
 
@@ -374,4 +405,6 @@ submit·ONGOING 게이트: **`[미定]`** (#22)
 | 2026-07-17 | 정책서 반영 |
 | 2026-07-17 | **Approved** — D3~D6·D8 확정 |
 | 2026-07-17 | **D1·submit·schedule-calendar → [#22](https://github.com/Central-MakeUs/TripFit-server/issues/22) deferred** · OpenAPI Hidden |
-| 2026-07-20 | **D5 amend** — 홈 2뷰(`scope=ongoing\|all`) · `last_activity_at` · `pinned_at` · 전체 필터 · Pin 자동 해제 Must · `membersPreview` |
+| 2026-07-20 | **D5 amend** — 홈 2뷰(`scope=ongoing\|all`) · `last_activity_at` · `pinned_at` · 전체 필터 · `membersPreview` |
+| 2026-07-20 | **status 필터 enum 통합** — `TripListStatusFilter` 삭제 · `TripStatus`(+`ALL`) 재사용 |
+| 2026-07-20 | **D5 구현 후속** — DTO 분리(`TripHomeCardResponse`/`TripDetailResponse`) · `TripListQuery` · `membersPreview` 배치 · **#26·#27 defer** (Pin lazy·TERMINATED 스케줄러) |

@@ -23,7 +23,9 @@
 |------|------|------|------|
 | [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
 | [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A·A1=730일 | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
-| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · **D5 홈 2뷰 amend** (2026-07-20) · submit·D1 → **#22 deferred** | 여행방 CRUD·참여·홈 목록·Pin | schedule-unified · #17 · **#22** |
+| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 2뷰 · submit→**#22** | 여행방 CRUD·홈 목록·Pin | #17 · **#22** |
+| [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Draft** (#26) | `last_activity_at` 갱신·AOP | #12 |
+| [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Draft** (#27) | TERMINATED·Pin batch | #12 |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft | 추천 4모드·TOP 3·확정·취소 | 위 2개 |
 
 **구현 순서:** uuid-primary-key → schedule-unified(#11) → calendar resolve(#17) → trip-room-api(#12) → trip-recommendation(#13)
@@ -38,6 +40,8 @@
 | #13 | trip-recommendation | Open |
 | #19 | join 미리보기 (Out) | Open |
 | #20 | 참여자 내보내기 (Out) | Open |
+| **#26** | trip-last-activity-at | Open |
+| **#27** | trip-home-schedulers | Open |
 | **#22** | schedule-participation-onboarding (`[미定]`) | Open |
 
 ## 완료 후

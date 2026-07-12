@@ -17,6 +17,15 @@ alwaysApply: true
 
 **절대 하지 말 것:** 문서와 다른 access/refresh TTL, API 필드, 에러 코드, env 키 이름을 에이전트가 임의로 정해 구현·커밋.
 
+## ⛔ DB 스키마 — 상용 데이터 없음 (마이그레이션 금지)
+
+**현재는 개발(dev) 단계이며 상용(운영) 보존 데이터가 없다.** 스키마·컬럼·PK 변경 시:
+
+1. **Flyway / Liquibase / `V*__*.sql` / 데이터 보존 마이그레이션 코드를 작성·커밋하지 않는다.**
+2. 스키마 SSOT는 **JPA 엔티티(최신 형태 하나)** + Hibernate `ddl-auto` (`docs/architecture.md`).
+3. 로컬·dev DB는 **폐기·재생성**해도 된다 (`docker compose down -v` 등). orphan 컬럼·구 스키마 호환 레이어를 남기지 않는다.
+4. 스펙·주석에 “나중에 Flyway V2 append” 식의 **마이그레이션 예정 코드/파일**을 추가하지 않는다. prod 데이터 보존이 필요해지면 **그때** decisions + 마이그레이션 도입을 별도 결정한다.
+
 ## 작업 분류 (시작 전 30초)
 
 1. **`docs/product/waves.md`** 에서 **wave(1~4)** 확인
@@ -59,6 +68,57 @@ alwaysApply: true
 - **커밋 요청 시:** 변경을 **주제별로 나눠 최대 3개** 커밋으로 만든다 (예: 구현 / 테스트 / 문서·하네스). 한 주제에 묶일 수 있으면 1개로 충분. 인위적 분할·의미 없는 쪼개기 금지
 - 같은 실수가 2회 이상이면 `.cursor/rules/` 추가를 **제안** (자동 추가는 하지 않음)
 - 요청 밖 dead code를 발견하면 삭제하지 말고 언급만 한다
+
+### 구현 후 후속 제안 (Follow-up)
+
+**목적:** 이번 요청 범위는 끝냈지만, **다음 이슈·스펙·리팩터**로 넘길 설계·성능·구조 개선을 사용자에게 짧게 알린다. (구현 중 drive-by 리팩터 **금지**와 별개.)
+
+**언제 쓸지**
+
+| 조건 | 후속 제안 |
+|------|-----------|
+| 사용자가 「구현 후 최적화/제안 말해줘」 등 **명시 요청** | **필수** — `./gradlew test` 통과 후 응답 |
+| API·DB·3파일+ 변경 등 **Must Have급** 구현을 방금 완료 | **권장** — 완료 요약 **뒤**에 § 추가 |
+| 한 줄·단일 파일·버그 핫픽스 | 생략 가능 |
+
+**형식 (완료 보고와 분리)**
+
+- 제목: `## 후속 제안` (또는 동등한 한 줄 섹션)
+- **3~8개** bullet, 영향 큰 순
+- 각 bullet: **무엇이 아쉬운지** → **권장 방향** → (선택) wave 밖 / 별도 이슈 / 스펙 amend 필요
+- **이번 PR·커밋에 포함하지 않음** — 사용자 승인·이슈 확정 후 진행
+
+**점검 축 (해당할 때만 골라서)**
+
+| 축 | 예 |
+|----|-----|
+| **ERD·스키마** | 컬럼 위치·nullable·기존 row backfill · effectiveStatus vs DB `status` |
+| **API 설계** | 쿼리 파라미터 vs 리소스 분리 · 조회 API의 부수 write · 이벤트별 `last_activity_at` 등 hook 누락 |
+| **DTO** | 목록 vs 상세 분리 · fat response · OpenAPI 계약과 프론트 필드 |
+| **쿼리·성능** | N+1 · batch fetch · 목록 pagination |
+| **패키지·레이어** | API 전용 enum 위치 · `*HomeService` 분리 |
+| **인터셉터·필터** | **필요할 때만** — 기존 `TripAuthorizationInterceptor`·`@TripMemberOnly` 패턴 우선. 단일 Controller 파싱·cross-cutting 로깅 정도는 converter/record로 충분하면 **인터셉터 추가 금지** |
+
+**금지**
+
+- 후속 제안을 핑계로 **같은 턴에** 스펙 밖 리팩터·추상화 구현
+- 「나중에 하면 좋겠다」만 나열하고 **근거·우선순위** 없이 장문
+- verification-before-completion(테스트·체크리스트) **대신** 제안만 하고 완료 선언
+
+**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.cursor/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — 위 After Coding과 동일).
+
+### 후속 작업 이슈 분리 (Defer)
+
+사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「wave 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** 아래를 **같은 턴**에 수행한다.
+
+1. **`docs/specs/{kebab-case}.md`** — Draft 스펙 작성 (`specify` 템플릿 축약 가능). Must Have·완료 기준·선행·wave·Out of Scope 포함
+2. **관련 Approved 스펙** — `deferred:` 헤더 또는 Out of Scope 표에 **스펙 경로 + `#n` 링크** 추가 · 본문에서 lazy/임시 구현을 **#n 위임**으로 명시
+3. **`docs/specs/README.md`** — wave 표·이슈 매핑에 행 추가
+4. **`gh issue create`** — 본문에 스펙 경로·선행 이슈·완료 기준
+5. **현재 구현** — 해당 범위 코드·Must 체크리스트에서 제거 또는 **최소 C(임시)** 로 두고 `#n`·스펙 URL 주석
+6. **사용자 보고** — 이슈 URL + 스펙 경로
+
+**금지:** 이슈만 생성하고 `docs/` 미작성 · Approved 스펙 amend 없이 lazy 동작만 남기기.
 
 ## 금지 (AGENTS.md와 동일)
 
