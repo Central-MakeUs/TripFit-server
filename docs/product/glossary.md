@@ -21,7 +21,7 @@
 | **희망 여행 시기** / **희망 기간** | `trip.startRange`~`endRange`. 여행을 떠나고 싶은 **탐색·조율 범위** | 추천 후보 윈도우와 혼동 금지 |
 | **조회 윈도우** | 여행방 일정(`members/schedule-calendar` 등)을 **조회할 수 있는** 서버 구간 (#37, 시작 앵커~+2년) | 희망 기간과 **별 축**. 앵커(X1)는 Approved 전 `[미정]` |
 | **A1 (730일)** | 본인 `GET /users/schedule/calendar`의 **요청 `startDate`~`endDate` 길이** 상한 (#17) | 조회 윈도우·희망 기간과 **의미 다름** |
-| **여행 일수** | 여행을 몇 박 며칠로 진행할지 설정하는 정보 | `duration_days` |
+| **여행 일수** | 여행을 몇 박 며칠로 진행할지. DB는 `duration_days`(m일). **0박 1일(당일치기) 허용** | API `durationNights`+`durationDays` |
 | **Wave Must** | 해당 Wave DoD에 필수인 이슈 | Backlog Must 섹션 SSOT — 이슈 `## Must Have`와 **다름** |
 | **Nice** | wave 소속이지만 DoD 불필요 | Backlog Nice · 비고 `분류: Wave N Nice` |
 | **Out** | 이 Wave에서 안 함 | Backlog Out — Nice와 혼용 금지 |

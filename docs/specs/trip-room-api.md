@@ -44,7 +44,7 @@
 | **D6** | 이름 최대 길이 | **15자** | 2026-07-17 |
 | **D7** | join 전 미리보기 | wave 2 Out · [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) | 2026-07-17 |
 | **D8** | 인원·기간 cap | `memberCount` **1~10** (create/patch) · `joinedMemberCount >= memberCount` → 신규 join 409 · `end_range` 경과(TERMINATED) → 초대·신규 join 불가 | 2026-07-17 |
-| **D9** | 일정·기간·박일 | `duration_days` **nullable**(미정). create/patch: `durationNights`+`durationDays` 쌍 또는 둘 다 null. DB는 **일만** 저장. **희망 기간은 create만·PATCH 불가**. 당일치기(0박1일) `[미정]` → **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** | 2026-07-21 |
+| **D9** | 일정·기간·박일 | `duration_days` **nullable**(미정). create/patch: `durationNights`+`durationDays` 쌍 또는 둘 다 null. DB는 **일만** 저장. **희망 기간은 create만·PATCH 불가**. **당일치기(0박 1일) 허용** (`nights=0`, `days=1`) | **2026-07-21** |
 
 ### D5 상세 (홈 목록 — 2026-07-19 확정)
 
@@ -192,11 +192,11 @@
 |------|------|
 | `name` | 최대 **15자** |
 | `startRange` / `endRange` | **필수** (생성 시에만 설정) |
-| `durationNights` / `durationDays` | **둘 다 null** = 일정 미정. **둘 다 값** = 확정 (`nights == days - 1`, `days ≥ 1`, `days` ≤ 기간 일수). 한쪽만 → 400 |
+| `durationNights` / `durationDays` | **둘 다 null** = 일정 미정. **둘 다 값** = 확정 (`nights == days - 1`, `days ≥ 1`, `nights ≥ 0`, `days` ≤ 기간 일수). **0박 1일(당일치기) 허용**. 한쪽만 → 400 |
 | `memberCount` | **1~10** 필수 |
 | `destination` | nullable (미정) |
 
-**당일치기(0박 1일) 허용 여부 `[미정]`** — 기획 확인 전. 서버는 관계식만 검증. 트래커: **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)**.
+**당일치기(0박 1일):** **허용** (2026-07-21 · [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)). `durationNights=0`, `durationDays=1`. 최소 1박 강제 없음.
 
 ### `PATCH /trips/{tripId}` 요청
 
@@ -447,7 +447,8 @@ trip `startRange`~`endRange` 기간 (현행). 멤버 **전원** × effective day
 | 2026-07-21 | **#39** — D1 amend: create=`JOINED` · `schedule/confirm` · RESPONDED 게이트 |
 | 2026-07-21 | schedule-calendar OpenAPI 공개 · personal-summary 삭제 · D2 갱신 |
 | 2026-07-21 | **#22 정합** — submit/`JOINED`/`[미정]` stale 정리 · D1·D2·에러코드 · `RESPONDED` 예시 |
-| 2026-07-21 | **D9** — `duration_days` nullable · API n박+m일 · PATCH 기간 잠금 · 당일치기 `[미정]` |
+| 2026-07-21 | **D9** — 당일치기(0박 1일) **허용** 확정 (#2) |
+| 2026-07-21 | **D9** — `duration_days` nullable · API n박+m일 · PATCH 기간 잠금 |
 | 2026-07-08 | 초안 |
 | 2026-07-13 | 일정 용어 #11 정합 |
 | 2026-07-17 | 정책서 반영 |

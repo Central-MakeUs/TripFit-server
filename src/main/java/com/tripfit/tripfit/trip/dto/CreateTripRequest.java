@@ -23,13 +23,15 @@ public record CreateTripRequest(
     LocalDate endRange,
 
     @Schema(
-        description = "희망 여행 박수 (n박). durationDays와 둘 다 null=미정, 둘 다 값이면 nights==days-1",
+        description =
+            "희망 여행 박수 (n박). durationDays와 둘 다 null=미정, 둘 다 값이면 nights==days-1."
+                + " 0박 1일(당일치기) 허용",
         nullable = true,
         example = "3")
     Integer durationNights,
 
     @Schema(
-        description = "희망 여행 일수 (m일). DB에만 저장. null=미정",
+        description = "희망 여행 일수 (m일). DB에만 저장. null=미정. 최소 1일(당일치기=1)",
         nullable = true,
         example = "4")
     Integer durationDays,

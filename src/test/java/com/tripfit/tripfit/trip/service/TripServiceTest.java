@@ -131,6 +131,34 @@ class TripServiceTest {
   }
 
   @Test
+  void createTrip_allowsDayTrip_zeroNightsOneDay() {
+    when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+    when(tripRepository.existsByInviteCode(any())).thenReturn(false);
+    when(tripRepository.save(any(Trip.class)))
+        .thenAnswer(
+            invocation -> {
+              Trip saved = invocation.getArgument(0);
+              saved.setId(TRIP_ID);
+              return saved;
+            });
+
+    tripService.createTrip(
+        OWNER_ID,
+        new CreateTripRequest(
+            "서울 당일치기",
+            LocalDate.of(2026, 8, 1),
+            LocalDate.of(2026, 8, 10),
+            0,
+            1,
+            4,
+            "서울"));
+
+    ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
+    verify(tripRepository).save(tripCaptor.capture());
+    assertThat(tripCaptor.getValue().getDurationDays()).isEqualTo(1);
+  }
+
+  @Test
   void createTrip_issuesOwnerMemberAndInviteCode() {
     when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
     when(tripRepository.existsByInviteCode(any())).thenReturn(false);
