@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "User")
+@Tag(name = "User", description = "프로필·마이페이지 이름")
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
@@ -29,7 +29,14 @@ public class UserController {
 
   @Operation(
       summary = "프로필(성·이름) 저장",
-      description = "성·이름 필수. 응답 user.hasPreSchedule은 일정 row EXISTS 파생(저장 필드 아님). 미완료 시 trip 생성·join 403")
+      description = """
+          목적: 온보딩에서 성·이름을 저장한다.
+          호출 시점: 소셜 로그인 직후 프로필 입력 화면.
+          전제: 성·이름 모두 필수.
+          결과: UserSummary. hasPreSchedule은 일정 row EXISTS 파생(저장 필드 아님).
+          주의: 성·이름 미완료면 여행방 생성·참여가 거부된다.
+          주의: 성·이름 미완료면 이후 여행방 생성·참여가 PROFILE_NAME_REQUIRED로 거부된다.
+          """)
   @PatchMapping("/profile")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateProfile(
       @AuthorizedUser UUID userId,
@@ -40,7 +47,12 @@ public class UserController {
 
   @Operation(
       summary = "마이페이지 이름 수정",
-      description = "성·이름만 수정. 응답 user.hasPreSchedule은 login/me와 동일하게 조회 시 파생")
+      description = """
+          목적: 마이페이지에서 성·이름만 수정한다.
+          호출 시점: 프로필 수정 화면.
+          전제: 성·이름 모두 필수.
+          결과: UserSummary. hasPreSchedule은 login/me와 동일하게 조회 시 파생.
+          """)
   @PatchMapping("/my-page")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateMyPage(
       @AuthorizedUser UUID userId,

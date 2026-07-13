@@ -22,7 +22,9 @@ public class OpenApiConfig {
                 .title("TripFit API")
                 .description(
                     "TripFit 백엔드 REST API. Authorize에 access JWT를 넣으면 "
-                        + "자물쇠가 있는 엔드포인트에 Authorization: Bearer가 붙습니다.")
+                        + "자물쇠가 있는 엔드포인트에 Authorization: Bearer가 붙습니다. "
+                        + "각 API description은 목적·호출 시점·전제·결과 순으로 읽으면 됩니다. "
+                        + "상세 정책은 서버 docs/specs를 참고하세요.")
                 .version("v0.0.1"))
         .components(
             new Components()

@@ -8,7 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalTime;
 
-@Schema(description = "정기 일정 전체 수정 요청. start/end 변경 시 슬롯은 시각으로 재계산")
+@Schema(
+    description = "정기 일정 전체 수정 요청. PATCH /users/schedule/regular/{id}. start/end 변경 시 슬롯 재계산")
 // @formatter:off — record 컴포넌트는 Eclipse가 parameter로 취급해 컨트롤러 한 줄 스타일과 충돌
 public record UpdateRegularScheduleRequest(
     @Schema(
@@ -19,7 +20,7 @@ public record UpdateRegularScheduleRequest(
     String title,
 
     @Schema(
-        description = "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 가능",
+        description = "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 시 null",
         example = "MON,TUE,WED,THU,FRI",
         nullable = true)
     String daysOfWeek,
@@ -52,10 +53,10 @@ public record UpdateRegularScheduleRequest(
         nullable = true)
     VacationApplyPeriod vacationApplyPeriod,
 
-    @Schema(description = "반차 사용 가능 여부. 생략 시 false(N)", example = "false", nullable = true)
+    @Schema(description = "반차 사용 가능 여부. 생략 시 false", example = "false", nullable = true)
     Boolean halfVacationAvailable,
 
-    @Schema(description = "공휴일 휴무 여부. 생략 시 true(Y)", example = "true", nullable = true)
+    @Schema(description = "공휴일 휴무 여부. 생략 시 true", example = "true", nullable = true)
     Boolean holidayRest
 ) {
 }

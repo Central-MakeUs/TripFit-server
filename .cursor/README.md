@@ -58,7 +58,7 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 
 | 파일 | `alwaysApply` | glob | 요약 |
 |------|---------------|------|------|
-| `spring-boot-java.mdc` | false | `**/*.java` | 레이어·enum·Entity·**ErrorCode·AOP**·OpenAPI JWT·주석 |
+| `spring-boot-java.mdc` | false | `**/*.java` | 레이어·enum·Entity·**ErrorCode·AOP**·OpenAPI(FE용 섹션 템플릿·JWT)·주석 |
 | `figma-product.mdc` | false | domain, service, specs | 도메인·BR·와이어프레임 |
 | `client-platform.mdc` | false | controller, service, config, specs | React 앱·스토어·API·인증 |
 | `deployment.mdc` | false | yml, Docker, domain, deploy | 배포 가드레일 — 절차는 `deploy/README.md` |

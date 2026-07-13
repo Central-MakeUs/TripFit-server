@@ -2,7 +2,7 @@ package com.tripfit.tripfit.trip.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "추천 모드 (BR-TRIP-005). trip.last_recommendation_mode")
+@Schema(description = "여행 일정 추천 모드")
 public enum RecommendationMode {
   @Schema(description = "기본 — 참석↑·연차↓·미정↓ 균형")
   BASIC,

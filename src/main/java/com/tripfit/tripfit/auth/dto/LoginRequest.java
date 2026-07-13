@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-@Schema(description = "소셜 로그인 요청")
+@Schema(description = "소셜 로그인 요청. POST /auth/login")
 public record LoginRequest(
     @Schema(
         description = "소셜 로그인 제공자",

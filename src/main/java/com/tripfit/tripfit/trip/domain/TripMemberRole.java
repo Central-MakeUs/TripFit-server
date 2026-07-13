@@ -2,9 +2,9 @@ package com.tripfit.tripfit.trip.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "여행방 내 참여자 역할")
+@Schema(description = "여행방 내 참여자 역할. TripDetailResponse.myRole 등에 사용")
 public enum TripMemberRole {
-  @Schema(description = "방장(총대)")
+  @Schema(description = "방장(총대) — 방 생성·수정·멤버 내보내기")
   OWNER,
 
   @Schema(description = "일반 멤버")

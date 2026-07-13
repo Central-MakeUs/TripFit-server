@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
-@Schema(description = "여행방 생성 요청")
+@Schema(description = "여행방 생성 요청. POST /trips")
 // @formatter:off
 public record CreateTripRequest(
     @Schema(description = "여행방 이름 (최대 15자)", example = "제주 3박4일", maxLength = 15)
@@ -31,18 +31,18 @@ public record CreateTripRequest(
     Integer durationNights,
 
     @Schema(
-        description = "희망 여행 일수 (m일). DB에만 저장. null=미정. 최소 1일(당일치기=1)",
+        description = "희망 여행 일수 (m일). null=미정. 최소 1일(당일치기=1)",
         nullable = true,
         example = "4")
     Integer durationDays,
 
-    @Schema(description = "참여 인원 (1~10)", example = "6", minimum = "1", maximum = "10")
+    @Schema(description = "모집 정원 (1~10)", example = "6", minimum = "1", maximum = "10")
     @NotNull
     @Min(1)
     @Max(10)
     Integer memberCount,
 
-    @Schema(description = "여행지 (선택·null=미정)", nullable = true, example = "제주")
+    @Schema(description = "여행지. null=미정", nullable = true, example = "제주")
     String destination
 ) {
 }

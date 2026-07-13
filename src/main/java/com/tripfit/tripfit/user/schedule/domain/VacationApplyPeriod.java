@@ -2,7 +2,7 @@ package com.tripfit.tripfit.user.schedule.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "연차 신청 가능 시점")
+@Schema(description = "연차 신청 가능 시점. 정기 일정 RegularScheduleResponse.vacationApplyPeriod")
 public enum VacationApplyPeriod {
   @Schema(description = "상관없음")
   ANY,

@@ -9,14 +9,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "홈 여행방 카드 (GET /trips 목록)")
+@Schema(description = "홈 여행방 카드 1건. GET /trips 목록 items")
 // @formatter:off
 public record TripHomeCardResponse(
     @Schema(description = "여행방 ID") UUID tripId,
 
     @Schema(description = "여행방 이름", maxLength = 15) String name,
 
-    @Schema(description = "여행지", nullable = true) String destination,
+    @Schema(description = "여행지. null=미정", nullable = true) String destination,
 
     @Schema(description = "희망 여행 기간 시작일") LocalDate startRange,
 
@@ -25,35 +25,50 @@ public record TripHomeCardResponse(
     @Schema(description = "희망 여행 일수 (m일). null=미정", nullable = true) Integer durationDays,
 
     @Schema(
-        description = "희망 여행 박수 (n박). durationDays-1 파생. null=미정",
+        description = "희망 여행 박수 (n박). durationDays-1 파생(DB 저장 없음). null=미정",
         nullable = true,
         example = "3")
     Integer durationNights,
 
-    @Schema(description = "참여 인원 (1~10)", example = "6", minimum = "1", maximum = "10")
+    @Schema(description = "모집 정원 (1~10)", example = "6", minimum = "1", maximum = "10")
     Integer memberCount,
 
-    @Schema(description = "여행방 상태 (effectiveStatus)") TripStatus status,
+    @Schema(
+        description =
+            "여행방 진행 상태(effectiveStatus). end_range 경과·방장 취소 등 반영된 화면 표시용")
+    TripStatus status,
 
-    @Schema(description = "최근 활동 시각") LocalDateTime lastActivityAt,
+    @Schema(description = "여행방 최근 활동 시각") LocalDateTime lastActivityAt,
 
-    @Schema(description = "본인 Pin 여부") boolean pinned,
+    @Schema(description = "본인이 이 방을 홈 상단에 Pin했는지") boolean pinned,
 
-    @Schema(description = "본인 역할") TripMemberRole myRole,
+    @Schema(description = "본인 역할 (방장 OWNER / 일반 MEMBER)") TripMemberRole myRole,
 
-    @Schema(description = "본인 멤버 상태") TripMemberStatus myMemberStatus,
+    @Schema(
+        description =
+            "본인 멤버십 상태. JOINED=일정 확인 전(방 입장 불가), RESPONDED=일정 확인 완료(방 입장 가능)")
+    TripMemberStatus myMemberStatus,
 
     @Schema(description = "일정 확인 완료(RESPONDED) 멤버 수") int respondedCount,
 
-    @Schema(description = "현재 참여 멤버 수") int joinedMemberCount,
+    @Schema(description = "현재 참여 멤버 수 (trip_member row 수)") int joinedMemberCount,
 
     @Schema(
-        description = "모집 현황 joinedMemberCount/memberCount (0.0~1.0). 구 responseRate 대체",
+        description =
+            """
+            모집 충원율 joinedMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
+            respondedCount와 무관 — 참여 인원 기준.
+            join·remove·정원 변경 시 갱신 — GET /trips 재호출.
+            """,
         example = "0.67")
         double memberFillRate,
 
-    @Schema(description = "참여자 미리보기 (최대 4)") List<MemberPreviewResponse> membersPreview,
+    @Schema(description = "참여자 미리보기 (방장 우선 · joinedAt DESC · 최대 4명)")
+    List<MemberPreviewResponse> membersPreview,
 
-    @Schema(description = "미리보기 초과 인원 (joinedMemberCount - 4, 최소 0)") int membersPreviewOverflow
+    @Schema(
+        description =
+            "미리보기 초과 인원 (joinedMemberCount - 4, 최소 0). +N 배지 표시용")
+    int membersPreviewOverflow
 ) {}
 // @formatter:on

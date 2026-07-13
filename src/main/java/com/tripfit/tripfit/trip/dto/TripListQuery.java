@@ -6,14 +6,17 @@ import com.tripfit.tripfit.trip.domain.TripStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Optional;
 
-@Schema(description = "GET /trips 쿼리 (D5)")
+@Schema(description = "홈 여행방 목록 조회 쿼리. GET /trips")
 public record TripListQuery(
-    @Schema(description = "ongoing | all", defaultValue = "all") TripListScope scope,
+    @Schema(description = "목록 뷰. ongoing=진행 중 캐러셀, all=전체 보기 (기본 all)",
+        defaultValue = "all") TripListScope scope,
 
     @Schema(
-        description = "ALL(기본) | ONGOING | CONFIRMED — scope=all만") Optional<TripStatus> statusFilter,
+        description = "상태 필터. ALL(기본)=필터 없음 · ONGOING=조율 중 · CONFIRMED=일정 확정. scope=all일 때만 적용") Optional<TripStatus> statusFilter,
 
-    @Schema(description = "내가 생성(OWNER)한 방만 — scope=all만", defaultValue = "false") boolean ownerOnly
+    @Schema(
+        description = "내가 방장(OWNER)인 방만. scope=all일 때만 적용",
+        defaultValue = "false") boolean ownerOnly
 ) {
 
   // statusFilter·ownerOnly는 scope=ALL 쿼리에서만 적용 (ONGOING scope는 Repository가 무시)

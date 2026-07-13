@@ -2,7 +2,7 @@ package com.tripfit.tripfit.user.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "소셜 로그인 제공자")
+@Schema(description = "소셜 로그인 제공자. POST /auth/login · UserSummaryResponse.provider")
 public enum SocialProvider {
   @Schema(description = "카카오")
   KAKAO,

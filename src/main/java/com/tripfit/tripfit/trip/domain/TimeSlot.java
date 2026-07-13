@@ -3,7 +3,7 @@ package com.tripfit.tripfit.trip.domain;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalTime;
 
-@Schema(description = "일정 입력 시간대 (반개구간). 정기·개별 일정 공통")
+@Schema(description = "일정 입력 시간대 (반개구간). 정기·개별 일정 슬롯 계산에 공통 사용")
 public enum TimeSlot {
   @Schema(description = "오전 [00:00, 13:00)")
   MORNING(LocalTime.MIDNIGHT, LocalTime.of(13, 0)),
