@@ -71,7 +71,7 @@ class UserSecurityIntegrationTest {
   void patchProfile_withoutBearer_returns401() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -85,7 +85,7 @@ class UserSecurityIntegrationTest {
   void patchProfile_withValidBearer_returns200() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(

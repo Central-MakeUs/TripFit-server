@@ -70,7 +70,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -85,7 +85,7 @@ class UserControllerTest {
   void patchProfile_blankFirstName_returns400() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -115,7 +115,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/me/my-page")
+            patch("/api/v1/users/my-page")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -130,7 +130,7 @@ class UserControllerTest {
   void patchMyPage_blankLastName_returns400() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/my-page")
+            patch("/api/v1/users/my-page")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -160,7 +160,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/me/onboarding")
+            patch("/api/v1/users/onboarding")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
