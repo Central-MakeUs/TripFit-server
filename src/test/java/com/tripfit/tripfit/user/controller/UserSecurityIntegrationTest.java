@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.controller;
 
+import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -47,11 +48,14 @@ class UserSecurityIntegrationTest {
         MockMvcBuilders.webAppContextSetup(webApplicationContext)
             .apply(SecurityMockMvcConfigurers.springSecurity())
             .build();
-    accessToken = jwtService.createAccessToken(1L);
-    when(userProfileService.updateProfile(eq(1L), any()))
+    accessToken =
+        jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
+    when(
+        userProfileService
+            .updateProfile(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
         .thenReturn(
             new UserSummaryResponse(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "user@example.com",
                 "길동",
                 "홍",
@@ -67,7 +71,7 @@ class UserSecurityIntegrationTest {
   void patchProfile_withoutBearer_returns401() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -81,7 +85,7 @@ class UserSecurityIntegrationTest {
   void patchProfile_withValidBearer_returns200() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(

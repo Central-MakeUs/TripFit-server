@@ -10,15 +10,22 @@
 4. 상단 메타: `wave`, `implements`, `deferred` — [`waves.md`](../product/waves.md)
 5. 사용자 승인 후 구현 시작
 
-## wave 2 (Draft — 승인 대기)
+## wave 1 (인프라)
 
-| 스펙 | 범위 | 선행 |
-|------|------|------|
-| [`schedule-unified.md`](schedule-unified.md) | `schedule` A안 통합·CONDITION/AVAILABILITY API | wave 1 auth·onboarding |
-| [`trip-room-api.md`](trip-room-api.md) | 여행방 CRUD·참여·Pin·일정 제출 | schedule-unified |
-| [`trip-recommendation.md`](trip-recommendation.md) | 추천 4모드·TOP 3·확정·취소 | 위 2개 |
+| 스펙 | 상태 | 범위 | 선행 |
+|------|------|------|------|
+| [`uuid-primary-key.md`](uuid-primary-key.md) | **Implemented** | 전 테이블 PK/FK bigint → UUID CHAR(36), JWT `sub`, Cursor 규칙 | — |
 
-**구현 순서:** schedule-unified → trip-room-api → trip-recommendation (room의 PATCH는 recommendation hard DELETE hook 필요).
+## wave 2
+
+| 스펙 | 상태 | 범위 | 선행 |
+|------|------|------|------|
+| [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
+| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Draft** (S1·R2=A 확정) · **#17** | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
+| [`trip-room-api.md`](trip-room-api.md) | Draft | 여행방 CRUD·참여·Pin·일정 제출 | schedule-unified |
+| [`trip-recommendation.md`](trip-recommendation.md) | Draft | 추천 4모드·TOP 3·확정·취소 | 위 2개 |
+
+**구현 순서:** uuid-primary-key → schedule-unified(완료) → trip-room-api → trip-recommendation (room의 PATCH는 recommendation hard DELETE hook 필요).
 
 ## 완료 후
 

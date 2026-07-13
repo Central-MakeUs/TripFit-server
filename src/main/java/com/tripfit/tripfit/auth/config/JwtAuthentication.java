@@ -1,13 +1,14 @@
 package com.tripfit.tripfit.auth.config;
 
+import java.util.UUID;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 
 public class JwtAuthentication extends AbstractAuthenticationToken {
 
-  private final Long userId;
+  private final UUID userId;
 
-  public JwtAuthentication(Long userId) {
+  public JwtAuthentication(UUID userId) {
     super(AuthorityUtils.NO_AUTHORITIES);
     this.userId = userId;
     setAuthenticated(true);

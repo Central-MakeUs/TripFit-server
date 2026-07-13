@@ -32,14 +32,14 @@ public class JwtService {
   }
 
   // 사용자 ID를 기반으로 서명된 JWT 액세스 토큰을 생성함
-  public String createAccessToken(Long userId) {
+  public String createAccessToken(UUID userId) {
     try {
       // 1. 발급 시각과 만료 시각을 계산해 JWT 클레임을 구성함
       Instant now = Instant.now();
       Instant expiry = now.plusSeconds(jwtProperties.getAccessExpirationSeconds());
       JWTClaimsSet claims =
           new JWTClaimsSet.Builder()
-              .subject(String.valueOf(userId))
+              .subject(userId.toString())
               .jwtID(UUID.randomUUID().toString())
               .issueTime(Date.from(now))
               .expirationTime(Date.from(expiry))
@@ -76,18 +76,22 @@ public class JwtService {
       if (jti == null || jti.isBlank()) {
         throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
       }
-      return new AccessTokenClaims(Long.parseLong(claims.getSubject()), jti);
+      String subject = claims.getSubject();
+      if (subject == null || subject.isBlank()) {
+        throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
+      }
+      return new AccessTokenClaims(UUID.fromString(subject), jti);
     } catch (ParseException | JOSEException exception) {
       // 토큰 구문 분석 실패나 서명 검증 오류 시 유효하지 않은 토큰으로 처리함
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
-    } catch (NumberFormatException exception) {
-      // subject 형식이 숫자 사용자 ID 규칙과 맞지 않으면 유효하지 않은 토큰으로 처리함
+    } catch (IllegalArgumentException exception) {
+      // subject 형식이 UUID 사용자 ID 규칙과 맞지 않으면 유효하지 않은 토큰으로 처리함
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
     }
   }
 
   // 액세스 토큰을 검증하고 내부 사용자 ID를 추출함
-  public Long parseUserId(String accessToken) {
+  public UUID parseUserId(String accessToken) {
     return parseAccessToken(accessToken).userId();
   }
 

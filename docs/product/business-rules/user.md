@@ -9,9 +9,9 @@
 | **BR-USER-003** | 소셜 계정 연동 | 설정에서 계정 관리 | 카카오·구글 등 연동 정보 관리·해제 | wave 4 — [`auth-social-login.md`](../../specs/auth-social-login.md) Deferred |
 | **BR-USER-004** | 회원 탈퇴 | 탈퇴 요청 시 | 확인 후 탈퇴; 본인이 생성한 여행방 데이터 삭제 | `[미정]` 진행 중 여행방 차단 여부 |
 | **BR-USER-005** | 알림 허용 | 마이페이지 알림 설정 | on/off 저장, off 시 푸시 미발송 (BR-NOTI-*) | `[미정]` 필수 알림 예외 |
-| **BR-USER-006** | 근무·연차 등록 게이트 | 여행방 일정 응답 진입 시 | 온보딩 skip(`isScheduleRegistered=false`) → **`schedule` CONDITION 행 저장 필수** 후 AVAILABILITY 입력 | 미등록 시 차단 |
-| **BR-USER-007** | 여행방 참여 완료 | trip 「일정 제출하기」 | `trip_member.status=RESPONDED`. 일정 데이터는 User `schedule` AVAILABILITY | 링크만으로 미완료 |
-| **BR-USER-008** | 전역 일정 연동 | AVAILABILITY·CONDITION 변경 시 | **참여 중 모든 여행방**에 동일 데이터 반영 (trip FK 없음) | — |
+| **BR-USER-006** | 정기 일정 등록 게이트 | 여행방 일정 응답 진입 시 | 온보딩 skip(`isScheduleRegistered=false`) → **`regular_schedule` ≥1행** 후 개별 일정 입력 | 미등록 시 차단 |
+| **BR-USER-007** | 여행방 참여 완료 | trip 「일정 제출하기」 | `trip_member.status=RESPONDED`. 일정 데이터는 User `personal_schedule` | 링크만으로 미완료 |
+| **BR-USER-008** | 전역 일정 연동 | 개별·정기 일정 변경 시 | **참여 중 모든 여행방**에 동일 데이터 반영 (trip FK 없음) | — |
 
 ## 보조 규칙 (Figma·PRD)
 
@@ -28,5 +28,9 @@
 ### 확정 (2026-07-08)
 
 - BR-USER-002: 소셜 로그인 필수, 비회원 없음 → `trip_member.user_id` NOT NULL
-- BR-USER-006: CONDITION 행 → `isScheduleRegistered=true`
-- BR-USER-008: `schedule` User 전역 — trip 삭제와 무관
+- BR-USER-006: `regular_schedule` ≥1 → `isScheduleRegistered=true`
+- BR-USER-008: 정기·개별 User 전역 — trip 삭제와 무관
+
+### 확정 (2026-07-13)
+
+- A안 단일 `schedule` 폐기 → `regular_schedule` + `personal_schedule`

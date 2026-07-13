@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.controller;
 
+import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -33,7 +34,8 @@ class UserControllerTest {
 
   @BeforeEach
   void setUp() {
-    SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(1L));
+    SecurityContextHolder.getContext().setAuthentication(
+        new JwtAuthentication(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")));
     UserController userController = new UserController(userProfileService);
     mockMvc =
         MockMvcBuilders.standaloneSetup(userController)
@@ -50,10 +52,12 @@ class UserControllerTest {
 
   @Test
   void patchProfile_returnsUpdatedUser() throws Exception {
-    when(userProfileService.updateProfile(eq(1L), any()))
+    when(
+        userProfileService
+            .updateProfile(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
         .thenReturn(
             new UserSummaryResponse(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "user@example.com",
                 "길동",
                 "홍",
@@ -66,7 +70,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -81,7 +85,7 @@ class UserControllerTest {
   void patchProfile_blankFirstName_returns400() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/profile")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -93,10 +97,12 @@ class UserControllerTest {
 
   @Test
   void patchMyPage_returnsUpdatedUser() throws Exception {
-    when(userProfileService.updateMyPage(eq(1L), any()))
+    when(
+        userProfileService
+            .updateMyPage(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
         .thenReturn(
             new UserSummaryResponse(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "user@example.com",
                 "철수",
                 "김",
@@ -109,7 +115,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/me/my-page")
+            patch("/api/v1/users/my-page")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -124,7 +130,7 @@ class UserControllerTest {
   void patchMyPage_blankLastName_returns400() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/me/my-page")
+            patch("/api/v1/users/my-page")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -136,10 +142,12 @@ class UserControllerTest {
 
   @Test
   void patchOnboarding_skipOnly_returnsUpdatedUser() throws Exception {
-    when(userProfileService.updateOnboarding(eq(1L), any()))
+    when(
+        userProfileService
+            .updateOnboarding(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
         .thenReturn(
             new UserSummaryResponse(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "user@example.com",
                 null,
                 null,
@@ -152,7 +160,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/me/onboarding")
+            patch("/api/v1/users/onboarding")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """

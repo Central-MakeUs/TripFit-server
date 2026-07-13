@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.controller;
 
+import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -58,7 +59,7 @@ class AuthControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
         .andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
-        .andExpect(jsonPath("$.data.user.id").value(1));
+        .andExpect(jsonPath("$.data.user.id").value("550e8400-e29b-41d4-a716-446655440001"));
   }
 
   @Test
@@ -126,7 +127,7 @@ class AuthControllerTest {
 
   private static UserSummaryResponse sampleUserSummary() {
     return new UserSummaryResponse(
-        1L,
+        UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
         "user@example.com",
         null,
         null,

@@ -9,17 +9,20 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -29,10 +32,15 @@ import lombok.Setter;
 @Schema(description = "여행방. 방장이 생성·초대·일정 확정")
 public class Trip extends SoftDeleteEntity {
 
-  @Schema(description = "여행방 ID", example = "1")
+  @Schema(
+      description = "여행방 ID (UUID v4)",
+      example = "550e8400-e29b-41d4-a716-446655440000")
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue
+  @UuidGenerator
+  @JdbcTypeCode(SqlTypes.CHAR)
+  @Column(length = 36, nullable = false, updatable = false)
+  private UUID id;
 
   @Schema(description = "방장(총대) 사용자")
   @ManyToOne(fetch = FetchType.LAZY)

@@ -19,7 +19,7 @@
 | 2 | 이름 = **성(`lastName`) + 이름(`firstName`)** 분리, **필수·건너뛰기 없음** |
 | 3 | **회원가입 = 소셜 login upsert + JWT** (이름 전에도 토큰 발급) |
 | 4 | `isGoogleCalendarConnected` — OAuth 연동 시만 `true`; 미연동·건너뛰기 = `false` |
-| 5 | `isScheduleRegistered` — `schedule` row_type=CONDITION 저장 시만 `true`; 미등록·건너뛰기 = `false` |
+| 5 | `isScheduleRegistered` — `regular_schedule` ≥1행 시만 `true`; 미등록·건너뛰기 = `false` |
 | 6 | `isOptionalOnboardingCompleted` — 선택 온보딩 **전체** 완료 후 `true` (재진입 시 온보딩 UI 미노출) |
 | 7 | `onboarding_step` **미사용** |
 
@@ -31,13 +31,13 @@
 POST /api/v1/auth/login → JWT + user (firstName/lastName may null)
        ↓
 firstName 또는 lastName null?
-  YES → [성/이름 입력] → PATCH /users/me/profile
+  YES → [성/이름 입력] → PATCH /users/profile
   NO  ↓
 !isOptionalOnboardingCompleted?
   YES → [선택 온보딩]
           ① Google 캘린더 (연동 또는 건너뛰기)
           ② 사전 일정 / 근무·연차 (등록 또는 건너뛰기)
-          → PATCH /users/me/onboarding { isOptionalOnboardingCompleted: true }
+          → PATCH /users/onboarding { isOptionalOnboardingCompleted: true }
   NO  ↓
 [메인]
 ```
@@ -63,16 +63,16 @@ firstName 또는 lastName null?
 - [ ] `user` 컬럼: `first_name`, `last_name`, `is_google_calendar_connected`, `is_schedule_registered`, `is_optional_onboarding_completed`
 - [ ] `nickname` — 소셜 값만, **fallback 폐기** ([`007`](../decisions/007-user-profile-onboarding.md))
 - [ ] login / `GET /auth/me` 응답 `user`에 위 필드 포함
-- [ ] `PATCH /api/v1/users/me/profile` — `{ firstName, lastName }` (JWT 필수)
-- [ ] `PATCH /api/v1/users/me/onboarding` — boolean 갱신 (JWT 필수, 아래 API 참고)
+- [ ] `PATCH /api/v1/users/profile` — `{ firstName, lastName }` (JWT 필수)
+- [ ] `PATCH /api/v1/users/onboarding` — boolean 갱신 (JWT 필수, 아래 API 참고)
 - [ ] `first_name`/`last_name` 없으면 여행방 생성 등 핵심 API **403** `PROFILE_NAME_REQUIRED` `[제안]`
 - [ ] `./gradlew test` 통과
 
 ### Deferred (별도 스펙 — wave 1 본문 구현 안 함)
 
 - [ ] Google Calendar OAuth 연동 API·토큰 저장
-- [ ] `schedule` CONDITION CRUD — [`schedule-unified.md`](schedule-unified.md) (wave 2)
-- [ ] 마이페이지 이름 수정 — [`user-my-page.md`](user-my-page.md) (`PATCH /users/me/my-page`)
+- [x] 정기·개별 일정 — [`schedule-unified.md`](schedule-unified.md) (wave 2, #11)
+- [ ] 마이페이지 이름 수정 — [`user-my-page.md`](user-my-page.md) (`PATCH /users/my-page`)
 - [ ] 네이버 캘린더
 
 ## API
@@ -81,7 +81,7 @@ firstName 또는 lastName null?
 
 ```json
 {
-  "id": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "email": "user@example.com",
   "firstName": "길동",
   "lastName": "홍",
@@ -103,7 +103,7 @@ firstName 또는 lastName null?
 | isScheduleRegistered | N | default `false`. **condition 저장 시만** `true` |
 | isOptionalOnboardingCompleted | N | default `false`. 선택 온보딩 전체 완료 시 `true` |
 
-### `PATCH /api/v1/users/me/profile`
+### `PATCH /api/v1/users/profile`
 
 | 항목 | 값 |
 |------|-----|
@@ -132,7 +132,7 @@ firstName 또는 lastName null?
 | 400 | `VALIDATION_ERROR` | blank 이름·성 |
 | 401 | `AUTH_EXPIRED` 등 | JWT 없음·만료 |
 
-### `PATCH /api/v1/users/me/onboarding`
+### `PATCH /api/v1/users/onboarding`
 
 선택 온보딩 boolean 갱신. **건너뛰기·연동·등록 결과를 서버에 반영**해 재진입 시 프론트만으로는 불가능한 “온보딩 완료” 상태를 저장한다.
 
@@ -153,7 +153,7 @@ firstName 또는 lastName null?
 | 필드 | 설명 |
 |------|------|
 | isGoogleCalendarConnected | Google Calendar OAuth **연동 성공** 시 `true`. 건너뛰기 시 **보내지 않거나 `false` 유지** |
-| isScheduleRegistered | `schedule` CONDITION 저장 API 연동 후 `true`. 건너뛰기 시 **보내지 않거나 `false` 유지** |
+| isScheduleRegistered | 정기 일정(`regular_schedule`) ≥1 저장 후 `true`. 건너뛰기 시 **보내지 않거나 `false` 유지** |
 | isOptionalOnboardingCompleted | 선택 온보딩 **마지막 단계** 완료(등록·건너뛰기 모두 포함) 시 `true` |
 
 **일반 패턴 (건너뛰기만 한 경우)**
@@ -175,7 +175,7 @@ firstName 또는 lastName null?
 | first_name | varchar | null | 유저 입력 이름 |
 | last_name | varchar | null | 유저 입력 성 |
 | is_google_calendar_connected | boolean | false | Google Calendar 연동 |
-| is_schedule_registered | boolean | false | 사전 일정(`schedule` CONDITION) 등록 |
+| is_schedule_registered | boolean | false | 사전 정기 일정(`regular_schedule`) 등록 |
 | is_optional_onboarding_completed | boolean | false | 선택 온보딩 전체 완료 |
 
 `nickname` — 소셜 전용, fallback 없음. 상세 [`erd.md`](../architecture/erd.md).
@@ -210,3 +210,4 @@ firstName 또는 lastName null?
 |------|------|
 | 2026-07-08 | Approved — boolean 3개 + 이름, PATCH onboarding |
 | 2026-07-09 | 마이페이지 이름 수정은 [`user-my-page.md`](user-my-page.md)로 분리 |
+| 2026-07-13 | 경로 `/users/me/*` → `/users/*` |

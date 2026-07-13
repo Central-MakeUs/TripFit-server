@@ -6,17 +6,20 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -29,10 +32,15 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Schema(description = "여행방 추천 일정 후보 (순위·기간·사유)")
 public class Recommendation {
 
-  @Schema(description = "추천 레코드 ID", example = "1")
+  @Schema(
+      description = "추천 레코드 ID (UUID v4)",
+      example = "550e8400-e29b-41d4-a716-446655440000")
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue
+  @UuidGenerator
+  @JdbcTypeCode(SqlTypes.CHAR)
+  @Column(length = 36, nullable = false, updatable = false)
+  private UUID id;
 
   @Schema(description = "대상 여행방")
   @ManyToOne(fetch = FetchType.LAZY)

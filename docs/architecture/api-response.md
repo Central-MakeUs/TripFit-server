@@ -41,7 +41,7 @@
 ```json
 {
   "data": {
-    "tripId": 1,
+    "tripId": "550e8400-e29b-41d4-a716-446655440000",
     "title": "제주 3박 4일"
   }
 }
@@ -56,7 +56,7 @@
   "code": "COMMON_SUCCESS",
   "message": "조회가 완료되었습니다.",
   "data": {
-    "tripId": 1,
+    "tripId": "550e8400-e29b-41d4-a716-446655440000",
     "title": "제주 3박 4일"
   }
 }
@@ -104,7 +104,7 @@ HTTP `400 Bad Request` + Body:
   "code": "COMMON_SUCCESS",
   "data": {
     "items": [
-      { "tripId": 1, "title": "제주 3박 4일" }
+      { "tripId": "550e8400-e29b-41d4-a716-446655440000", "title": "제주 3박 4일" }
     ],
     "pageInfo": {
       "nextCursor": "abc123",

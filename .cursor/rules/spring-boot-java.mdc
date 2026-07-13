@@ -21,12 +21,16 @@ com.tripfit.tripfit
 │   ├── domain/                  # JPA @Entity, enum, 값 타입
 │   ├── client/                  # 외부 API·OAuth 검증 등 (auth 등 필요 시)
 │   ├── exception/               # 도메인별 ErrorCode (auth 등)
-│   └── config/                  # 도메인 전용 설정 (auth 등)
+│   ├── config/                  # 도메인 전용 설정 (auth 등)
+│   └── {feature}/               # 선택: 기능 단위 (예: user/schedule)
+│       ├── controller|dto|service|domain|repository|exception
 └── common/                      # api, config, domain(베이스), exception
 ```
 
 가이드: `docs/decisions/003-architecture-guide.md`, `docs/architecture.md`  
 **풀 DDD 미적용** — JPA 연관관계·객체 그래프 탐색 허용.
+
+**feature 하위 패키지:** 도메인 안 기능이 커지면 `{domain}/{feature}/`에 **동일 레이어 세트**를 둘 수 있다 (예: `user/schedule/`). 최상위 도메인으로 승격하지 않는 한 소유 도메인 안에 둔다. `controller/dto/`처럼 **레이어만 중첩**하는 것은 금지.
 
 ## 레이어 (최소 규칙)
 
@@ -36,7 +40,27 @@ com.tripfit.tripfit
 - **domain**: JPA Entity·enum·도메인 값 타입.
 - **repository**: `JpaRepository`만. Entity는 `domain/`에 둔다.
 - **client**: 외부 OAuth·HTTP 연동, 토큰 검증 adapter. service에서 호출.
-- 예외 → `GlobalExceptionHandler`가 `ErrorCode` 인터페이스로 envelope 변환. 공통은 `CommonErrorCode`, 도메인별은 `{domain}/exception/{Domain}ErrorCode`.
+- 예외 → `GlobalExceptionHandler`가 `ErrorCode` 인터페이스로 envelope 변환. 공통은 `CommonErrorCode`, 도메인별은 `{domain}/exception/{Domain}ErrorCode`, feature별은 `{domain}/{feature}/exception/{Feature}ErrorCode` (예: `ScheduleErrorCode`).
+
+### ErrorCode enum
+
+`*ErrorCode` 상수는 **한 상수 = 한 줄** (`NAME(HttpStatus, "CODE", "메시지"),`). 여러 상수를 한 줄에 이어서 쓰지 않고, 생성자 인자도 같은 줄에 둔다.
+
+```java
+// ✅
+public enum AuthErrorCode implements ErrorCode {
+  AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_TOKEN", "유효하지 않은 소셜 로그인 토큰입니다."),
+  AUTH_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_EXPIRED", "액세스 토큰이 만료되었습니다.");
+  // ...
+}
+
+// ❌ 상수·인자를 줄바꿈해 이어서 붙이기
+AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_TOKEN",
+    "…"), AUTH_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_EXPIRED",
+        "…");
+```
+
+Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap 안 함 (`config/tripfit-java-format.xml`).
 
 ## Entity Conventions
 
@@ -45,13 +69,23 @@ com.tripfit.tripfit
 - Enum: `{domain}/domain/`, `@Enumerated(EnumType.STRING)`
 - JPA `@ManyToOne` 등 연관관계 사용 가능 — 기본 `LAZY`
 - 테이블·컬럼: snake_case. 예약어 컬럼은 `@Column(name = "...")` 명시
+- **PK / FK:** 모든 테이블 PK·FK는 **UUID v4**. Java `java.util.UUID`, DB `CHAR(36)`. `@GeneratedValue` + `@UuidGenerator` + `@JdbcTypeCode(SqlTypes.CHAR)` (`length = 36`). **`Long` / `IDENTITY` / `bigint` PK 금지.** SSOT: `docs/architecture/erd.md`, `docs/specs/uuid-primary-key.md`
 - **필드 설명:** Entity·enum·베이스 클래스의 **클래스·필드·enum 상수**마다 `@Schema(description = "...")` (springdoc). nullable·example·requiredMode는 ERD·스펙과 맞출 것. 상세: 아래 OpenAPI 섹션
 
 ```java
+// ✅ PK
+@Id
+@GeneratedValue
+@UuidGenerator
+@JdbcTypeCode(SqlTypes.CHAR)
+@Column(length = 36, nullable = false, updatable = false)
+private UUID id;
+
 // ✅ Controller는 DTO만 반환
 return TripResponse.from(trip);
 
 // ❌ Entity 직접 반환 금지
+// ❌ @GeneratedValue(strategy = GenerationType.IDENTITY) / Long id
 ```
 
 ## OpenAPI @Schema (Entity · DTO · enum)
@@ -79,9 +113,12 @@ springdoc OpenAPI 3 — `io.swagger.v3.oas.annotations.media.Schema`
 @Schema(description = "소셜 로그인 요청")
 public record LoginRequest(
 		@Schema(description = "소셜 제공자", example = "GOOGLE", requiredMode = Schema.RequiredMode.REQUIRED)
-		@NotNull SocialProvider provider,
+		@NotNull
+		SocialProvider provider,
+
 		@Schema(description = "GOOGLE/APPLE: id_token, KAKAO: access_token", requiredMode = Schema.RequiredMode.REQUIRED)
-		@NotBlank String token
+		@NotBlank
+		String token
 ) {}
 ```
 
@@ -91,12 +128,39 @@ public record LoginRequest(
 - Lombok 미사용
 - 공통 설정: `common/config/`, 도메인 전용: `{domain}/config/`
 
+### DTO record 가독성
+
+- API DTO record 컴포넌트(필드)는 **필드마다 빈 줄로 구분**, `@Schema` / validation / 타입을 **각각 별도 줄** (`UpdateMyPageRequest` 스타일)
+- Eclipse Spotless는 record 컴포넌트를 **method parameter**와 동일 규칙으로 포맷한다 → 컨트롤러 한 줄 파라미터 설정과 충돌
+- 따라서 다필드 DTO record는 `// @formatter:off` … `// @formatter:on`으로 가독성 레이아웃을 고정한다
+
+### Controller 메서드 파라미터
+
+- 파라미터 어노테이션은 **같은 줄**에 붙인다. 어노테이션만 단독 줄로 쪼개지 않음
+- 기준: `config/tripfit-java-format.xml` — `insert_new_line_after_annotation_on_parameter=do not insert`
+
+```java
+// ✅
+ResponseEntity<ApiResponse<UserSummaryResponse>> updateProfile(
+		@AuthorizedUser UUID userId,
+		@Valid @RequestBody UpdateProfileRequest request) { ... }
+
+// ❌ 어노테이션·타입·이름을 한 줄씩 분리
+ResponseEntity<...> updateProfile(
+		@AuthorizedUser
+		UUID userId,
+		@Valid
+		@RequestBody
+		UpdateProfileRequest request) { ... }
+```
+
 ## Comments
 
-- 메서드/함수 바로 위에는 Javadoc 대신 `//` 한 줄 주석으로 기능을 간결한 한국어로 설명
-- 복잡한 내부 로직은 코드 블록 안에서 `// 1.`, `// 2.`, `// 3.` 형태로 흐름을 순서대로 설명
+- **모든 public/private 메서드** 바로 위에 Javadoc 대신 `//` 한 줄 주석으로 기능을 간결한 한국어로 설명 (`AuthService`·`UserProfileService` 기준)
+- 복잡한 내부 로직은 코드 블록 안에서 `// 1.`, `// 2.`, `// 3.` 형태로 **작동 메커니즘**을 순서대로 설명
 - `catch` 등 예외 처리 블록에는 왜 해당 예외를 처리하는지 의도를 한국어로 명시
 - 주석은 코드 바깥 설명문보다 코드 가까이에 두고, 짧고 명확하게 유지
+- **서비스 구현 시 주석 생략 금지** — 메서드 설명 + (분기·다단계면) 블록 번호 주석을 함께 작성
 
 ## API (추가 시)
 
@@ -105,6 +169,7 @@ public record LoginRequest(
 - 요청 검증: Jakarta Validation (`@Valid`)
 - 예외: `@RestControllerAdvice` + `{ code, message }`
 - 문서: springdoc — `@Tag`, `@Operation(summary, description)` + DTO·Entity `@Schema` (위 OpenAPI 섹션)
+- Controller 파라미터 스타일: 위 **Controller 메서드 파라미터** 절 준수
 
 ## Configuration
 

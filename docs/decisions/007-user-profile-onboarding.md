@@ -52,7 +52,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수)
 
 - 캘린더 단계: `isGoogleCalendarConnected`는 **연동 성공 시에만** `true`. 건너뛰기는 `false` 유지.
 - 사전 일정 단계: `isScheduleRegistered`는 **저장 성공 시에만** `true`. 건너뛰기는 `false` 유지.
-- 온보딩 **전체** 재노출 방지: 마지막 단계(등록 또는 건너뛰기) 후 `PATCH /users/me/onboarding`으로 `isOptionalOnboardingCompleted=true`
+- 온보딩 **전체** 재노출 방지: 마지막 단계(등록 또는 건너뛰기) 후 `PATCH /users/onboarding`으로 `isOptionalOnboardingCompleted=true`
 
 ### 확정 UX — 건너뛰기 전부 후 재진입
 
@@ -85,8 +85,8 @@ firstName 또는 lastName null?  → [이름 입력] (필수)
 | 포함 | 제외 (별도 스펙·이후) |
 |------|----------------------|
 | login 응답 필드 확장 | Google Calendar OAuth 연동 API 본체 |
-| `PATCH /users/me/profile` (first/last) | `user_condition` CRUD 전체 |
-| `PATCH /users/me/onboarding` (boolean 갱신) | 네이버 캘린더 |
+| `PATCH /users/profile` (first/last) | `user_condition` CRUD 전체 |
+| `PATCH /users/onboarding` (boolean 갱신) | 네이버 캘린더 |
 
 ## 고려한 대안
 
@@ -108,3 +108,4 @@ firstName 또는 lastName null?  → [이름 입력] (필수)
 | 날짜 | 변경 |
 |------|------|
 | 2026-07-08 | 초안 — boolean 3개 + 이름, 네이버 제외, JWT login 직후 |
+| 2026-07-13 | API 경로 `/users/me/*` → `/users/*` |

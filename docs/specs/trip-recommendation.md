@@ -43,7 +43,7 @@
 - [ ] `POST /api/v1/trips/{tripId}/recommendations` — `{ mode }` → 계산 → 기존 rows **hard DELETE** → TOP 3 INSERT
 - [ ] `GET /api/v1/trips/{tripId}/recommendations` — 현재 저장된 TOP 3 (+ `mode`, `generatedAt` `[제안]`)
 - [ ] 후보 윈도우: `[startRange, endRange]` 내 **연속 `durationDays`일** 슬라이딩 `[제안]`
-- [ ] 입력: 참여자 `schedule` AVAILABILITY + CONDITION (전역, BR-USER-008)
+- [ ] 입력: 참여자 `personal_schedule` + `regular_schedule` (User 전역, BR-USER-008). TBD = 날짜 단위 `uncertain` (슬롯별 TBD 없음 — #11)
 - [ ] **ALL_ATTEND:** `targetMemberCount` 미달 후보 **제외** (BR-TRIP-011)
 - [ ] **동점:** BR-TRIP-012 — 1) 연차 적은 순 2) 기간 긴 순 3) 주말·공휴일 포함 순 `[제안]`
 - [ ] `POST /api/v1/trips/{tripId}/confirm` — 방장만 (BR-TRIP-007): `{ recommendationRank }` 또는 `{ startDate, endDate }`
@@ -152,8 +152,9 @@
 ### 공통
 
 1. 후보: `startRange`~`endRange`에서 길이=`durationDays`인 모든 `[startDate, endDate]`
-2. 각 후보·각 멤버·각 슬롯: AVAILABILITY status 집계
-3. CONDITION: 연차 필요일 추정 `[제안]` — IMPOSSIBLE 슬롯·근무일 mismatch 시 연차 +1
+2. 각 후보·각 멤버·각 슬롯: resolved 가능/불가 집계 — 입력은 `regular_schedule` 요일 펼침 ⊕ `personal_schedule` 덮어쓰기 (충돌 규칙 Draft: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) R1)
+3. TBD: `personal_schedule.uncertain=true`인 날짜 (CERTAIN 모드)
+4. 정기 일정 연차: `maxVacationDays`·`VacationApplyPeriod`·반차·공휴일 휴무 필드 참고 (BR-TRIP-006). 필요일 추정 `[제안]` — workday IMPOSSIBLE → +1 (복수 행 집계 `[미정]`)
 
 ### 모드별
 
@@ -197,7 +198,7 @@
 
 ### 단위 테스트 (필수)
 
-- [ ] 고정 fixture 멤버·schedule → 모드별 rank 1 기대값
+- [ ] 고정 fixture 멤버·`regular_schedule`/`personal_schedule` → 모드별 rank 1 기대값
 - [ ] 동점 comparator 순서
 - [ ] hard DELETE 후 count=0
 
@@ -212,7 +213,8 @@
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | BR-TRIP-005 가중치 w1/w2/w3 | `[미정]` | MVP는 상대 순위만 맞으면 됨 — 튜닝은 prod 전 |
-| 연차 산출 규칙 | `[제안]` | IMPOSSIBLE on workday → 1일; half vacation `[미정]` |
+| 연차 산출 규칙 | `[제안]` | IMPOSSIBLE on workday → 1일; `halfVacationAvailable` 반영 `[미정]` |
+| regular vs personal 병합 | Draft | [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) — 추천 입력과 공유 |
 | 공휴일 데이터 | `[미정]` | KR 공휴일 static table vs API |
 | confirm 후 recommendation 유지 | `[제안]` | UI 재조회용 |
 | NOTI on confirm | wave 3 | stub 없음 |
@@ -222,3 +224,4 @@
 | 날짜 | 변경 |
 |------|------|
 | 2026-07-08 | 초안 |
+| 2026-07-13 | AVAILABILITY → `regular`/`personal` + `uncertain`; calendar-resolve Draft 링크 |

@@ -7,14 +7,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -26,10 +29,15 @@ import lombok.Setter;
 @Schema(description = "TripFit 서비스 사용자. 식별 키는 (provider, social_id)")
 public class User extends SoftDeleteEntity {
 
-  @Schema(description = "사용자 고유 ID (TripFit 내부 PK)", example = "1")
+  @Schema(
+      description = "사용자 고유 ID (TripFit 내부 PK, UUID v4)",
+      example = "550e8400-e29b-41d4-a716-446655440000")
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue
+  @UuidGenerator
+  @JdbcTypeCode(SqlTypes.CHAR)
+  @Column(length = 36, nullable = false, updatable = false)
+  private UUID id;
 
   @Schema(description = "소셜 제공자 고유 사용자 ID (Google/Apple `sub`, Kakao `id`)", example = "1234567890")
   @Column(nullable = false)

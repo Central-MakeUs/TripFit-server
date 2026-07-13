@@ -42,7 +42,7 @@
 
 #### 1. 개요
 - 데이터 모델 설계 목적
-- 설계 원칙: snake_case, soft delete(`deleted_at`), bigint PK, BR-* 반영
+- 설계 원칙: snake_case, soft delete(`deleted_at`), UUID v4 PK (`char(36)`), BR-* 반영
 - 대상 DB: **MySQL 8.0** (예약어 `user` 등 주석)
 
 #### 2. Mermaid ERD

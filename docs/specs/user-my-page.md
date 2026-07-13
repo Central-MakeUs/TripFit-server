@@ -13,7 +13,7 @@
 
 ## 배경
 
-- 온보딩 최초 입력: `PATCH /api/v1/users/me/profile` ([`user-onboarding.md`](user-onboarding.md))
+- 온보딩 최초 입력: `PATCH /api/v1/users/profile` ([`user-onboarding.md`](user-onboarding.md))
 - 마이페이지 재수정: 별도 엔드포인트로 UI 의도를 분리 (동일 컬럼·검증 재사용)
 - Figma: [`figma-wireframe-v1.md`](../product/design/figma-wireframe-v1.md) — 마이페이지(설정·탈퇴·캘린더 연동)
 
@@ -21,7 +21,7 @@
 
 ### Must Have (wave 1 — 본 스펙)
 
-- [ ] `PATCH /api/v1/users/me/my-page` — `{ firstName, lastName }` (JWT 필수)
+- [ ] `PATCH /api/v1/users/my-page` — `{ firstName, lastName }` (JWT 필수)
 - [ ] `first_name`/`last_name` 갱신 (trim 적용)
 - [ ] 응답: 갱신된 `user` 요약 DTO (`UserSummaryResponse`)
 - [ ] `./gradlew test` 통과
@@ -34,7 +34,7 @@
 
 ## API
 
-### `PATCH /api/v1/users/me/my-page`
+### `PATCH /api/v1/users/my-page`
 
 | 항목 | 값 |
 |------|-----|
@@ -69,8 +69,8 @@
 
 | API | 시점 | 필드 |
 |-----|------|------|
-| `PATCH /users/me/profile` | 온보딩 **최초** 이름 입력 | firstName, lastName |
-| `PATCH /users/me/my-page` | 마이페이지 **이름 수정** | firstName, lastName |
+| `PATCH /users/profile` | 온보딩 **최초** 이름 입력 | firstName, lastName |
+| `PATCH /users/my-page` | 마이페이지 **이름 수정** | firstName, lastName |
 
 저장 컬럼·검증·응답 DTO는 동일. 재로그인 시 소셜 `nickname`으로 덮어쓰지 않음 ([`007`](../decisions/007-user-profile-onboarding.md)).
 
@@ -93,3 +93,4 @@
 | 날짜 | 변경 |
 |------|------|
 | 2026-07-09 | Approved — 마이페이지 이름 PATCH |
+| 2026-07-13 | 경로 `/users/me/*` → `/users/*` |

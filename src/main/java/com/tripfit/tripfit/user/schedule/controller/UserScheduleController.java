@@ -1,0 +1,103 @@
+package com.tripfit.tripfit.user.schedule.controller;
+
+import com.tripfit.tripfit.auth.config.AuthorizedUser;
+import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.user.schedule.dto.CreateRegularScheduleRequest;
+import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse;
+import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
+import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse.RegularScheduleListResponse;
+import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
+import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
+import com.tripfit.tripfit.user.schedule.service.ScheduleService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.util.UUID;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@Tag(name = "User Schedule")
+@RestController
+@RequestMapping("/api/v1/users/schedule")
+public class UserScheduleController {
+
+  private final ScheduleService scheduleService;
+
+  public UserScheduleController(ScheduleService scheduleService) {
+    this.scheduleService = scheduleService;
+  }
+
+  // JWT 사용자의 정기 일정 목록을 조회함
+  @Operation(summary = "정기 일정 목록")
+  @GetMapping("/regular")
+  ResponseEntity<ApiResponse<RegularScheduleListResponse>> listRegular(
+      @AuthorizedUser UUID userId) {
+    return ResponseEntity.ok(ApiResponse.of(scheduleService.listRegular(userId)));
+  }
+
+  // JWT 사용자의 정기 일정을 생성함 (슬롯은 시각으로 계산)
+  @Operation(
+      summary = "정기 일정 생성",
+      description = "startTime/endTime으로 슬롯을 계산해 저장")
+  @PostMapping("/regular")
+  ResponseEntity<ApiResponse<RegularScheduleResponse>> createRegular(
+      @AuthorizedUser UUID userId,
+      @Valid @RequestBody CreateRegularScheduleRequest request) {
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.of(scheduleService.createRegular(userId, request)));
+  }
+
+  // JWT 사용자의 정기 일정 전체를 수정함 (start/end 변경 시 슬롯 재계산)
+  @Operation(
+      summary = "정기 일정 전체 수정",
+      description = "title·요일·시각·연차 필드를 갱신. start/end 변경 시 슬롯 재계산")
+  @PatchMapping("/regular/{id}")
+  ResponseEntity<ApiResponse<RegularScheduleResponse>> updateRegular(
+      @AuthorizedUser UUID userId,
+      @PathVariable UUID id,
+      @Valid @RequestBody UpdateRegularScheduleRequest request) {
+    return ResponseEntity.ok(
+        ApiResponse.of(scheduleService.updateRegular(userId, id, request)));
+  }
+
+  // JWT 사용자의 정기 일정을 삭제하고 등록 플래그를 재계산함
+  @Operation(summary = "정기 일정 삭제")
+  @DeleteMapping("/regular/{id}")
+  ResponseEntity<Void> deleteRegular(
+      @AuthorizedUser UUID userId,
+      @PathVariable UUID id) {
+    scheduleService.deleteRegular(userId, id);
+    return ResponseEntity.noContent().build();
+  }
+
+  // JWT 사용자의 기간 내 개인 일정을 조회함
+  @Operation(summary = "개인 일정 조회", description = "startDate·endDate 필수. 날짜당 슬롯3 + uncertain")
+  @GetMapping("/personal")
+  ResponseEntity<ApiResponse<PersonalScheduleResponse>> getPersonal(
+      @AuthorizedUser UUID userId,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    return ResponseEntity.ok(
+        ApiResponse.of(scheduleService.getPersonal(userId, startDate, endDate)));
+  }
+
+  // JWT 사용자의 개인 일정을 날짜별로 bulk upsert함
+  @Operation(summary = "개인 일정 bulk upsert")
+  @PatchMapping("/personal")
+  ResponseEntity<ApiResponse<PersonalScheduleResponse>> upsertPersonal(
+      @AuthorizedUser UUID userId,
+      @Valid @RequestBody UpdatePersonalScheduleRequest request) {
+    return ResponseEntity.ok(ApiResponse.of(scheduleService.upsertPersonal(userId, request)));
+  }
+}

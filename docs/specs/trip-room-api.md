@@ -16,8 +16,8 @@
 - **JPA 선행 반영:** `Trip` (`destination`, `TripStatus` incl. TERMINATED), `TripMember` (`user_id` NOT NULL, `is_pinned`)
 - **미구현:** Controller·Service, `trip.last_recommendation_mode`, `TripMember.deleted_at`, invite_code 생성
 - **참여:** 소셜 로그인 필수 (BR-USER-002), 비회원 없음
-- **일정 데이터:** `schedule` AVAILABILITY (전역) — [`schedule-unified.md`](schedule-unified.md)
-- **참여 완료:** 「일정 제출하기」→ `trip_member.status=RESPONDED` (BR-USER-007)
+- **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](schedule-unified.md)
+- **참여 완료:** 「일정 제출하기」→ `trip_member.status=RESPONDED` (BR-USER-007). 일정 행은 trip FK 없음
 
 ### 관련 문서
 
@@ -41,7 +41,7 @@
 - [ ] `POST /api/v1/trips/join` — `{ inviteCode }` → MEMBER + `JOINED` (이미 참여 시 idempotent — BR-USER-010)
 - [ ] `GET /api/v1/trips/{tripId}/members` — 참여자 목록 + `status`, `role`, `pinned`, 응답률 요약
 - [ ] `PATCH /api/v1/trips/{tripId}/pin` — `{ pinned: boolean }` 본인 `trip_member.is_pinned`
-- [ ] `POST /api/v1/trips/{tripId}/schedule/submit` — BR-USER-007: CONDITION 게이트 + trip 기간 AVAILABILITY 최소 1슬롯 `[제안]` → `RESPONDED`
+- [ ] `POST /api/v1/trips/{tripId}/schedule/submit` — BR-USER-007: `regular_schedule` 게이트(BR-USER-006) + trip 기간 `personal_schedule` 최소 1행 `[제안]` → `RESPONDED`
 - [ ] `DELETE /api/v1/trips/{tripId}` — 방장 soft delete, `trip_member` **연쇄 soft** (BR-TRIP-013)
 - [ ] `TripMember` → `SoftDeleteEntity` 또는 `deleted_at` 추가
 - [ ] `./gradlew test` 통과
@@ -55,7 +55,7 @@
 
 - 추천·확정·취소 — [`trip-recommendation.md`](trip-recommendation.md)
 - `cancel_reason` 저장 — wave 4
-- 그룹 달력 집계 API (wave 3 — 프론트가 members + availability-summary 조합 가능)
+- 그룹 달력 resolved API — Draft [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md); wave 2는 members + `personal-summary` 조합 가능
 - NOTI — wave 3
 
 ## API / 인터페이스
@@ -92,7 +92,7 @@
 ```json
 {
   "data": {
-    "tripId": 1,
+    "tripId": "550e8400-e29b-41d4-a716-446655440000",
     "inviteCode": "A1B2C3",
     "status": "ONGOING"
   }
@@ -103,7 +103,7 @@
 
 ```json
 {
-  "tripId": 1,
+  "tripId": "550e8400-e29b-41d4-a716-446655440000",
   "name": "제주 3박4일",
   "destination": "제주",
   "startRange": "2026-08-01",
@@ -130,7 +130,7 @@
 | 403 | `PROFILE_NAME_REQUIRED` | BR-USER-001 — [`user-onboarding.md`](user-onboarding.md) |
 | 403 | `TRIP_FORBIDDEN` | owner 아닌 PATCH/DELETE |
 | 403 | `TRIP_ACCESS_DENIED` | 비참여자 |
-| 403 | `SCHEDULE_CONDITION_REQUIRED` | submit 시 CONDITION 없음 |
+| 403 | `REGULAR_SCHEDULE_REQUIRED` | submit 시 정기 일정 0행 |
 | 404 | `TRIP_NOT_FOUND` | 없음 또는 soft deleted |
 | 409 | `TRIP_ALREADY_CONFIRMED` | CONFIRMED trip join/수정 제한 `[제안]` |
 | 404 | `INVITE_CODE_NOT_FOUND` | 잘못된 초대 코드 |
@@ -147,7 +147,7 @@
 |------|------|
 | `trip` | `deleted_at` 설정 |
 | `trip_member` | trip delete 시 **연쇄** `deleted_at` |
-| `schedule` | **유지** (User 전역) |
+| `regular_schedule` · `personal_schedule` | **유지** (User 전역, trip 삭제와 무관) |
 
 ### TripStatus (wave 2 API 노출)
 
@@ -184,12 +184,12 @@
 - [ ] 참여자 join → MEMBER JOINED
 - [ ] submit → RESPONDED, 재호출 idempotent
 - [ ] pin true → 목록 `pinned` true
-- [ ] owner delete → trip·members soft, schedule 유지
+- [ ] owner delete → trip·members soft, `regular_schedule`·`personal_schedule` 유지
 
 ### 엣지 · 실패
 
 - [ ] 참여자 PATCH trip → 403
-- [ ] CONDITION 없이 submit → 403
+- [ ] 정기 일정 없이 submit → 403 `REGULAR_SCHEDULE_REQUIRED`
 - [ ] durationDays > range → 400
 - [ ] CONFIRMED trip join → 409 `[제안]`
 
@@ -206,7 +206,7 @@
 | TERMINATED 전환 | `[미정]` | wave 2는 enum·DTO만; 스케줄러는 wave 4 후보 |
 | UI ↔ TripStatus 매핑 | `[미정]` | `TripStatus.java` TODO — 프론트 합의 |
 | 홈 정렬 (pin 이후) | `[미정]` | pinned DESC, 그 다음 `[제안]` updatedAt DESC |
-| submit 최소 슬롯 수 | `[제안]` | trip 기간 내 AVAILABILITY ≥ 1 |
+| submit 최소 입력 | `[제안]` | trip 기간 내 `personal_schedule` ≥ 1행 |
 | invite_code 형식 | `[제안]` | 6자 Base32 |
 
 ## 변경 이력
@@ -214,3 +214,4 @@
 | 날짜 | 변경 |
 |------|------|
 | 2026-07-08 | 초안 |
+| 2026-07-13 | 일정 용어: AVAILABILITY/`schedule` → `regular_schedule` + `personal_schedule` (#11 정합) |

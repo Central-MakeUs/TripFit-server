@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.controller;
 
+import java.util.UUID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -44,11 +45,12 @@ class AuthSecurityIntegrationTest {
         MockMvcBuilders.webAppContextSetup(webApplicationContext)
             .apply(SecurityMockMvcConfigurers.springSecurity())
             .build();
-    accessToken = jwtService.createAccessToken(1L);
-    when(authService.getCurrentUser(1L))
+    accessToken =
+        jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
+    when(authService.getCurrentUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
         .thenReturn(
             new UserSummaryResponse(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "user@example.com",
                 null,
                 null,
