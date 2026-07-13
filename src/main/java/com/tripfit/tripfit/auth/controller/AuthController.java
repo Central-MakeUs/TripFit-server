@@ -11,6 +11,7 @@ import com.tripfit.tripfit.common.api.ApiResponse;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.UUID;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,7 +73,7 @@ public class AuthController {
   @Operation(summary = "현재 사용자 조회", description = "Authorization: Bearer {accessToken} 필수")
   @GetMapping("/me")
   ResponseEntity<ApiResponse<UserSummaryResponse>> me(@AuthorizedUser
-  Long userId) {
+  UUID userId) {
     UserSummaryResponse response = authService.getCurrentUser(userId);
     return ResponseEntity.ok(ApiResponse.of(response));
   }

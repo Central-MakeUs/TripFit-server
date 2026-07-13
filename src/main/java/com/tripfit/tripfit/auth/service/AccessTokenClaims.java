@@ -1,7 +1,9 @@
 package com.tripfit.tripfit.auth.service;
 
+import java.util.UUID;
+
 public record AccessTokenClaims(
-    Long userId,
+    UUID userId,
     String jti
 ) {
 }

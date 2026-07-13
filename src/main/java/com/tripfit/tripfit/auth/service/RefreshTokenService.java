@@ -25,7 +25,7 @@ public class RefreshTokenService {
 
   // 사용자 ID 기준으로 새 리프레시 토큰을 발급해 저장함
   @Transactional
-  public RefreshToken create(Long userId) {
+  public RefreshToken create(UUID userId) {
     // 1. 토큰 값과 토큰 패밀리 식별자를 새로 생성함
     String token = UUID.randomUUID().toString();
     String familyId = UUID.randomUUID().toString();

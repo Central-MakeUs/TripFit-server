@@ -168,7 +168,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 | `SecurityFilterChain` | `/api/v1/auth/**` permitAll, 나머지 authenticated |
 | `JwtAuthenticationFilter` | Access JWT 파싱·검증 → SecurityContext 설정 |
 | `SocialTokenVerifier` | provider별 토큰 검증 (Strategy 패턴) |
-| `@AuthorizedUser` | HandlerMethodArgumentResolver — 컨트롤러에 `Long userId` 주입 (AOP 확장 기반) |
+| `@AuthorizedUser` | HandlerMethodArgumentResolver — 컨트롤러에 `UUID userId` 주입 (AOP 확장 기반) |
 
 **채택하지 않음**: Spring Security OAuth2 Client 리다이렉트 플로우 (`/oauth2/authorization/{provider}`) — 모바일 앱에 부적합.
 
@@ -268,7 +268,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
     "refreshToken": "<opaque-uuid-or-random>",
     "expiresIn": 7200,
     "user": {
-      "id": 1,
+      "id": "550e8400-e29b-41d4-a716-446655440000",
       "email": "user@example.com",
       "firstName": "길동",
       "lastName": "홍",
@@ -378,8 +378,8 @@ Authorization: Bearer <accessToken>
 
 | 컬럼 | 타입 | Nullable | 설명 |
 |------|------|----------|------|
-| id | bigint | N | PK |
-| user_id | bigint | N | FK → `user(id)` |
+| id | char(36) | N | PK | UUID v4 |
+| user_id | char(36) | N | FK → `user(id)` |
 | token | varchar(255) | N | opaque token (UUID v4 등). UNIQUE |
 | family_id | char(36) | N | UUID — login 체인 (wave 4 RTR). wave 1: login마다 신규 |
 | revoked_at | datetime(6) | Y | wave 4 rotation용. wave 1 logout은 row **delete** |
@@ -444,7 +444,7 @@ Authorization: Bearer <accessToken>
 
 - 앱에서 `access_token` 전달
 - 서버: Kakao REST API `GET /v2/user/me` (Authorization: Bearer)
-- 응답 `id` (Long) → `social_id` (String 변환)
+- 응답 `id` (UUID) → `social_id` (String 변환)
 - nickname: `kakao_account.profile.nickname`
 - profileImageUrl: `kakao_account.profile.profile_image_url` → DB **A안** passthrough
 

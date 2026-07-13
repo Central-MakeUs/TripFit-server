@@ -92,7 +92,7 @@
 ```json
 {
   "data": {
-    "tripId": 1,
+    "tripId": "550e8400-e29b-41d4-a716-446655440000",
     "inviteCode": "A1B2C3",
     "status": "ONGOING"
   }
@@ -103,7 +103,7 @@
 
 ```json
 {
-  "tripId": 1,
+  "tripId": "550e8400-e29b-41d4-a716-446655440000",
   "name": "제주 3박4일",
   "destination": "제주",
   "startRange": "2026-08-01",

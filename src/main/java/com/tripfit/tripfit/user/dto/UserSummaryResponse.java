@@ -3,12 +3,14 @@ package com.tripfit.tripfit.user.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "사용자 요약 (login · GET /auth/me · PATCH profile/onboarding 공통)")
 public record UserSummaryResponse(
-    @Schema(description = "TripFit 사용자 ID", example = "1")
-    Long id,
+    @Schema(description = "TripFit 사용자 ID (UUID v4)",
+        example = "550e8400-e29b-41d4-a716-446655440000")
+    UUID id,
 
     @Schema(
         description = "소셜 계정 이메일. 미제공 시 null",

@@ -9,6 +9,7 @@ import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.UUID;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -32,7 +33,7 @@ public class UserController {
   @PatchMapping("/profile")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateProfile(
       @AuthorizedUser
-      Long userId,
+      UUID userId,
       @Valid
       @RequestBody
       UpdateProfileRequest request) {
@@ -45,7 +46,7 @@ public class UserController {
   @PatchMapping("/my-page")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateMyPage(
       @AuthorizedUser
-      Long userId,
+      UUID userId,
       @Valid
       @RequestBody
       UpdateMyPageRequest request) {
@@ -58,7 +59,7 @@ public class UserController {
   @PatchMapping("/onboarding")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateOnboarding(
       @AuthorizedUser
-      Long userId,
+      UUID userId,
       @Valid
       @RequestBody
       UpdateOnboardingRequest request) {

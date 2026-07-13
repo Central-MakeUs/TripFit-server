@@ -71,7 +71,7 @@ firstName 또는 lastName null?
 ### Deferred (별도 스펙 — wave 1 본문 구현 안 함)
 
 - [ ] Google Calendar OAuth 연동 API·토큰 저장
-- [ ] `schedule` CONDITION CRUD — [`schedule-unified.md`](schedule-unified.md) (wave 2)
+- [x] `schedule` CONDITION CRUD — [`schedule-unified.md`](schedule-unified.md) (wave 2, #11 Approved)
 - [ ] 마이페이지 이름 수정 — [`user-my-page.md`](user-my-page.md) (`PATCH /users/me/my-page`)
 - [ ] 네이버 캘린더
 
@@ -81,7 +81,7 @@ firstName 또는 lastName null?
 
 ```json
 {
-  "id": 1,
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "email": "user@example.com",
   "firstName": "길동",
   "lastName": "홍",

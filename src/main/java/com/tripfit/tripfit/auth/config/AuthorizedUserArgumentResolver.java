@@ -2,6 +2,7 @@ package com.tripfit.tripfit.auth.config;
 
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import java.util.UUID;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,18 +18,18 @@ public class AuthorizedUserArgumentResolver implements HandlerMethodArgumentReso
   @Override
   public boolean supportsParameter(MethodParameter parameter) {
     return parameter.hasParameterAnnotation(AuthorizedUser.class)
-        && Long.class.equals(parameter.getParameterType());
+        && UUID.class.equals(parameter.getParameterType());
   }
 
   @Override
-  // SecurityContext에 설정된 JWT userId를 컨트롤러 Long 파라미터로 주입함
+  // SecurityContext에 설정된 JWT userId를 컨트롤러 UUID 파라미터로 주입함
   public Object resolveArgument(
       MethodParameter parameter,
       ModelAndViewContainer mavContainer,
       NativeWebRequest webRequest,
       WebDataBinderFactory binderFactory) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !(authentication.getPrincipal() instanceof Long userId)) {
+    if (authentication == null || !(authentication.getPrincipal() instanceof UUID userId)) {
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
     }
     return userId;

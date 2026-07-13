@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -23,16 +24,18 @@ class JwtServiceTest {
 
   @Test
   void createAndParseAccessToken() {
-    String token = jwtService.createAccessToken(42L);
-    Long userId = jwtService.parseUserId(token);
-    assertThat(userId).isEqualTo(42L);
+    String token =
+        jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440042"));
+    UUID userId = jwtService.parseUserId(token);
+    assertThat(userId).isEqualTo(UUID.fromString("550e8400-e29b-41d4-a716-446655440042"));
   }
 
   @Test
   void parseAccessToken_returnsUserIdAndJti() {
-    String token = jwtService.createAccessToken(42L);
+    String token =
+        jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440042"));
     AccessTokenClaims claims = jwtService.parseAccessToken(token);
-    assertThat(claims.userId()).isEqualTo(42L);
+    assertThat(claims.userId()).isEqualTo(UUID.fromString("550e8400-e29b-41d4-a716-446655440042"));
     assertThat(claims.jti()).isNotBlank();
   }
 

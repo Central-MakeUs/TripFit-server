@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -40,9 +41,12 @@ class UserProfileServiceTest {
 
   @Test
   void updateProfile_savesFirstAndLastName() {
-    when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    when(userRepository.findById(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn(Optional.of(user));
     UserSummaryResponse response =
-        userProfileService.updateProfile(1L, new UpdateProfileRequest("길동", "홍"));
+        userProfileService.updateProfile(
+            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+            new UpdateProfileRequest("길동", "홍"));
 
     assertThat(user.getFirstName()).isEqualTo("길동");
     assertThat(user.getLastName()).isEqualTo("홍");
@@ -54,9 +58,12 @@ class UserProfileServiceTest {
   void updateMyPage_savesFirstAndLastName() {
     user.setFirstName("길동");
     user.setLastName("홍");
-    when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    when(userRepository.findById(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn(Optional.of(user));
     UserSummaryResponse response =
-        userProfileService.updateMyPage(1L, new UpdateMyPageRequest("철수", "김"));
+        userProfileService.updateMyPage(
+            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+            new UpdateMyPageRequest("철수", "김"));
 
     assertThat(user.getFirstName()).isEqualTo("철수");
     assertThat(user.getLastName()).isEqualTo("김");
@@ -66,9 +73,12 @@ class UserProfileServiceTest {
 
   @Test
   void updateOnboarding_skipOnly_setsOptionalCompleted() {
-    when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    when(userRepository.findById(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn(Optional.of(user));
     UserSummaryResponse response =
-        userProfileService.updateOnboarding(1L, new UpdateOnboardingRequest(null, null, true));
+        userProfileService.updateOnboarding(
+            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+            new UpdateOnboardingRequest(null, null, true));
 
     assertThat(user.isOptionalOnboardingCompleted()).isTrue();
     assertThat(user.isGoogleCalendarConnected()).isFalse();
@@ -78,10 +88,13 @@ class UserProfileServiceTest {
 
   @Test
   void updateOnboarding_partialUpdate_keepsOtherFields() {
-    when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+    when(userRepository.findById(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn(Optional.of(user));
     user.setGoogleCalendarConnected(true);
 
-    userProfileService.updateOnboarding(1L, new UpdateOnboardingRequest(null, null, true));
+    userProfileService.updateOnboarding(
+        UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+        new UpdateOnboardingRequest(null, null, true));
 
     assertThat(user.isGoogleCalendarConnected()).isTrue();
     assertThat(user.isOptionalOnboardingCompleted()).isTrue();
@@ -105,10 +118,11 @@ class UserProfileServiceTest {
 
   @Test
   void updateProfile_whenUserMissing_throwsForbidden() {
-    when(userRepository.findById(99L)).thenReturn(Optional.empty());
+    UUID missingId = UUID.fromString("550e8400-e29b-41d4-a716-446655440099");
+    when(userRepository.findById(missingId)).thenReturn(Optional.empty());
 
     assertThatThrownBy(
-        () -> userProfileService.updateProfile(99L, new UpdateProfileRequest("길동", "홍")))
+        () -> userProfileService.updateProfile(missingId, new UpdateProfileRequest("길동", "홍")))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_FORBIDDEN);

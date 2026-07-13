@@ -5,15 +5,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -22,14 +25,22 @@ import lombok.Setter;
 @Schema(description = "리프레시 토큰 (opaque). wave 1: logout 시 row 삭제. wave 4: RTR 예정")
 public class RefreshToken extends BaseTimeEntity {
 
-  @Schema(description = "리프레시 토큰 레코드 ID", example = "1")
+  @Schema(
+      description = "리프레시 토큰 레코드 ID (UUID v4)",
+      example = "550e8400-e29b-41d4-a716-446655440000")
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue
+  @UuidGenerator
+  @JdbcTypeCode(SqlTypes.CHAR)
+  @Column(length = 36, nullable = false, updatable = false)
+  private UUID id;
 
-  @Schema(description = "소유 사용자 ID (FK → user.id)", example = "1")
-  @Column(name = "user_id", nullable = false)
-  private Long userId;
+  @Schema(
+      description = "소유 사용자 ID (FK → user.id)",
+      example = "550e8400-e29b-41d4-a716-446655440000")
+  @JdbcTypeCode(SqlTypes.CHAR)
+  @Column(name = "user_id", length = 36, nullable = false)
+  private UUID userId;
 
   @Schema(
       description = "opaque refresh token 값 (UUID 등). UNIQUE",
@@ -52,7 +63,7 @@ public class RefreshToken extends BaseTimeEntity {
   @Column(name = "expires_at", nullable = false)
   private LocalDateTime expiresAt;
 
-  public RefreshToken(Long userId, String token, String familyId, LocalDateTime expiresAt) {
+  public RefreshToken(UUID userId, String token, String familyId, LocalDateTime expiresAt) {
     this.userId = userId;
     this.token = token;
     this.familyId = familyId;

@@ -6,16 +6,19 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalTime;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -25,10 +28,15 @@ import lombok.Setter;
 @Schema(description = "사용자 근무·연차 조건 (온보딩·내 일정 관리)")
 public class UserCondition extends BaseTimeEntity {
 
-  @Schema(description = "조건 레코드 ID", example = "1")
+  @Schema(
+      description = "조건 레코드 ID (UUID v4)",
+      example = "550e8400-e29b-41d4-a716-446655440000")
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue
+  @UuidGenerator
+  @JdbcTypeCode(SqlTypes.CHAR)
+  @Column(length = 36, nullable = false, updatable = false)
+  private UUID id;
 
   @Schema(description = "소유 사용자 (1:1)")
   @OneToOne(fetch = FetchType.LAZY)

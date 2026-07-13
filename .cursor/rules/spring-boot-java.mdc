@@ -45,13 +45,23 @@ com.tripfit.tripfit
 - Enum: `{domain}/domain/`, `@Enumerated(EnumType.STRING)`
 - JPA `@ManyToOne` 등 연관관계 사용 가능 — 기본 `LAZY`
 - 테이블·컬럼: snake_case. 예약어 컬럼은 `@Column(name = "...")` 명시
+- **PK / FK:** 모든 테이블 PK·FK는 **UUID v4**. Java `java.util.UUID`, DB `CHAR(36)`. `@GeneratedValue` + `@UuidGenerator` + `@JdbcTypeCode(SqlTypes.CHAR)` (`length = 36`). **`Long` / `IDENTITY` / `bigint` PK 금지.** SSOT: `docs/architecture/erd.md`, `docs/specs/uuid-primary-key.md`
 - **필드 설명:** Entity·enum·베이스 클래스의 **클래스·필드·enum 상수**마다 `@Schema(description = "...")` (springdoc). nullable·example·requiredMode는 ERD·스펙과 맞출 것. 상세: 아래 OpenAPI 섹션
 
 ```java
+// ✅ PK
+@Id
+@GeneratedValue
+@UuidGenerator
+@JdbcTypeCode(SqlTypes.CHAR)
+@Column(length = 36, nullable = false, updatable = false)
+private UUID id;
+
 // ✅ Controller는 DTO만 반환
 return TripResponse.from(trip);
 
 // ❌ Entity 직접 반환 금지
+// ❌ @GeneratedValue(strategy = GenerationType.IDENTITY) / Long id
 ```
 
 ## OpenAPI @Schema (Entity · DTO · enum)

@@ -13,6 +13,7 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserSummaryMapper;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,7 +86,7 @@ public class AuthService {
 
   // JWT에 담긴 userId로 현재 로그인 사용자 프로필을 조회함
   @Transactional(readOnly = true)
-  public UserSummaryResponse getCurrentUser(Long userId) {
+  public UserSummaryResponse getCurrentUser(UUID userId) {
     User user =
         userRepository
             .findById(userId)

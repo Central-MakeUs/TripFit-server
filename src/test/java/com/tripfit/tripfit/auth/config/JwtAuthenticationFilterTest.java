@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.config;
 
+import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,7 +52,8 @@ class JwtAuthenticationFilterTest {
 
   @Test
   void doFilterInternal_validToken_setsSecurityContext() throws Exception {
-    String token = jwtService.createAccessToken(7L);
+    String token =
+        jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440007"));
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
     MockHttpServletResponse response = new MockHttpServletResponse();
@@ -64,12 +66,14 @@ class JwtAuthenticationFilterTest {
     verify(filterChain).doFilter(request, response);
     assertThat(SecurityContextHolder.getContext().getAuthentication())
         .isInstanceOf(JwtAuthentication.class);
-    assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(7L);
+    assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
+        .isEqualTo(UUID.fromString("550e8400-e29b-41d4-a716-446655440007"));
   }
 
   @Test
   void doFilterInternal_revokedToken_returns401() throws Exception {
-    String token = jwtService.createAccessToken(7L);
+    String token =
+        jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440007"));
     String jti = jwtService.parseAccessToken(token).jti();
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);

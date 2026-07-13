@@ -74,7 +74,7 @@ class AuthServiceTest {
     when(refreshTokenService.create(any()))
         .thenReturn(
             new RefreshToken(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "refresh-token",
                 UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(30)));
@@ -106,7 +106,7 @@ class AuthServiceTest {
     when(refreshTokenService.create(any()))
         .thenReturn(
             new RefreshToken(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "refresh-token",
                 UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(30)));
@@ -134,7 +134,7 @@ class AuthServiceTest {
     when(refreshTokenService.create(any()))
         .thenReturn(
             new RefreshToken(
-                1L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
                 "refresh-token",
                 UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(30)));
@@ -149,9 +149,11 @@ class AuthServiceTest {
   void refresh_returnsNewAccessToken() {
     RefreshToken refreshToken =
         new RefreshToken(
-            1L, "refresh-token", UUID.randomUUID().toString(), LocalDateTime.now().plusDays(30));
+            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"), "refresh-token",
+            UUID.randomUUID().toString(), LocalDateTime.now().plusDays(30));
     when(refreshTokenService.validate("refresh-token")).thenReturn(refreshToken);
-    when(jwtService.createAccessToken(1L)).thenReturn("new-access-jwt");
+    when(jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn("new-access-jwt");
     when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
 
     RefreshResponse response = authService.refresh("refresh-token");

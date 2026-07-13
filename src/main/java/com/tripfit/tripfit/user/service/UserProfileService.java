@@ -9,6 +9,7 @@ import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.repository.UserRepository;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class UserProfileService {
 
   // JWT 사용자의 성·이름 프로필을 저장함
   @Transactional
-  public UserSummaryResponse updateProfile(Long userId, UpdateProfileRequest request) {
+  public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
     User user = findUser(userId);
     user.setFirstName(request.firstName().trim());
     user.setLastName(request.lastName().trim());
@@ -32,13 +33,13 @@ public class UserProfileService {
 
   // JWT 사용자의 마이페이지에서 성·이름을 수정함
   @Transactional
-  public UserSummaryResponse updateMyPage(Long userId, UpdateMyPageRequest request) {
+  public UserSummaryResponse updateMyPage(UUID userId, UpdateMyPageRequest request) {
     return updateProfile(userId, new UpdateProfileRequest(request.firstName(), request.lastName()));
   }
 
   // JWT 사용자의 선택 온보딩 boolean을 partial update함
   @Transactional
-  public UserSummaryResponse updateOnboarding(Long userId, UpdateOnboardingRequest request) {
+  public UserSummaryResponse updateOnboarding(UUID userId, UpdateOnboardingRequest request) {
     User user = findUser(userId);
     if (request.isGoogleCalendarConnected() != null) {
       user.setGoogleCalendarConnected(request.isGoogleCalendarConnected());
@@ -59,7 +60,7 @@ public class UserProfileService {
     }
   }
 
-  private User findUser(Long userId) {
+  private User findUser(UUID userId) {
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
