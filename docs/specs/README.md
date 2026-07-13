@@ -35,33 +35,43 @@
 | [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 4모드·TOP 3·확정·취소 | #12 · #17 · #22 |
 
+## wave 3
+
+| 스펙 | 상태 | 범위 | 선행 |
+|------|------|------|------|
+| [`kakao-invite-share.md`](kakao-invite-share.md) | **Draft** (#19) | 카카오톡 초대 링크 공유 · D3 URL | trip-room-api D3 · #12 |
+| (알림) | Draft 예정 (#21) | FCM/APNs · BR-NOTI-001~004 | #12 · #13 · 참여 완료 정의 |
+
 ## wave 4
 
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md) | **Draft** (#35) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
+| [`google-calendar-oauth.md`](google-calendar-oauth.md) | **Draft** (#44) | Google Calendar OAuth · `is_google_calendar_connected` | auth-social-login · user-onboarding |
 | [`auth-token-rotation.md`](auth-token-rotation.md) | Draft | RTR + Redis | auth-social-login · decision 004 |
 | [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md) | Draft | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
 
 **구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation(#13)
 
-## GitHub 이슈 매핑 (wave 2)
+## GitHub 이슈 매핑
 
 | 이슈 | 스펙 | 상태 |
 |------|------|------|
 | #11 | schedule-unified | Closed |
 | #17 | schedule-calendar-resolve (본인 calendar) | Closed |
-| #12 | trip-room-api | Open |
+| #12 | trip-room-api | Closed / Implemented |
 | #13 | trip-recommendation | Open |
-| #19 | join 미리보기 | Open · **Wave 2 Out** |
+| **#19** | kakao-invite-share | Open · **Wave 3 Must** (구 join 미리보기 → 이슈 미배정) |
 | #20 | trip-member-remove | Implemented · **Wave 2 Nice** |
-| **#26** | trip-last-activity-at | Open |
-| **#27** | trip-home-schedulers | Open |
-| **#22** | schedule-participation-onboarding (Draft — late-join · 방장 A · memberFillRate) | Open |
+| **#21** | 알림 (Draft 예정) | Open · **Wave 3 Must** |
+| **#26** | trip-last-activity-at | Implemented |
+| **#27** | trip-home-schedulers | Implemented |
+| **#22** | schedule-participation-onboarding | Closed |
 | **#35** | trip-join-capacity-hold (Draft — wave 4) | Open |
-| **#37** | trip-schedule-calendar-window | Open · **Approved** · **본 브랜치 구현** · Wave 2 Must |
-| **#38** | trip-schedule-snapshot | Open · **Approved** · Wave 2 Must |
+| **#37** | trip-schedule-calendar-window | Closed |
+| **#38** | trip-schedule-snapshot | Closed |
+| **#44** | google-calendar-oauth | Open · **Wave 4 Must** (구 Swagger chore 폐기) |
 
 ## 완료 후
 

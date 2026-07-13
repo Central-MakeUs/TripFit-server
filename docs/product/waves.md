@@ -37,9 +37,10 @@
 | 추천 4모드·확정 | 2 | Must |
 | `last_activity_at` hook · TERMINATED 스케줄러 (#26, #27) | 2 | **Nice** |
 | 참여자 내보내기 (#20) | 2 | **Nice** |
-| join 전 미리보기 (#19) | 2 | **Out** |
-| 그룹 달력 · 알림 · 카카오 공유 | 3 | Must |
+| join 전 미리보기 (이슈 미배정 · 구 #19) | 2 | **Out** |
+| 알림 (#21) · 카카오 초대 공유 (#19) · 그룹 달력 | 3 | Must |
 | RTR·Redis · Apple S2S · S3 · 계정 연결 | 4 | — |
+| Google Calendar OAuth (#44) | 4 | Must |
 | join 정원 hold (#35) | 4 | — |
 | BR-NOTI-005 · cancel_reason | 4 | — |
 
@@ -54,7 +55,7 @@
 | **`wave:N`** | Milestone과 1:1 |
 | **`kind:` / `area:`** | feature/bug/docs · api/domain/… |
 
-**Nice 구분:** 라벨 없음 — Backlog [#30](https://github.com/Central-MakeUs/TripFit-server/issues/30) Nice 섹션 + Issue **비고** `분류: Wave 2 Nice` (#20 · #26 · #27). **Out**은 Backlog Out만 (#19). `Nice / Out` 혼용 금지. Wave Must 전부 Closed 전 Nice 착수 금지(팀 예외 시 Backlog에 명시).
+**Nice 구분:** 라벨 없음 — Backlog [#30](https://github.com/Central-MakeUs/TripFit-server/issues/30) Nice 섹션 + Issue **비고** `분류: Wave 2 Nice` (#20 · #26 · #27). **Out**은 Backlog Out만 (join 전 미리보기 · 이슈 미배정). `Nice / Out` 혼용 금지. Wave Must 전부 Closed 전 Nice 착수 금지(팀 예외 시 Backlog에 명시).
 
 ### Wave Backlog Issue (GitHub)
 
@@ -65,7 +66,7 @@
 | 3 | [#31](https://github.com/Central-MakeUs/TripFit-server/issues/31) | Wave 3 — 출시 UX |
 | 4 | [#32](https://github.com/Central-MakeUs/TripFit-server/issues/32) | Wave 4 — 운영·확장 |
 
-**활성 Wave (2026-07-21):** Wave 2 Must Open = **#13 · #37 · #38** (Closed Must: #11 · #12 · #17). Nice: #20 · #26 · #27✓. Out: #19.
+**활성 Wave (2026-07-22):** Wave 2 Must Open = **#13** (Closed Must: #11 · #12 · #17 · #37 · #38). Nice: #20 · #26✓ · #27✓. Out: join 전 미리보기(이슈 미배정). Wave 3 Must: **#21** · **#19**. Wave 4: **#44** Google Calendar.
 
 > **용어:** 이슈 `## Must Have` ≠ Wave Must. `MVP: In scope` ≠ Wave Must. SSOT: [`development-wave.md`](development-wave.md) · harness `Wave Must / Nice / Out`.
 

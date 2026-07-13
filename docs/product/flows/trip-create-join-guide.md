@@ -94,7 +94,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 - 소셜 로그인 필수 — **비회원 참여 없음** (BR-USER-002)
 - 이름 완료 필수
-- join 전 미리보기(#19)는 여전히 Out 가능
+- join 전 미리보기(이슈 미배정 · 구 #19)는 여전히 Out 가능
 
 ### 단계
 
@@ -279,7 +279,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 |------|------|
 | 설계 대안·Open Q | [`trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) |
 | JOINED 단계 초대·PATCH | 미정 |
-| join 전 미리보기 · 내보내기 · 푸시 · hold | #19 **Out** · #20 **Nice** · #21 Wave3 · #35 Wave4 |
+| join 전 미리보기 · 내보내기 · 푸시 · 카카오 공유 · hold | 미리보기 **Out**(이슈 미배정) · #20 **Nice** · #21·#19 Wave3 · #35 Wave4 |
 | 이 문서를 정식 SSOT로 승격 | 스펙 Approved 후 현행 guide와 교체 |
 
 ---

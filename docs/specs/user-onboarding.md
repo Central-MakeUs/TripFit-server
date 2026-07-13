@@ -83,7 +83,7 @@ firstName 또는 lastName null?
 
 ### Deferred (별도 스펙 — wave 1 본문 구현 안 함)
 
-- [ ] Google Calendar OAuth 연동 API·토큰 저장
+- [ ] Google Calendar OAuth 연동 API·토큰 저장 → [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](google-calendar-oauth.md)
 - [x] 정기·개별 일정 — [`schedule-unified.md`](schedule-unified.md) (wave 2, #11)
 - [ ] 마이페이지 이름 수정 — [`user-my-page.md`](user-my-page.md) (`PATCH /users/my-page`)
 - [ ] 네이버 캘린더

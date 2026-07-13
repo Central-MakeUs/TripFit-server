@@ -557,7 +557,7 @@ com.tripfit.tripfit
 | Refresh token rotation (RTR) | **wave 4 확정** | [`004`](../decisions/004-auth-token-rotation.md) — wave 1 Out |
 | Redis (access JWT) | **wave 4 확정** | blacklist vs whitelist `[미정]` |
 | JWT 서명 알고리즘 HS256 vs RS256 | `[미정]` | 단일 서버 MVP는 HS256으로 시작 가능 |
-| Google Calendar OAuth API | **Deferred** | 연동 본체 별도 스펙; wave 1은 boolean·`PATCH /users/onboarding` — [`user-onboarding.md`](user-onboarding.md) |
+| Google Calendar OAuth API | **Deferred** | [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](google-calendar-oauth.md); wave 1은 boolean·`PATCH /users/onboarding` — [`user-onboarding.md`](user-onboarding.md) |
 
 ## 구현 단계 제안 (이슈 분할 참고)
 

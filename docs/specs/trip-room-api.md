@@ -2,7 +2,7 @@
 
 > wave: 2  
 > implements: BR-TRIP-001, BR-TRIP-008, BR-TRIP-009, BR-TRIP-013, BR-USER-001, BR-USER-002, BR-USER-009, BR-USER-010  
-> deferred: **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), 카카오 공유 SDK ([#21](https://github.com/Central-MakeUs/TripFit-server/issues/21)), join 전 미리보기 ([#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **TERMINATED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)  
+> deferred: **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), **카카오 초대 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), join 전 미리보기 (Wave 2 Out · **이슈 미배정** · 구 #19 주제), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **TERMINATED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)  
 > related Implemented: 참여자 내보내기 → [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) [`trip-member-remove.md`](trip-member-remove.md)
 > 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·참여 = #22 확정** (2026-07-21) · **D5 홈 2뷰 amend** (2026-07-19) · **D5 구현 후속 defer #26·#27** (2026-07-19)  
 > 선행: [`auth-social-login.md`](auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)  
@@ -42,7 +42,7 @@
 | **D4** | CONFIRMED·CANCELED | 기존 멤버 재접속 idempotent · **신규 join 409** · PATCH는 **`ONGOING`만** | 2026-07-17 |
 | **D5** | 홈 목록 | **2뷰** (`scope=ongoing` \| `all`) · `last_activity_at` · `pinned_at` — 아래 §홈 목록 | **2026-07-19** |
 | **D6** | 이름 최대 길이 | **15자** | 2026-07-17 |
-| **D7** | join 전 미리보기 | wave 2 Out · [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) | 2026-07-17 |
+| **D7** | join 전 미리보기 | wave 2 Out · **이슈 미배정** (구 [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) — 2026-07-22부터 카카오 공유로 전환) | 2026-07-17 |
 | **D8** | 인원·기간 cap | `memberCount` **1~10** (create/patch) · `joinedMemberCount >= memberCount` → 신규 join 409 · `end_range` 경과(TERMINATED) → 초대·신규 join 불가 | 2026-07-17 |
 | **D9** | 일정·기간·박일 | `duration_days` **nullable**(미정). create/patch: `durationNights`+`durationDays` 쌍 또는 둘 다 null. DB는 **일만** 저장. **희망 기간은 create만·PATCH 불가**. **당일치기(0박 1일) 허용** (`nights=0`, `days=1`) | **2026-07-21** |
 
@@ -121,8 +121,9 @@
 |------|------|
 | 추천·확정·취소 | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) |
 | **참여·`is_all_free`·온보딩·sparse** | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (wave 1) |
-| join 전 미리보기 | [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) |
-| 카카오 공유·푸시 | [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21) (wave 3) |
+| join 전 미리보기 | Wave 2 Out · 이슈 미배정 (구 #19) |
+| 카카오 초대 공유 | [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) · [`kakao-invite-share.md`](kakao-invite-share.md) (wave 3) |
+| 푸시 알림 | [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21) (wave 3) |
 | `cancel_reason` VOC | wave 4 |
 
 ## API / 인터페이스
