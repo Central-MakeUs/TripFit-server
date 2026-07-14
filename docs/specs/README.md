@@ -21,7 +21,7 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
-| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Draft** (S1·R2=A 확정) · **#17** | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
+| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Approved** (S1·R2=A·A1=730일) · **#17** | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
 | [`trip-room-api.md`](trip-room-api.md) | Draft | 여행방 CRUD·참여·Pin·일정 제출 | schedule-unified |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft | 추천 4모드·TOP 3·확정·취소 | 위 2개 |
 

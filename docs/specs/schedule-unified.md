@@ -84,11 +84,11 @@ user/schedule/
 - 정기 vs 개인 병합 → **S1 + R2=A 확정** ([`schedule-calendar-resolve.md`](schedule-calendar-resolve.md)): personal 있으면 그날 통째로 personal; regular 복수 시 슬롯별 IMPOSSIBLE 우선; sparse omit; effective만
 - `uncertain=true`일 때 추천에서 슬롯 무시 여부 (#13) — calendar는 U1(슬롯 그대로 노출) 가정
 
-## API (calendar 추가 예정)
+## API
 
 | Method | Path | 설명 |
 |--------|------|------|
-| GET | `/api/v1/users/schedule/calendar` | 기간 effective days — **#17**, 스펙 `schedule-calendar-resolve.md` |
+| GET | `/api/v1/users/schedule/calendar` | 기간 effective days — **#17**, 상한 730일, 스펙 `schedule-calendar-resolve.md` (Approved) |
 
 ## 변경 이력
 

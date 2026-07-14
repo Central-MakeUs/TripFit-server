@@ -27,7 +27,7 @@ docs/
 │   ├── user-onboarding.md                ← wave 1 이름·온보딩 boolean·PATCH API (Approved)
 │   ├── user-my-page.md                   ← wave 1 마이페이지 이름 수정 PATCH API
 │   ├── schedule-unified.md               ← wave 2 정기/개별 2테이블 (Approved, #11)
-│   ├── schedule-calendar-resolve.md      ← wave 2 달력 effective (Draft, S1+R2=A 확정)
+│   ├── schedule-calendar-resolve.md      ← wave 2 달력 effective (Approved, A1=730일)
 │   ├── trip-room-api.md                  ← wave 2 여행방·참여·Pin (Draft)
 │   ├── trip-recommendation.md            ← wave 2 추천 4모드·확정 (Draft)
 │   ├── auth-token-rotation.md            ← wave 4 RTR + Redis (Draft)

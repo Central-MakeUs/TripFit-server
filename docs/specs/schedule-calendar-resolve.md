@@ -4,7 +4,7 @@
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008  
 > related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](trip-room-api.md), [`trip-recommendation.md`](trip-recommendation.md)  
 > deferred: 그룹 달력 **집계·시각화 UI** (wave 3), Google Calendar OAuth (wave 4), `uncertain`→추천 TBD 취급 (#13)  
-> 상태: **Draft** — 병합 **S1 + R2=A** · sparse · effective-only **확정**. API 구현은 스펙 Approved 후  
+> 상태: **Approved** — 병합 S1+R2=A · sparse · effective-only · **A1=730일(약 2년)** 확정  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 
 ## 목표
@@ -24,6 +24,7 @@
 | 4 | 응답 깊이 | 본인·그룹 **모두 effective만** (원본 레이어 없음, 납작한 day) |
 | 5 | 용어 | 합친 결과 = **`effective`** (중첩 wrapper 없음) |
 | 6 | 동일 요일 regular 복수 | **R2=A** — 슬롯별 **IMPOSSIBLE 우선** |
+| 7 | calendar 기간 상한 **A1** | **`ChronoUnit.DAYS.between(start,end) ≤ 730`** (약 2년). 초과 시 400 `INVALID_INPUT` |
 
 ### S1이란 (클라이언트 관점)
 
@@ -187,7 +188,8 @@ null(미설정) 슬롯 → 합성에서 무시 (의견 없음). 해당 슬롯에
 |--------|------|------|
 | GET | `/api/v1/users/schedule/calendar` | JWT |
 
-**Query:** `startDate`, `endDate` (ISO date, 필수). `end < start` → 400.
+**Query:** `startDate`, `endDate` (ISO date, 필수). `end < start` → 400.  
+**기간 상한:** `DAYS.between(start,end) ≤ 730` (약 2년). 초과 → 400 `INVALID_INPUT`.
 
 **응답**
 
@@ -247,19 +249,20 @@ trip CRUD 전이면 **①만** 구현.
 - [x] S1 병합·personal 3슬롯 필수·sparse·effective-only shape **문서 확정**
 - [x] R2=A (슬롯별 IMPOSSIBLE 우선) **문서 확정**
 - [x] `schedule-unified.md` 동기화
-- [ ] (선택) 기간 상한, T1/T2/T3, `source` 여부
+- [x] A1 기간 상한 **730일(약 2년)** 확정
+- [ ] (선택) T1/T2/T3, `source` 여부
 
 ### Must Have (구현 — 스펙 Approved 후)
 
-- [ ] resolve 로직 + 단위 테스트 (S1, R2=A, omit, weekday expand)
-- [ ] `GET /api/v1/users/schedule/calendar`
-- [ ] OpenAPI `@Schema`
-- [ ] trip 이후 members schedule-calendar (+ summary 정리)
+- [x] resolve 로직 + 단위 테스트 (S1, R2=A, omit, weekday expand)
+- [x] `GET /api/v1/users/schedule/calendar`
+- [x] OpenAPI `@Schema`
+- [x] 기간 상한 730일 검증
+- [ ] trip 이후 members schedule-calendar (+ summary 정리) — **#12**
 
 ### Nice to Have
 
 - [ ] `source` (`REGULAR` \| `PERSONAL`)
-- [ ] 조회 기간 상한 (예: 90일)
 
 ---
 
@@ -313,17 +316,17 @@ function combineRegularsImpossibleWins(regulars):
 
 ### 정상
 
-- [ ] regular만 → 매칭 요일만 days, 주말 omit  
-- [ ] personal 있으면 그날 슬롯·uncertain이 personal과 **완전 일치** (S1)  
-- [ ] personal만(요일 regular 없음) → 그날만 포함  
-- [ ] “오후만 연차” 저장 = 클라이언트가 3슬롯 채움 → calendar effective가 그 3슬롯  
-- [ ] 동일 요일 regular 2행 → 슬롯별 IMPOSSIBLE 우선 (R2=A)
+- [x] regular만 → 매칭 요일만 days, 주말 omit  
+- [x] personal 있으면 그날 슬롯·uncertain이 personal과 **완전 일치** (S1)  
+- [x] personal만(요일 regular 없음) → 그날만 포함  
+- [x] “오후만 연차” 저장 = 클라이언트가 3슬롯 채움 → calendar effective가 그 3슬롯  
+- [x] 동일 요일 regular 2행 → 슬롯별 IMPOSSIBLE 우선 (R2=A)
 
 ### 실패
 
-- [ ] `endDate < startDate` → 400  
-- [ ] 기간 내 무데이터 → `days: []`  
-- [ ] trip calendar 비멤버 → 403  
+- [x] `endDate < startDate` → 400  
+- [x] 기간 내 무데이터 → `days: []`  
+- [ ] trip calendar 비멤버 → 403 — **#12**
 
 ---
 
@@ -333,12 +336,14 @@ function combineRegularsImpossibleWins(regulars):
 
 - [x] S1·sparse·effective-only·**R2=A** 문서 확정  
 - [x] 관련 스펙 인덱스·`schedule-unified` 동기화  
+- [x] A1=730일 확정  
 
 ### 구현
 
-- [ ] 본 스펙 **Approved** 후 코드  
-- [ ] `./gradlew test`  
-- [ ] 이슈/OpenAPI 갱신  
+- [x] 본 스펙 **Approved** 후 코드  
+- [x] `./gradlew test` (`user.schedule.*`)  
+- [x] 이슈 #17 체크리스트 갱신  
+- [ ] PR · Implemented 상태 표기
 
 ---
 
@@ -359,7 +364,7 @@ function combineRegularsImpossibleWins(regulars):
 
 | ID | 항목 | 선택지 / 질문 | 제안 | 상태 |
 |----|------|---------------|------|------|
-| **A1** | calendar **기간 상한** | 없음 / 31일 / 90일 / trip 기간만 | MVP: **90일** 또는 trip 컨텍스트만 | `[미정]` |
+| **A1** | calendar **기간 상한** | **확정: 730일 (약 2년)** | `MAX_CALENDAR_RANGE_DAYS=730` | **확정** |
 | **A2** | `personal-summary` vs `schedule-calendar` | T1 대체 / T2 병행 / T3 브레이킹 변경 | **T1** (summary deprecate) | `[미정]` — #12와 협의 |
 | **A3** | **타임존·날짜 경계** | `LocalDate` only vs zone 포함 | **캘린더 일자(존 없음)** — 요청/응답 모두 date | 합의 권장 (문서에 박기) |
 | **A4** | **`holidayRest`를 calendar에 반영?** | wave 2 Out / 공휴일 테이블 후 반영 | **wave 2 Out** — 요일만. 공휴일은 #13·후속 | 확정 방향(문서) · 프론트에 “공휴일≠휴무 자동” 고지 |
@@ -381,7 +386,7 @@ function combineRegularsImpossibleWins(regulars):
 
 | # | 항목 | 비고 |
 |---|------|------|
-| 1 | A1 기간 상한 | 구현 기본값만 정해도 됨 |
+| 1 | A1 기간 상한 | **확정 730일** |
 | 2 | A2 summary 정리 | #12와 함께 |
 | 3 | A6 추천 uncertain | #13 |
 | 4 | A7 source | Nice |
@@ -414,4 +419,4 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-13 | Draft 초안 |
 | 2026-07-14 | S1·sparse·effective-only 확정 |
 | 2026-07-14 | R2=A 확정 · 리스크 표 |
-| 2026-07-14 | Critical/Agreement 등급 · **#17** 트래킹 |
+| 2026-07-14 | **Approved** · A1=730일(2년) · 본인 calendar 구현 · #17 |
