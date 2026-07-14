@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.domain.Trip;
@@ -284,6 +285,55 @@ class ScheduleServiceTest {
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(ScheduleErrorCode.REGULAR_SCHEDULE_REQUIRED);
+  }
+
+  @Test
+  void getCalendar_whenRangeExceedsTwoYears_throws400() {
+    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(regularScheduleRepository.existsByUserId(USER_ID)).thenReturn(true);
+
+    assertThatThrownBy(
+        () -> scheduleService.getCalendar(
+            USER_ID,
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2028, 1, 2)))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  void getCalendar_resolvesSparseWeekdays() {
+    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(regularScheduleRepository.existsByUserId(USER_ID)).thenReturn(true);
+    RegularSchedule work =
+        RegularSchedule.create(
+            user,
+            "출근",
+            "MON,TUE,WED,THU,FRI",
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID))
+        .thenReturn(List.of(work));
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            LocalDate.of(2026, 8, 1),
+            LocalDate.of(2026, 8, 7)))
+        .thenReturn(List.of());
+
+    var response =
+        scheduleService.getCalendar(
+            USER_ID,
+            LocalDate.of(2026, 8, 1),
+            LocalDate.of(2026, 8, 7));
+
+    assertThat(response.days()).hasSize(5);
+    assertThat(response.days().getFirst().date()).isEqualTo(LocalDate.of(2026, 8, 3));
   }
 
   @Test

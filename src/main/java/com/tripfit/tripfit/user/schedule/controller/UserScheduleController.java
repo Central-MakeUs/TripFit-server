@@ -6,6 +6,7 @@ import com.tripfit.tripfit.user.schedule.dto.CreateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse.RegularScheduleListResponse;
+import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
@@ -99,5 +100,19 @@ public class UserScheduleController {
       @AuthorizedUser UUID userId,
       @Valid @RequestBody UpdatePersonalScheduleRequest request) {
     return ResponseEntity.ok(ApiResponse.of(scheduleService.upsertPersonal(userId, request)));
+  }
+
+  // JWT 사용자의 regular+personal effective 달력을 조회함
+  @Operation(
+      summary = "일정 달력(effective) 조회",
+      description = "기간 내 날짜별 합친 슬롯. personal 우선(S1), regular 복수는 IMPOSSIBLE 우선(R2=A). "
+          + "빈 날은 omit. start~end 최대 730일(약 2년). 정기 미등록 시 403")
+  @GetMapping("/calendar")
+  ResponseEntity<ApiResponse<ScheduleCalendarResponse>> getCalendar(
+      @AuthorizedUser UUID userId,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    return ResponseEntity.ok(
+        ApiResponse.of(scheduleService.getCalendar(userId, startDate, endDate)));
   }
 }

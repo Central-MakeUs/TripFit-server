@@ -1,0 +1,155 @@
+package com.tripfit.tripfit.user.schedule.service;
+
+import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.domain.SlotStatuses;
+import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
+import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
+import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+// regular 요일 expand + personal S1 overlay → 날짜별 effective (R2=A)
+final class ScheduleCalendarResolver {
+
+  private ScheduleCalendarResolver() {}
+
+  // 기간 날짜마다 personal 우선, 없으면 regular(IMPOSSIBLE 우선)로 effective를 만듦
+  static List<CalendarDayResponse> resolve(
+      List<RegularSchedule> regulars,
+      List<PersonalSchedule> personals,
+      LocalDate startDate,
+      LocalDate endDate) {
+    Map<LocalDate, PersonalSchedule> personalByDate = new HashMap<>();
+    for (PersonalSchedule personal : personals) {
+      personalByDate.put(personal.getScheduleDate(), personal);
+    }
+
+    List<CalendarDayResponse> days = new ArrayList<>();
+    for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+      PersonalSchedule personal = personalByDate.get(date);
+      if (personal != null) {
+        SlotStatuses slots = personal.getSlotStatuses();
+        days.add(
+            new CalendarDayResponse(
+                date,
+                slots.getMorningStatus(),
+                slots.getAfternoonStatus(),
+                slots.getEveningStatus(),
+                personal.isUncertain()));
+        continue;
+      }
+
+      List<RegularSchedule> matched = matchingRegulars(regulars, date.getDayOfWeek());
+      if (matched.isEmpty()) {
+        continue;
+      }
+      SlotStatuses combined = combineImpossibleWins(matched);
+      if (combined.getMorningStatus() == null
+          && combined.getAfternoonStatus() == null
+          && combined.getEveningStatus() == null) {
+        continue;
+      }
+      days.add(
+          new CalendarDayResponse(
+              date,
+              nullToPossible(combined.getMorningStatus()),
+              nullToPossible(combined.getAfternoonStatus()),
+              nullToPossible(combined.getEveningStatus()),
+              false));
+    }
+    return days;
+  }
+
+  // 같은 요일 regular들의 슬롯을 IMPOSSIBLE 우선으로 합침 (R2=A)
+  static SlotStatuses combineImpossibleWins(List<RegularSchedule> matched) {
+    return new SlotStatuses(
+        mergeSlot(matched, true, false, false),
+        mergeSlot(matched, false, true, false),
+        mergeSlot(matched, false, false, true));
+  }
+
+  // daysOfWeek 문자열에 해당 요일이 포함되는지 판별함
+  static boolean matchesDayOfWeek(String daysOfWeek, DayOfWeek dayOfWeek) {
+    return parseDaysOfWeek(daysOfWeek).contains(dayOfWeek);
+  }
+
+  // "MON,TUE,WED" 형태를 DayOfWeek 집합으로 파싱함 (공백·대소문자 무시)
+  static Set<DayOfWeek> parseDaysOfWeek(String daysOfWeek) {
+    Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
+    if (daysOfWeek == null || daysOfWeek.isBlank()) {
+      return days;
+    }
+    for (String token : daysOfWeek.split(",")) {
+      String trimmed = token.trim().toUpperCase(Locale.ROOT);
+      if (trimmed.isEmpty()) {
+        continue;
+      }
+      DayOfWeek parsed = parseDayToken(trimmed);
+      if (parsed != null) {
+        days.add(parsed);
+      }
+    }
+    return days;
+  }
+
+  private static List<RegularSchedule> matchingRegulars(
+      List<RegularSchedule> regulars,
+      DayOfWeek dayOfWeek) {
+    List<RegularSchedule> matched = new ArrayList<>();
+    for (RegularSchedule regular : regulars) {
+      if (matchesDayOfWeek(regular.getDaysOfWeek(), dayOfWeek)) {
+        matched.add(regular);
+      }
+    }
+    return matched;
+  }
+
+  private static ScheduleStatus mergeSlot(
+      List<RegularSchedule> matched,
+      boolean morning,
+      boolean afternoon,
+      boolean evening) {
+    boolean sawPossible = false;
+    for (RegularSchedule regular : matched) {
+      SlotStatuses slots = regular.getSlotStatuses();
+      if (slots == null) {
+        continue;
+      }
+      ScheduleStatus status =
+          morning
+              ? slots.getMorningStatus()
+              : afternoon ? slots.getAfternoonStatus() : slots.getEveningStatus();
+      if (status == ScheduleStatus.IMPOSSIBLE) {
+        return ScheduleStatus.IMPOSSIBLE;
+      }
+      if (status == ScheduleStatus.POSSIBLE) {
+        sawPossible = true;
+      }
+    }
+    return sawPossible ? ScheduleStatus.POSSIBLE : null;
+  }
+
+  private static ScheduleStatus nullToPossible(ScheduleStatus status) {
+    return status != null ? status : ScheduleStatus.POSSIBLE;
+  }
+
+  private static DayOfWeek parseDayToken(String token) {
+    return switch (token) {
+      case "MON", "MONDAY" -> DayOfWeek.MONDAY;
+      case "TUE", "TUESDAY" -> DayOfWeek.TUESDAY;
+      case "WED", "WEDNESDAY" -> DayOfWeek.WEDNESDAY;
+      case "THU", "THURSDAY" -> DayOfWeek.THURSDAY;
+      case "FRI", "FRIDAY" -> DayOfWeek.FRIDAY;
+      case "SAT", "SATURDAY" -> DayOfWeek.SATURDAY;
+      case "SUN", "SUNDAY" -> DayOfWeek.SUNDAY;
+      default -> null;
+    };
+  }
+}

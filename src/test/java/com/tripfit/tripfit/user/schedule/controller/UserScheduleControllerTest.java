@@ -17,6 +17,7 @@ import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse.PersonalScheduleItemResponse;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
+import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -196,5 +197,30 @@ class UserScheduleControllerTest {
                 .param("startDate", "2026-08-01")
                 .param("endDate", "2026-08-10"))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  void getCalendar_ok() throws Exception {
+    when(scheduleService.getCalendar(eq(USER_ID), any(), any()))
+        .thenReturn(
+            new ScheduleCalendarResponse(
+                LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 7),
+                List.of(
+                    new ScheduleCalendarResponse.CalendarDayResponse(
+                        LocalDate.of(2026, 8, 3),
+                        ScheduleStatus.IMPOSSIBLE,
+                        ScheduleStatus.IMPOSSIBLE,
+                        ScheduleStatus.POSSIBLE,
+                        false))));
+
+    mockMvc
+        .perform(
+            get("/api/v1/users/schedule/calendar")
+                .param("startDate", "2026-08-01")
+                .param("endDate", "2026-08-07"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.days[0].date").value("2026-08-03"))
+        .andExpect(jsonPath("$.data.days[0].morningStatus").value("IMPOSSIBLE"));
   }
 }

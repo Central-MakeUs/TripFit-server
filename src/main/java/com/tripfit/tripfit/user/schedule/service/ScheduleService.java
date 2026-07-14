@@ -20,6 +20,7 @@ import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse.PersonalScheduleItemResponse;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse.RegularScheduleListResponse;
+import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.PersonalScheduleItem;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
@@ -29,6 +30,7 @@ import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +42,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ScheduleService {
+
+  /** calendar 조회 최대 기간 (start~end 일수 차, ChronoUnit.DAYS). 약 2년. */
+  public static final int MAX_CALENDAR_RANGE_DAYS = 730;
 
   private final RegularScheduleRepository regularScheduleRepository;
 
@@ -201,6 +206,30 @@ public class ScheduleService {
     return getPersonal(userId, minDate, maxDate);
   }
 
+  // 기간 내 regular+personal을 합친 effective 달력을 조회함 (S1 · R2=A · sparse)
+  @Transactional(readOnly = true)
+  public ScheduleCalendarResponse getCalendar(
+      UUID userId,
+      LocalDate startDate,
+      LocalDate endDate) {
+    // 1. 정기 등록·기간(최대 2년)을 검증함
+    requireRegularScheduleRegistered(userId);
+    validateCalendarDateRange(startDate, endDate);
+
+    // 2. regular·personal을 읽어 날짜별 effective로 합침
+    List<RegularSchedule> regulars =
+        regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
+    List<PersonalSchedule> personals =
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            userId,
+            startDate,
+            endDate);
+    return new ScheduleCalendarResponse(
+        startDate,
+        endDate,
+        ScheduleCalendarResolver.resolve(regulars, personals, startDate, endDate));
+  }
+
   // 여행방 멤버들의 희망 기간 개인 일정을 집계함
   @Transactional(readOnly = true)
   public MemberPersonalSummaryResponse getMemberPersonalSummary(
@@ -321,6 +350,14 @@ public class ScheduleService {
   // 조회 기간이 유효한지 확인함
   private void validateDateRange(LocalDate startDate, LocalDate endDate) {
     if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
+      throw new TripFitException(CommonErrorCode.INVALID_INPUT);
+    }
+  }
+
+  // calendar 기간이 시작≤종료이고 최대 2년(730일)을 넘지 않는지 확인함
+  private void validateCalendarDateRange(LocalDate startDate, LocalDate endDate) {
+    validateDateRange(startDate, endDate);
+    if (ChronoUnit.DAYS.between(startDate, endDate) > MAX_CALENDAR_RANGE_DAYS) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }
