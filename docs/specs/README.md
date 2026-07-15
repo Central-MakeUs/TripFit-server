@@ -16,7 +16,7 @@
 |------|------|------|------|
 | [`uuid-primary-key.md`](uuid-primary-key.md) | **Implemented** | 전 테이블 PK/FK bigint → UUID CHAR(36), JWT `sub`, Cursor 규칙 | — |
 | [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Draft** (#22 · **#39 amend**) | join 게이트 · `JOINED`→confirm · submit 폐기 · hold→#35 | user-onboarding · trip-create-join-flow-redesign |
-| [`trip-create-join-flow-redesign.md`](trip-create-join-flow-redesign.md) | **Implemented (core)** · **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)** | 생성→일정 confirm · [계획](../superpowers/plans/2026-07-21-trip-schedule-confirm-joined.md) | trip-room-api · [가이드](../product/flows/trip-create-join-guide.md) |
+| [`trip-create-join-flow-redesign.md`](trip-create-join-flow-redesign.md) | **Implemented (core)** · **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)** | 생성→일정 confirm | trip-room-api · [가이드](../product/flows/trip-create-join-guide.md) |
 
 ## wave 2
 

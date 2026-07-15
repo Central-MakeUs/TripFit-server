@@ -1,7 +1,6 @@
 # 여행방 생성·참여 플로우 재설계 — 설계 대안
 
 > 상태: **Accepted / Implemented (core)** — 대안 A · [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39) · 브랜치 `feat/39-trip-schedule-confirm-joined`  
-> 구현 계획: [`../superpowers/plans/2026-07-21-trip-schedule-confirm-joined.md`](../superpowers/plans/2026-07-21-trip-schedule-confirm-joined.md)  
 > 관련: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) (#22), [`trip-room-api.md`](trip-room-api.md),  
 > 가이드: [`../product/flows/trip-create-join-guide.md`](../product/flows/trip-create-join-guide.md)  
 > 작성: 2026-07-21  
@@ -275,12 +274,9 @@
 ## 다음 단계
 
 1. ~~대안 선택~~ → **A 확정**
-2. Plan defaults(Open Q) 사용자 확인 · **새 GitHub 이슈** 생성
-3. `schedule-participation-onboarding.md` · `trip-room-api.md` amend → **Approved**
-4. [`2026-07-21-trip-schedule-confirm-joined.md`](../superpowers/plans/2026-07-21-trip-schedule-confirm-joined.md) Task 0~5 실행
-5. proposed guide 승격 · `./gradlew test`
-
-**Approved 전 구현하지 않는다.**
+2. ~~Plan · GitHub #39~~ → **Implemented (core)**
+3. ~~스펙 amend~~ → `schedule-participation-onboarding.md` · `trip-room-api.md` · 가이드 반영 완료
+4. ~~구현·`./gradlew test`~~ → 완료 (구 Superpowers plan 문서는 삭제 — SSOT는 본 스펙·가이드)
 
 ## 변경 이력
 
@@ -288,3 +284,4 @@
 |------|------|
 | 2026-07-21 | Draft — 대안 A~D · 권장 A · 가이드 비교본 링크 |
 | 2026-07-21 | 대안 A 선택 · 구현 계획 링크 · 새 이슈 권장 |
+| 2026-07-21 | Implemented (core) · 완료된 Superpowers plan 문서 삭제 |

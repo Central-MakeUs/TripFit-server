@@ -1,7 +1,7 @@
 # 여행방 생성·참여 — 플로우·정책·시나리오
 
 > SSOT 가이드 (대안 A · [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)).  
-> 계약: [`trip-room-api.md`](../../specs/trip-room-api.md) · [`trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) · 계획: [`2026-07-21-trip-schedule-confirm-joined.md`](../../superpowers/plans/2026-07-21-trip-schedule-confirm-joined.md)  
+> 계약: [`trip-room-api.md`](../../specs/trip-room-api.md) · [`trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) · [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)  
 > 짧은 요약: [`trip-create.md`](trip-create.md) · [`trip-join.md`](trip-join.md)
 
 ---
