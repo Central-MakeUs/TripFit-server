@@ -29,6 +29,7 @@
 | [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 · **#39** JOINED/confirm | 여행방 CRUD·홈 목록·Pin · schedule/confirm | #17 · #22 · #39 |
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | TERMINATED DB·Pin batch · 00:05 KST | #12 |
+| [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft | 추천 4모드·TOP 3·확정·취소 | 위 2개 |
 
 ## wave 4
@@ -48,7 +49,7 @@
 | #12 | trip-room-api | Open |
 | #13 | trip-recommendation | Open |
 | #19 | join 미리보기 (Out) | Open |
-| #20 | 참여자 내보내기 (Out) | Open |
+| #20 | trip-member-remove | Implemented · Nice |
 | **#26** | trip-last-activity-at | Open |
 | **#27** | trip-home-schedulers | Open |
 | **#22** | schedule-participation-onboarding (Draft — late-join · 방장 A · memberFillRate) | Open |

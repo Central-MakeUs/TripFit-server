@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.trip.controller;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -79,6 +80,27 @@ class TripMemberControllerTest {
         .perform(get("/api/v1/trips/" + TRIP_ID + "/members"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.memberFillRate").value(1.0));
+  }
+
+  @Test
+  void removeMember_ok() throws Exception {
+    when(tripService.removeMember(TRIP_ID, USER_ID, OTHER_ID))
+        .thenReturn(
+            new TripMembersResponse(
+                6,
+                1,
+                1,
+                1.0 / 6,
+                List.of(
+                    new TripMemberItemResponse(
+                        USER_ID, "홍길동", TripMemberRole.OWNER, TripMemberStatus.RESPONDED,
+                        false))));
+
+    mockMvc
+        .perform(delete("/api/v1/trips/" + TRIP_ID + "/members/" + OTHER_ID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.joinedMemberCount").value(1))
+        .andExpect(jsonPath("$.data.members[0].userId").value(USER_ID.toString()));
   }
 
   @Test

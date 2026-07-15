@@ -12,7 +12,9 @@ public enum TripErrorCode implements ErrorCode {
   TRIP_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "TRIP_ALREADY_CONFIRMED", "일정이 확정된 여행방에는 참여할 수 없습니다."),
   TRIP_CANCELED(HttpStatus.CONFLICT, "TRIP_CANCELED", "취소된 여행방에는 참여할 수 없습니다."),
   TRIP_TERMINATED(HttpStatus.CONFLICT, "TRIP_TERMINATED", "종료된 여행방에는 참여할 수 없습니다."),
-  TRIP_MEMBER_FULL(HttpStatus.CONFLICT, "TRIP_MEMBER_FULL", "참여 인원이 가득 찼습니다.");
+  TRIP_MEMBER_FULL(HttpStatus.CONFLICT, "TRIP_MEMBER_FULL", "참여 인원이 가득 찼습니다."),
+  TRIP_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_MEMBER_NOT_FOUND", "여행방 참여자를 찾을 수 없습니다."),
+  CANNOT_REMOVE_OWNER(HttpStatus.BAD_REQUEST, "CANNOT_REMOVE_OWNER", "방장은 내보낼 수 없습니다.");
 
   private final HttpStatus httpStatus;
 

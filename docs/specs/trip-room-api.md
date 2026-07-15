@@ -431,7 +431,7 @@ trip `startRange`~`endRange` 기간 (현행). 멤버 **전원** × effective day
 |------|------|
 | TERMINATED 전환 시점 | **#27 Approved** — DB UPDATE 매일 00:05 KST · effectiveStatus lazy는 배치 전까지 · [`trip-home-schedulers.md`](trip-home-schedulers.md) |
 | PATCH `startRange`/`endRange` | 정책서 vs 화면정의서 충돌 |
-| 참여자 내보내기 | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) | wave 2 Out |
+| 참여자 내보내기 | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) · [`trip-member-remove.md`](trip-member-remove.md) | Nice · 구현 중 |
 | join 전 미리보기 | D7 · 별도 이슈 |
 | User 전역 일정 수정 → 참여 trip `last_activity_at` | **#26 L2 확정 — touch 안 함** · [`trip-last-activity-at.md`](trip-last-activity-at.md) |
 | 그룹 `schedule-calendar` OpenAPI 공개 | **완료** · ~~personal-summary~~ 삭제 |
@@ -440,6 +440,7 @@ trip `startRange`~`endRange` 기간 (현행). 멤버 **전원** × effective day
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-21 | 참여자 내보내기 → [`trip-member-remove.md`](trip-member-remove.md) (#20 Approved) |
 | 2026-07-21 | **#39** — D1 amend: create=`JOINED` · `schedule/confirm` · RESPONDED 게이트 |
 | 2026-07-21 | schedule-calendar OpenAPI 공개 · personal-summary 삭제 · D2 갱신 |
 | 2026-07-21 | **#22 정합** — submit/`JOINED`/`[미정]` stale 정리 · D1·D2·에러코드 · `RESPONDED` 예시 |

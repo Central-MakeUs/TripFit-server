@@ -121,6 +121,7 @@ class TripServiceTest {
             support,
             tripQueryService,
             proxiedJoinService,
+            tripMemberQueryService,
             userSummaryService);
     AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
     commandProxyFactory.addAspect(tripActivityAspect);
@@ -602,6 +603,62 @@ class TripServiceTest {
     assertThat(response.members())
         .extracting(m -> m.displayName())
         .containsExactly("홍길동", "홍길동(2)");
+  }
+
+  @Test
+  void removeMember_softDeletesMemberAndReturnsRemainingList() {
+    TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
+    TripMember target = tripMember(member, TripMemberRole.MEMBER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.of(target));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(ownerMembership));
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
+        .thenReturn(List.of(ownerMembership));
+
+    var response = tripService.removeMember(TRIP_ID, OWNER_ID, MEMBER_ID);
+
+    assertThat(target.getDeletedAt()).isNotNull();
+    assertThat(response.joinedMemberCount()).isEqualTo(1);
+    assertThat(response.members()).extracting(m -> m.userId()).containsExactly(OWNER_ID);
+    verify(recommendationRepository, never()).deleteByTripId(any());
+  }
+
+  @Test
+  void removeMember_whenTargetIsOwner_throwsCannotRemoveOwner() {
+    TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(ownerMembership));
+
+    assertThatThrownBy(() -> tripService.removeMember(TRIP_ID, OWNER_ID, OWNER_ID))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.CANNOT_REMOVE_OWNER);
+  }
+
+  @Test
+  void removeMember_whenTargetMissing_throwsNotFound() {
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> tripService.removeMember(TRIP_ID, OWNER_ID, MEMBER_ID))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_MEMBER_NOT_FOUND);
+  }
+
+  @Test
+  void removeMember_whenTripNotOngoing_throwsConflict() {
+    trip.setStatus(TripStatus.CONFIRMED);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+
+    assertThatThrownBy(() -> tripService.removeMember(TRIP_ID, OWNER_ID, MEMBER_ID))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_NOT_ONGOING);
   }
 
   private static PatchTripRequest patchRequest() {
