@@ -3,7 +3,7 @@
 > wave: 2  
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008  
 > related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](trip-room-api.md), [`trip-recommendation.md`](trip-recommendation.md)  
-> deferred: 그룹 달력 **집계·시각화 UI** (wave 3), Google Calendar OAuth (wave 4), `uncertain`→추천 TBD 취급 (#13)  
+> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)**  
 > 상태: **Implemented** (#17) — 병합 S1+R2=A · sparse · effective-only · **A1=730일(약 2년)** 확정  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 

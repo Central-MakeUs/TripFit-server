@@ -108,4 +108,9 @@ firstName 또는 lastName null?  → [이름 입력] (필수)
 | 날짜 | 변경 |
 |------|------|
 | 2026-07-08 | 초안 — boolean 3개 + 이름, 네이버 제외, JWT login 직후 |
-| 2026-07-13 | API 경로 `/users/me/*` → `/users/*` |
+| 2026-07-17 | BR-USER-006 게이트·personal/calendar → **#22 `[미定]`** · OpenAPI Hidden |
+
+## Amend (2026-07-17) — #22
+
+`isScheduleRegistered`·사전 일정 skip·trip submit(BR-USER-007)과의 정합이 깨져 **사전 일정 단계 정책을 `[미定]`으로 되돌림**.  
+재설계 SSOT: [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md) · GitHub **#22**.

@@ -10,11 +10,12 @@
 4. 상단 메타: `wave`, `implements`, `deferred` — [`waves.md`](../product/waves.md)
 5. 사용자 승인 후 구현 시작
 
-## wave 1 (인프라)
+## wave 1 (인프라 + 참여 흐름 재설계)
 
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`uuid-primary-key.md`](uuid-primary-key.md) | **Implemented** | 전 테이블 PK/FK bigint → UUID CHAR(36), JWT `sub`, Cursor 규칙 | — |
+| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **`[미定]`** (#22) | submit · onboarding skip · sparse · BR-USER-006/007 재설계 | user-onboarding · schedule-unified |
 
 ## wave 2
 
@@ -22,7 +23,7 @@
 |------|------|------|------|
 | [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
 | [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A·A1=730일 | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
-| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) | 여행방 CRUD·참여·Pin·일정 제출·members schedule-calendar | schedule-unified · #17 |
+| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · submit·D1 → **#22 deferred** | 여행방 CRUD·참여·Pin | schedule-unified · #17 · **#22** |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft | 추천 4모드·TOP 3·확정·취소 | 위 2개 |
 
 **구현 순서:** uuid-primary-key → schedule-unified(#11) → calendar resolve(#17) → trip-room-api(#12) → trip-recommendation(#13)
@@ -37,7 +38,7 @@
 | #13 | trip-recommendation | Open |
 | #19 | join 미리보기 (Out) | Open |
 | #20 | 참여자 내보내기 (Out) | Open |
-| #21 | 알림·카카오 (wave 3) | Open |
+| **#22** | schedule-participation-onboarding (`[미定]`) | Open |
 
 ## 완료 후
 

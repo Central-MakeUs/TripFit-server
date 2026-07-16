@@ -4,8 +4,8 @@
 > implements: BR-USER-001 (이름 완료 후 핵심 API)  
 > 결정: [`docs/decisions/007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md)  
 > 선행: [`auth-social-login.md`](auth-social-login.md)  
-> 상태: Approved  
-> 승인: 2026-07-08
+> deferred: 사전 일정 skip·`isScheduleRegistered`·`PATCH /users/onboarding` → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md)  
+> 상태: Approved (이름·boolean API) · **사전 일정 단계 `[미定]`** (#22)  
 
 ## 목표
 
@@ -49,7 +49,7 @@ firstName 또는 lastName null?
 | 소셜 login | SDK 로그인 | user row upsert, JWT 발급, boolean 기본값 `false` |
 | 이름 | 성·이름 입력 (소셜 `nickname`은 인풋 prefill만) | `PATCH profile` → `first_name`, `last_name` |
 | 캘린더 | 연동 또는 건너뛰기 | 연동 성공 시 `isGoogleCalendarConnected=true` (별도 스펙). **건너뛰기 = `false` 유지** |
-| 사전 일정 | 근무·연차 입력 또는 건너뛰기 | 저장 시 `isScheduleRegistered=true` (별도 스펙). **건너뛰기 = `false` 유지** |
+| 사전 일정 | 근무·연차 입력 또는 건너뛰기 | **`[미定]` #22** — 저장/skip·`isScheduleRegistered` 재설계 |
 | 온보딩 종료 | 마지막 단계 완료 | `PATCH onboarding` → `isOptionalOnboardingCompleted=true` |
 
 > **건너뛰기 전부 후 재진입:** 캘린더·일정 온보딩 **재노출 금지** — 마지막 건너뛰기 직후 `isOptionalOnboardingCompleted=true` PATCH 필수. 두 연동 boolean은 `false` 유지.

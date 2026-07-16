@@ -1,8 +1,8 @@
 # schedule 분리 — 정기 일정 + 개인 일정
 
 > wave: 2  
-> implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-TRIP-006, BR-USER-006, BR-USER-008  
-> deferred: Google Calendar OAuth (wave 4), 연차 복수 행 집계 (#13)  
+> implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-TRIP-006, BR-USER-008  
+> deferred: BR-USER-006 (personal/calendar 게이트) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)**, Google Calendar OAuth (wave 4), 연차 복수 행 집계 (#13)  
 > 상태: Approved  
 > supersedes: A안 `schedule`; `Availability` → `PersonalSchedule`
 
@@ -74,7 +74,8 @@ user/schedule/
 |--------|------|
 | GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성(start·end → 슬롯 계산) |
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정(start·end → 슬롯 재계산) / 삭제 |
-| GET/PATCH | `/api/v1/users/schedule/personal` (`startDate`·`endDate` query on GET). **BR-USER-006:** 정기 0행이면 403 `REGULAR_SCHEDULE_REQUIRED` |
+| GET/PATCH | `/api/v1/users/schedule/personal` — **`@Hidden` #22** · ~~BR-USER-006~~ `[미定]` |
+| GET | `/api/v1/users/schedule/calendar` — **`@Hidden` #22** |
 | GET | `/api/v1/trips/{tripId}/members/personal-summary` | **deprecate** → `members/schedule-calendar` (D2 T1, #12) |
 
 > 폐기: `/schedule/availability`, per-slot TBD, `note`

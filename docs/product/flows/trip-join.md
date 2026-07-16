@@ -11,16 +11,16 @@
 1. 초대 링크 클릭 또는 참여 코드 입력
 2. 앱 설치 여부 분기 → 앱 실행 또는 웹 랜딩 (BR-USER-002)
 3. 소셜 로그인 (필수, 비회원 없음 — BR-USER-002)
-4. `isScheduleRegistered=false`이면 `schedule` CONDITION 입력 (BR-USER-006)
+4. `isScheduleRegistered=false`이면 `schedule` CONDITION 입력 — **`[미定]` #22**
 5. (기존 사용자) CONDITION·AVAILABILITY 확인·수정 (BR-USER-008)
 6. trip 희망 기간 내 AVAILABILITY 입력 (BR-TRIP-002, BR-TRIP-003)
-7. 「일정 제출하기」 클릭 (BR-USER-007)
+7. 「일정 제출하기」 클릭 — **`[미定]` #22** (구 BR-USER-007)
 
-**성공 종료 조건:** `trip_member.status=RESPONDED` 및 여행방 상세 진입
+**성공 종료 조건:** **`[미定]` #22** (구 `trip_member.status=RESPONDED`)
 
 **예외 / 분기:**
 
-- 일정 제출 없이 이탈 → 참여 완료 미인정 (BR-USER-007)
+- 일정 제출 없이 이탈 → **`[미定]` #22** (구 참여 미완료)
 - **확정·취소된 여행방** → **신규** 참여 409 · 기존 멤버 재접속 idempotent (D4)
 - **희망 여행 시기 종료**(TERMINATED) → 신규 참여 제한·만료 안내; 기존 참여자는 조회·삭제만 (정책서 3-5 · 7-2)
 - **참여 인원 가득** → join 거부 (정책서)

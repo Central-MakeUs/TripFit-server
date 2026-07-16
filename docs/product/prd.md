@@ -79,8 +79,8 @@
 | 항목 | 결정 |
 |------|------|
 | BR-USER-002 | 참여자 소셜 로그인 필수, 비회원 없음 |
-| BR-USER-006 | 온보딩 skip 시 `schedule` CONDITION 필수 (`isScheduleRegistered`) |
-| BR-USER-007 | trip 「일정 제출하기」→ 참여 완료 (`RESPONDED`) |
+| BR-USER-006 | **`[미정]` #22** — 온보딩 skip·regular 게이트 |
+| BR-USER-007 | **`[미정]` #22** — 참여 완료·submit |
 | BR-TRIP-005 | 추천 4모드 wave 2 전부 |
 | BR-TRIP-010 | 기간·일수 변경 시 추천 초기화 |
 | BR-TRIP-001 | `trip.destination` MVP In |
