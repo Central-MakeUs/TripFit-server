@@ -71,6 +71,7 @@ class TripCommandService {
     this.userSummaryService = userSummaryService;
   }
 
+  // 여행방 생성 — 방장 멤버십 JOINED (#39). confirm 전 RESPONDED 아님
   @Transactional
   public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = support.findUser(userId);
@@ -140,6 +141,7 @@ class TripCommandService {
     return tripQueryService.toDetail(trip, membership);
   }
 
+  // 방장만 메타 수정. duration 변경 시 recommendation hard DELETE (BR-TRIP-010)
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
@@ -177,6 +179,7 @@ class TripCommandService {
     return tripQueryService.toDetail(trip, membership);
   }
 
+  // 방장 trip soft delete + 멤버 row 연쇄 soft delete
   @Transactional
   public void deleteTrip(UUID tripId, UUID userId) {
     Trip trip = support.requireActiveTrip(tripId);
@@ -190,6 +193,7 @@ class TripCommandService {
     }
   }
 
+  // 초대코드 join — 신규 MEMBER=RESPONDED. JOINED 재진입은 confirm 유도
   @Transactional
   public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
     User user = support.findUser(userId);
@@ -228,6 +232,7 @@ class TripCommandService {
     return tripJoinService.joinAsNewMember(trip, user);
   }
 
+  // 멤버 Pin on/off. 자동 해제는 #27 스케줄러
   @Transactional
   public TripDetailResponse updatePin(UUID tripId, UUID userId, UpdateTripPinRequest request) {
     TripMember membership = support.requireActiveMember(tripId, userId);

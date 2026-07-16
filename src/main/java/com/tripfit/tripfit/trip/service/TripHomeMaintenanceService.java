@@ -28,6 +28,7 @@ public class TripHomeMaintenanceService {
     this.tripScheduleSnapshotService = tripScheduleSnapshotService;
   }
 
+  // 일 배치: 만료 ONGOING freeze→TERMINATED + Pin 해제 (#27·#38)
   @Transactional
   public void runForDate(LocalDate today) {
     // 1. 만료 ONGOING 로드 → effective freeze → TERMINATED (R-freeze · R-gap 공백 불허)

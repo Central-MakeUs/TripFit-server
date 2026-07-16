@@ -86,7 +86,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - **레거시** — 경로·상수·검증·API를 바꾸면 **구 구현·미사용 메서드·구 assert·‘현행’ 문서 문구를 같은 변경에서 삭제** (STOP §4). “나중에” 금지
 - **ErrorCode·AOP** — 실패·touch·권한 변경 시 **같은 턴** (STOP §2)
 - 기존 스타일 유지. 내 변경으로 생긴 unused만 정리
-- 패키지·Entity·DTO·enum·JWT `@Operation`: `spring-boot-java.mdc`
+- 패키지·Entity·DTO·enum·JWT `@Operation`·**메서드 역할 `//` 주석**: `spring-boot-java.mdc` (Comments — public 유스케이스 생략 금지)
 - 핵심 로직 변경 시 `./gradlew test`
 - 변경한 모든 줄은 사용자 요청에 직접 연결
 

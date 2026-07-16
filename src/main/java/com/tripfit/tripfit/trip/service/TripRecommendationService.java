@@ -22,6 +22,7 @@ class TripRecommendationService {
     this.tripScheduleSnapshotService = tripScheduleSnapshotService;
   }
 
+  // #13 stub — 추천 생성 (BR-TRIP-005 hard DELETE·TOP3)
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public void generateRecommendations(UUID tripId, UUID ownerId, RecommendationMode mode) {

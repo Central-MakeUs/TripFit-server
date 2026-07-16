@@ -59,6 +59,7 @@ class TripMemberQueryService {
     this.support = support;
   }
 
+  // 멤버 목록 — joined/responded·memberFillRate·displayName
   @Transactional(readOnly = true)
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
     support.requireActiveMember(tripId, userId);
@@ -123,6 +124,7 @@ class TripMemberQueryService {
     return new MemberScheduleCalendarResponse(startDate, endDate, readOnly, memberCalendars);
   }
 
+  // ONGOING — regular+personal resolve (live)
   private List<MemberCalendar> buildLive(
       List<TripMember> members,
       Map<UUID, String> displayNames,
@@ -161,6 +163,7 @@ class TripMemberQueryService {
     return memberCalendars;
   }
 
+  // CONFIRMED/TERMINATED — snapshot row → calendar (#38)
   private List<MemberCalendar> buildFromSnapshots(
       UUID tripId,
       List<TripMember> members,
