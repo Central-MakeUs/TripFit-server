@@ -1,6 +1,6 @@
 package com.tripfit.tripfit.trip.domain;
 
-import com.tripfit.tripfit.common.domain.BaseTimeEntity;
+import com.tripfit.tripfit.common.domain.SoftDeleteEntity;
 import com.tripfit.tripfit.user.domain.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
@@ -32,7 +32,7 @@ import org.hibernate.type.SqlTypes;
     name = "trip_member",
     uniqueConstraints = @UniqueConstraint(columnNames = {"trip_id", "user_id"}))
 @Schema(description = "여행방 참여자. trip–user 매핑 및 응답 상태")
-public class TripMember extends BaseTimeEntity {
+public class TripMember extends SoftDeleteEntity {
 
   @Schema(
       description = "참여자 레코드 ID (UUID v4)",

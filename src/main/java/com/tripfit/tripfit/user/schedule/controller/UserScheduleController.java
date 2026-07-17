@@ -10,6 +10,7 @@ import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -85,6 +86,7 @@ public class UserScheduleController {
   }
 
   // JWT 사용자의 기간 내 개인 일정을 조회함
+  @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(
       summary = "개인 일정 조회",
       description = "startDate·endDate 필수. 날짜당 슬롯3 + uncertain")
@@ -98,6 +100,7 @@ public class UserScheduleController {
   }
 
   // JWT 사용자의 개인 일정을 날짜별로 bulk upsert함
+  @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(
       summary = "개인 일정 bulk upsert",
       description = "날짜별 슬롯·uncertain 생성 또는 갱신 후 요청 기간 목록 반환")
@@ -109,6 +112,7 @@ public class UserScheduleController {
   }
 
   // JWT 사용자의 regular+personal effective 달력을 조회함
+  @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(
       summary = "일정 달력(effective) 조회",
       description = "기간 내 날짜별 합친 슬롯. personal 우선(S1), regular 복수는 IMPOSSIBLE 우선(R2=A). "

@@ -394,7 +394,8 @@ class ScheduleServiceTest {
             TripStatus.ONGOING);
     trip.setId(TRIP_ID);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
-    when(tripMemberRepository.existsByTripIdAndUserId(TRIP_ID, OTHER_ID)).thenReturn(false);
+    when(tripMemberRepository.existsByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OTHER_ID))
+        .thenReturn(false);
 
     assertThatThrownBy(() -> scheduleService.getMemberPersonalSummary(TRIP_ID, OTHER_ID))
         .isInstanceOf(TripFitException.class)

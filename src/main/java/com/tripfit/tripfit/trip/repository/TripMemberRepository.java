@@ -5,12 +5,30 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
-  boolean existsByTripIdAndUserId(UUID tripId, UUID userId);
+  boolean existsByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
 
-  Optional<TripMember> findByTripIdAndUserId(UUID tripId, UUID userId);
+  Optional<TripMember> findByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
 
-  List<TripMember> findByTripId(UUID tripId);
+  List<TripMember> findByTripIdAndDeletedAtIsNull(UUID tripId);
+
+  long countByTripIdAndDeletedAtIsNull(UUID tripId);
+
+  long countByTripIdAndStatusAndDeletedAtIsNull(
+      UUID tripId,
+      com.tripfit.tripfit.trip.domain.TripMemberStatus status);
+
+  @Query("""
+      SELECT tm FROM TripMember tm
+      JOIN FETCH tm.trip t
+      WHERE tm.user.id = :userId
+      AND tm.deletedAt IS NULL
+      AND t.deletedAt IS NULL
+      ORDER BY tm.pinned DESC, t.updatedAt DESC
+      """)
+  List<TripMember> findActiveMembershipsByUserId(@Param("userId") UUID userId);
 }

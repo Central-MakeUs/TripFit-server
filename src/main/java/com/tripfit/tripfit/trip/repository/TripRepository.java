@@ -8,4 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface TripRepository extends JpaRepository<Trip, UUID> {
 
   Optional<Trip> findByIdAndDeletedAtIsNull(UUID id);
+
+  Optional<Trip> findByInviteCodeAndDeletedAtIsNull(String inviteCode);
+
+  boolean existsByInviteCode(String inviteCode);
 }

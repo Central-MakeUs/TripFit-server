@@ -241,12 +241,12 @@ public class ScheduleService {
         tripRepository
             .findByIdAndDeletedAtIsNull(tripId)
             .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
-    if (!tripMemberRepository.existsByTripIdAndUserId(tripId, requesterUserId)) {
+    if (!tripMemberRepository.existsByTripIdAndUserIdAndDeletedAtIsNull(tripId, requesterUserId)) {
       throw new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED);
     }
 
     // 2. 멤버 userId와 기간 내 personal_schedule을 조회함
-    List<TripMember> members = tripMemberRepository.findByTripId(tripId);
+    List<TripMember> members = tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId);
     List<UUID> userIds = members.stream().map(m -> m.getUser().getId()).distinct().toList();
     if (userIds.isEmpty()) {
       return new MemberPersonalSummaryResponse(List.of());
@@ -411,7 +411,7 @@ public class ScheduleService {
   }
 
   // 프로필 성·이름 → nickname → 기본 표시명 순으로 멤버 이름을 정함
-  static String displayName(User user) {
+  public static String displayName(User user) {
     if (user.hasProfileNameComplete()) {
       return user.getLastName() + user.getFirstName();
     }

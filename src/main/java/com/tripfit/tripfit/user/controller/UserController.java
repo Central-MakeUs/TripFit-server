@@ -7,6 +7,7 @@ import com.tripfit.tripfit.user.dto.UpdateOnboardingRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -49,6 +50,7 @@ public class UserController {
   }
 
   // JWT 사용자의 선택 온보딩 boolean을 갱신함
+  @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(summary = "온보딩 상태 갱신", description = "전송한 boolean 필드만 partial update")
   @PatchMapping("/onboarding")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateOnboarding(

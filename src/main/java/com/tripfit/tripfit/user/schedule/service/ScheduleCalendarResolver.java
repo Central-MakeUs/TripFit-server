@@ -16,12 +16,12 @@ import java.util.Map;
 import java.util.Set;
 
 // regular 요일 expand + personal S1 overlay → 날짜별 effective (R2=A)
-final class ScheduleCalendarResolver {
+public final class ScheduleCalendarResolver {
 
   private ScheduleCalendarResolver() {}
 
   // 기간 날짜마다 personal 우선, 없으면 regular(IMPOSSIBLE 우선)로 effective를 만듦
-  static List<CalendarDayResponse> resolve(
+  public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
       LocalDate startDate,

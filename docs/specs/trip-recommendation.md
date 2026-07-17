@@ -4,7 +4,7 @@
 > implements: BR-TRIP-005, BR-TRIP-007, BR-TRIP-010, BR-TRIP-011, BR-TRIP-012  
 > deferred: BR-NOTI-004 확정 알림 (wave 3), `cancel_reason` VOC (wave 4), 추천 가중치 수치 튜닝  
 > 상태: Draft  
-> 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17 Implemented), [`trip-room-api.md`](trip-room-api.md) (#12 Approved)
+> 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (RESPONDED·sparse·submit)
 
 ## 목표
 

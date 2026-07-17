@@ -10,10 +10,18 @@ import com.tripfit.tripfit.auth.config.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.dto.MemberPersonalSummaryResponse;
 import com.tripfit.tripfit.trip.dto.MemberPersonalSummaryResponse.DayPersonal;
 import com.tripfit.tripfit.trip.dto.MemberPersonalSummaryResponse.MemberPersonal;
+import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse;
+import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.CalendarDay;
+import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.MemberCalendar;
+import com.tripfit.tripfit.trip.dto.TripMembersResponse;
+import com.tripfit.tripfit.trip.dto.TripMembersResponse.TripMemberItemResponse;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
+import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import java.time.LocalDate;
 import java.util.List;
@@ -39,6 +47,9 @@ class TripMemberControllerTest {
   private static final UUID TRIP_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440010");
 
   @Mock
+  private TripService tripService;
+
+  @Mock
   private ScheduleService scheduleService;
 
   private MockMvc mockMvc;
@@ -47,7 +58,7 @@ class TripMemberControllerTest {
   void setUp() {
     SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(USER_ID));
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new TripMemberController(scheduleService))
+        MockMvcBuilders.standaloneSetup(new TripMemberController(tripService, scheduleService))
             .setCustomArgumentResolvers(new AuthorizedUserArgumentResolver())
             .setControllerAdvice(new GlobalExceptionHandler())
             .setMessageConverters(new JacksonJsonHttpMessageConverter())
@@ -57,6 +68,52 @@ class TripMemberControllerTest {
   @AfterEach
   void tearDown() {
     SecurityContextHolder.clearContext();
+  }
+
+  @Test
+  void listMembers_ok() throws Exception {
+    when(tripService.listMembers(TRIP_ID, USER_ID))
+        .thenReturn(
+            new TripMembersResponse(
+                2,
+                1,
+                0.5,
+                List.of(
+                    new TripMemberItemResponse(
+                        OTHER_ID, "김철수", TripMemberRole.MEMBER, TripMemberStatus.RESPONDED,
+                        false))));
+
+    mockMvc
+        .perform(get("/api/v1/trips/" + TRIP_ID + "/members"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.responseRate").value(0.5));
+  }
+
+  @Test
+  void getScheduleCalendar_ok() throws Exception {
+    when(tripService.getMemberScheduleCalendar(TRIP_ID, USER_ID))
+        .thenReturn(
+            new MemberScheduleCalendarResponse(
+                LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 10),
+                List.of(
+                    new MemberCalendar(
+                        OTHER_ID,
+                        "김철수",
+                        TripMemberRole.MEMBER,
+                        TripMemberStatus.RESPONDED,
+                        List.of(
+                            new CalendarDay(
+                                LocalDate.of(2026, 8, 3),
+                                ScheduleStatus.IMPOSSIBLE,
+                                ScheduleStatus.POSSIBLE,
+                                ScheduleStatus.POSSIBLE,
+                                true))))));
+
+    mockMvc
+        .perform(get("/api/v1/trips/" + TRIP_ID + "/members/schedule-calendar"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.members[0].days[0].uncertain").value(true));
   }
 
   @Test
