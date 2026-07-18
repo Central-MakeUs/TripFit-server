@@ -57,7 +57,7 @@ class TripServiceSupport {
     this.userRepository = userRepository;
   }
 
-  // 홈 카드 — preview는 상한 4명, overflow = joined - 4
+  // 홈 카드 DTO — 미리보기는 최대 4명, overflow = 참여 수 − 4
   TripHomeCardResponse toHomeCard(
       Trip trip,
       TripMember membership,
@@ -86,6 +86,7 @@ class TripServiceSupport {
         overflow);
   }
 
+  // 여행방 상세 DTO — inviteCode·본인 역할/상태·모집률 포함
   TripDetailResponse toDetail(Trip trip, TripMember membership) {
     UUID tripId = trip.getId();
     long joinedMemberCount =
@@ -119,7 +120,7 @@ class TripServiceSupport {
         memberFillRate(joined, trip.getMemberCount()));
   }
 
-  // 모집 현황 — joinedMemberCount / trip.memberCount (#22 D-MEMBER-FILL)
+  // 모집 현황 비율 — joinedMemberCount ÷ trip.memberCount (0.0~1.0)
   static double memberFillRate(int joinedMemberCount, Integer memberCount) {
     if (memberCount == null || memberCount <= 0) {
       return 0.0;
@@ -150,33 +151,35 @@ class TripServiceSupport {
     return byTrip;
   }
 
+  // 활성 여행방 로드 — 없거나 삭제되면 TRIP_NOT_FOUND
   Trip requireActiveTrip(UUID tripId) {
     return tripRepository
         .findByIdAndDeletedAtIsNull(tripId)
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
   }
 
-  // 비멤버·탈퇴 → TRIP_ACCESS_DENIED (방장 전용 FORBIDDEN과 구분)
+  // 활성 멤버십 로드 — 비멤버·탈퇴는 TRIP_ACCESS_DENIED (방장 전용 FORBIDDEN과 구분)
   TripMember requireActiveMember(UUID tripId, UUID userId) {
     return tripMemberRepository
         .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
   }
 
+  // 방장만 허용 — 아니면 TRIP_FORBIDDEN
   void requireOwner(Trip trip, UUID userId) {
     if (!trip.getOwner().getId().equals(userId)) {
       throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
     }
   }
 
-  // 조회용 effectiveStatus 기준 — DB status만 보면 기간 경과 ONGOING도 통과함
+  // 조율 중(ONGOING)만 변경 허용 — effectiveStatus 기준(기간 경과면 TERMINATED로 봄)
   void requireOngoingForMutation(Trip trip) {
     if (effectiveStatus(trip) != TripStatus.ONGOING) {
       throw new TripFitException(TripErrorCode.TRIP_NOT_ONGOING);
     }
   }
 
-  // ONGOING + end_range 경과 → TERMINATED (배치 전 lazy · #27 이후 DB TERMINATED와 동일 UX)
+  // 화면용 상태 — ONGOING이어도 endRange가 지났으면 TERMINATED (배치 전이라도 UX 동일)
   TripStatus effectiveStatus(Trip trip) {
     if (trip.getStatus() == TripStatus.ONGOING
         && trip.getEndRange().isBefore(LocalDate.now())) {
@@ -186,7 +189,7 @@ class TripServiceSupport {
   }
 
   // 1. 이름 길이 2. 기간·인원 3. 박/일 쌍(둘 다 null=미정) 4. days ≤ range (있을 때)
-  // 당일치기(0박1일) 허용 — nights==days-1 · days≥1 · nights≥0 (#2 확정)
+  // 당일치기(0박1일) 허용 — nights==days-1 · days≥1 · nights≥0
   void validateTripMeta(
       String name,
       LocalDate startRange,
@@ -215,7 +218,7 @@ class TripServiceSupport {
   }
 
   // 둘 다 null → null(미정). 둘 다 값 + nights==days-1 + days≥1 + nights≥0 → days.
-  // 당일치기: nights=0, days=1 (#2). 한쪽만·관계 불일치·음수 박 → 400
+  // 당일치기: nights=0, days=1. 한쪽만·관계 불일치·음수 박 → 400
   static Integer resolveDurationDays(Integer durationNights, Integer durationDays) {
     if (durationNights == null && durationDays == null) {
       return null;

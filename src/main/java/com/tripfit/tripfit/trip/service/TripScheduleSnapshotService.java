@@ -20,7 +20,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** #38 — CONFIRMED/TERMINATED 시 희망 기간 effective freeze (R-model A · R-gap 공백 불허). */
+/** 확정·종료 시 희망 기간의 멤버 effective 일정을 스냅샷으로 고정한다 (이후 읽기 전용). */
 @Service
 public class TripScheduleSnapshotService {
 
@@ -43,7 +43,7 @@ public class TripScheduleSnapshotService {
     this.personalScheduleRepository = personalScheduleRepository;
   }
 
-  // status=CONFIRMED|TERMINATED 전환과 동일 TX에서 호출. 이미 freeze된 trip은 no-op (idempotent)
+  // CONFIRMED|TERMINATED 전환과 같은 TX에서 호출 — 이미 freeze된 방은 no-op(idempotent)
   @Transactional
   public void freezeTrip(Trip trip) {
     UUID tripId = trip.getId();

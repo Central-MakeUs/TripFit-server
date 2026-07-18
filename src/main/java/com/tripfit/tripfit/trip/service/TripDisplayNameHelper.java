@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-// BR-USER-009: 동명이인 표시 — 첫 번째는 원명, 이후 `홍길동(2)` 형식
+// 동명이인 표시명 — 첫 사람은 원명, 이후 `홍길동(2)` 형식
 final class TripDisplayNameHelper {
 
   private TripDisplayNameHelper() {}

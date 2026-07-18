@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-// trip 생성·join·confirm·변경 등 쓰기 유스케이스 (#39 JOINED→confirm, #22 D-BR006-5)
+// 여행방 생성·참여·일정 confirm·메타 수정·삭제·Pin·내보내기 등 쓰기 유스케이스
 class TripCommandService {
 
   private final TripRepository tripRepository;
@@ -71,11 +71,11 @@ class TripCommandService {
     this.userSummaryService = userSummaryService;
   }
 
-  // 여행방 생성 — 방장 멤버십 JOINED (#39). confirm 전 RESPONDED 아님
+  // 여행방 생성 — 방장은 JOINED(일정 확인 전). confirm 전에는 RESPONDED가 아님
   @Transactional
   public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = support.findUser(userId);
-    // BR-USER-001: 여행방 생성 전 성·이름 필수
+    // 성·이름 미완료면 생성 불가
     userProfileService.requireProfileNameComplete(owner);
     support.validateTripMeta(
         request.name(),
@@ -100,7 +100,7 @@ class TripCommandService {
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
     tripRepository.save(trip);
 
-    // create 직후는 JOINED — 일정 confirm 후에 RESPONDED (#39). markAllFree는 confirm/join에서.
+    // create 직후는 JOINED — 일정 confirm 후에 RESPONDED. 전부 free 처리는 confirm/join에서.
     TripMember ownerMember =
         new TripMember(
             trip,
@@ -110,12 +110,12 @@ class TripCommandService {
             LocalDateTime.now());
     tripMemberRepository.save(ownerMember);
 
-    // inviteCode는 DB에만 발급 — JOINED(방 입장 전) 응답에 노출하지 않음. 공유는 confirm→RESPONDED 후 상세
+    // inviteCode는 DB에만 발급 — JOINED(입장 전) 생성 응답에는 안 실림. 공유는 confirm 후 상세에서
     return new CreateTripResponse(
         trip.getId(), support.effectiveStatus(trip), TripMemberStatus.JOINED, true);
   }
 
-  // JOINED → RESPONDED. 이미 RESPONDED면 idempotent detail (#39)
+  // 방장 일정 확인을 끝내 JOINED→RESPONDED로 바꾼다 — 이미 RESPONDED면 동일 상세 반환(idempotent)
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) {
@@ -131,14 +131,14 @@ class TripCommandService {
       return tripQueryService.toDetail(trip, membership);
     }
 
-    // Skip+0행 → is_all_free=true 후 canEnterRoom 게이트 (동일 User 인스턴스)
+    // 일정이 0건이면 전부 free로 표시한 뒤 입장 조건(일정≥1 또는 전부 free) 검사
     userSummaryService.markAllFreeIfNoSchedules(user);
     userSummaryService.requireCanEnterRoom(user);
     membership.markResponded();
     return tripQueryService.toDetail(trip, membership);
   }
 
-  // 방장만 메타 수정. duration 변경 시 recommendation hard DELETE (BR-TRIP-010)
+  // 방장만 메타 수정 — 희망 박/일이 바뀌면 기존 추천 후보를 삭제한다
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
@@ -165,7 +165,7 @@ class TripCommandService {
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
 
     if (recommendationInputsChanged) {
-      // BR-TRIP-010: recommendation hard DELETE — #13 TripRecommendationService와 통합 예정
+      // 추천 입력이 바뀌면 후보를 hard DELETE — 추천 서비스와 통합은 추후
       recommendationRepository.deleteByTripId(tripId);
     }
 
@@ -176,7 +176,7 @@ class TripCommandService {
     return tripQueryService.toDetail(trip, membership);
   }
 
-  // 방장 trip soft delete + 멤버 row 연쇄 soft delete
+  // 방장이 여행방을 soft delete — 멤버 row도 연쇄 soft delete
   @Transactional
   public void deleteTrip(UUID tripId, UUID userId) {
     Trip trip = support.requireActiveTrip(tripId);
@@ -184,13 +184,12 @@ class TripCommandService {
 
     LocalDateTime now = LocalDateTime.now();
     trip.setDeletedAt(now);
-    // trip soft delete 시 멤버 row도 연쇄 soft delete
     for (TripMember member : tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId)) {
       member.setDeletedAt(now);
     }
   }
 
-  // 초대코드 join — 신규 MEMBER=RESPONDED. JOINED 재진입은 confirm 유도
+  // 초대코드로 참여 — 신규 멤버는 바로 RESPONDED. JOINED(confirm 전 방장)는 confirm으로 유도
   @Transactional
   public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
     User user = support.findUser(userId);
@@ -205,7 +204,7 @@ class TripCommandService {
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {
       TripMember membership = existing.get();
-      // JOINED면 join 경로로 상세 우회 금지 — confirm 유도
+      // JOINED면 join으로 상세를 우회하지 못함 — schedule/confirm 필요
       if (membership.getStatus() != TripMemberStatus.RESPONDED) {
         throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
       }
@@ -229,16 +228,16 @@ class TripCommandService {
     return tripJoinService.joinAsNewMember(trip, user);
   }
 
-  // 멤버 Pin on/off. 자동 해제는 #27 스케줄러
+  // 멤버 Pin on/off — 만료 Pin 자동 해제는 일 배치(TripHomeMaintenanceService)
   @Transactional
   public TripDetailResponse updatePin(UUID tripId, UUID userId, UpdateTripPinRequest request) {
     TripMember membership = support.requireActiveMember(tripId, userId);
-    // Pin 자동 해제는 #27 스케줄러 — 조회 API 부수 write 없음
+    // 조회 API에서 Pin을 부수적으로 쓰지 않음 — 해제는 배치만
     membership.applyPin(Boolean.TRUE.equals(request.pinned()));
     return tripQueryService.toDetail(membership.getTrip(), membership);
   }
 
-  // 방장만 MEMBER soft delete. recommendation 미터치 (#20 #3 보류). 일정 row 유지.
+  // 방장이 MEMBER를 soft delete — 추천 후보는 건드리지 않고, 대상 일정 row는 유지
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
