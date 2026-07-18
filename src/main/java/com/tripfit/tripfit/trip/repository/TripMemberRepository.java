@@ -33,7 +33,7 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       UUID tripId,
       com.tripfit.tripfit.trip.domain.TripMemberStatus status);
 
-  // 진행 중 캐러셀: end_range >= today · Pin → pinned_at → last_activity_at (D5)
+  // 진행 중 캐러셀: endRange≥today · Pin 우선 → pinnedAt → lastActivityAt
   @Query("""
       SELECT tm FROM TripMember tm
       JOIN FETCH tm.trip t
@@ -47,7 +47,7 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       @Param("userId") UUID userId,
       @Param("today") LocalDate today);
 
-  // 전체 보기: last_activity_at만 · status/ownerOnly 필터 (D5)
+  // 전체 보기: lastActivityAt만 · status/ownerOnly 필터
   @Query("""
       SELECT tm FROM TripMember tm
       JOIN FETCH tm.trip t
@@ -69,7 +69,7 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       @Param("statusFilter") String statusFilter,
       @Param("ownerOnly") boolean ownerOnly);
 
-  // 홈 카드 membersPreview: 방당 최대 4 · OWNER 우선 · joined_at DESC (D5 C)
+  // 홈 카드 멤버 미리보기: 방당 최대 4 · 방장 우선 · joinedAt 내림차순
   @Query(
       value = """
           SELECT ranked.trip_id AS tripId, ranked.user_id AS userId,

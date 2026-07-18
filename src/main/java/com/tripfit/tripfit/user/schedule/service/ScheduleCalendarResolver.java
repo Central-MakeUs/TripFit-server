@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// regular 요일 expand + personal overlay → 날짜별 effective (R2=A). 일정 없는 날짜는 omit(sparse)
+// 정기 요일 펼침 + 개별 일정 덮어쓰기 → 날짜별 합산 슬롯. 일정 없는 날짜는 omit(sparse)
 public final class ScheduleCalendarResolver {
 
   private ScheduleCalendarResolver() {}
@@ -68,7 +68,7 @@ public final class ScheduleCalendarResolver {
     return days;
   }
 
-  // 같은 요일 regular들의 슬롯을 IMPOSSIBLE 우선으로 합침 (R2=A)
+  // 같은 요일 정기 일정들의 슬롯을 IMPOSSIBLE 우선으로 합침
   static SlotStatuses combineImpossibleWins(List<RegularSchedule> matched) {
     return new SlotStatuses(
         mergeSlot(matched, true, false, false),

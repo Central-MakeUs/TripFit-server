@@ -33,10 +33,10 @@ public enum TripErrorCode implements ErrorCode {
   @Schema(description = "정원 초과 신규 join")
   TRIP_MEMBER_FULL(HttpStatus.CONFLICT, "TRIP_MEMBER_FULL", "참여 인원이 가득 찼습니다."),
 
-  @Schema(description = "참여자 없음·이미 soft-deleted (#20)")
+  @Schema(description = "참여자 없음·이미 내보낸(soft-deleted) 멤버")
   TRIP_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "TRIP_MEMBER_NOT_FOUND", "여행방 참여자를 찾을 수 없습니다."),
 
-  @Schema(description = "방장 내보내기 금지 (#20)")
+  @Schema(description = "방장은 내보낼 수 없음")
   CANNOT_REMOVE_OWNER(HttpStatus.BAD_REQUEST, "CANNOT_REMOVE_OWNER", "방장은 내보낼 수 없습니다.");
 
   private final HttpStatus httpStatus;

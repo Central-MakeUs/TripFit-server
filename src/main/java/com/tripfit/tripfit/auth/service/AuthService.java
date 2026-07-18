@@ -89,9 +89,7 @@ public class AuthService {
     refreshTokenService.delete(refreshTokenValue);
   }
 
-  // JWT userId → UserSummary — hasPreSchedule은 regular/personal EXISTS 파생 (D-JOIN-ENTRY, 일정 CRUD 후
-  // me
-  // 재조회)
+  // JWT userId로 현재 사용자 요약 조회 — hasPreSchedule은 일정 EXISTS 파생(일정 CRUD 후 me 재조회)
   @Transactional(readOnly = true)
   public UserSummaryResponse getCurrentUser(UUID userId) {
     User user =
@@ -119,8 +117,8 @@ public class AuthService {
         profile.profileImageUrl());
   }
 
-  // 재로그인 시 소셜 프로필에서 전달된 필드만 갱신 — first/last는 PATCH profile 전용 (BR-USER-001)
-  // profileImageUrl: A안 provider URL passthrough (006). B안 S3 미러는 wave 4
+  // 재로그인 시 소셜에서 온 이메일·닉네임·프로필 이미지만 갱신 — 성·이름은 PATCH profile 전용
+  // profileImageUrl: 현재는 provider URL 그대로. S3 미러는 추후
   private User updateFromProfile(User user, OAuthProfile profile) {
     if (profile.email() != null && !profile.email().isBlank()) {
       user.setEmail(profile.email());

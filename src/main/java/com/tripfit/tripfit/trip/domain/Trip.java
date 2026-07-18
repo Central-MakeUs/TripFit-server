@@ -97,14 +97,14 @@ public class Trip extends SoftDeleteEntity {
   private String cancelReason;
 
   @Schema(
-      description = "마지막 추천 모드. 추천 API 저장 시 갱신 (BR-TRIP-005)",
+      description = "마지막으로 사용한 추천 모드. 추천 생성 API 저장 시 갱신",
       nullable = true,
       example = "BASIC")
   @Enumerated(EnumType.STRING)
   @Column(name = "last_recommendation_mode")
   private RecommendationMode lastRecommendationMode;
 
-  @Schema(description = "홈 정렬용 최근 활동 시각 (D5)", example = "2026-07-19T12:00:00")
+  @Schema(description = "홈 목록 정렬용 최근 활동 시각", example = "2026-07-19T12:00:00")
   @Column(name = "last_activity_at", nullable = false)
   private LocalDateTime lastActivityAt;
 
@@ -128,7 +128,7 @@ public class Trip extends SoftDeleteEntity {
     this.lastActivityAt = LocalDateTime.now();
   }
 
-  // {@link TripActivityAspect} — join · patch · confirm · 추천 · 확정 (#26 · #39)
+  // 최근 활동 시각 갱신 — join·patch·confirm·추천·확정 등에서 Aspect가 호출
   public void touchLastActivity() {
     this.lastActivityAt = LocalDateTime.now();
   }

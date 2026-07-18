@@ -33,7 +33,7 @@ import org.hibernate.type.SqlTypes;
     uniqueConstraints = @UniqueConstraint(
         name = "uk_trip_member_schedule_snapshot",
         columnNames = {"trip_id", "user_id", "schedule_date"}))
-@Schema(description = "완료·만료 여행방 멤버 effective 일정 snapshot (#38). 희망 기간·sparse")
+@Schema(description = "확정·종료된 여행방의 멤버 effective 일정 스냅샷. 희망 기간만, 빈 날은 저장하지 않음")
 public class TripMemberScheduleSnapshot extends BaseTimeEntity {
 
   @Schema(description = "snapshot 행 ID (UUID v4)")

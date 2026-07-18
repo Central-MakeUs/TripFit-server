@@ -2,7 +2,7 @@ package com.tripfit.tripfit.trip.repository.projection;
 
 import java.util.UUID;
 
-/** Native query projection — 홈 membersPreview batch (#12 D5). */
+/** 홈 카드 멤버 미리보기용 native 쿼리 projection (방당 배치 조회). */
 public interface TripMemberPreviewProjection {
 
   UUID getTripId();
