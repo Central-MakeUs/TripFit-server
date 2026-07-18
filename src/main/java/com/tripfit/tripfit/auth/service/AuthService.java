@@ -71,7 +71,7 @@ public class AuthService {
       return new RefreshResponse(accessToken, jwtService.getAccessExpirationSeconds());
     } catch (TripFitException exception) {
       if (exception.getErrorCode() == AuthErrorCode.AUTH_INVALID_REFRESH) {
-        // 만료된 리프레시 토큰으로 재시도한 경우 저장소에서 정리함
+        // 만료 refresh로 재시도 시 row를 남겨두면 동일 토큰으로 반복 호출 가능 — 정리 후 401
         refreshTokenService.deleteExpired(refreshTokenValue);
       }
       throw exception;
@@ -112,8 +112,8 @@ public class AuthService {
         profile.profileImageUrl());
   }
 
-  // 재로그인 시 소셜 프로필에서 전달된 필드만 최신 값으로 갱신함 (first/last는 PATCH profile 전용)
-  // profileImageUrl: A안 — provider URL passthrough (006). B안 S3 미러는 wave 4.
+  // 재로그인 시 소셜 프로필에서 전달된 필드만 갱신 — first/last는 PATCH profile 전용 (BR-USER-001)
+  // profileImageUrl: A안 provider URL passthrough (006). B안 S3 미러는 wave 4
   private User updateFromProfile(User user, OAuthProfile profile) {
     if (profile.email() != null && !profile.email().isBlank()) {
       user.setEmail(profile.email());

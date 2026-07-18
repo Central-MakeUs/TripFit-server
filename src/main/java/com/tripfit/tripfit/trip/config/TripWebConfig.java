@@ -17,6 +17,7 @@ public class TripWebConfig implements WebMvcConfigurer {
   public void addInterceptors(InterceptorRegistry registry) {
     registry
         .addInterceptor(tripAuthorizationInterceptor)
+        // /api/v1/trips/** 만 대상 — join 등 tripId 없는 경로는 @Trip*Only 미적용
         .addPathPatterns("/api/v1/trips/**");
   }
 }

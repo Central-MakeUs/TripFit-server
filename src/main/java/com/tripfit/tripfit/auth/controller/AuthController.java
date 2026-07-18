@@ -32,7 +32,6 @@ public class AuthController {
     this.authService = authService;
   }
 
-  // 소셜 로그인 요청을 받아 액세스 토큰과 리프레시 토큰을 발급함
   @Operation(
       summary = "소셜 로그인",
       description = "Google/Kakao/Apple 토큰 검증 후 TripFit access·refresh 발급",
@@ -44,7 +43,6 @@ public class AuthController {
     return ResponseEntity.ok(ApiResponse.of(response));
   }
 
-  // 리프레시 토큰을 검증해 새로운 액세스 토큰을 재발급함
   @Operation(
       summary = "액세스 토큰 재발급",
       description = "유효한 refresh token으로 access JWT만 재발급 (wave 1: refresh row 유지)",
@@ -56,7 +54,6 @@ public class AuthController {
     return ResponseEntity.ok(ApiResponse.of(response));
   }
 
-  // 전달받은 리프레시 토큰을 삭제해 현재 세션을 로그아웃 처리함
   @Operation(
       summary = "로그아웃",
       description = "refresh token row 삭제. 204 No Content",
@@ -68,7 +65,6 @@ public class AuthController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
-  // JWT로 인증된 현재 사용자 프로필을 반환함
   @Operation(summary = "현재 사용자 조회", description = "JWT 기준 UserSummary 반환")
   @GetMapping("/me")
   ResponseEntity<ApiResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) {

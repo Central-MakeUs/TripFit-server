@@ -91,6 +91,7 @@ public class TripService {
   @Transactional
   public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = findUser(userId);
+    // BR-USER-001: 여행방 생성 전 성·이름 필수
     userProfileService.requireProfileNameComplete(owner);
     validateTripMeta(
         request.name(),
@@ -182,6 +183,7 @@ public class TripService {
 
     LocalDateTime now = LocalDateTime.now();
     trip.setDeletedAt(now);
+    // trip soft delete 시 멤버 row도 연쇄 soft delete
     for (TripMember member : tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId)) {
       member.setDeletedAt(now);
     }
@@ -200,6 +202,7 @@ public class TripService {
     var existing =
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {
+      // 이미 참여한 멤버 — idempotent 200 (trip-room-api)
       return toSummary(trip, existing.get());
     }
 
@@ -209,6 +212,7 @@ public class TripService {
       case CANCELED -> throw new TripFitException(TripErrorCode.TRIP_CANCELED);
       case TERMINATED -> throw new TripFitException(TripErrorCode.TRIP_TERMINATED);
       case ONGOING -> {
+        // BR-TRIP-008: 정원 초과 시 join 거부
         long memberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
         if (memberCount >= trip.getTargetMemberCount()) {
           throw new TripFitException(TripErrorCode.TRIP_MEMBER_FULL);
@@ -240,6 +244,7 @@ public class TripService {
     requireOngoingForMutation(trip);
     TripMember membership = requireActiveMember(tripId, userId);
 
+    // BR-USER-007: regular ≥1 + 제출 API 호출 시에만 RESPONDED
     scheduleService.requireRegularScheduleRegistered(userId);
     membership.setStatus(TripMemberStatus.RESPONDED);
     return toSummary(trip, membership);
@@ -256,6 +261,7 @@ public class TripService {
             .toList();
 
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
+    // BR-USER-009: 동명이인 `홍길동(2)` 표시
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
     int memberCount = members.size();
@@ -292,11 +298,13 @@ public class TripService {
             .toList();
 
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
+    // BR-USER-009: 동명이인 `홍길동(2)` 표시
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
     List<MemberCalendar> memberCalendars = new ArrayList<>();
     for (TripMember member : members) {
       UUID memberUserId = member.getUser().getId();
+      // TODO: 멤버 수만큼 regular/personal 조회 — batch fetch로 N+1 완화 (#17)
       List<RegularSchedule> regulars =
           regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(memberUserId);
       List<PersonalSchedule> personals =
@@ -382,6 +390,7 @@ public class TripService {
   }
 
   private TripStatus effectiveStatus(Trip trip) {
+    // end_range 경과 시 DB status와 무관하게 TERMINATED로 노출 (trip-room-api 정책서)
     if (trip.getStatus() == TripStatus.ONGOING
         && trip.getEndRange().isBefore(LocalDate.now())) {
       return TripStatus.TERMINATED;
@@ -420,6 +429,7 @@ public class TripService {
         return code;
       }
     }
+    // FIXME: 20회 충돌 시 500 — 재시도 정책·코드 길이 확장 검토 (trip-room-api)
     throw new TripFitException(CommonErrorCode.INTERNAL_ERROR);
   }
 

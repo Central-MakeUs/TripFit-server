@@ -46,6 +46,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
       return true;
     }
 
+    // JWT(SecurityContext) + tripId 경로 변수 기준으로 Controller @Trip*Only 권한 검사
     UUID userId = requireAuthenticatedUserId();
     UUID tripId = requireTripId(request);
 

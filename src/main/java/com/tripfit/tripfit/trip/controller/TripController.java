@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/trips")
 @SecurityRequirement(name = "bearer-jwt")
+// JWT 외 tripId 경로 권한은 TripAuthorizationInterceptor가 @TripMemberOnly/@TripOwnerOnly로 처리함
 public class TripController {
 
   private final TripService tripService;

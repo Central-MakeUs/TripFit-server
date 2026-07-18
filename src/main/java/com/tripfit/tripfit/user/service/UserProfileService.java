@@ -22,7 +22,6 @@ public class UserProfileService {
     this.userRepository = userRepository;
   }
 
-  // JWT 사용자의 성·이름 프로필을 저장함
   @Transactional
   public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
     User user = findUser(userId);
@@ -31,13 +30,11 @@ public class UserProfileService {
     return UserSummaryMapper.toSummary(user);
   }
 
-  // JWT 사용자의 마이페이지에서 성·이름을 수정함
   @Transactional
   public UserSummaryResponse updateMyPage(UUID userId, UpdateMyPageRequest request) {
     return updateProfile(userId, new UpdateProfileRequest(request.firstName(), request.lastName()));
   }
 
-  // JWT 사용자의 선택 온보딩 boolean을 partial update함
   @Transactional
   public UserSummaryResponse updateOnboarding(UUID userId, UpdateOnboardingRequest request) {
     User user = findUser(userId);
@@ -53,7 +50,7 @@ public class UserProfileService {
     return UserSummaryMapper.toSummary(user);
   }
 
-  // wave 2+ 핵심 API에서 성·이름 미입력 시 호출함
+  // BR-USER-001: wave 2+ 핵심 API(여행방 생성 등) 진입 전 성·이름 완료 강제
   public void requireProfileNameComplete(User user) {
     if (!user.hasProfileNameComplete()) {
       throw new TripFitException(UserErrorCode.PROFILE_NAME_REQUIRED);

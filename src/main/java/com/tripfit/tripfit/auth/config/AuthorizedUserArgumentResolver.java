@@ -22,7 +22,6 @@ public class AuthorizedUserArgumentResolver implements HandlerMethodArgumentReso
   }
 
   @Override
-  // SecurityContext에 설정된 JWT userId를 컨트롤러 UUID 파라미터로 주입함
   public Object resolveArgument(
       MethodParameter parameter,
       ModelAndViewContainer mavContainer,

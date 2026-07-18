@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/trips/{tripId}/members")
 @SecurityRequirement(name = "bearer-jwt")
+// tripId 멤버십은 @TripMemberOnly → TripAuthorizationInterceptor
 public class TripMemberController {
 
   private final TripService tripService;

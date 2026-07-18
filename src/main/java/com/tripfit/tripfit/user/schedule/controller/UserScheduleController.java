@@ -40,7 +40,6 @@ public class UserScheduleController {
     this.scheduleService = scheduleService;
   }
 
-  // JWT 사용자의 정기 일정 목록을 조회함
   @Operation(summary = "정기 일정 목록", description = "생성 시각 오름차순. 슬롯은 start/end로 계산된 값")
   @GetMapping("/regular")
   ResponseEntity<ApiResponse<RegularScheduleListResponse>> listRegular(
@@ -48,7 +47,6 @@ public class UserScheduleController {
     return ResponseEntity.ok(ApiResponse.of(scheduleService.listRegular(userId)));
   }
 
-  // JWT 사용자의 정기 일정을 생성함 (슬롯은 시각으로 계산)
   @Operation(
       summary = "정기 일정 생성",
       description = "startTime/endTime으로 슬롯 계산 후 저장. daysOfWeek는 Weekday(MON~SUN) 콤마 CSV")
@@ -60,7 +58,6 @@ public class UserScheduleController {
         .body(ApiResponse.of(scheduleService.createRegular(userId, request)));
   }
 
-  // JWT 사용자의 정기 일정 전체를 수정함 (start/end 변경 시 슬롯 재계산)
   @Operation(
       summary = "정기 일정 전체 수정",
       description = "title·요일·시각·연차 전체 갱신. start/end 변경 시 슬롯 재계산")
@@ -73,7 +70,6 @@ public class UserScheduleController {
         ApiResponse.of(scheduleService.updateRegular(userId, id, request)));
   }
 
-  // JWT 사용자의 정기 일정을 삭제하고 등록 플래그를 재계산함
   @Operation(
       summary = "정기 일정 삭제",
       description = "본인 소유만 삭제. 남은 정기 일정이 없으면 isScheduleRegistered=false")
@@ -85,7 +81,6 @@ public class UserScheduleController {
     return ResponseEntity.noContent().build();
   }
 
-  // JWT 사용자의 기간 내 개인 일정을 조회함
   @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(
       summary = "개인 일정 조회",
@@ -99,7 +94,6 @@ public class UserScheduleController {
         ApiResponse.of(scheduleService.getPersonal(userId, startDate, endDate)));
   }
 
-  // JWT 사용자의 개인 일정을 날짜별로 bulk upsert함
   @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(
       summary = "개인 일정 bulk upsert",
@@ -111,7 +105,6 @@ public class UserScheduleController {
     return ResponseEntity.ok(ApiResponse.of(scheduleService.upsertPersonal(userId, request)));
   }
 
-  // JWT 사용자의 regular+personal effective 달력을 조회함
   @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(
       summary = "일정 달력(effective) 조회",

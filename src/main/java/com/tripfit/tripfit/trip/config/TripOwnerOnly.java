@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** 여행방 방장만 허용. 비방장 → 403 TRIP_FORBIDDEN */
+// TripAuthorizationInterceptor: 방장만 허용 → 403 TRIP_FORBIDDEN
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TripOwnerOnly {
