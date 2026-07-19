@@ -12,6 +12,7 @@ import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 
+// @TripActivity 성공 반환 후 last_activity_at 갱신 — 해석 실패 시 silent skip (호출 자체는 성공 유지)
 @Aspect
 @Component
 public class TripActivityAspect {
@@ -30,9 +31,11 @@ public class TripActivityAspect {
     if (tripId == null) {
       return;
     }
+    // soft-delete된 방은 갱신하지 않음
     tripRepository.findByIdAndDeletedAtIsNull(tripId).ifPresent(Trip::touchLastActivity);
   }
 
+  // tripIdFromReturn=true → TripDetailResponse.tripId / 아니면 tripIdParam 이름의 UUID 인자
   private UUID resolveTripId(JoinPoint joinPoint, TripActivity tripActivity, Object result) {
     if (tripActivity.tripIdFromReturn()) {
       if (result instanceof TripDetailResponse detail) {

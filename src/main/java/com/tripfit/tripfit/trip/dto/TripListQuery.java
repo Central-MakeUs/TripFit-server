@@ -16,6 +16,7 @@ public record TripListQuery(
     @Schema(description = "내가 생성(OWNER)한 방만 — scope=all만", defaultValue = "false") boolean ownerOnly
 ) {
 
+  // statusFilter·ownerOnly는 scope=ALL 쿼리에서만 적용 (ONGOING scope는 Repository가 무시)
   public static TripListQuery parse(String scope, String status, boolean ownerOnly) {
     return new TripListQuery(parseScope(scope), parseStatusFilter(status), ownerOnly);
   }

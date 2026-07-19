@@ -12,6 +12,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
+// @AuthorizedUser UUID 주입 — Filter가 Bearer 없으면 익명 통과하므로, 여기서 미인증을 AUTH_INVALID_TOKEN으로 차단
 @Component
 public class AuthorizedUserArgumentResolver implements HandlerMethodArgumentResolver {
 

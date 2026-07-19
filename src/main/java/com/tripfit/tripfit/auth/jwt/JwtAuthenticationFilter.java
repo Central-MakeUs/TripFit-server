@@ -36,7 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   }
 
   @Override
-  // Authorization Bearer 헤더가 있으면 JWT를 검증하고 SecurityContext에 userId를 설정함
+  // 1. Bearer 없거나 빈 토큰 → 익명으로 chain 계속 (authenticated API는 EntryPoint/Resolver가 차단)
+  // 2. 파싱 후 jti 폐기 여부 검사 → SecurityContext에 JwtAuthentication 설정
   protected void doFilterInternal(
       HttpServletRequest request,
       HttpServletResponse response,
@@ -56,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     try {
       AccessTokenClaims claims = jwtService.parseAccessToken(accessToken);
+      // logout 등으로 폐기된 access jti는 Advice 전에 Filter에서 401 envelope
       if (tokenRevocationChecker.isRevoked(claims.jti())) {
         authErrorResponseWriter.write(response, AuthErrorCode.AUTH_INVALID_TOKEN);
         return;
@@ -63,7 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(claims.userId()));
       filterChain.doFilter(request, response);
     } catch (TripFitException exception) {
-      // JWT 파싱·검증 실패 시 envelope 형식의 401 응답을 반환함
+      // JWT 파싱·검증 실패 — Filter 경로라 GlobalExceptionHandler 대신 Writer 사용
       ErrorCode errorCode = exception.getErrorCode();
       authErrorResponseWriter.write(response, errorCode);
     }

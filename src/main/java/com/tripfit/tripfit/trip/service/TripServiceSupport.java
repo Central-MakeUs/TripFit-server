@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
+// Trip command/query가 공유하는 매핑·검증·초대코드·권한 가드
 @Component
 class TripServiceSupport {
 
@@ -56,6 +57,7 @@ class TripServiceSupport {
     this.userRepository = userRepository;
   }
 
+  // 홈 카드 — preview는 상한 4명, overflow = joined - 4
   TripHomeCardResponse toHomeCard(
       Trip trip,
       TripMember membership,
@@ -115,7 +117,7 @@ class TripServiceSupport {
         memberFillRate(joined, trip.getMemberCount()));
   }
 
-  /** 모집 현황 — joinedMemberCount / trip.memberCount (#22 D-MEMBER-FILL) */
+  // 모집 현황 — joinedMemberCount / trip.memberCount (#22 D-MEMBER-FILL)
   static double memberFillRate(int joinedMemberCount, Integer memberCount) {
     if (memberCount == null || memberCount <= 0) {
       return 0.0;
@@ -123,11 +125,13 @@ class TripServiceSupport {
     return (double) joinedMemberCount / memberCount;
   }
 
+  // N+1 방지 — tripId 목록 일괄 집계
   Map<UUID, TripMemberCountProjection> loadMemberCountsByTripIds(List<UUID> tripIds) {
     return tripMemberRepository.countMembersByTripIds(tripIds).stream()
         .collect(Collectors.toMap(TripMemberCountProjection::getTripId, c -> c));
   }
 
+  // N+1 방지 — 미리보기 row를 tripId별 리스트로 묶음 (상한은 Repository 쿼리)
   Map<UUID, List<MemberPreviewResponse>> loadMemberPreviewsByTripIds(List<UUID> tripIds) {
     List<TripMemberPreviewProjection> rows =
         tripMemberRepository.findMemberPreviewsByTripIds(tripIds);
@@ -150,6 +154,7 @@ class TripServiceSupport {
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
   }
 
+  // 비멤버·탈퇴 → TRIP_ACCESS_DENIED (방장 전용 FORBIDDEN과 구분)
   TripMember requireActiveMember(UUID tripId, UUID userId) {
     return tripMemberRepository
         .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
@@ -162,13 +167,14 @@ class TripServiceSupport {
     }
   }
 
+  // 조회용 effectiveStatus 기준 — DB status만 보면 기간 경과 ONGOING도 통과함
   void requireOngoingForMutation(Trip trip) {
     if (effectiveStatus(trip) != TripStatus.ONGOING) {
       throw new TripFitException(TripErrorCode.TRIP_NOT_ONGOING);
     }
   }
 
-  // effectiveStatus: ONGOING + end_range 경과 → TERMINATED (배치 전 lazy · #27 이후 DB TERMINATED와 동일 UX)
+  // ONGOING + end_range 경과 → TERMINATED (배치 전 lazy · #27 이후 DB TERMINATED와 동일 UX)
   TripStatus effectiveStatus(Trip trip) {
     if (trip.getStatus() == TripStatus.ONGOING
         && trip.getEndRange().isBefore(LocalDate.now())) {
@@ -177,6 +183,7 @@ class TripServiceSupport {
     return trip.getStatus();
   }
 
+  // 1. 이름 길이 2. 기간·인원 범위 3. durationDays ≤ inclusive 일수
   void validateTripMeta(
       String name,
       LocalDate startRange,
@@ -202,6 +209,7 @@ class TripServiceSupport {
     }
   }
 
+  // UNIQUE 충돌 재시도 — 한도 초과 시 INTERNAL_ERROR (클라이언트 재시도 유도)
   String generateUniqueInviteCode() {
     for (int attempt = 0; attempt < MAX_INVITE_CODE_ATTEMPTS; attempt++) {
       String code = InviteCodeGenerator.generate();

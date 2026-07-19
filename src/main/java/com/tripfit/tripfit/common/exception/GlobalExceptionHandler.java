@@ -9,12 +9,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+// 도메인·검증 예외만 envelope로 변환 — Filter 경로 401은 AuthErrorResponseWriter가 담당
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(TripFitException.class)
   ResponseEntity<ErrorResponse> handleTripFitException(TripFitException exception) {
     ErrorCode errorCode = exception.getErrorCode();
+    // 커스텀 message가 있으면 ErrorCode 기본 문구보다 우선
     String message =
         exception.getMessage() != null ? exception.getMessage() : errorCode.getMessage();
     return ResponseEntity.status(errorCode.getHttpStatus())

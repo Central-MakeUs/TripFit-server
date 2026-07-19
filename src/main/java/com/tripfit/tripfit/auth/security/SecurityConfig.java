@@ -27,7 +27,7 @@ public class SecurityConfig {
   }
 
   @Bean
-  // 인증 API는 공개하고 그 외 API는 JWT 인증을 요구하는 Stateless 보안 체인을 구성함
+  // login/refresh/logout·actuator·swagger는 공개. logout은 만료·폐기 토큰도 body로 처리하기 위해 permitAll
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.disable())
         .sessionManagement(

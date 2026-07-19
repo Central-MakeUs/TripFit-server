@@ -242,9 +242,12 @@ ResponseEntity<...> updateProfile(
 |--------|-----------|
 | **Controller** | 접근 권한(`@AuthorizedUser`, `@TripMemberOnly` 등)·인터셉터·`@Valid` 검증 흐름. 비즈니스 로직 설명 금지 |
 | **Service** | BR-*·wave 정책, 분기 **이유(Why)**, `@Transactional`·외부 API·Stream에서 non-obvious한 선택. **다단계 유스케이스는 `// 1.` `// 2.` 단계 주석** |
+| **Support / Helper / Resolver** | 공유 매핑·검증·생성 로직의 **정책·에러코드 매핑·배치 vs lazy** Why. 단순 위임 1~2줄은 생략 가능 |
+| **Interceptor / Aspect / Filter / ArgumentResolver** | 진입 조건·권한 분기·silent skip·SecurityContext 전제·Advice 우회 등 **교차 관심사 Why** |
 | **client** | 외부 OAuth·HTTP 검증 흐름 — Service와 동일하게 단계·catch 의도 |
 | **Repository** | `@Query` 정렬·필터·fetch 의도. **파생 API 필드용 EXISTS·집계**는 SSOT 조회임을 한 줄 |
-| **DTO/Entity** | `@Schema`로 안 담기는 배경(formatter off, 경계 record 등). enum·필드는 `@Schema` 우선 |
+| **DTO / Entity / 공통 envelope** | 필드는 `@Schema` SSOT. **쿼리 조합 제약·파생 필드·성공/에러 이중 팩토리·formatter off** 등 Schema로 안 담기는 배경만 `//` |
+| **exception** | `ErrorCode` 계약·커스텀 message override·Handler가 다루는 예외 범위 |
 
 ### Service · client 메서드 주석
 

@@ -28,6 +28,7 @@ public class AppConfig implements WebMvcConfigurer {
   }
 
   @Override
+  // @AuthorizedUser → UUID 주입 (SecurityContext principal)
   public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
     resolvers.add(authorizedUserArgumentResolver);
   }

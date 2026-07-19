@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// regular 요일 expand + personal S1 overlay → 날짜별 effective (R2=A)
+// regular 요일 expand + personal overlay → 날짜별 effective (R2=A). 일정 없는 날짜는 omit(sparse)
 public final class ScheduleCalendarResolver {
 
   private ScheduleCalendarResolver() {}
 
-  // 기간 날짜마다 personal 우선, 없으면 regular(IMPOSSIBLE 우선)로 effective를 만듦
+  // 1. personal 있으면 그날 슬롯 그대로 2. 없으면 regular 합침(IMPOSSIBLE 우선) 3. 전부 null이면 날짜 생략
   public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
@@ -56,6 +56,7 @@ public final class ScheduleCalendarResolver {
           && combined.getEveningStatus() == null) {
         continue;
       }
+      // regular에서 슬롯이 null이면 API에는 POSSIBLE로 노출
       days.add(
           new CalendarDayResponse(
               date,
@@ -132,6 +133,7 @@ public final class ScheduleCalendarResolver {
     return sawPossible ? ScheduleStatus.POSSIBLE : null;
   }
 
+  // merge 결과가 null인 슬롯 → POSSIBLE (미입력 ≠ IMPOSSIBLE)
   private static ScheduleStatus nullToPossible(ScheduleStatus status) {
     return status != null ? status : ScheduleStatus.POSSIBLE;
   }

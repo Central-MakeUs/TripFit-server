@@ -17,6 +17,7 @@ public record ErrorResponse(
 ) {
 
   public ErrorResponse(String code, String message) {
+    // validation 외 경로 — errors 없음
     this(code, message, null);
   }
 }

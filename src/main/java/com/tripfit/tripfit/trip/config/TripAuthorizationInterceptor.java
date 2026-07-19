@@ -17,6 +17,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
+// @TripMemberOnly / @TripOwnerOnly — JWT + path tripId로 멤버십 검사 후 D-JOIN-ENTRY(일정 또는 is_all_free)
 @Component
 public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
@@ -56,10 +57,12 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     UUID userId = requireAuthenticatedUserId();
     UUID tripId = requireTripId(request);
 
+    // 존재하지 않거나 soft-delete된 tripId(형식 오류 포함) → NOT_FOUND로 통일 (정보 누수 방지)
     if (!tripRepository.existsByIdAndDeletedAtIsNull(tripId)) {
       throw new TripFitException(TripErrorCode.TRIP_NOT_FOUND);
     }
 
+    // OWNER 실패=FORBIDDEN, MEMBER 실패=ACCESS_DENIED — 클라이언트 분기용
     if (ownerOnly) {
       if (!tripRepository.existsByIdAndOwner_IdAndDeletedAtIsNull(tripId, userId)) {
         throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
@@ -81,7 +84,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     return userId;
   }
 
-  @SuppressWarnings("unchecked")
+  // path variable tripId 파싱 실패도 NOT_FOUND (400으로 UUID 형식만 노출하지 않음)
   private static UUID requireTripId(HttpServletRequest request) {
     Object attribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
     if (!(attribute instanceof Map<?, ?> variables)) {
