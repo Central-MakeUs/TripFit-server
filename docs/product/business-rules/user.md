@@ -11,7 +11,7 @@
 | **BR-USER-005** | 알림 허용 | 마이페이지 | on/off | `[미정]` 필수 알림 |
 | **BR-USER-006** | 방 입장 가능 조건 | D-JOIN-ENTRY | 정기≥1 OR 개별≥1 OR **`is_all_free`** | 불만족 시 차단 |
 | **BR-USER-007** | trip 일정 확인·가입 | **#22** | **방장:** 생성 **전** 일정 플로우 → `POST /trips` 시 `RESPONDED`. **참여자:** 플로우 후 **`POST /trips/join`** 만. submit **삭제**. `JOINED` **미사용** | 정원 409 · canEnterRoom |
-| **BR-USER-008** | 전역 일정 | 일정·`is_all_free` 변경 | 모든 참여 방에 동일 | — |
+| **BR-USER-008** | 전역 일정 | 일정·`is_all_free` 변경 | 모든 참여 방에 동일 | — · **충돌 Draft:** 만료(TERMINATED) 방 snapshot → [`trip-schedule-snapshot.md`](../../specs/trip-schedule-snapshot.md) (#38, BR amend 후보·미승인) |
 | **BR-USER-009** | 동일 이름 표시 | 목록 | `홍길동(2)` | — |
 | **BR-USER-010** | 재접속 | 이미 `trip_member` | 방 상세 직행 | 미가입 참여자 → 플로우 |
 | **BR-USER-011** | 일정↔전부 free | 0행 / 추가 | 0행→`is_all_free=true`. 추가→`false`. 선언 버튼 없음 | — |
@@ -30,6 +30,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-21 | BR-USER-008 — TERMINATED snapshot 충돌 Draft 링크 (#38), 규칙 본문 미변경 |
 | 2026-07-21 | Skip+0행 `is_all_free` 방장=create 확정 · 전이 표 보강 |
 | 2026-07-21 | 방장 생성 전 플로우 · JOINED 제거 · join 단일 · submit 삭제 |
 | 2026-07-21 | late-join · memberFillRate · #35 |

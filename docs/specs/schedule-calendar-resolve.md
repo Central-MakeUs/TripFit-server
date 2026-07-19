@@ -3,8 +3,8 @@
 > wave: 2  
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008  
 > related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](trip-room-api.md), [`trip-recommendation.md`](trip-recommendation.md)  
-> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)**  
-> 상태: **Implemented** (#17) — 병합 S1+R2=A · sparse · effective-only · **A1=730일(약 2년)** 확정  
+> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 재정의** → [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**) · **TERMINATED snapshot** → [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)  
+> 상태: **Implemented** (#17) — 병합 S1+R2=A · sparse · effective-only · **A1=730일(약 2년)** 확정 (**후속 Draft #37·#38이 A1·만료 조회 재정의 예정**)  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 
 ## 목표
@@ -24,7 +24,7 @@
 | 4 | 응답 깊이 | 본인·그룹 **모두 effective만** (원본 레이어 없음, 납작한 day) |
 | 5 | 용어 | 합친 결과 = **`effective`** (중첩 wrapper 없음) |
 | 6 | 동일 요일 regular 복수 | **R2=A** — 슬롯별 **IMPOSSIBLE 우선** |
-| 7 | calendar 기간 상한 **A1** | **`ChronoUnit.DAYS.between(start,end) ≤ 730`** (약 2년). 초과 시 400 `INVALID_INPUT` |
+| 7 | calendar 기간 상한 **A1** | **`ChronoUnit.DAYS.between(start,end) ≤ 730`** (약 2년). 초과 시 400 `INVALID_INPUT`. **후속:** [#37](https://github.com/Central-MakeUs/TripFit-server/issues/37) [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) |
 
 ### S1이란 (클라이언트 관점)
 
@@ -79,7 +79,7 @@ GET /users/schedule/calendar  시
 |-----|------|------------------|
 | `GET .../regular` | 규칙 목록 | ❌ |
 | `GET .../personal?start&end` | **저장된 personal만** | ❌ 정기만 있는 날 누락 |
-| `GET .../trips/{id}/members/personal-summary` | 멤버 **personal만** | ❌ 동일 |
+| ~~`GET .../trips/{id}/members/personal-summary`~~ | ~~멤버 personal만~~ | **삭제 (#39)** — `members/schedule-calendar` 사용 |
 
 **해결:** 서버가 기간 → 날짜별 **effective** 를 한곳에서 계산하는 calendar API.
 
@@ -226,7 +226,7 @@ null(미설정) 슬롯 → 합성에서 무시 (의견 없음). 해당 슬롯에
 |--------|------|------|
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | JWT + member |
 
-기존 `personal-summary`와의 관계 **T1 확정** (#12 — `members/schedule-calendar` 추가, summary deprecate).  
+기존 ~~`personal-summary`~~ 와의 관계 **T1 확정** (#12) · **API 삭제 (#39)**.  
 trip CRUD 전이면 **①만** 구현.
 
 ### 유지 (변경 없음)
@@ -357,7 +357,7 @@ function combineRegularsImpossibleWins(regulars):
 | ID | 문제 | 왜 치명적인가 | 완화 / 담당 |
 |----|------|---------------|-------------|
 | **C1** | **추천(#13)이 resolve를 따로 구현** | 달력 색과 추천 TOP이 다른 “가능”을 씀 → 사용자 불신 | #13 Must: **본 스펙 resolve 함수 재사용**. 가중치만 #13 |
-| **C2** | **`personal-summary`가 personal-only로 남음** | 그룹 달력에 출근(정기)이 안 보임 → “일정 미입력”으로 오해 | trip 멤버 조회는 **effective calendar**로 통일 (T1 권장). #12 연동 시 협의 |
+| **C2** | ~~**`personal-summary`가 personal-only로 남음**~~ | — | **해소 (#39)** — API 삭제 · `members/schedule-calendar`만 |
 | **C3** | **Personal 프리필을 regular 1행만으로 함** | S1이 잘못된 POSSIBLE을 DB에 고정 → 다른 정기(수업 등) 불가 무시 | 프론트: 일정 시트는 **`GET .../calendar` effective 복사** 후 편집. API 가이드·이슈에 명시 |
 | **C4** | **`daysOfWeek` 파싱 불일치** | 생성은 성공·resolve는 매칭 실패(또는 반대) → 특정 요일만 조용히 omit | 서버 단일 파서·정규화(대문자·trim). 잘못된 토큰은 400 |
 
@@ -365,8 +365,8 @@ function combineRegularsImpossibleWins(regulars):
 
 | ID | 항목 | 선택지 / 질문 | 제안 | 상태 |
 |----|------|---------------|------|------|
-| **A1** | calendar **기간 상한** | **확정: 730일 (약 2년)** | `MAX_CALENDAR_RANGE_DAYS=730` | **확정** |
-| **A2** | `personal-summary` vs `schedule-calendar` | T1 대체 | **T1 확정** (#12 — 멤버 전원 effective) |
+| **A1** | calendar **기간 상한** | **확정: 730일 (약 2년)** — #17 Implemented | `MAX_CALENDAR_RANGE_DAYS=730` | **확정** · **재정의 Draft #37** |
+| **A2** | `personal-summary` vs `schedule-calendar` | T1 대체 | **T1 확정** (#12) · **personal-summary 삭제 (#39)** |
 | **A3** | **타임존·날짜 경계** | `LocalDate` only vs zone 포함 | **캘린더 일자(존 없음)** — 요청/응답 모두 date | 합의 권장 (문서에 박기) |
 | **A4** | **`holidayRest`를 calendar에 반영?** | wave 2 Out / 공휴일 테이블 후 반영 | **wave 2 Out** — 요일만. 공휴일은 #13·후속 | 확정 방향(문서) · 프론트에 “공휴일≠휴무 자동” 고지 |
 | **A5** | **`VacationApplyPeriod`를 calendar에 반영?** | 슬롯만 / “신청 불가 기간” 표시 | **슬롯만** (calendar). 신청 가능 여부는 제출·추천 | 확정 방향 |
@@ -422,3 +422,4 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-14 | R2=A 확정 · 리스크 표 |
 | 2026-07-14 | **Approved** · A1=730일 · 본인 calendar · #17 |
 | 2026-07-17 | A2 T1 확정 · members calendar → #12 |
+| 2026-07-21 | deferred — #37 조회 윈도우 · #38 TERMINATED snapshot (A1 현행 유지) |

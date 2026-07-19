@@ -23,6 +23,8 @@
 |------|------|------|------|
 | [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
 | [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A·A1=730일 | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
+| [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Draft** (#37) | 여행방 일정 조회 윈도우 (시작 기준 +2년) · A1 재정의 | #17 · #12 |
+| [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) | **Draft** (#38) | TERMINATED 방 일정 snapshot | #27 · #17 · #12 |
 | [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 2뷰 · submit→**#22** | 여행방 CRUD·홈 목록·Pin | #17 · **#22** |
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | TERMINATED DB·Pin batch · 00:05 KST | #12 |
@@ -50,6 +52,8 @@
 | **#27** | trip-home-schedulers | Open |
 | **#22** | schedule-participation-onboarding (Draft — late-join · 방장 A · memberFillRate) | Open |
 | **#35** | trip-join-capacity-hold (Draft — wave 4) | Open |
+| **#37** | trip-schedule-calendar-window (Draft — +2년 조회 윈도우) | Open |
+| **#38** | trip-schedule-snapshot (Draft — TERMINATED 일정 freeze) | Open |
 
 ## 완료 후
 

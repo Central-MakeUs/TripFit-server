@@ -2,7 +2,7 @@
 
 > wave: 2  
 > implements: BR-TRIP-001, BR-TRIP-008, BR-TRIP-009, BR-TRIP-013, BR-USER-001, BR-USER-002, BR-USER-009, BR-USER-010  
-> deferred: members schedule-calendar OpenAPI Hidden 2단계 → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md), **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), 카카오 공유 SDK ([#21](https://github.com/Central-MakeUs/TripFit-server/issues/21)), join 전 미리보기 ([#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)), 참여자 내보내기 ([#20](https://github.com/Central-MakeUs/TripFit-server/issues/20)), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **TERMINATED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)  
+> deferred: **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), `cancel_reason` VOC (wave 4), 카카오 공유 SDK ([#21](https://github.com/Central-MakeUs/TripFit-server/issues/21)), join 전 미리보기 ([#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)), 참여자 내보내기 ([#20](https://github.com/Central-MakeUs/TripFit-server/issues/20)), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **TERMINATED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)  
 > 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·참여 = #22 확정** (2026-07-21) · **D5 홈 2뷰 amend** (2026-07-19) · **D5 구현 후속 defer #26·#27** (2026-07-19)  
 > 선행: [`auth-social-login.md`](auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)  
 > 후속: [`trip-recommendation.md`](trip-recommendation.md)
@@ -34,7 +34,7 @@
 | ID | 항목 | 결정 | 확정일 |
 |----|------|------|--------|
 | **D1** | 참여 완료 | **`RESPONDED`** = create/join INSERT. **submit 삭제** · `JOINED` 미사용 — [#22](schedule-participation-onboarding.md) | 2026-07-21 |
-| **D2** | 그룹 일정 조회 | **T1** — `members/schedule-calendar`(effective). **OpenAPI Hidden 2단계** (#22). `personal-summary` deprecate | 2026-07-21 |
+| **D2** | 그룹 일정 조회 | **T1** — `members/schedule-calendar`(effective) **OpenAPI 공개** (#39). ~~personal-summary~~ **삭제**. **후속:** [#37](https://github.com/Central-MakeUs/TripFit-server/issues/37) 윈도우 · [#38](https://github.com/Central-MakeUs/TripFit-server/issues/38) snapshot | 2026-07-21 |
 | **D3** | `invite_code` | **6자** Crockford Base32 (`0`/`O`/`I`/`1` 제외). 링크 공유 UX — 아래 §초대 | 2026-07-17 |
 | **D4** | CONFIRMED·CANCELED | 기존 멤버 재접속 idempotent · **신규 join 409** · PATCH는 **`ONGOING`만** | 2026-07-17 |
 | **D5** | 홈 목록 | **2뷰** (`scope=ongoing` \| `all`) · `last_activity_at` · `pinned_at` — 아래 §홈 목록 | **2026-07-19** |
@@ -132,7 +132,7 @@
 | GET | `/api/v1/trips/{tripId}/members` | JWT + member | 참여자 목록 |
 | PATCH | `/api/v1/trips/{tripId}/pin` | JWT + member | Pin 토글 (`is_pinned` + `pinned_at`) |
 | ~~POST~~ | ~~`/api/v1/trips/{tripId}/schedule/submit`~~ | — | **삭제 (#22)** — create / `POST /join` |
-| GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | JWT + member | **구현 유지 · OpenAPI `@Hidden` 2단계** (#22) |
+| GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | JWT + member | **OpenAPI 공개** (#39 · #22 Hidden 2단계 해제) |
 
 ### `GET /trips` — 홈 목록 (D5)
 
@@ -265,7 +265,8 @@
 
 ### `members/schedule-calendar` 응답 (D2)
 
-trip `startRange`~`endRange` 기간. 멤버 **전원** × effective day (S1·R2=A · #17).
+trip `startRange`~`endRange` 기간 (현행). 멤버 **전원** × effective day (S1·R2=A · #17).  
+**후속 Draft:** 기간을 여행방 시작 기준 +2년 윈도우로 재정의 가능 — [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md). TERMINATED는 live 대신 snapshot — [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md).
 
 ```json
 {
@@ -354,9 +355,9 @@ trip `startRange`~`endRange` 기간. 멤버 **전원** × effective day (S1·R2=
 
 희망 기간·`durationDays` 변경 시 **`recommendation` hard DELETE** — hook 지점 주석/호출 (#13).
 
-### `personal-summary` (deprecate)
+### ~~`personal-summary`~~ (삭제 — #39)
 
-기존 `GET .../members/personal-summary`는 personal-only(C2). **`schedule-calendar` → #22 Hidden 2단계** (구현 유지 · OpenAPI 미노출).
+구 `GET .../members/personal-summary`(personal-only)는 **삭제**. 그룹 조회는 `members/schedule-calendar`만 사용.
 
 ## 검증 시나리오
 
@@ -399,12 +400,13 @@ trip `startRange`~`endRange` 기간. 멤버 **전원** × effective day (S1·R2=
 | 참여자 내보내기 | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) | wave 2 Out |
 | join 전 미리보기 | D7 · 별도 이슈 |
 | User 전역 일정 수정 → 참여 trip `last_activity_at` | **#26 L2 확정 — touch 안 함** · [`trip-last-activity-at.md`](trip-last-activity-at.md) |
-| 그룹 `schedule-calendar` OpenAPI 공개 | #22 Hidden **2단계** |
+| 그룹 `schedule-calendar` OpenAPI 공개 | **#39 완료** · ~~personal-summary~~ 삭제 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-21 | **#39** — `members/schedule-calendar` OpenAPI 공개 · ~~personal-summary~~ 삭제 · D2 갱신 |
 | 2026-07-21 | **#22 정합** — submit/`JOINED`/`[미정]` stale 정리 · D1·D2·에러코드 · `RESPONDED` 예시 |
 | 2026-07-08 | 초안 |
 | 2026-07-13 | 일정 용어 #11 정합 |
