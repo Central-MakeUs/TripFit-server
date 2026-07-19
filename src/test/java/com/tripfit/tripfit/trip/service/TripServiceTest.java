@@ -33,8 +33,8 @@ import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import com.tripfit.tripfit.user.service.UserProfileService;
+import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -70,9 +70,6 @@ class TripServiceTest {
   private UserProfileService userProfileService;
 
   @Mock
-  private ScheduleService scheduleService;
-
-  @Mock
   private RegularScheduleRepository regularScheduleRepository;
 
   @Mock
@@ -92,9 +89,14 @@ class TripServiceTest {
   @BeforeEach
   void setUp() {
     owner = user(OWNER_ID, "홍", "길동");
+    owner.setAllFree(true);
     member = user(MEMBER_ID, "김", "철수");
+    member.setAllFree(true);
     trip = ongoingTrip();
 
+    UserSummaryService userSummaryService =
+        new UserSummaryService(
+            regularScheduleRepository, personalScheduleRepository, userRepository);
     TripServiceSupport support =
         new TripServiceSupport(tripRepository, tripMemberRepository, userRepository);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
@@ -104,7 +106,8 @@ class TripServiceTest {
             regularScheduleRepository,
             personalScheduleRepository,
             support);
-    TripJoinService tripJoinService = new TripJoinService(tripMemberRepository, tripQueryService);
+    TripJoinService tripJoinService =
+        new TripJoinService(tripMemberRepository, tripQueryService, userSummaryService);
     TripActivityAspect tripActivityAspect = new TripActivityAspect(tripRepository);
     AspectJProxyFactory joinProxyFactory = new AspectJProxyFactory(tripJoinService);
     joinProxyFactory.addAspect(tripActivityAspect);
@@ -114,11 +117,11 @@ class TripServiceTest {
             tripRepository,
             tripMemberRepository,
             userProfileService,
-            scheduleService,
             recommendationRepository,
             support,
             tripQueryService,
-            proxiedJoinService);
+            proxiedJoinService,
+            userSummaryService);
     AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
     commandProxyFactory.addAspect(tripActivityAspect);
     TripCommandService tripCommandService = commandProxyFactory.getProxy();
@@ -156,7 +159,35 @@ class TripServiceTest {
     ArgumentCaptor<TripMember> memberCaptor = ArgumentCaptor.forClass(TripMember.class);
     verify(tripMemberRepository).save(memberCaptor.capture());
     assertThat(memberCaptor.getValue().getRole()).isEqualTo(TripMemberRole.OWNER);
-    assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.JOINED);
+    assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+  }
+
+  @Test
+  void createTrip_setsAllFreeWhenNoSchedules() {
+    owner.setAllFree(false);
+    when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+    when(tripRepository.existsByInviteCode(any())).thenReturn(false);
+    when(tripRepository.save(any(Trip.class)))
+        .thenAnswer(
+            invocation -> {
+              Trip saved = invocation.getArgument(0);
+              saved.setId(TRIP_ID);
+              return saved;
+            });
+    when(regularScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
+    when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
+
+    tripService.createTrip(
+        OWNER_ID,
+        new CreateTripRequest(
+            "제주 3박4일",
+            LocalDate.of(2026, 8, 1),
+            LocalDate.of(2026, 8, 10),
+            4,
+            6,
+            "제주"));
+
+    assertThat(owner.isAllFree()).isTrue();
   }
 
   @Test
@@ -172,6 +203,25 @@ class TripServiceTest {
                 LocalDate.of(2026, 8, 10),
                 4,
                 6,
+                null)))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  void createTrip_rejectsMemberCountOver10() {
+    when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+
+    assertThatThrownBy(
+        () -> tripService.createTrip(
+            OWNER_ID,
+            new CreateTripRequest(
+                "제주 3박4일",
+                LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 10),
+                4,
+                11,
                 null)))
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
@@ -220,6 +270,29 @@ class TripServiceTest {
 
     assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
     verify(tripMemberRepository).save(any());
+  }
+
+  @Test
+  void joinTrip_setsAllFreeWhenNoSchedules() {
+    member.setAllFree(false);
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
+    when(
+        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
+            TRIP_ID,
+            TripMemberStatus.RESPONDED))
+        .thenReturn(0L);
+    when(regularScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
+    when(personalScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
+
+    tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
+
+    assertThat(member.isAllFree()).isTrue();
   }
 
   @Test
@@ -333,28 +406,6 @@ class TripServiceTest {
   }
 
   @Test
-  void submitSchedule_setsRespondedWhenRegularExists() {
-    trip.setLastActivityAt(LocalDateTime.of(2026, 1, 1, 0, 0));
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
-    TripMember membership = tripMember(owner, TripMemberRole.OWNER);
-    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
-        .thenReturn(Optional.of(membership));
-    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
-        .thenReturn(1L);
-
-    var summary = tripService.submitSchedule(TRIP_ID, OWNER_ID);
-
-    assertThat(membership.getStatus()).isEqualTo(TripMemberStatus.RESPONDED);
-    assertThat(summary.myMemberStatus()).isEqualTo(TripMemberStatus.RESPONDED);
-    assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
-    verify(scheduleService).requireRegularScheduleRegistered(OWNER_ID);
-  }
-
-  @Test
   void updatePin_togglesPinnedAndPinnedAt() {
     TripMember membership = tripMember(owner, TripMemberRole.OWNER);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
@@ -389,7 +440,7 @@ class TripServiceTest {
             new TripListQuery(TripListScope.ONGOING, Optional.empty(), false));
 
     assertThat(response.trips()).hasSize(1);
-    assertThat(response.trips().get(0).memberCount()).isEqualTo(1);
+    assertThat(response.trips().get(0).joinedMemberCount()).isEqualTo(1);
   }
 
   @Test
@@ -415,7 +466,7 @@ class TripServiceTest {
     assertThat(response.trips().get(0).myRole()).isEqualTo(TripMemberRole.OWNER);
   }
 
-  private static TripMemberCountProjection countProjection(int memberCount, int responded) {
+  private static TripMemberCountProjection countProjection(int joinedMemberCount, int responded) {
     return new TripMemberCountProjection() {
       @Override
       public UUID getTripId() {
@@ -423,8 +474,8 @@ class TripServiceTest {
       }
 
       @Override
-      public long getMemberCount() {
-        return memberCount;
+      public long getJoinedMemberCount() {
+        return joinedMemberCount;
       }
 
       @Override
@@ -482,7 +533,7 @@ class TripServiceTest {
 
   private TripMember tripMember(User user, TripMemberRole role) {
     TripMember tm =
-        new TripMember(trip, user, role, TripMemberStatus.JOINED, LocalDateTime.now());
+        new TripMember(trip, user, role, TripMemberStatus.RESPONDED, LocalDateTime.now());
     return tm;
   }
 

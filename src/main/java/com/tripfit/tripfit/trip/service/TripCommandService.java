@@ -18,8 +18,8 @@ import com.tripfit.tripfit.trip.repository.RecommendationRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import com.tripfit.tripfit.user.service.UserProfileService;
+import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+// trip 생성·join·변경·submit 등 쓰기 유스케이스 — submit은 #22에서 regular EXISTS 게이트 제거(D-BR006-5)
 class TripCommandService {
 
   private final TripRepository tripRepository;
@@ -34,8 +35,6 @@ class TripCommandService {
   private final TripMemberRepository tripMemberRepository;
 
   private final UserProfileService userProfileService;
-
-  private final ScheduleService scheduleService;
 
   private final RecommendationRepository recommendationRepository;
 
@@ -45,23 +44,25 @@ class TripCommandService {
 
   private final TripJoinService tripJoinService;
 
+  private final UserSummaryService userSummaryService;
+
   TripCommandService(
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
       UserProfileService userProfileService,
-      ScheduleService scheduleService,
       RecommendationRepository recommendationRepository,
       TripServiceSupport support,
       TripQueryService tripQueryService,
-      TripJoinService tripJoinService) {
+      TripJoinService tripJoinService,
+      UserSummaryService userSummaryService) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
     this.userProfileService = userProfileService;
-    this.scheduleService = scheduleService;
     this.recommendationRepository = recommendationRepository;
     this.support = support;
     this.tripQueryService = tripQueryService;
     this.tripJoinService = tripJoinService;
+    this.userSummaryService = userSummaryService;
   }
 
   @Transactional
@@ -74,7 +75,10 @@ class TripCommandService {
         request.startRange(),
         request.endRange(),
         request.durationDays(),
-        request.targetMemberCount());
+        request.memberCount());
+
+    // Skip+0행 → is_all_free=true (D-JOIN-TRIP-FLOW)
+    userSummaryService.markAllFreeIfNoSchedules(owner);
 
     Trip trip =
         new Trip(
@@ -83,7 +87,7 @@ class TripCommandService {
             request.startRange(),
             request.endRange(),
             request.durationDays(),
-            request.targetMemberCount(),
+            request.memberCount(),
             support.generateUniqueInviteCode(),
             TripStatus.ONGOING);
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
@@ -94,7 +98,7 @@ class TripCommandService {
             trip,
             owner,
             TripMemberRole.OWNER,
-            TripMemberStatus.JOINED,
+            TripMemberStatus.RESPONDED,
             LocalDateTime.now());
     tripMemberRepository.save(ownerMember);
 
@@ -114,7 +118,7 @@ class TripCommandService {
         request.startRange(),
         request.endRange(),
         request.durationDays(),
-        request.targetMemberCount());
+        request.memberCount());
 
     boolean recommendationInputsChanged =
         !Objects.equals(trip.getStartRange(), request.startRange())
@@ -125,7 +129,7 @@ class TripCommandService {
     trip.setStartRange(request.startRange());
     trip.setEndRange(request.endRange());
     trip.setDurationDays(request.durationDays());
-    trip.setTargetMemberCount(request.targetMemberCount());
+    trip.setMemberCount(request.memberCount());
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
 
     if (recommendationInputsChanged) {
@@ -175,8 +179,9 @@ class TripCommandService {
       case CANCELED -> throw new TripFitException(TripErrorCode.TRIP_CANCELED);
       case TERMINATED -> throw new TripFitException(TripErrorCode.TRIP_TERMINATED);
       case ONGOING -> {
-        long memberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
-        if (memberCount >= trip.getTargetMemberCount()) {
+        long joinedMemberCount =
+            tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
+        if (joinedMemberCount >= trip.getMemberCount()) {
           throw new TripFitException(TripErrorCode.TRIP_MEMBER_FULL);
         }
       }
@@ -193,15 +198,4 @@ class TripCommandService {
     return tripQueryService.toDetail(membership.getTrip(), membership);
   }
 
-  @Transactional
-  @TripActivity(tripIdParam = "tripId")
-  public TripDetailResponse submitSchedule(UUID tripId, UUID userId) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOngoingForMutation(trip);
-    TripMember membership = support.requireActiveMember(tripId, userId);
-
-    scheduleService.requireRegularScheduleRegistered(userId);
-    membership.setStatus(TripMemberStatus.RESPONDED);
-    return tripQueryService.toDetail(trip, membership);
-  }
 }

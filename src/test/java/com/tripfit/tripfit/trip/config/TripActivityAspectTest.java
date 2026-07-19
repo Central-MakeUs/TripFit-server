@@ -97,7 +97,8 @@ class TripActivityAspectTest {
         null,
         null,
         0,
-        1);
+        1,
+        1.0 / 6.0);
   }
 
   private static Trip sampleTrip() {

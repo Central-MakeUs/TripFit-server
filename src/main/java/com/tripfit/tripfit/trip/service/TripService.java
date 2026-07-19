@@ -59,10 +59,6 @@ public class TripService {
     return tripCommandService.updatePin(tripId, userId, request);
   }
 
-  public TripDetailResponse submitSchedule(UUID tripId, UUID userId) {
-    return tripCommandService.submitSchedule(tripId, userId);
-  }
-
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
     return tripMemberQueryService.listMembers(tripId, userId);
   }

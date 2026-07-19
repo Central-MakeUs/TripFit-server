@@ -33,6 +33,10 @@ class TripServiceSupport {
 
   static final int NAME_MAX_LENGTH = 15;
 
+  static final int MEMBER_COUNT_MIN = 1;
+
+  static final int MEMBER_COUNT_MAX = 10;
+
   static final int MAX_INVITE_CODE_ATTEMPTS = 20;
 
   static final int MEMBERS_PREVIEW_LIMIT = 4;
@@ -55,10 +59,10 @@ class TripServiceSupport {
   TripHomeCardResponse toHomeCard(
       Trip trip,
       TripMember membership,
-      int memberCount,
+      int joinedMemberCount,
       int respondedCount,
       List<MemberPreviewResponse> previews) {
-    int overflow = Math.max(0, memberCount - MEMBERS_PREVIEW_LIMIT);
+    int overflow = Math.max(0, joinedMemberCount - MEMBERS_PREVIEW_LIMIT);
     return new TripHomeCardResponse(
         trip.getId(),
         trip.getName(),
@@ -66,24 +70,28 @@ class TripServiceSupport {
         trip.getStartRange(),
         trip.getEndRange(),
         trip.getDurationDays(),
+        trip.getMemberCount(),
         effectiveStatus(trip),
         trip.getLastActivityAt(),
         membership.isPinned(),
         membership.getRole(),
         membership.getStatus(),
         respondedCount,
-        memberCount,
+        joinedMemberCount,
+        memberFillRate(joinedMemberCount, trip.getMemberCount()),
         previews,
         overflow);
   }
 
   TripDetailResponse toDetail(Trip trip, TripMember membership) {
     UUID tripId = trip.getId();
-    long memberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(tripId);
+    long joinedMemberCount =
+        tripMemberRepository.countByTripIdAndDeletedAtIsNull(tripId);
     int respondedCount =
         (int) tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
             tripId,
             TripMemberStatus.RESPONDED);
+    int joined = (int) joinedMemberCount;
 
     return new TripDetailResponse(
         tripId,
@@ -92,7 +100,7 @@ class TripServiceSupport {
         trip.getStartRange(),
         trip.getEndRange(),
         trip.getDurationDays(),
-        trip.getTargetMemberCount(),
+        trip.getMemberCount(),
         effectiveStatus(trip),
         trip.getInviteCode(),
         trip.getConfirmedStartDate(),
@@ -103,7 +111,16 @@ class TripServiceSupport {
         membership.getRole(),
         membership.getStatus(),
         respondedCount,
-        (int) memberCount);
+        joined,
+        memberFillRate(joined, trip.getMemberCount()));
+  }
+
+  /** 모집 현황 — joinedMemberCount / trip.memberCount (#22 D-MEMBER-FILL) */
+  static double memberFillRate(int joinedMemberCount, Integer memberCount) {
+    if (memberCount == null || memberCount <= 0) {
+      return 0.0;
+    }
+    return (double) joinedMemberCount / memberCount;
   }
 
   Map<UUID, TripMemberCountProjection> loadMemberCountsByTripIds(List<UUID> tripIds) {
@@ -165,7 +182,7 @@ class TripServiceSupport {
       LocalDate startRange,
       LocalDate endRange,
       Integer durationDays,
-      Integer targetMemberCount) {
+      Integer memberCount) {
     if (name == null || name.isBlank() || name.trim().length() > NAME_MAX_LENGTH) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
@@ -174,8 +191,9 @@ class TripServiceSupport {
         || endRange.isBefore(startRange)
         || durationDays == null
         || durationDays < 1
-        || targetMemberCount == null
-        || targetMemberCount < 1) {
+        || memberCount == null
+        || memberCount < MEMBER_COUNT_MIN
+        || memberCount > MEMBER_COUNT_MAX) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
     long rangeDays = ChronoUnit.DAYS.between(startRange, endRange) + 1;

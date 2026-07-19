@@ -7,7 +7,7 @@ public interface TripMemberCountProjection {
 
   UUID getTripId();
 
-  long getMemberCount();
+  long getJoinedMemberCount();
 
   long getRespondedCount();
 }

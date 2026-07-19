@@ -13,7 +13,6 @@ import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.service.TripService;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -114,15 +113,4 @@ public class TripController {
     return ResponseEntity.ok(ApiResponse.of(tripService.updatePin(tripId, userId, request)));
   }
 
-  @Hidden
-  @TripMemberOnly
-  @Operation(
-      summary = "일정 제출",
-      description = "regular_schedule ≥1 → RESPONDED · ONGOING만")
-  @PostMapping("/{tripId}/schedule/submit")
-  ResponseEntity<ApiResponse<TripDetailResponse>> submitSchedule(
-      @PathVariable UUID tripId,
-      @AuthorizedUser UUID userId) {
-    return ResponseEntity.ok(ApiResponse.of(tripService.submitSchedule(tripId, userId)));
-  }
 }

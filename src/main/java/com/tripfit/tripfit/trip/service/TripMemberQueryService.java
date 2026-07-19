@@ -50,7 +50,7 @@ class TripMemberQueryService {
   @Transactional(readOnly = true)
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
     support.requireActiveMember(tripId, userId);
-    support.requireActiveTrip(tripId);
+    Trip trip = support.requireActiveTrip(tripId);
 
     List<TripMember> members =
         tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
@@ -60,12 +60,13 @@ class TripMemberQueryService {
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
-    int memberCount = members.size();
+    int joinedMemberCount = members.size();
     int respondedCount =
         (int) members.stream()
             .filter(m -> m.getStatus() == TripMemberStatus.RESPONDED)
             .count();
-    double responseRate = memberCount == 0 ? 0.0 : (double) respondedCount / memberCount;
+    int memberCount = trip.getMemberCount() == null ? 0 : trip.getMemberCount();
+    double memberFillRate = TripServiceSupport.memberFillRate(joinedMemberCount, memberCount);
 
     List<TripMemberItemResponse> items = new ArrayList<>();
     for (TripMember member : members) {
@@ -78,7 +79,8 @@ class TripMemberQueryService {
               member.isPinned()));
     }
 
-    return new TripMembersResponse(memberCount, respondedCount, responseRate, items);
+    return new TripMembersResponse(
+        memberCount, joinedMemberCount, respondedCount, memberFillRate, items);
   }
 
   @Transactional(readOnly = true)

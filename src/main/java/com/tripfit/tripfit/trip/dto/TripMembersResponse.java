@@ -8,9 +8,12 @@ import java.util.UUID;
 
 @Schema(description = "여행방 참여자 목록")
 public record TripMembersResponse(
-    @Schema(description = "현재 참여 멤버 수") int memberCount,
-    @Schema(description = "일정 응답 완료 멤버 수") int respondedCount,
-    @Schema(description = "응답률 (0.0~1.0)") double responseRate,
+    @Schema(description = "방장 설정 정원 (trip.memberCount)") int memberCount,
+    @Schema(description = "현재 참여 멤버 수 (trip_member)") int joinedMemberCount,
+    @Schema(description = "일정 확인 완료(RESPONDED) 멤버 수") int respondedCount,
+    @Schema(
+        description = "모집 현황 joinedMemberCount/memberCount (0.0~1.0). 구 responseRate(responded/joined) 대체",
+        example = "0.67") double memberFillRate,
     @Schema(description = "참여자 목록") List<TripMemberItemResponse> members
 ) {
 

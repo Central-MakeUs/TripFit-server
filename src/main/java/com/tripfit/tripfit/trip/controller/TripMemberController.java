@@ -44,7 +44,7 @@ public class TripMemberController {
     return ResponseEntity.ok(ApiResponse.of(tripService.listMembers(tripId, userId)));
   }
 
-  @Hidden // #22 schedule-participation-onboarding [미定]
+  @Hidden // #22 Hidden 2단계 — 그룹 schedule-calendar
   @TripMemberOnly
   @Operation(
       summary = "멤버 effective 일정 달력",

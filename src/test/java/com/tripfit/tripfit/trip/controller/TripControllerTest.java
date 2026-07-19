@@ -13,7 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
-import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
@@ -22,7 +21,6 @@ import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
-import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.service.TripService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -84,7 +82,7 @@ class TripControllerTest {
                           "startRange": "2026-08-01",
                           "endRange": "2026-08-10",
                           "durationDays": 4,
-                          "targetMemberCount": 6,
+                          "memberCount": 6,
                           "destination": "제주"
                         }
                         """))
@@ -133,7 +131,8 @@ class TripControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"inviteCode\":\"ABC234\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.memberCount").value(1));
+        .andExpect(jsonPath("$.data.joinedMemberCount").value(1))
+        .andExpect(jsonPath("$.data.memberCount").value(6));
   }
 
   @Test
@@ -156,17 +155,6 @@ class TripControllerTest {
         .andExpect(status().isNoContent());
   }
 
-  @Test
-  void submitSchedule_notOngoing() throws Exception {
-    when(tripService.submitSchedule(TRIP_ID, USER_ID))
-        .thenThrow(new TripFitException(TripErrorCode.TRIP_NOT_ONGOING));
-
-    mockMvc
-        .perform(post("/api/v1/trips/" + TRIP_ID + "/schedule/submit"))
-        .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.code").value("TRIP_NOT_ONGOING"));
-  }
-
   private static TripHomeCardResponse sampleHomeCard(boolean pinned) {
     return new TripHomeCardResponse(
         TRIP_ID,
@@ -175,13 +163,15 @@ class TripControllerTest {
         LocalDate.of(2026, 8, 1),
         LocalDate.of(2026, 8, 10),
         4,
+        6,
         TripStatus.ONGOING,
         LocalDateTime.of(2026, 7, 20, 12, 0),
         pinned,
         TripMemberRole.OWNER,
-        TripMemberStatus.JOINED,
+        TripMemberStatus.RESPONDED,
         0,
         1,
+        1.0 / 6.0,
         List.of(),
         0);
   }
@@ -203,8 +193,9 @@ class TripControllerTest {
         LocalDateTime.of(2026, 7, 20, 12, 0),
         pinned,
         TripMemberRole.OWNER,
-        TripMemberStatus.JOINED,
+        TripMemberStatus.RESPONDED,
         0,
-        1);
+        1,
+        1.0 / 6.0);
   }
 }

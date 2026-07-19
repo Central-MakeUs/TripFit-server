@@ -68,9 +68,9 @@ public class Trip extends SoftDeleteEntity {
   @Column(nullable = false)
   private Integer durationDays;
 
-  @Schema(description = "예상 참여 인원", example = "6")
-  @Column(nullable = false)
-  private Integer targetMemberCount;
+  @Schema(description = "참여 인원 (1~10)", example = "6", minimum = "1", maximum = "10")
+  @Column(name = "member_count", nullable = false)
+  private Integer memberCount;
 
   @Schema(description = "초대 코드. UNIQUE", example = "ABC123")
   @Column(nullable = false)
@@ -111,7 +111,7 @@ public class Trip extends SoftDeleteEntity {
       LocalDate startRange,
       LocalDate endRange,
       Integer durationDays,
-      Integer targetMemberCount,
+      Integer memberCount,
       String inviteCode,
       TripStatus status) {
     this.owner = owner;
@@ -119,7 +119,7 @@ public class Trip extends SoftDeleteEntity {
     this.startRange = startRange;
     this.endRange = endRange;
     this.durationDays = durationDays;
-    this.targetMemberCount = targetMemberCount;
+    this.memberCount = memberCount;
     this.inviteCode = inviteCode;
     this.status = status;
     this.lastActivityAt = LocalDateTime.now();

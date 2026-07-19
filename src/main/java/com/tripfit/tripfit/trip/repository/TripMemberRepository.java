@@ -93,7 +93,7 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
   @Query(
       value = """
           SELECT tm.trip_id AS tripId,
-                 COUNT(*) AS memberCount,
+                 COUNT(*) AS joinedMemberCount,
                  SUM(CASE WHEN tm.status = 'RESPONDED' THEN 1 ELSE 0 END) AS respondedCount
           FROM trip_member tm
           WHERE tm.trip_id IN (:tripIds) AND tm.deleted_at IS NULL

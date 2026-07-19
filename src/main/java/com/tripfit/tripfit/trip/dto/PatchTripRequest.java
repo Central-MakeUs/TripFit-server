@@ -1,6 +1,8 @@
 package com.tripfit.tripfit.trip.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -24,9 +26,11 @@ public record PatchTripRequest(
     @NotNull
     Integer durationDays,
 
-    @Schema(description = "예상 참여 인원", example = "6")
+    @Schema(description = "참여 인원 (1~10)", example = "6", minimum = "1", maximum = "10")
     @NotNull
-    Integer targetMemberCount,
+    @Min(1)
+    @Max(10)
+    Integer memberCount,
 
     @Schema(description = "여행지 (선택)", nullable = true, example = "제주")
     String destination

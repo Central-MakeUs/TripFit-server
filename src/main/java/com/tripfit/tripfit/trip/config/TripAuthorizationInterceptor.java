@@ -5,6 +5,7 @@ import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
+import com.tripfit.tripfit.user.service.UserSummaryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -23,10 +24,15 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
   private final TripMemberRepository tripMemberRepository;
 
+  private final UserSummaryService userSummaryService;
+
   public TripAuthorizationInterceptor(
-      TripRepository tripRepository, TripMemberRepository tripMemberRepository) {
+      TripRepository tripRepository,
+      TripMemberRepository tripMemberRepository,
+      UserSummaryService userSummaryService) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
+    this.userSummaryService = userSummaryService;
   }
 
   @Override
@@ -58,12 +64,12 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
       if (!tripRepository.existsByIdAndOwner_IdAndDeletedAtIsNull(tripId, userId)) {
         throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
       }
-      return true;
-    }
-
-    if (!tripMemberRepository.existsByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)) {
+    } else if (!tripMemberRepository.existsByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)) {
       throw new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED);
     }
+
+    // D-JOIN-ENTRY: 멤버·방장 공통 — 일정 또는 is_all_free
+    userSummaryService.requireCanEnterRoom(userId);
     return true;
   }
 

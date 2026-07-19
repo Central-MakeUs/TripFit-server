@@ -76,8 +76,9 @@ class TripMemberControllerTest {
         .thenReturn(
             new TripMembersResponse(
                 2,
+                2,
                 1,
-                0.5,
+                1.0,
                 List.of(
                     new TripMemberItemResponse(
                         OTHER_ID, "김철수", TripMemberRole.MEMBER, TripMemberStatus.RESPONDED,
@@ -86,7 +87,7 @@ class TripMemberControllerTest {
     mockMvc
         .perform(get("/api/v1/trips/" + TRIP_ID + "/members"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.responseRate").value(0.5));
+        .andExpect(jsonPath("$.data.memberFillRate").value(1.0));
   }
 
   @Test

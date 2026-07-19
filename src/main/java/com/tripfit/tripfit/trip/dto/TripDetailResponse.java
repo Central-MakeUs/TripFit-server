@@ -24,7 +24,8 @@ public record TripDetailResponse(
 
     @Schema(description = "희망 여행 일수") Integer durationDays,
 
-    @Schema(description = "예상 참여 인원") Integer targetMemberCount,
+    @Schema(description = "참여 인원 (1~10)", example = "6", minimum = "1", maximum = "10")
+    Integer memberCount,
 
     @Schema(description = "여행방 상태 (effectiveStatus)") TripStatus status,
 
@@ -44,8 +45,13 @@ public record TripDetailResponse(
 
     @Schema(description = "본인 멤버 상태") TripMemberStatus myMemberStatus,
 
-    @Schema(description = "일정 응답 완료 멤버 수") int respondedCount,
+    @Schema(description = "일정 확인 완료(RESPONDED) 멤버 수") int respondedCount,
 
-    @Schema(description = "현재 참여 멤버 수") int memberCount
+    @Schema(description = "현재 참여 멤버 수") int joinedMemberCount,
+
+    @Schema(
+        description = "모집 현황 joinedMemberCount/memberCount (0.0~1.0). 구 responseRate 대체",
+        example = "0.67")
+        double memberFillRate
 ) {}
 // @formatter:on

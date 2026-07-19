@@ -57,12 +57,13 @@ class TripQueryService {
                 m -> {
                   UUID tripId = m.getTrip().getId();
                   TripMemberCountProjection counts = countsByTripId.get(tripId);
-                  int memberCount = counts == null ? 0 : (int) counts.getMemberCount();
+                  int joinedMemberCount =
+                      counts == null ? 0 : (int) counts.getJoinedMemberCount();
                   int respondedCount = counts == null ? 0 : (int) counts.getRespondedCount();
                   return support.toHomeCard(
                       m.getTrip(),
                       m,
-                      memberCount,
+                      joinedMemberCount,
                       respondedCount,
                       previewsByTripId.getOrDefault(tripId, List.of()));
                 })
