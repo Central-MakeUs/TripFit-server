@@ -37,6 +37,7 @@
 | join 미리보기 · 참여자 내보내기 (#19, #20) | 2 | **Nice / Out** |
 | 그룹 달력 · 알림 · 카카오 공유 | 3 | Must |
 | RTR·Redis · Apple S2S · S3 · 계정 연결 | 4 | — |
+| join 정원 hold (#35) | 4 | — |
 | BR-NOTI-005 · cancel_reason | 4 | — |
 
 상세 Must/Nice/Out: [`development-wave.md` §3](development-wave.md#3-wave-14-재정의).

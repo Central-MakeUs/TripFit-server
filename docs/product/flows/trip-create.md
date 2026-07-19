@@ -11,7 +11,7 @@
 1. 홈 화면에서 「여행방 신규 생성하기」 또는 「+」 클릭
 2. 여행방 이름 입력 (최대 **15자** — BR-TRIP-001)
 3. 여행 희망 기간(Calendar Range) 및 희망 여행 일수 선택 (BR-TRIP-008)
-4. 예상 참여 인원 설정
+4. 참여 인원 설정 (**1~10**, BR-TRIP-001)
 5. (선택) 여행지 입력 → `trip.destination` (BR-TRIP-001)
 6. (선택) 방장 본인 해당 기간 일정 입력
 7. 생성 완료 및 초대 링크 발급
@@ -21,6 +21,6 @@
 **예외 / 분기:**
 
 - 필수 정보 누락 시 다음 단계 비활성화 (BR-TRIP-001)
-- 예상 인원(`target_member_count`) **도달 시** 신규 join 409 · 공유 UI alert (D8). `end_range` 경과(TERMINATED) 시 초대·신규 join 불가
+- 참여 인원(`member_count`) **도달 시** 신규 join 409 · 공유 UI alert (D8). `end_range` 경과(TERMINATED) 시 초대·신규 join 불가
 
 **MVP 포함 여부:** In

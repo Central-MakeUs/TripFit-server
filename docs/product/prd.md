@@ -79,8 +79,9 @@
 | 항목 | 결정 |
 |------|------|
 | BR-USER-002 | 참여자 소셜 로그인 필수, 비회원 없음 |
-| BR-USER-006 | **`[미정]` #22** — 온보딩 skip·regular 게이트 |
-| BR-USER-007 | **`[미정]` #22** — 참여 완료·submit |
+| BR-USER-006 | **#22** — `user.is_all_free` · 입장 3조건. [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md) |
+| BR-USER-007 | **#22** — late-join · 방장 A · `memberFillRate`. submit 폐기 |
+| BR-USER-011 | **#22** — 0행↔`is_all_free` 전이. 선언 버튼 없음 |
 | BR-TRIP-005 | 추천 4모드 wave 2 전부 |
 | BR-TRIP-010 | 기간·일수 변경 시 추천 초기화 |
 | BR-TRIP-001 | `trip.destination` MVP In |

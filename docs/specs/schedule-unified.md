@@ -2,7 +2,7 @@
 
 > wave: 2  
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-TRIP-006, BR-USER-008  
-> deferred: BR-USER-006 (personal/calendar 게이트) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)**, Google Calendar OAuth (wave 4), 연차 복수 행 집계 (#13)  
+> deferred: Google Calendar OAuth (wave 4), 연차 복수 행 집계 (#13), members schedule-calendar OpenAPI 공개 → [#22](https://github.com/Central-MakeUs/TripFit-server/issues/22) Hidden 2단계  
 > 상태: Approved  
 > supersedes: A안 `schedule`; `Availability` → `PersonalSchedule`
 
@@ -54,9 +54,14 @@ user/schedule/
       "eveningStatus": "POSSIBLE",
       "uncertain": true
     }
-  ]
+  ],
+  "deletedDates": ["2026-08-04", "2026-08-05"]
 }
 ```
+
+- **`items`:** `(user, date)` insert/update  
+- **`deletedDates`:** 해당 날짜 row 삭제 (CLEAR · #22). regular도 0이면 `is_all_free=true`  
+- `items` ∩ `deletedDates` 비공집합 → 400 · 둘 다 비어 있으면 400
 
 ## 정기 일정 (`RegularSchedule`)
 
@@ -70,31 +75,26 @@ user/schedule/
 
 ## API
 
-| Method | Path |
-|--------|------|
-| GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성(start·end → 슬롯 계산) |
-| PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정(start·end → 슬롯 재계산) / 삭제 |
-| GET/PATCH | `/api/v1/users/schedule/personal` — **`@Hidden` #22** · ~~BR-USER-006~~ `[미定]` |
-| GET | `/api/v1/users/schedule/calendar` — **`@Hidden` #22** |
-| GET | `/api/v1/trips/{tripId}/members/personal-summary` | **deprecate** → `members/schedule-calendar` (D2 T1, #12) |
-
-> 폐기: `/schedule/availability`, per-slot TBD, `note`
-
-## `[미정]`
-
-- 정기 vs 개인 병합 → **S1 + R2=A 확정** ([`schedule-calendar-resolve.md`](schedule-calendar-resolve.md)): personal 있으면 그날 통째로 personal; regular 복수 시 슬롯별 IMPOSSIBLE 우선; sparse omit; effective만
-- `uncertain=true`일 때 추천에서 슬롯 무시 여부 (#13) — calendar는 U1(슬롯 그대로 노출) 가정
-
-## API
-
 | Method | Path | 설명 |
 |--------|------|------|
-| GET | `/api/v1/users/schedule/calendar` | 기간 effective days — **#17**, 상한 730일, 스펙 `schedule-calendar-resolve.md` (Approved) |
+| GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성 |
+| PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
+| GET/PATCH | `/api/v1/users/schedule/personal` | 조회 / **upsert + `deletedDates`** (#22 Hidden **1단계 해제**) |
+| GET | `/api/v1/users/schedule/calendar` | effective 달력 · 최대 730일 (#17) · Hidden **1단계 해제** |
+| GET | `/api/v1/trips/{tripId}/members/personal-summary` | **deprecate** → `members/schedule-calendar` |
+
+> 폐기: `/schedule/availability`, per-slot TBD, `note` · ~~BR-USER-006 regular 선행 403~~ (#22 D-BR006-5)
+
+## 잔여
+
+- `uncertain=true`일 때 추천에서 슬롯 무시 여부 (#13) — calendar는 U1(슬롯 그대로 노출) 가정
+- 그룹 `members/schedule-calendar` OpenAPI 공개 — #22 Hidden **2단계**
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-21 | **#22** — personal/calendar Hidden 해제 · `deletedDates` CLEAR · BR-USER-006 게이트 폐기 반영 |
 | 2026-07-14 | personal GET/PATCH에 BR-USER-006 `REGULAR_SCHEDULE_REQUIRED` 게이트 |
 | 2026-07-14 | 병합 S1 확정 링크 (`schedule-calendar-resolve.md`) |
 | 2026-07-13 | calendar resolve Draft 링크 (`schedule-calendar-resolve.md`) |

@@ -27,7 +27,7 @@
 | 여행방 생성 | ✓ | `created_at`과 동일 시각으로 초기화 ([#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)) |
 | 신규 참여 (join) | ✓ | Implemented |
 | 여행방 정보 수정 (PATCH) | ✓ | Implemented |
-| 일정 제출 (trip `submit`) | ✓ | Implemented · trip 맥락 |
+| 일정 확인 완료 (구 trip `submit`) | ✓ | **#22** — submit 폐기 → **확인 완료 API** (`JOINED→RESPONDED`) touch |
 | 추천 일정 생성 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 일정 확정 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | Pin 토글 | ✗ | Pin → `pinned_at` 별도 정렬 (D5) |

@@ -45,7 +45,7 @@
 - [ ] 후보 윈도우: `[startRange, endRange]` 내 **연속 `durationDays`일** 슬라이딩 `[제안]`
 - [ ] **입력 resolve:** #17 `ScheduleCalendarResolveService` **재사용** (C1 — 별도 병합 로직 금지). 멤버×날짜 effective
 - [ ] TBD = 날짜 단위 `uncertain` (CERTAIN 모드 · U1 달력과 동일)
-- [ ] **ALL_ATTEND:** `targetMemberCount` 미달 후보 **제외** (BR-TRIP-011)
+- [ ] **ALL_ATTEND:** `memberCount` 미달 후보 **제외** (BR-TRIP-011)
 - [ ] **동점:** BR-TRIP-012 — 1) 연차 적은 순 2) 기간 긴 순 3) 주말·공휴일 포함 순 `[제안]`
 - [ ] `POST /api/v1/trips/{tripId}/confirm` — 방장만 (BR-TRIP-007): `{ recommendationRank }` 또는 `{ startDate, endDate }`
 - [ ] confirm → `status=CONFIRMED`, `confirmedStartDate`/`confirmedEndDate` 설정
@@ -163,7 +163,7 @@
 | 모드 | 점수화 `[제안]` | 필터 |
 |------|-----------------|------|
 | BASIC | `w1*attendRate - w2*vacationDays - w3*tbdRate` | 없음 |
-| ALL_ATTEND | BASIC과 동일 sort | **가능 인원 < targetMemberCount 제외** |
+| ALL_ATTEND | BASIC과 동일 sort | **가능 인원 < memberCount 제외** |
 | SAVE_VACATION | `-vacationDays` primary | 없음 |
 | CERTAIN | `-tbdCount` primary | 없음 |
 

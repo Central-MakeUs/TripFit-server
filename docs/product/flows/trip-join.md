@@ -1,29 +1,29 @@
-# 여행방 참여 플로우
+# 여행방 참여·생성 플로우
 
-> NotebookLM 기획 자료 정리본.
+> SSOT: [`schedule-participation-onboarding.md`](../../specs/schedule-participation-onboarding.md)
 
-- **목적:** 초대받은 참여자가 여행방에 입장하고 일정을 처음 제출함
-- **액터:** 참여자
-- **사전 조건:** 방장으로부터 공유받은 초대 링크 또는 참여 코드
+## 방장
 
-**단계:**
+1. 「방 생성」→ **정기→개별** 일정 플로우 (수정/Skip)  
+2. **수정 시** 정기 CRUD / 개별 bulk upsert patch  
+3. **방 생성 폼** (이름·기간·인원 등)  
+4. `POST /trips` → owner `trip_member` **`RESPONDED`** (+ row0이면 `is_all_free`) → 방 상세  
+5. **`JOINED` 없음** · submit **없음**
 
-1. 초대 링크 클릭 또는 참여 코드 입력
-2. 앱 설치 여부 분기 → 앱 실행 또는 웹 랜딩 (BR-USER-002)
-3. 소셜 로그인 (필수, 비회원 없음 — BR-USER-002)
-4. `isScheduleRegistered=false`이면 `schedule` CONDITION 입력 — **`[미定]` #22**
-5. (기존 사용자) CONDITION·AVAILABILITY 확인·수정 (BR-USER-008)
-6. trip 희망 기간 내 AVAILABILITY 입력 (BR-TRIP-002, BR-TRIP-003)
-7. 「일정 제출하기」 클릭 — **`[미定]` #22** (구 BR-USER-007)
+## 참여자
 
-**성공 종료 조건:** **`[미定]` #22** (구 `trip_member.status=RESPONDED`)
+1. 초대 링크 → (미멤버) **정기→개별** 플로우 (수정/Skip)  
+2. **수정 시** 동일 patch  
+3. **`POST /api/v1/trips/join`** `{ inviteCode }` → INSERT **`RESPONDED`** (+ row0이면 `is_all_free`)  
+4. 정원 full → 409 (MVP · hold [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35))  
+5. 이미 멤버 → 방 상세 (BR-USER-010)
 
-**예외 / 분기:**
+## 모집 현황
 
-- 일정 제출 없이 이탈 → **`[미定]` #22** (구 참여 미완료)
-- **확정·취소된 여행방** → **신규** 참여 409 · 기존 멤버 재접속 idempotent (D4)
-- **희망 여행 시기 종료**(TERMINATED) → 신규 참여 제한·만료 안내; 기존 참여자는 조회·삭제만 (정책서 3-5 · 7-2)
-- **참여 인원 가득** → join 거부 (정책서)
-- 미로그인 → 로그인 유도
+`memberFillRate = joinedMemberCount / memberCount`
 
-**MVP 포함 여부:** In
+## Prefill
+
+프론트 UX — 백엔드 계약 아님.
+
+**MVP:** In

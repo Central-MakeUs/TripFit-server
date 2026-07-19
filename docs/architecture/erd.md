@@ -35,8 +35,7 @@ erDiagram
         string nickname
         string profile_image_url
         boolean is_google_calendar_connected
-        boolean is_schedule_registered
-        boolean is_optional_onboarding_completed
+        boolean is_all_free "default false"
         datetime created_at
         datetime updated_at
         datetime deleted_at
@@ -90,7 +89,7 @@ erDiagram
         date start_range
         date end_range
         int duration_days
-        int target_member_count
+        int member_count
         string invite_code
         string status
         string last_recommendation_mode
@@ -147,13 +146,12 @@ erDiagram
 | nickname | varchar | Y | | 소셜 prefill, fallback 없음 |
 | profile_image_url | varchar | Y | | wave 1 CDN / wave 4 S3 B안 |
 | is_google_calendar_connected | boolean | N | | default false |
-| is_schedule_registered | boolean | N | | **`regular_schedule` ≥1행 시 true** |
-| is_optional_onboarding_completed | boolean | N | | default false |
+| is_all_free | boolean | N | | default false. 전부 free 선언. row≥1이면 false 강제 |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
 
-**인덱스:** `UNIQUE (provider, social_id)`
+**API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`user.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
 
 ### `refresh_token`
 
@@ -193,7 +191,7 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
-**제약:** user당 **0..N행**. 1행 이상 → `user.is_schedule_registered=true`. soft delete 없음.
+**제약:** user당 **0..N행**. 1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY). soft delete 없음.
 
 ### `personal_schedule` (개인 일정)
 
@@ -232,7 +230,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | start_range | date | N | | 희망 기간 시작 |
 | end_range | date | N | | 희망 기간 종료 |
 | duration_days | int | N | | **m일만 저장**. n박은 UI 계산 |
-| target_member_count | int | N | | |
+| member_count | int | N | | **1~10** (BR-TRIP-001) |
 | invite_code | varchar | N | | UNIQUE |
 | status | varchar | N | | `ONGOING`, `CONFIRMED`, `CANCELED`, **`TERMINATED`** (기간 만료·종료) |
 | last_recommendation_mode | varchar | Y | | BASIC, ALL_ATTEND, SAVE_VACATION, CERTAIN |
@@ -258,7 +256,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | trip_id | char(36) | N | FK → trip.id | |
 | user_id | char(36) | N | FK → user.id | NOT NULL |
 | role | varchar | N | | OWNER, MEMBER |
-| status | varchar | N | | JOINED, RESPONDED |
+| status | varchar | N | | **`RESPONDED`** (멤버 = 확인 완료). ~~JOINED~~ 신규 미사용 — [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md) |
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | |

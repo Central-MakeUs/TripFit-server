@@ -49,6 +49,7 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 //   5) trip 존재·soft-delete 확인 → 없으면 404 TRIP_NOT_FOUND
 //   6) OwnerOnly → trip.owner == userId 아니면 403 TRIP_FORBIDDEN
 //      MemberOnly → tripMemberRepository.existsBy...AndDeletedAtIsNull 아니면 403 TRIP_ACCESS_DENIED
+//   7) 공통 canEnterRoom (D-JOIN-ENTRY) → 아니면 403 SCHEDULE_ENTRY_REQUIRED
 ```
 
 - 등록: `WebMvcConfigurer.addInterceptors`에 `addPathPatterns("/api/v1/trips/**")`.
@@ -80,4 +81,4 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 - [x] Service `requireActiveMember`/`requireOwner`는 헬퍼로 유지 (중복 제거는 후속)
 - [x] 인터셉터 단위 테스트 (멤버/비멤버/방장/비방장/soft-delete/없는 tripId)
 - [x] `./gradlew test` · OpenAPI에는 영향 없음(어노테이션은 런타임 권한만)
-- [ ] #22 완료 기준에 본 설계 반영 여부 결정 (submit·members 권한과 함께 확정)
+- [x] #22 canEnterRoom — `@TripMemberOnly`/`@TripOwnerOnly` 공통 인터셉터 게이트 (2026-07-21)

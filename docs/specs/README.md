@@ -15,7 +15,7 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`uuid-primary-key.md`](uuid-primary-key.md) | **Implemented** | 전 테이블 PK/FK bigint → UUID CHAR(36), JWT `sub`, Cursor 규칙 | — |
-| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Draft** (#22, 부분 확정) | D-NAME-1~D-JOIN-4 확정 · sparse/submit **`[미정]`** | user-onboarding · schedule-unified |
+| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Draft** (#22) | late-join · 방장 A · `memberFillRate` · submit 폐기 · hold→#35 | user-onboarding · schedule-unified |
 
 ## wave 2
 
@@ -27,6 +27,12 @@
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | TERMINATED DB·Pin batch · 00:05 KST | #12 |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft | 추천 4모드·TOP 3·확정·취소 | 위 2개 |
+
+## wave 4
+
+| 스펙 | 상태 | 범위 | 선행 |
+|------|------|------|------|
+| [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md) | **Draft** (#35) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
 
 **구현 순서:** uuid-primary-key → schedule-unified(#11) → calendar resolve(#17) → trip-room-api(#12) → trip-recommendation(#13)
 
@@ -42,7 +48,8 @@
 | #20 | 참여자 내보내기 (Out) | Open |
 | **#26** | trip-last-activity-at | Open |
 | **#27** | trip-home-schedulers | Open |
-| **#22** | schedule-participation-onboarding (Draft — **2026-07-19 부분 확정**: 이름·재진입·join 게이트) | Open |
+| **#22** | schedule-participation-onboarding (Draft — late-join · 방장 A · memberFillRate) | Open |
+| **#35** | trip-join-capacity-hold (Draft — wave 4) | Open |
 
 ## 완료 후
 

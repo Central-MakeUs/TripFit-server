@@ -25,8 +25,8 @@ docs/
 │   └── flows/                ← 사용자 플로우
 ├── specs/                    ← 기능 스펙 (implement 전)
 │   ├── auth-social-login.md              ← wave 1 소셜 로그인·JWT (Approved)
-│   ├── user-onboarding.md                ← wave 1 이름·온보딩 (사전 일정 #22 `[미정]`)
-│   ├── schedule-participation-onboarding.md ← wave 1 submit·skip·sparse `[미정]` (#22)
+│   ├── user-onboarding.md                ← wave 1 이름·온보딩 (재진입 D-REENTRY-2 · #22 부분 확정)
+│   ├── schedule-participation-onboarding.md ← wave 1 join 게이트 **Draft** (#22 D-JOIN-ENTRY·CLEAR·TRIP-FLOW 부분 확정)
 │   ├── user-my-page.md                   ← wave 1 마이페이지 이름 수정 PATCH API
 │   ├── schedule-unified.md               ← wave 2 정기/개별 2테이블 (Approved, #11)
 │   ├── schedule-calendar-resolve.md      ← wave 2 달력 effective (Approved, A1=730일)
