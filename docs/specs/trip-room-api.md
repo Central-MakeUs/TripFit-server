@@ -13,7 +13,7 @@
 
 ## 배경
 
-- **구현 상태:** D5 홈 2뷰(`scope`·필터·`last_activity_at`·`pinned_at`)·`TripHomeCardResponse`/`TripDetailResponse` 분리·`membersPreview` 배치 조회 반영. **`last_activity_at` 전체 hook·Pin/TERMINATED 스케줄러는 #26·#27 deferred**
+- **구현 상태:** D5 홈 2뷰(`scope`·필터·`last_activity_at`·`pinned_at`)·`TripHomeCardResponse`/`TripDetailResponse` 분리·`membersPreview` 배치 조회 반영. **#27** TERMINATED·Pin 배치 Implemented · **#26** `last_activity_at` AOP Implemented
 - **참여:** 소셜 로그인 필수 (BR-USER-002), 비회원 없음. **초대는 카카오·OS 링크 공유**(딥링크/Universal Link에 `inviteCode` 포함) — 코드 수동 입력은 보조
 - **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](schedule-unified.md)
 - **참여 완료·submit:** **`[미정]`** — [#22](https://github.com/Central-MakeUs/TripFit-server/issues/22). (구) D1·BR-USER-007 확정 **철회**
@@ -67,7 +67,7 @@
 
 - `is_pinned` + `pinned_at` (Pin ON 시 `now()`, OFF 시 `null`)
 - **진행 중 캐러셀에서만** 정렬 우선순위 적용
-- `end_range < today` Pin **자동 해제** — **[#27](https://github.com/Central-MakeUs/TripFit-server/issues/27) Approved** [`trip-home-schedulers.md`](trip-home-schedulers.md): 매일 00:05 KST · TERMINATED DB UPDATE + Pin 해제 **통합 job**
+- `end_range < today` Pin **자동 해제** — **[#27](https://github.com/Central-MakeUs/TripFit-server/issues/27) Implemented** [`trip-home-schedulers.md`](trip-home-schedulers.md): 매일 00:05 KST · TERMINATED DB UPDATE + Pin 해제 **통합 job**
 - Pin 토글: `PATCH /trips/{id}/pin` (기존)
 
 **프론트 전용 (API 범위 밖):**
@@ -410,4 +410,4 @@ submit·ONGOING 게이트: **`[미정]`** (#22)
 | 2026-07-19 | **status 필터 enum 통합** — `TripListStatusFilter` 삭제 · `TripStatus`(+`ALL`) 재사용 |
 | 2026-07-19 | **D5 구현 후속** — DTO 분리(`TripHomeCardResponse`/`TripDetailResponse`) · `TripListQuery` · `membersPreview` 배치 · **#26·#27 defer** (Pin lazy·TERMINATED 스케줄러) |
 | 2026-07-19 | **#26 L1·L2** — `last_activity_at` 갱신 이벤트 · 전역 일정 PATCH touch 안 함 → [`trip-last-activity-at.md`](trip-last-activity-at.md) |
-| 2026-07-19 | **#26 L3·L4 · #27 S1~S4 Approved** — AOP · TERMINATED batch 00:05 KST |
+| 2026-07-19 | **#27 Implemented** — `TripHomeScheduler` · TERMINATED batch · Pin clear |

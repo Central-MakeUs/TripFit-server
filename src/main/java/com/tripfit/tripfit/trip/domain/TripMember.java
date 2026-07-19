@@ -74,7 +74,7 @@ public class TripMember extends SoftDeleteEntity {
   private boolean pinned;
 
   @Schema(description = "Pin ON 시각. OFF면 null (D5)", nullable = true,
-      example = "2026-07-20T14:00:00")
+      example = "2026-07-19T14:00:00")
   @Column(name = "pinned_at")
   private LocalDateTime pinnedAt;
 

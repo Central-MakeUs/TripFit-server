@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -100,4 +101,14 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
           """,
       nativeQuery = true)
   List<TripMemberCountProjection> countMembersByTripIds(@Param("tripIds") Collection<UUID> tripIds);
+
+  @Modifying
+  @Query("""
+      UPDATE TripMember tm SET tm.pinned = false, tm.pinnedAt = null
+      WHERE tm.deletedAt IS NULL
+      AND tm.pinned = true
+      AND tm.trip.deletedAt IS NULL
+      AND tm.trip.endRange < :today
+      """)
+  int clearExpiredPins(@Param("today") LocalDate today);
 }

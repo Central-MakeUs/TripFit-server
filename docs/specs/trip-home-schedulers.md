@@ -57,9 +57,9 @@
 ## 구현 Must Have
 
 - [x] S1~S4 확정·스펙 amend
-- [ ] `TripHomeScheduler`(가칭) — S2 cron · S3 단일 `@Transactional` job
-- [ ] soft-deleted trip 제외 · idempotent
-- [ ] `./gradlew test` — 날짜 mock 1건 이상
+- [x] `TripHomeScheduler` · `TripHomeMaintenanceService` — S2 cron · S3 단일 `@Transactional` job
+- [x] soft-deleted trip 제외 · idempotent
+- [x] `./gradlew test` — 날짜 mock 1건 이상
 
 ## Out of Scope
 
@@ -72,3 +72,4 @@
 |------|------|
 | 2026-07-19 | Draft — #12 후속 분리 |
 | 2026-07-19 | **S1~S4 확정 · Approved** — DB TERMINATED · 00:05 KST · 통합 job · local/dev 포함 |
+| 2026-07-19 | **Implemented** — `TripHomeScheduler` · batch UPDATE (#27) |
