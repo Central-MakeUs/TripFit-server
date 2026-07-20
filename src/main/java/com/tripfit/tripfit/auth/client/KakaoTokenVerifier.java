@@ -21,13 +21,12 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
   }
 
   @Override
-  // 이 검증기가 담당하는 소셜 제공자를 카카오로 반환함
   public SocialProvider getProvider() {
     return SocialProvider.KAKAO;
   }
 
-  @Override
   // 카카오 사용자 조회 API로 액세스 토큰을 검증하고 사용자 프로필을 추출함
+  @Override
   public OAuthProfile verify(String token) {
     try {
       // 1. 카카오 사용자 정보 API를 호출해 토큰 유효성을 확인함
@@ -73,7 +72,7 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
       // 비즈니스 검증에서 만든 인증 예외는 그대로 상위로 전달함
       throw exception;
     } catch (Exception exception) {
-      // 외부 API 호출 실패나 응답 파싱 오류 시 유효하지 않은 토큰으로 처리함
+      // 카카오 API·JSON 파싱 실패는 클라이언트 토큰 오류로 통일
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
     }
   }

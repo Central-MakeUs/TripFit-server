@@ -29,7 +29,6 @@ public class UserController {
     this.userProfileService = userProfileService;
   }
 
-  // JWT 사용자의 성·이름을 저장함
   @Operation(summary = "프로필(성·이름) 저장", description = "성·이름 필수. 미완료 시 trip 생성 등에서 403")
   @PatchMapping("/profile")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateProfile(
@@ -39,7 +38,6 @@ public class UserController {
     return ResponseEntity.ok(ApiResponse.of(response));
   }
 
-  // JWT 사용자의 마이페이지에서 성·이름을 수정함
   @Operation(summary = "마이페이지 이름 수정", description = "성·이름만 수정. 빈 값 거부")
   @PatchMapping("/my-page")
   ResponseEntity<ApiResponse<UserSummaryResponse>> updateMyPage(
@@ -49,7 +47,6 @@ public class UserController {
     return ResponseEntity.ok(ApiResponse.of(response));
   }
 
-  // JWT 사용자의 선택 온보딩 boolean을 갱신함
   @Hidden // #22 schedule-participation-onboarding [미定]
   @Operation(summary = "온보딩 상태 갱신", description = "전송한 boolean 필드만 partial update")
   @PatchMapping("/onboarding")

@@ -1,8 +1,8 @@
 # 008 — 여행방 권한 검증 (@TripMemberOnly / @TripOwnerOnly + Interceptor)
 
-- **상태:** 제안
+- **상태:** 확정
 - **날짜:** 2026-07-16
-- **관련:** [`docs/specs/trip-room-api.md`](../specs/trip-room-api.md), [`docs/specs/schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md), Issue #22 (본 설계 포함), #12 (여행방 API 구현)
+- **관련:** [`docs/specs/trip-room-api.md`](../specs/trip-room-api.md), [`docs/specs/schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md), Issue **#24** (구현), #22 (설계 범위), #12 (여행방 API)
 
 ## 맥락
 
@@ -74,10 +74,10 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 
 ## 후속 작업
 
-- [ ] `TripMemberOnly` / `TripOwnerOnly` 어노테이션 추가
-- [ ] `TripAuthorizationInterceptor` + `WebMvcConfigurer` 등록 (`/api/v1/trips/**`)
-- [ ] `TripController`·`TripMemberController`에 어노테이션 부착 (get/patch/delete/pin/members/submit)
-- [ ] Service `requireActiveMember`/`requireOwner`는 헬퍼로 유지 (중복 제거는 후속)
-- [ ] 인터셉터 단위 테스트 (멤버/비멤버/방장/비방장/soft-delete/없는 tripId)
-- [ ] `./gradlew test` · OpenAPI에는 영향 없음(어노테이션은 런타임 권한만)
+- [x] `TripMemberOnly` / `TripOwnerOnly` 어노테이션 추가
+- [x] `TripAuthorizationInterceptor` + `WebMvcConfigurer` 등록 (`/api/v1/trips/**`)
+- [x] `TripController`·`TripMemberController`에 어노테이션 부착 (get/patch/delete/pin/members/submit)
+- [x] Service `requireActiveMember`/`requireOwner`는 헬퍼로 유지 (중복 제거는 후속)
+- [x] 인터셉터 단위 테스트 (멤버/비멤버/방장/비방장/soft-delete/없는 tripId)
+- [x] `./gradlew test` · OpenAPI에는 영향 없음(어노테이션은 런타임 권한만)
 - [ ] #22 완료 기준에 본 설계 반영 여부 결정 (submit·members 권한과 함께 확정)

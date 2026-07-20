@@ -44,7 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ScheduleService {
 
-  /** calendar 조회 최대 기간 (start~end 일수 차, ChronoUnit.DAYS). 약 2년. */
+  // calendar 조회 최대 기간 — schedule-calendar-resolve A1=730일
   public static final int MAX_CALENDAR_RANGE_DAYS = 730;
 
   private final RegularScheduleRepository regularScheduleRepository;
@@ -100,7 +100,7 @@ public class ScheduleService {
             request.holidayRest());
     regularScheduleRepository.save(schedule);
 
-    // 3. 정기 일정이 생겼으므로 온보딩 게이트 플래그를 켬
+    // 3. 정기 일정이 생겼으므로 온보딩 게이트 플래그를 켬 (BR-USER-006)
     user.setScheduleRegistered(true);
     return toRegularResponse(schedule);
   }
@@ -138,7 +138,7 @@ public class ScheduleService {
             .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
     regularScheduleRepository.delete(schedule);
 
-    // 2. 남은 정기 일정이 없으면 등록 플래그를 false로 되돌림
+    // 2. 남은 정기 일정이 없으면 등록 플래그를 false로 되돌림 (BR-USER-006)
     User user = findUser(userId);
     user.setScheduleRegistered(regularScheduleRepository.existsByUserId(userId));
   }
@@ -284,7 +284,7 @@ public class ScheduleService {
     return new MemberPersonalSummaryResponse(result);
   }
 
-  // 여행방 일정 응답 등에서 정기 일정 등록 여부를 강제함 (BR-USER-006)
+  // BR-USER-006: 플래그와 실제 row 불일치(삭제·마이그레이션) 시 row 존재 여부로 재판단
   @Transactional(readOnly = true)
   public void requireRegularScheduleRegistered(UUID userId) {
     User user = findUser(userId);
@@ -293,7 +293,6 @@ public class ScheduleService {
     }
   }
 
-  // 정기 일정 생성 요청의 필수·범위 값을 검증함
   private void validateCreateRegular(CreateRegularScheduleRequest request) {
     validateRegularTimesAndVacation(
         request.title(),
@@ -303,7 +302,6 @@ public class ScheduleService {
         request.maxVacationDays());
   }
 
-  // 정기 일정 수정 요청의 필수·범위 값을 검증함
   private void validateUpdateRegular(UpdateRegularScheduleRequest request) {
     validateRegularTimesAndVacation(
         request.title(),
@@ -336,7 +334,6 @@ public class ScheduleService {
     }
   }
 
-  // daysOfWeek CSV를 Weekday 기준으로 정규화함 (null/blank → null)
   private static String normalizeDaysOfWeek(String daysOfWeek) {
     try {
       return Weekday.normalizeCsv(daysOfWeek);
@@ -345,7 +342,6 @@ public class ScheduleService {
     }
   }
 
-  // 개인 일정 항목의 날짜·슬롯 필수 값을 검증함
   private void validatePersonalItem(PersonalScheduleItem item) {
     if (item.scheduleDate() == null
         || item.morningStatus() == null
@@ -358,21 +354,19 @@ public class ScheduleService {
     requireSlotStatus(item.eveningStatus());
   }
 
-  // 슬롯 상태는 POSSIBLE/IMPOSSIBLE만 허용함
+  // calendar API는 POSSIBLE/IMPOSSIBLE만 허용 — ON_LEAVE 등은 wave 3+
   private void requireSlotStatus(ScheduleStatus status) {
     if (status != ScheduleStatus.POSSIBLE && status != ScheduleStatus.IMPOSSIBLE) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }
 
-  // 조회 기간이 유효한지 확인함
   private void validateDateRange(LocalDate startDate, LocalDate endDate) {
     if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }
 
-  // calendar 기간이 시작≤종료이고 최대 2년(730일)을 넘지 않는지 확인함
   private void validateCalendarDateRange(LocalDate startDate, LocalDate endDate) {
     validateDateRange(startDate, endDate);
     if (ChronoUnit.DAYS.between(startDate, endDate) > MAX_CALENDAR_RANGE_DAYS) {
@@ -380,7 +374,6 @@ public class ScheduleService {
     }
   }
 
-  // RegularSchedule 엔티티를 API 응답으로 변환함
   private RegularScheduleResponse toRegularResponse(RegularSchedule schedule) {
     var slots = schedule.getSlotStatuses();
     return new RegularScheduleResponse(
@@ -398,7 +391,6 @@ public class ScheduleService {
         schedule.isHolidayRest());
   }
 
-  // PersonalSchedule 엔티티를 API 항목 응답으로 변환함
   private PersonalScheduleItemResponse toPersonalItem(PersonalSchedule schedule) {
     var slots = schedule.getSlotStatuses();
     return new PersonalScheduleItemResponse(
@@ -410,7 +402,7 @@ public class ScheduleService {
         schedule.isUncertain());
   }
 
-  // 프로필 성·이름 → nickname → 기본 표시명 순으로 멤버 이름을 정함
+  // BR-USER-009 + glossary: 성·이름 → nickname → 기본값
   public static String displayName(User user) {
     if (user.hasProfileNameComplete()) {
       return user.getLastName() + user.getFirstName();
@@ -421,7 +413,6 @@ public class ScheduleService {
     return "사용자";
   }
 
-  // JWT userId로 사용자를 조회하고 없으면 403을 던짐
   private User findUser(UUID userId) {
     return userRepository
         .findById(userId)

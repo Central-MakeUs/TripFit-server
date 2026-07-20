@@ -22,6 +22,7 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       UUID tripId,
       com.tripfit.tripfit.trip.domain.TripMemberStatus status);
 
+  // 홈 목록 정렬: Pin 우선 → 여행방 최근 수정순 (trip-room-api)
   @Query("""
       SELECT tm FROM TripMember tm
       JOIN FETCH tm.trip t

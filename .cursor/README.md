@@ -45,7 +45,7 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 |------|---------------|------|------|
 | `harness-workflow.mdc` | ✅ true | — | 계획 → 승인 → 구현 → 검증 전체 워크플로 |
 | `superpowers-workflow.mdc` | ✅ true | — | Superpowers 스킬 트리거·하네스 우선순위 |
-| `spring-boot-java.mdc` | false | `**/*.java` | 레이어·enum·Entity·OpenAPI JWT·API·예외 컨벤션 |
+| `spring-boot-java.mdc` | false | `**/*.java` | 레이어·enum·Entity·OpenAPI JWT·API·예외·**주석(Comments)** 컨벤션 |
 | `figma-product.mdc` | false | domain, service, specs | 도메인·BR·와이어프레임 (API 계약은 client-platform) |
 | `client-platform.mdc` | false | controller, service, config, specs | React 앱·스토어·API·인증 (도메인은 figma-product) |
 | `deployment.mdc` | false | yml, Docker, domain, deploy | 배포 가드레일 — 절차는 deploy/README SSOT |

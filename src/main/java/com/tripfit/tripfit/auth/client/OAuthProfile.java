@@ -3,7 +3,6 @@ package com.tripfit.tripfit.auth.client;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/** verifier → {@code AuthService} 경계 DTO (DB Entity 아님). */
 @Schema(description = "소셜 토큰 검증 결과. verifier → AuthService 경계 DTO")
 public record OAuthProfile(
     @Schema(description = "소셜 제공자") SocialProvider provider,

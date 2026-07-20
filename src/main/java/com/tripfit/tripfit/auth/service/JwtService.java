@@ -26,9 +26,7 @@ public class JwtService {
   public JwtService(JwtProperties jwtProperties) {
     this.jwtProperties = jwtProperties;
     this.secretBytes = jwtProperties.getSecret().getBytes();
-    // if (secretBytes.length < 32) {
-    // throw new IllegalStateException("JWT secret must be at least 32 bytes");
-    // }
+    // TODO: secret 최소 32바이트 검증을 부팅 시 강제 — 현재는 env 누락 시 런타임 서명 실패에 의존
   }
 
   // 사용자 ID를 기반으로 서명된 JWT 액세스 토큰을 생성함
@@ -82,20 +80,18 @@ public class JwtService {
       }
       return new AccessTokenClaims(UUID.fromString(subject), jti);
     } catch (ParseException | JOSEException exception) {
-      // 토큰 구문 분석 실패나 서명 검증 오류 시 유효하지 않은 토큰으로 처리함
+      // 파싱·서명 실패는 클라이언트 토큰 오류와 구분하지 않고 AUTH_INVALID_TOKEN으로 통일
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
     } catch (IllegalArgumentException exception) {
-      // subject 형식이 UUID 사용자 ID 규칙과 맞지 않으면 유효하지 않은 토큰으로 처리함
+      // subject가 UUID가 아니면 위조·손상 토큰으로 간주
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
     }
   }
 
-  // 액세스 토큰을 검증하고 내부 사용자 ID를 추출함
   public UUID parseUserId(String accessToken) {
     return parseAccessToken(accessToken).userId();
   }
 
-  // 액세스 토큰 만료 시간을 초 단위로 반환함
   public long getAccessExpirationSeconds() {
     return jwtProperties.getAccessExpirationSeconds();
   }

@@ -9,6 +9,10 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
 
   Optional<Trip> findByIdAndDeletedAtIsNull(UUID id);
 
+  boolean existsByIdAndDeletedAtIsNull(UUID id);
+
+  boolean existsByIdAndOwner_IdAndDeletedAtIsNull(UUID id, UUID ownerId);
+
   Optional<Trip> findByInviteCodeAndDeletedAtIsNull(String inviteCode);
 
   boolean existsByInviteCode(String inviteCode);

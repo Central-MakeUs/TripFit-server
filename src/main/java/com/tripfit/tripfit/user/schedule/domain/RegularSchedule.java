@@ -116,7 +116,6 @@ public class RegularSchedule extends BaseTimeEntity {
     return schedule;
   }
 
-  // 전체 필드를 갱신하고 start/end로 슬롯을 재계산함
   public void applyUpdate(
       String title,
       String daysOfWeek,

@@ -2,6 +2,8 @@ package com.tripfit.tripfit.trip.controller;
 
 import com.tripfit.tripfit.auth.config.AuthorizedUser;
 import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.trip.config.TripMemberOnly;
+import com.tripfit.tripfit.trip.config.TripOwnerOnly;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
 import com.tripfit.tripfit.trip.dto.JoinTripRequest;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/trips")
 @SecurityRequirement(name = "bearer-jwt")
+// JWT 외 tripId 경로 권한은 TripAuthorizationInterceptor가 @TripMemberOnly/@TripOwnerOnly로 처리함
 public class TripController {
 
   private final TripService tripService;
@@ -54,6 +57,7 @@ public class TripController {
     return ResponseEntity.ok(ApiResponse.of(tripService.listMyTrips(userId)));
   }
 
+  @TripMemberOnly
   @Operation(summary = "여행방 상세", description = "참여자만 조회")
   @GetMapping("/{tripId}")
   ResponseEntity<ApiResponse<TripSummaryResponse>> getTrip(
@@ -62,6 +66,7 @@ public class TripController {
     return ResponseEntity.ok(ApiResponse.of(tripService.getTrip(tripId, userId)));
   }
 
+  @TripOwnerOnly
   @Operation(summary = "여행방 메타 수정", description = "방장만 · ONGOING만")
   @PatchMapping("/{tripId}")
   ResponseEntity<ApiResponse<TripSummaryResponse>> patchTrip(
@@ -71,6 +76,7 @@ public class TripController {
     return ResponseEntity.ok(ApiResponse.of(tripService.patchTrip(tripId, userId, request)));
   }
 
+  @TripOwnerOnly
   @Operation(summary = "여행방 삭제", description = "방장 soft delete · trip_member 연쇄 soft")
   @DeleteMapping("/{tripId}")
   ResponseEntity<Void> deleteTrip(
@@ -88,6 +94,7 @@ public class TripController {
     return ResponseEntity.ok(ApiResponse.of(tripService.joinTrip(userId, request)));
   }
 
+  @TripMemberOnly
   @Operation(summary = "Pin 토글", description = "본인 trip_member.is_pinned")
   @PatchMapping("/{tripId}/pin")
   ResponseEntity<ApiResponse<TripSummaryResponse>> updatePin(
@@ -98,6 +105,7 @@ public class TripController {
   }
 
   @Hidden // #22 schedule-participation-onboarding [미定]
+  @TripMemberOnly
   @Operation(
       summary = "일정 제출",
       description = "regular_schedule ≥1 → RESPONDED · ONGOING만")

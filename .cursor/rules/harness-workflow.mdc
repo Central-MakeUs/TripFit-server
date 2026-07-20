@@ -20,8 +20,11 @@ alwaysApply: true
 ## 작업 분류 (시작 전 30초)
 
 1. **`docs/product/waves.md`** 에서 **wave(1~4)** 확인
-2. DB·인증·3파일+ 변경이면 `specify` 스킬 → `docs/specs/` 작성 → **승인 후** 구현
-3. 그 외는 `AGENTS.md` + 관련 `docs/product/` 확인 후 바로 구현
+2. **GitHub 이슈** — 작업 범위·완료 기준이 있는 이슈 확인 또는 생성 (**브랜치명에 쓸 `#n` 확정**)
+3. DB·인증·3파일+ 변경이면 `specify` 스킬 → `docs/specs/` 작성 → **승인 후** 구현
+4. 그 외는 `AGENTS.md` + 관련 `docs/product/` 확인 후 바로 구현
+
+**브랜치 네이밍 (필수):** `main`에서 `{type}/{issue-number}-{description}` 분기 — **이슈 번호 생략 금지**. SSOT: [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md) (`feat/12-trip-room-create` 등).
 
 **스펙 신호:** DB 스키마 변경, 3개 이상 파일, BR-* 영향, 프로필/배포 변경, **인증·푸시·딥링크·결제** 등 클라이언트 연동 API.
 
@@ -32,7 +35,8 @@ alwaysApply: true
 3. **가정을 명시**하고, 해석이 여러 개면 조용히 고르지 말고 질문. 더 단순한 방법이 있으면 말한다.
 4. 모호한 요구·충돌하는 문서 → **최우선 규칙에 따라 질문 후 진행** (구현 시작 금지)
 5. 구현 전 변경 파일 목록을 머릿속으로 확정 (drive-by 리팩터링 금지)
-6. 다단계 작업은 `1. [단계] → verify: [확인]` 형태로 계획을 짧게 적는다
+6. **`main`에서 `{type}/{issue-number}-{description}` 브랜치 분기** (이슈 번호 없는 `feat/foo-bar` 금지)
+7. 다단계 작업은 `1. [단계] → verify: [확인]` 형태로 계획을 짧게 적는다
 
 ## While Coding
 
@@ -58,7 +62,7 @@ alwaysApply: true
 
 ## 금지 (AGENTS.md와 동일)
 
-- 사용자 요청 없는 `git commit` / `git push`
+- **이슈 번호 없는 브랜치명** (`feat/trip-room-api` 등) — `.github/CONTRIBUTING.md` `{type}/{issue-number}-{description}` 위반
 - **문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋** (최우선 규칙 위반)
 - `git push --force` (main/master), `rm -rf`, 운영 DB 파괴 명령
 - `.env`·API 키를 코드·커밋에 포함

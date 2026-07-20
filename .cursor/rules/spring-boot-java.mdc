@@ -131,7 +131,7 @@ springdoc OpenAPI 3 — `io.swagger.v3.oas.annotations.media.Schema`
 - 설명은 **한국어**, 한 줄로 필드/컬럼 의미·제약 (nullable, UNIQUE, FK, wave 정책 등)
 - API 필드: `example`, `nullable`, `requiredMode = REQUIRED` (validation `@NotNull`/`@NotBlank`와 일치)
 - Entity는 Swagger UI에 직접 안 나와도 **코드·ERD SSOT**로 동일하게 작성
-- Javadoc 대신 `@Schema` 우선 (필드 의미). 메서드 흐름 주석은 기존 `//` 규칙 유지
+- Javadoc 대신 `@Schema` 우선 (필드 의미). 메서드·API 흐름 주석은 아래 **Comments** 절
 - SSOT: `docs/architecture/erd.md`, 해당 `docs/specs/` — 불일치 시 문서 먼저
 
 ```java
@@ -214,11 +214,43 @@ ResponseEntity<...> updateProfile(
 
 ## Comments
 
-- **모든 public/private 메서드** 바로 위에 Javadoc 대신 `//` 한 줄 주석으로 기능을 간결한 한국어로 설명 (`AuthService`·`UserProfileService` 기준)
-- 복잡한 내부 로직은 코드 블록 안에서 `// 1.`, `// 2.`, `// 3.` 형태로 **작동 메커니즘**을 순서대로 설명
-- `catch` 등 예외 처리 블록에는 왜 해당 예외를 처리하는지 의도를 한국어로 명시
-- 주석은 코드 바깥 설명문보다 코드 가까이에 두고, 짧고 명확하게 유지
-- **서비스 구현 시 주석 생략 금지** — 메서드 설명 + (분기·다단계면) 블록 번호 주석을 함께 작성
+1인 개발·Swagger(springdoc) 전제. **필드 의미는 `@Schema`**, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT. `//`·Javadoc은 **Why·정책·비 obvious·다단계 흐름**을 담는다.
+
+### 쓰지 않음
+
+- `@Operation`/`@Parameter`·메서드명·record 필드명만으로 유추 가능한 설명
+- 단순 `@param`/`@return` Javadoc
+- Controller에서 비즈니스 로직·Service 역할까지 반복하는 설명
+
+### 레이어별 초점
+
+| 레이어 | 주석 대상 |
+|--------|-----------|
+| **Controller** | 접근 권한(`@AuthorizedUser`, `@TripMemberOnly` 등)·인터셉터·`@Valid` 검증 흐름. 비즈니스 로직 설명 금지 |
+| **Service** | BR-*·wave 정책, 분기 **이유(Why)**, `@Transactional`·외부 API·Stream에서 non-obvious한 선택. **다단계 유스케이스는 `// 1.` `// 2.` 단계 주석** |
+| **client** | 외부 OAuth·HTTP 검증 흐름 — Service와 동일하게 단계·catch 의도 |
+| **Repository** | `@Query` 정렬·필터·fetch 의도 |
+| **DTO/Entity** | `@Schema`로 안 담기는 배경(formatter off, 경계 record 등). enum·필드는 `@Schema` 우선 |
+
+### Service · client 메서드 주석
+
+- **public·private 유스케이스 메서드** 바로 위에 `//` 한 줄로 역할 요약 (`AuthService`·`ScheduleService` 기준)
+- 본문이 **2단계 이상**이면 `// 1.` `// 2.` `// 3.` 형태로 **작동 메커니즘(How)** 을 순서대로 표시
+- 같은 블록에 **Why(정책·BR)** 가 필요하면 단계 주석 옆·직후에 짧게 병기 — Why만 또는 How만 강제하지 않음
+- **단순 CRUD·1~2줄 메서드**는 메서드 한 줄 주석 생략 가능
+
+### 메서드 내부 (`//`)
+
+- 외부 API 호출, 복잡 Stream, 트랜잭션 경계, `catch` **의도(Why)** 에 설명
+- 어조: 간결한 개발자체 (`~함`, `~을 위해 분기`)
+
+### 기술 부채
+
+- 예외·성능·구조 개선 필요 구간: `// TODO:` 또는 `// FIXME:` + 개선 방향 (wave·이슈 번호 있으면 병기)
+
+### Javadoc (`/** */`)
+
+- 사용 최소화 — public library API 아님. **`//` 한 줄** 또는 `@Schema`로 대체
 
 ## API (추가 시)
 

@@ -2,6 +2,7 @@ package com.tripfit.tripfit.trip.controller;
 
 import com.tripfit.tripfit.auth.config.AuthorizedUser;
 import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.trip.config.TripMemberOnly;
 import com.tripfit.tripfit.trip.dto.MemberPersonalSummaryResponse;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/trips/{tripId}/members")
 @SecurityRequirement(name = "bearer-jwt")
+// tripId 멤버십은 @TripMemberOnly → TripAuthorizationInterceptor
 public class TripMemberController {
 
   private final TripService tripService;
@@ -33,6 +35,7 @@ public class TripMemberController {
     this.scheduleService = scheduleService;
   }
 
+  @TripMemberOnly
   @Operation(summary = "참여자 목록", description = "status·role·pinned·응답률 · 동명이인 `홍길동(2)`")
   @GetMapping
   ResponseEntity<ApiResponse<TripMembersResponse>> listMembers(
@@ -42,6 +45,7 @@ public class TripMemberController {
   }
 
   @Hidden // #22 schedule-participation-onboarding [미定]
+  @TripMemberOnly
   @Operation(
       summary = "멤버 effective 일정 달력",
       description = "trip 기간 멤버 전원 effective (#17 resolve). wave 2 권장 API")
@@ -53,6 +57,7 @@ public class TripMemberController {
         ApiResponse.of(tripService.getMemberScheduleCalendar(tripId, userId)));
   }
 
+  @TripMemberOnly
   @Operation(
       summary = "멤버 개인 일정 요약 (deprecated)",
       description = "personal-only. wave 2 신규 클라이언트는 schedule-calendar 사용. 제거 일정 미정",

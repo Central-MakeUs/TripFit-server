@@ -20,7 +20,6 @@ public class SocialTokenVerifierRegistry {
     }
   }
 
-  // 소셜 제공자에 대응하는 토큰 검증기를 조회함
   public SocialTokenVerifier getVerifier(SocialProvider provider) {
     SocialTokenVerifier verifier = verifiers.get(provider);
     if (verifier == null) {
