@@ -151,7 +151,7 @@ class TripServiceSupport {
     }
   }
 
-  // #27 스케줄러 전까지 API lazy TERMINATED 노출
+  // effectiveStatus: ONGOING + end_range 경과 → TERMINATED (배치 전 lazy · #27 이후 DB TERMINATED와 동일 UX)
   TripStatus effectiveStatus(Trip trip) {
     if (trip.getStatus() == TripStatus.ONGOING
         && trip.getEndRange().isBefore(LocalDate.now())) {
