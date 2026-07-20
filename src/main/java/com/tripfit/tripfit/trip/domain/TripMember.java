@@ -69,9 +69,14 @@ public class TripMember extends SoftDeleteEntity {
   @Column(nullable = false)
   private LocalDateTime joinedAt;
 
-  @Schema(description = "홈 화면 고정 여부 (참여자별)", example = "false")
+  @Schema(description = "홈 화면 고정 여부 (참여자별 · 진행 중 캐러셀)", example = "false")
   @Column(name = "is_pinned", nullable = false)
   private boolean pinned;
+
+  @Schema(description = "Pin ON 시각. OFF면 null (D5)", nullable = true,
+      example = "2026-07-20T14:00:00")
+  @Column(name = "pinned_at")
+  private LocalDateTime pinnedAt;
 
   public TripMember(
       Trip trip, User user, TripMemberRole role, TripMemberStatus status, LocalDateTime joinedAt) {
@@ -80,5 +85,17 @@ public class TripMember extends SoftDeleteEntity {
     this.role = role;
     this.status = status;
     this.joinedAt = joinedAt;
+  }
+
+  // Pin ON/OFF — pinned_at 동기화 (D5)
+  public void applyPin(boolean pinned) {
+    this.pinned = pinned;
+    this.pinnedAt = pinned ? LocalDateTime.now() : null;
+  }
+
+  // end_range 경과 시 Pin 자동 해제
+  public void clearPin() {
+    this.pinned = false;
+    this.pinnedAt = null;
   }
 }

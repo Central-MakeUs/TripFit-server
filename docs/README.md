@@ -29,7 +29,7 @@ docs/
 │   ├── user-my-page.md                   ← wave 1 마이페이지 이름 수정 PATCH API
 │   ├── schedule-unified.md               ← wave 2 정기/개별 2테이블 (Approved, #11)
 │   ├── schedule-calendar-resolve.md      ← wave 2 달력 effective (Approved, A1=730일)
-│   ├── trip-room-api.md                  ← wave 2 여행방·참여·Pin (#12 · submit→#22)
+│   ├── trip-room-api.md                  ← wave 2 여행방·참여·홈 2뷰·Pin (#12 · D5 amend · submit→#22)
 │   ├── trip-recommendation.md            ← wave 2 추천 4모드·확정 (Draft)
 │   ├── auth-token-rotation.md            ← wave 4 RTR + Redis (Draft)
 │   ├── auth-apple-server-notifications.md  ← Apple S2S webhook (스토어 제출 전)

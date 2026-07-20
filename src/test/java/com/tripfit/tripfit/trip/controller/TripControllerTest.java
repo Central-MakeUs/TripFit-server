@@ -14,14 +14,18 @@ import com.tripfit.tripfit.auth.config.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.config.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.trip.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
+import com.tripfit.tripfit.trip.dto.TripDetailResponse;
+import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
+import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
-import com.tripfit.tripfit.trip.dto.TripSummaryResponse;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.service.TripService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -89,56 +93,39 @@ class TripControllerTest {
   }
 
   @Test
-  void listTrips_ok() throws Exception {
-    when(tripService.listMyTrips(USER_ID))
-        .thenReturn(
-            new TripListResponse(
-                List.of(
-                    new TripSummaryResponse(
-                        TRIP_ID,
-                        "제주",
-                        "제주",
-                        LocalDate.of(2026, 8, 1),
-                        LocalDate.of(2026, 8, 10),
-                        4,
-                        6,
-                        TripStatus.ONGOING,
-                        "ABC234",
-                        null,
-                        null,
-                        null,
-                        true,
-                        TripMemberStatus.JOINED,
-                        0,
-                        1))));
+  void listTrips_ok_defaultAll() throws Exception {
+    when(tripService.listMyTrips(eq(USER_ID), any(TripListQuery.class)))
+        .thenReturn(new TripListResponse(List.of(sampleHomeCard(true))));
 
     mockMvc
         .perform(get("/api/v1/trips"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.trips[0].pinned").value(true));
+        .andExpect(jsonPath("$.data.trips[0].pinned").value(true))
+        .andExpect(jsonPath("$.data.trips[0].myRole").value("OWNER"));
+  }
+
+  @Test
+  void listTrips_ok_ongoingScope() throws Exception {
+    when(tripService.listMyTrips(eq(USER_ID), any(TripListQuery.class)))
+        .thenReturn(new TripListResponse(List.of(sampleHomeCard(false))));
+
+    mockMvc
+        .perform(get("/api/v1/trips").param("scope", "ongoing"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.trips[0].pinned").value(false));
+  }
+
+  @Test
+  void listTrips_badScope_400() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/trips").param("scope", "weird"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
   }
 
   @Test
   void joinTrip_ok() throws Exception {
-    when(tripService.joinTrip(eq(USER_ID), any()))
-        .thenReturn(
-            new TripSummaryResponse(
-                TRIP_ID,
-                "제주",
-                null,
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
-                4,
-                6,
-                TripStatus.ONGOING,
-                "ABC234",
-                null,
-                null,
-                null,
-                false,
-                TripMemberStatus.JOINED,
-                0,
-                2));
+    when(tripService.joinTrip(eq(USER_ID), any())).thenReturn(sampleDetail(false));
 
     mockMvc
         .perform(
@@ -146,30 +133,12 @@ class TripControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"inviteCode\":\"ABC234\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.memberCount").value(2));
+        .andExpect(jsonPath("$.data.memberCount").value(1));
   }
 
   @Test
   void updatePin_ok() throws Exception {
-    when(tripService.updatePin(eq(TRIP_ID), eq(USER_ID), any()))
-        .thenReturn(
-            new TripSummaryResponse(
-                TRIP_ID,
-                "제주",
-                null,
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
-                4,
-                6,
-                TripStatus.ONGOING,
-                "ABC234",
-                null,
-                null,
-                null,
-                true,
-                TripMemberStatus.JOINED,
-                0,
-                1));
+    when(tripService.updatePin(eq(TRIP_ID), eq(USER_ID), any())).thenReturn(sampleDetail(true));
 
     mockMvc
         .perform(
@@ -196,5 +165,46 @@ class TripControllerTest {
         .perform(post("/api/v1/trips/" + TRIP_ID + "/schedule/submit"))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("TRIP_NOT_ONGOING"));
+  }
+
+  private static TripHomeCardResponse sampleHomeCard(boolean pinned) {
+    return new TripHomeCardResponse(
+        TRIP_ID,
+        "제주",
+        "제주",
+        LocalDate.of(2026, 8, 1),
+        LocalDate.of(2026, 8, 10),
+        4,
+        TripStatus.ONGOING,
+        LocalDateTime.of(2026, 7, 20, 12, 0),
+        pinned,
+        TripMemberRole.OWNER,
+        TripMemberStatus.JOINED,
+        0,
+        1,
+        List.of(),
+        0);
+  }
+
+  private static TripDetailResponse sampleDetail(boolean pinned) {
+    return new TripDetailResponse(
+        TRIP_ID,
+        "제주",
+        "제주",
+        LocalDate.of(2026, 8, 1),
+        LocalDate.of(2026, 8, 10),
+        4,
+        6,
+        TripStatus.ONGOING,
+        "ABC234",
+        null,
+        null,
+        null,
+        LocalDateTime.of(2026, 7, 20, 12, 0),
+        pinned,
+        TripMemberRole.OWNER,
+        TripMemberStatus.JOINED,
+        0,
+        1);
   }
 }

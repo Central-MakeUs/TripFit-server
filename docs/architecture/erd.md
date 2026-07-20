@@ -96,6 +96,7 @@ erDiagram
         string last_recommendation_mode
         date confirmed_start_date
         date confirmed_end_date
+        datetime last_activity_at
         datetime created_at
         datetime updated_at
         datetime deleted_at
@@ -108,6 +109,7 @@ erDiagram
         string role
         string status
         boolean is_pinned
+        datetime pinned_at
         datetime joined_at
         datetime deleted_at
         datetime created_at
@@ -237,6 +239,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | cancel_reason | varchar | Y | | 취소·삭제 VOC. **wave 4** 구현 — Figma 플로우 있음 |
 | confirmed_start_date | date | Y | | |
 | confirmed_end_date | date | Y | | |
+| last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·submit·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip-room-api.md) D5) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
@@ -256,7 +259,8 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | user_id | char(36) | N | FK → user.id | NOT NULL |
 | role | varchar | N | | OWNER, MEMBER |
 | status | varchar | N | | JOINED, RESPONDED |
-| is_pinned | boolean | N | | default false. 홈 고정 (MVP In, wave 2) |
+| is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
+| pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | **trip soft delete 시 연쇄 soft** |
 | created_at | timestamptz | N | | |
@@ -339,4 +343,5 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 1. **MVP 핵심:** `user`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation` + `refresh_token`
 2. **2026-07-08:** TERMINATED, Pin(`is_pinned`), cancel_reason wave 4, 전역 연동
 3. **2026-07-13:** A안 폐기 → 정기/개별 2테이블, 정기 N행·title·범용 시간 필드
-4. 알림 이력 테이블 — ERD 범위 외 (wave 3)
+4. **2026-07-20:** 홈 D5 — `trip.last_activity_at`, `trip_member.pinned_at` ([`trip-room-api.md`](../specs/trip-room-api.md))
+5. 알림 이력 테이블 — ERD 범위 외 (wave 3)

@@ -1,6 +1,8 @@
 package com.tripfit.tripfit.trip.repository;
 
 import com.tripfit.tripfit.trip.domain.TripMember;
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,7 +16,13 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
   Optional<TripMember> findByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
 
-  List<TripMember> findByTripIdAndDeletedAtIsNull(UUID tripId);
+  @Query("""
+      SELECT tm FROM TripMember tm
+      JOIN FETCH tm.user
+      WHERE tm.trip.id = :tripId
+      AND tm.deletedAt IS NULL
+      """)
+  List<TripMember> findByTripIdAndDeletedAtIsNull(@Param("tripId") UUID tripId);
 
   long countByTripIdAndDeletedAtIsNull(UUID tripId);
 
@@ -22,14 +30,72 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       UUID tripId,
       com.tripfit.tripfit.trip.domain.TripMemberStatus status);
 
-  // 홈 목록 정렬: Pin 우선 → 여행방 최근 수정순 (trip-room-api)
+  // 진행 중 캐러셀: end_range >= today · Pin → pinned_at → last_activity_at (D5)
   @Query("""
       SELECT tm FROM TripMember tm
       JOIN FETCH tm.trip t
       WHERE tm.user.id = :userId
       AND tm.deletedAt IS NULL
       AND t.deletedAt IS NULL
-      ORDER BY tm.pinned DESC, t.updatedAt DESC
+      AND t.endRange >= :today
+      ORDER BY tm.pinned DESC, tm.pinnedAt DESC NULLS LAST, t.lastActivityAt DESC
       """)
-  List<TripMember> findActiveMembershipsByUserId(@Param("userId") UUID userId);
+  List<TripMember> findOngoingMembershipsByUserId(
+      @Param("userId") UUID userId,
+      @Param("today") LocalDate today);
+
+  // 전체 보기: last_activity_at만 · status/ownerOnly 필터 (D5)
+  @Query("""
+      SELECT tm FROM TripMember tm
+      JOIN FETCH tm.trip t
+      WHERE tm.user.id = :userId
+      AND tm.deletedAt IS NULL
+      AND t.deletedAt IS NULL
+      AND (:ownerOnly = false OR tm.role = com.tripfit.tripfit.trip.domain.TripMemberRole.OWNER)
+      AND (
+        :statusFilter = 'ALL'
+        OR (:statusFilter = 'ONGOING' AND t.status = com.tripfit.tripfit.trip.domain.TripStatus.ONGOING
+            AND t.endRange >= :today)
+        OR (:statusFilter = 'CONFIRMED' AND t.status = com.tripfit.tripfit.trip.domain.TripStatus.CONFIRMED)
+      )
+      ORDER BY t.lastActivityAt DESC
+      """)
+  List<TripMember> findAllMembershipsByUserId(
+      @Param("userId") UUID userId,
+      @Param("today") LocalDate today,
+      @Param("statusFilter") String statusFilter,
+      @Param("ownerOnly") boolean ownerOnly);
+
+  // 홈 카드 membersPreview: 방당 최대 4 · OWNER 우선 · joined_at DESC (D5 C)
+  @Query(
+      value = """
+          SELECT ranked.trip_id AS tripId, ranked.user_id AS userId,
+                 ranked.profile_image_url AS profileImageUrl, ranked.role AS role
+          FROM (
+            SELECT tm.trip_id, u.id AS user_id, u.profile_image_url, tm.role,
+                   ROW_NUMBER() OVER (
+                     PARTITION BY tm.trip_id
+                     ORDER BY CASE WHEN tm.role = 'OWNER' THEN 0 ELSE 1 END, tm.joined_at DESC
+                   ) AS rn
+            FROM trip_member tm
+            INNER JOIN user u ON u.id = tm.user_id
+            WHERE tm.trip_id IN (:tripIds) AND tm.deleted_at IS NULL
+          ) ranked
+          WHERE ranked.rn <= 4
+          """,
+      nativeQuery = true)
+  List<TripMemberPreviewProjection> findMemberPreviewsByTripIds(
+      @Param("tripIds") Collection<UUID> tripIds);
+
+  @Query(
+      value = """
+          SELECT tm.trip_id AS tripId,
+                 COUNT(*) AS memberCount,
+                 SUM(CASE WHEN tm.status = 'RESPONDED' THEN 1 ELSE 0 END) AS respondedCount
+          FROM trip_member tm
+          WHERE tm.trip_id IN (:tripIds) AND tm.deleted_at IS NULL
+          GROUP BY tm.trip_id
+          """,
+      nativeQuery = true)
+  List<TripMemberCountProjection> countMembersByTripIds(@Param("tripIds") Collection<UUID> tripIds);
 }

@@ -3,6 +3,7 @@ package com.tripfit.tripfit.trip.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,9 +18,12 @@ import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
+import com.tripfit.tripfit.trip.dto.TripListQuery;
+import com.tripfit.tripfit.trip.dto.TripListScope;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.RecommendationRepository;
+import com.tripfit.tripfit.trip.repository.TripMemberCountProjection;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
@@ -272,6 +276,7 @@ class TripServiceTest {
             "제주"));
 
     verify(recommendationRepository).deleteByTripId(TRIP_ID);
+    assertThat(trip.getLastActivityAt()).isNotNull();
   }
 
   @Test
@@ -295,7 +300,7 @@ class TripServiceTest {
   }
 
   @Test
-  void updatePin_togglesPinned() {
+  void updatePin_togglesPinnedAndPinnedAt() {
     TripMember membership = tripMember(owner, TripMemberRole.OWNER);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(membership));
@@ -311,6 +316,67 @@ class TripServiceTest {
 
     assertThat(summary.pinned()).isTrue();
     assertThat(membership.isPinned()).isTrue();
+    assertThat(membership.getPinnedAt()).isNotNull();
+  }
+
+  @Test
+  void listMyTrips_ongoing_usesPreviewBatchQuery() {
+    TripMember membership = tripMember(owner, TripMemberRole.OWNER);
+    when(tripMemberRepository.findOngoingMembershipsByUserId(eq(OWNER_ID), any(LocalDate.class)))
+        .thenReturn(List.of(membership));
+    when(tripMemberRepository.countMembersByTripIds(any()))
+        .thenReturn(List.of(countProjection(1, 0)));
+    when(tripMemberRepository.findMemberPreviewsByTripIds(any())).thenReturn(List.of());
+
+    var response =
+        tripService.listMyTrips(
+            OWNER_ID,
+            new TripListQuery(TripListScope.ONGOING, Optional.empty(), false));
+
+    assertThat(response.trips()).hasSize(1);
+    assertThat(response.trips().get(0).memberCount()).isEqualTo(1);
+  }
+
+  @Test
+  void listMyTrips_all_withStatusFilter() {
+    TripMember membership = tripMember(owner, TripMemberRole.OWNER);
+    when(
+        tripMemberRepository.findAllMembershipsByUserId(
+            eq(OWNER_ID),
+            any(LocalDate.class),
+            eq("ONGOING"),
+            eq(true)))
+        .thenReturn(List.of(membership));
+    when(tripMemberRepository.countMembersByTripIds(any()))
+        .thenReturn(List.of(countProjection(1, 0)));
+    when(tripMemberRepository.findMemberPreviewsByTripIds(any())).thenReturn(List.of());
+
+    var response =
+        tripService.listMyTrips(
+            OWNER_ID,
+            new TripListQuery(TripListScope.ALL, Optional.of(TripStatus.ONGOING), true));
+
+    assertThat(response.trips()).hasSize(1);
+    assertThat(response.trips().get(0).myRole()).isEqualTo(TripMemberRole.OWNER);
+  }
+
+  private static TripMemberCountProjection countProjection(int memberCount, int responded) {
+    return new TripMemberCountProjection() {
+      @Override
+      public UUID getTripId() {
+        return TRIP_ID;
+      }
+
+      @Override
+      public long getMemberCount() {
+        return memberCount;
+      }
+
+      @Override
+      public long getRespondedCount() {
+        return responded;
+      }
+    };
   }
 
   @Test

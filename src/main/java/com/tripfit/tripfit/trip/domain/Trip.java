@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -100,6 +101,10 @@ public class Trip extends SoftDeleteEntity {
   @Column(name = "last_recommendation_mode")
   private RecommendationMode lastRecommendationMode;
 
+  @Schema(description = "홈 정렬용 최근 활동 시각 (D5)", example = "2026-07-20T12:00:00")
+  @Column(name = "last_activity_at", nullable = false)
+  private LocalDateTime lastActivityAt;
+
   public Trip(
       User owner,
       String name,
@@ -117,5 +122,11 @@ public class Trip extends SoftDeleteEntity {
     this.targetMemberCount = targetMemberCount;
     this.inviteCode = inviteCode;
     this.status = status;
+    this.lastActivityAt = LocalDateTime.now();
+  }
+
+  // 홈 정렬용 최근 활동 시각 갱신 (join·patch·submit·추천·확정)
+  public void touchLastActivity() {
+    this.lastActivityAt = LocalDateTime.now();
   }
 }

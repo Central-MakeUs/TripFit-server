@@ -284,7 +284,7 @@ public class ScheduleService {
     return new MemberPersonalSummaryResponse(result);
   }
 
-  // BR-USER-006: 플래그와 실제 row 불일치(삭제·마이그레이션) 시 row 존재 여부로 재판단
+  // BR-USER-006: 플래그와 실제 row 불일치(삭제 등) 시 row 존재 여부로 재판단
   @Transactional(readOnly = true)
   public void requireRegularScheduleRegistered(UUID userId) {
     User user = findUser(userId);

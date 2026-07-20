@@ -11,17 +11,22 @@ import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
 import com.tripfit.tripfit.trip.dto.JoinTripRequest;
+import com.tripfit.tripfit.trip.dto.MemberPreviewResponse;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.CalendarDay;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.MemberCalendar;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
+import com.tripfit.tripfit.trip.dto.TripDetailResponse;
+import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
+import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse.TripMemberItemResponse;
-import com.tripfit.tripfit.trip.dto.TripSummaryResponse;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.RecommendationRepository;
+import com.tripfit.tripfit.trip.repository.TripMemberCountProjection;
+import com.tripfit.tripfit.trip.repository.TripMemberPreviewProjection;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
@@ -39,10 +44,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +59,8 @@ public class TripService {
   private static final int NAME_MAX_LENGTH = 15;
 
   private static final int MAX_INVITE_CODE_ATTEMPTS = 20;
+
+  private static final int MEMBERS_PREVIEW_LIMIT = 4;
 
   private final TripRepository tripRepository;
 
@@ -126,21 +135,55 @@ public class TripService {
   }
 
   @Transactional(readOnly = true)
-  public TripListResponse listMyTrips(UUID userId) {
-    List<TripMember> memberships = tripMemberRepository.findActiveMembershipsByUserId(userId);
-    List<TripSummaryResponse> trips =
-        memberships.stream().map(m -> toSummary(m.getTrip(), m)).toList();
+  public TripListResponse listMyTrips(UUID userId, TripListQuery query) {
+    LocalDate today = LocalDate.now();
+    String statusFilterName = query.statusFilter().map(Enum::name).orElse("ALL");
+    List<TripMember> memberships =
+        switch (query.scope()) {
+          case ONGOING -> tripMemberRepository.findOngoingMembershipsByUserId(userId, today);
+          case ALL -> tripMemberRepository.findAllMembershipsByUserId(
+              userId,
+              today,
+              statusFilterName,
+              query.ownerOnly());
+        };
+
+    if (memberships.isEmpty()) {
+      return new TripListResponse(List.of());
+    }
+
+    List<UUID> tripIds = memberships.stream().map(m -> m.getTrip().getId()).distinct().toList();
+    Map<UUID, TripMemberCountProjection> countsByTripId = loadMemberCountsByTripIds(tripIds);
+    Map<UUID, List<MemberPreviewResponse>> previewsByTripId =
+        loadMemberPreviewsByTripIds(tripIds);
+
+    List<TripHomeCardResponse> trips =
+        memberships.stream()
+            .map(
+                m -> {
+                  UUID tripId = m.getTrip().getId();
+                  TripMemberCountProjection counts = countsByTripId.get(tripId);
+                  int memberCount = counts == null ? 0 : (int) counts.getMemberCount();
+                  int respondedCount = counts == null ? 0 : (int) counts.getRespondedCount();
+                  return toHomeCard(
+                      m.getTrip(),
+                      m,
+                      memberCount,
+                      respondedCount,
+                      previewsByTripId.getOrDefault(tripId, List.of()));
+                })
+            .toList();
     return new TripListResponse(trips);
   }
 
   @Transactional(readOnly = true)
-  public TripSummaryResponse getTrip(UUID tripId, UUID userId) {
+  public TripDetailResponse getTrip(UUID tripId, UUID userId) {
     TripMember membership = requireActiveMember(tripId, userId);
-    return toSummary(membership.getTrip(), membership);
+    return toDetail(membership.getTrip(), membership);
   }
 
   @Transactional
-  public TripSummaryResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
+  public TripDetailResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
     Trip trip = requireActiveTrip(tripId);
     requireOwner(trip, userId);
     requireOngoingForMutation(trip);
@@ -163,6 +206,8 @@ public class TripService {
     trip.setDurationDays(request.durationDays());
     trip.setTargetMemberCount(request.targetMemberCount());
     trip.setDestination(normalizeDestination(request.destination()));
+    // #26: 갱신 이벤트 SSOT·AOP 확정 전 최소 hook
+    trip.touchLastActivity();
 
     if (recommendationInputsChanged) {
       // BR-TRIP-010: recommendation hard DELETE — #13 TripRecommendationService와 통합 예정
@@ -173,7 +218,7 @@ public class TripService {
         tripMemberRepository
             .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
             .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
-    return toSummary(trip, membership);
+    return toDetail(trip, membership);
   }
 
   @Transactional
@@ -190,7 +235,7 @@ public class TripService {
   }
 
   @Transactional
-  public TripSummaryResponse joinTrip(UUID userId, JoinTripRequest request) {
+  public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
     User user = findUser(userId);
     String inviteCode = request.inviteCode().trim().toUpperCase();
 
@@ -202,8 +247,7 @@ public class TripService {
     var existing =
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {
-      // 이미 참여한 멤버 — idempotent 200 (trip-room-api)
-      return toSummary(trip, existing.get());
+      return toDetail(trip, existing.get());
     }
 
     TripStatus status = effectiveStatus(trip);
@@ -212,7 +256,6 @@ public class TripService {
       case CANCELED -> throw new TripFitException(TripErrorCode.TRIP_CANCELED);
       case TERMINATED -> throw new TripFitException(TripErrorCode.TRIP_TERMINATED);
       case ONGOING -> {
-        // BR-TRIP-008: 정원 초과 시 join 거부
         long memberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
         if (memberCount >= trip.getTargetMemberCount()) {
           throw new TripFitException(TripErrorCode.TRIP_MEMBER_FULL);
@@ -228,32 +271,34 @@ public class TripService {
             TripMemberStatus.JOINED,
             LocalDateTime.now());
     tripMemberRepository.save(member);
-    return toSummary(trip, member);
+    trip.touchLastActivity();
+    return toDetail(trip, member);
   }
 
   @Transactional
-  public TripSummaryResponse updatePin(UUID tripId, UUID userId, UpdateTripPinRequest request) {
+  public TripDetailResponse updatePin(UUID tripId, UUID userId, UpdateTripPinRequest request) {
     TripMember membership = requireActiveMember(tripId, userId);
-    membership.setPinned(request.pinned());
-    return toSummary(membership.getTrip(), membership);
+    // Pin 자동 해제는 #27 스케줄러 — 조회 API 부수 write 없음
+    membership.applyPin(Boolean.TRUE.equals(request.pinned()));
+    return toDetail(membership.getTrip(), membership);
   }
 
   @Transactional
-  public TripSummaryResponse submitSchedule(UUID tripId, UUID userId) {
+  public TripDetailResponse submitSchedule(UUID tripId, UUID userId) {
     Trip trip = requireActiveTrip(tripId);
     requireOngoingForMutation(trip);
     TripMember membership = requireActiveMember(tripId, userId);
 
-    // BR-USER-007: regular ≥1 + 제출 API 호출 시에만 RESPONDED
     scheduleService.requireRegularScheduleRegistered(userId);
     membership.setStatus(TripMemberStatus.RESPONDED);
-    return toSummary(trip, membership);
+    trip.touchLastActivity();
+    return toDetail(trip, membership);
   }
 
   @Transactional(readOnly = true)
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
     requireActiveMember(tripId, userId);
-    Trip trip = requireActiveTrip(tripId);
+    requireActiveTrip(tripId);
 
     List<TripMember> members =
         tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
@@ -261,7 +306,6 @@ public class TripService {
             .toList();
 
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
-    // BR-USER-009: 동명이인 `홍길동(2)` 표시
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
     int memberCount = members.size();
@@ -298,13 +342,11 @@ public class TripService {
             .toList();
 
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
-    // BR-USER-009: 동명이인 `홍길동(2)` 표시
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
     List<MemberCalendar> memberCalendars = new ArrayList<>();
     for (TripMember member : members) {
       UUID memberUserId = member.getUser().getId();
-      // TODO: 멤버 수만큼 regular/personal 조회 — batch fetch로 N+1 완화 (#17)
       List<RegularSchedule> regulars =
           regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(memberUserId);
       List<PersonalSchedule> personals =
@@ -338,7 +380,32 @@ public class TripService {
     return new MemberScheduleCalendarResponse(startDate, endDate, memberCalendars);
   }
 
-  private TripSummaryResponse toSummary(Trip trip, TripMember membership) {
+  private TripHomeCardResponse toHomeCard(
+      Trip trip,
+      TripMember membership,
+      int memberCount,
+      int respondedCount,
+      List<MemberPreviewResponse> previews) {
+    int overflow = Math.max(0, memberCount - MEMBERS_PREVIEW_LIMIT);
+    return new TripHomeCardResponse(
+        trip.getId(),
+        trip.getName(),
+        trip.getDestination(),
+        trip.getStartRange(),
+        trip.getEndRange(),
+        trip.getDurationDays(),
+        effectiveStatus(trip),
+        trip.getLastActivityAt(),
+        membership.isPinned(),
+        membership.getRole(),
+        membership.getStatus(),
+        respondedCount,
+        memberCount,
+        previews,
+        overflow);
+  }
+
+  private TripDetailResponse toDetail(Trip trip, TripMember membership) {
     UUID tripId = trip.getId();
     long memberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(tripId);
     int respondedCount =
@@ -346,7 +413,7 @@ public class TripService {
             tripId,
             TripMemberStatus.RESPONDED);
 
-    return new TripSummaryResponse(
+    return new TripDetailResponse(
         tripId,
         trip.getName(),
         trip.getDestination(),
@@ -359,10 +426,34 @@ public class TripService {
         trip.getConfirmedStartDate(),
         trip.getConfirmedEndDate(),
         trip.getLastRecommendationMode(),
+        trip.getLastActivityAt(),
         membership.isPinned(),
+        membership.getRole(),
         membership.getStatus(),
         respondedCount,
         (int) memberCount);
+  }
+
+  private Map<UUID, TripMemberCountProjection> loadMemberCountsByTripIds(List<UUID> tripIds) {
+    return tripMemberRepository.countMembersByTripIds(tripIds).stream()
+        .collect(Collectors.toMap(TripMemberCountProjection::getTripId, c -> c));
+  }
+
+  private Map<UUID, List<MemberPreviewResponse>> loadMemberPreviewsByTripIds(
+      List<UUID> tripIds) {
+    List<TripMemberPreviewProjection> rows =
+        tripMemberRepository.findMemberPreviewsByTripIds(tripIds);
+    Map<UUID, List<MemberPreviewResponse>> byTrip = new HashMap<>();
+    for (TripMemberPreviewProjection row : rows) {
+      byTrip
+          .computeIfAbsent(row.getTripId(), ignored -> new ArrayList<>())
+          .add(
+              new MemberPreviewResponse(
+                  row.getUserId(),
+                  row.getProfileImageUrl(),
+                  TripMemberRole.valueOf(row.getRole())));
+    }
+    return byTrip;
   }
 
   private Trip requireActiveTrip(UUID tripId) {
@@ -389,8 +480,8 @@ public class TripService {
     }
   }
 
+  // #27 스케줄러 전까지 API lazy TERMINATED 노출
   private TripStatus effectiveStatus(Trip trip) {
-    // end_range 경과 시 DB status와 무관하게 TERMINATED로 노출 (trip-room-api 정책서)
     if (trip.getStatus() == TripStatus.ONGOING
         && trip.getEndRange().isBefore(LocalDate.now())) {
       return TripStatus.TERMINATED;
@@ -429,7 +520,6 @@ public class TripService {
         return code;
       }
     }
-    // FIXME: 20회 충돌 시 500 — 재시도 정책·코드 길이 확장 검토 (trip-room-api)
     throw new TripFitException(CommonErrorCode.INTERNAL_ERROR);
   }
 
