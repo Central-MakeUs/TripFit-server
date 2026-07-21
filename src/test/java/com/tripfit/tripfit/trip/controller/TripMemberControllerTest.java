@@ -110,6 +110,7 @@ class TripMemberControllerTest {
             new MemberScheduleCalendarResponse(
                 LocalDate.of(2026, 8, 1),
                 LocalDate.of(2026, 8, 10),
+                false,
                 List.of(
                     new MemberCalendar(
                         OTHER_ID,
@@ -127,6 +128,7 @@ class TripMemberControllerTest {
     mockMvc
         .perform(get("/api/v1/trips/" + TRIP_ID + "/members/schedule-calendar"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.readOnly").value(false))
         .andExpect(jsonPath("$.data.members[0].days[0].uncertain").value(true));
   }
 }

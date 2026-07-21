@@ -42,7 +42,7 @@ alwaysApply: true
 | 용어 | 의미 | 비고 |
 |------|------|------|
 | **희망 기간** | `trip.startRange`~`endRange` | 추천·조율 탐색 범위 |
-| **조회 윈도우** | 여행방 일정 calendar 조회 가능 구간 (#37) | 희망 기간과 **별 축** · X1 앵커는 Approved 전 `[미정]` |
-| **A1 (730일)** | 본인 `users/schedule/calendar` **요청 구간 길이** 상한 (#17) | 조회 윈도우와 **의미 다름** |
+| **조회 윈도우** | 여행방 일정 calendar 조회 가능 구간 (#37) | 희망 기간과 **별 축** · C1=`today~+2y` · C2/C3=`startRange~endRange` |
+| **C1 윈도우 (#37)** | 본인 `users/schedule/calendar` 조회·수정 가능 구간 | **today ~ today+2년−1** · 구 A1(730일 길이) 대체 |
 
 상세: [`docs/product/development-wave.md`](../../docs/product/development-wave.md) · [`docs/product/glossary.md`](../../docs/product/glossary.md)

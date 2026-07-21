@@ -226,6 +226,7 @@ public class ScheduleService {
       UUID userId,
       LocalDate startDate,
       LocalDate endDate) {
+    // 1. #37 C1 윈도우 검증 (today ~ today+2y−1)
     validateCalendarDateRange(startDate, endDate);
 
     // 2. regular·personal을 읽어 날짜별 effective로 합침

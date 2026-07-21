@@ -43,14 +43,17 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 3. 로컬·dev DB **폐기·재생성** 허용 (`docker compose down -v` 등). orphan·구 스키마 호환 레이어 금지.
 4. “나중에 Flyway V2” 식 예정 코드/파일·주석 추가 금지. prod 보존이 필요해지면 **그때** decisions + 마이그레이션 별도 결정.
 
-### 4. 레거시·정책 불일치 코드 제거 (호환 레이어 금지)
+### 4. 레거시·정책 불일치 코드 제거 (호환 레이어 금지 · **같은 변경에서 즉시**)
 
-현행 Approved 스펙·BR·decisions·구현 계약과 다른 코드·경로·문서를 “호환용”으로 남기지 않는다.
+현행 Approved 스펙·BR·decisions·구현 계약과 다른 코드·경로·문서를 “호환용”으로 남기지 않는다.  
+**dev·상용 보존 데이터 없음** → 듀얼 패스·구 클라/DB 호환·orphan 유지 **불필요·금지**.
 
-1. **삭제:** 폐기 API/path · 정책상 폐기 enum/필드 · 구 스키마 매핑 · 호환 if · stale `@Schema`/`docs` · “나중에 지울” TODO 잔존물
-2. **시점:** 정책 amend 구현 **같은 PR**. 점검 중 발견해도 정책 SSOT에 맞춰 삭제 (스펙 **문서 간** 충돌이면 §1에 따라 질문)
-3. **하지 않음:** 구 클라/DB 호환 어댑터 · orphan 컬럼 · deprecated 방치
-4. **요청 밖 dead code:** 정책과 무관하면 언급만. **정책 불일치 레거시는 이 절이 우선**
+1. **삭제 대상:** 폐기 API/path · 정책상 폐기 enum/`ErrorCode`/필드 · 구 상수·검증(예: 대체된 730일 A1) · 대체된 Repository 메서드·벌크 쿼리 · 구 스키마 매핑 · 호환 if · `@Deprecated` 방치 · stale `@Schema`/메시지 · “나중에 지울” TODO · 스펙·OpenAPI의 **현행 계약으로 적힌** 구 수치·구 API명
+2. **시점 (필수):** 정책 amend·경로 교체 구현과 **같은 커밋/같은 PR/같은 턴**. “다음 커밋에 정리”·“일단 새 경로만 추가” **금지**
+3. **교체 = 구경로 삭제:** 새 구현을 넣으면 **호출되지 않는 구 메서드·상수·테스트 assert·문서 ‘현행’ 문구**를 같은 변경에서 제거. “요청 밖 dead code라서 언급만”으로 **넘기지 않는다** — 이번 변경이 대체한 코드는 **요청 범위**
+4. **하지 않음:** 구 클라/DB 호환 어댑터 · orphan 컬럼 · deprecated 방치 · soft/hard·live/snapshot 등 **정책상 폐기된 이중 분기**
+5. **예외 — 진짜 요청 밖:** 이번 정책과 **무관한** 기존 dead code만 언급. **정책 불일치·이번 교체 잔존은 이 절이 우선 → 삭제**
+6. **이력 문서:** 스펙 Changelog·과거 체크리스트의 “당시 A1=730” 등은 OK. **‘현행 코드/계약’** 으로 적힌 구 값은 §1·본 절로 **즉시 amend**
 
 ## 작업 분류 (시작 전 30초)
 
@@ -80,9 +83,10 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - 요청 범위만 · 인접 “개선”·깨지지 않은 리팩터 금지
 - 요청 밖 기능·단일 사용 추상화·불필요 설정 금지
 - STOP 재확인 — 스펙과 다른 수치·계약·env 금지
+- **레거시** — 경로·상수·검증·API를 바꾸면 **구 구현·미사용 메서드·구 assert·‘현행’ 문서 문구를 같은 변경에서 삭제** (STOP §4). “나중에” 금지
 - **ErrorCode·AOP** — 실패·touch·권한 변경 시 **같은 턴** (STOP §2)
 - 기존 스타일 유지. 내 변경으로 생긴 unused만 정리
-- 패키지·Entity·DTO·enum·JWT `@Operation`: `spring-boot-java.mdc`
+- 패키지·Entity·DTO·enum·JWT `@Operation`·**메서드 역할 `//` 주석**: `spring-boot-java.mdc` (Comments — public 유스케이스 생략 금지)
 - 핵심 로직 변경 시 `./gradlew test`
 - 변경한 모든 줄은 사용자 요청에 직접 연결
 
@@ -95,7 +99,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
 - **커밋 요청 시:** 주제별 **최대 3개** (구현/테스트/문서·하네스). 억지 분할 금지
 - 같은 실수 2회+ → `.cursor/rules/` 추가 **제안** (자동 추가 금지)
-- 요청 밖·정책 무관 dead code는 언급만. **정책 불일치 레거시 → STOP §4 삭제**
+- **레거시 재점검:** 이번 PR이 대체한 구 경로·상수·문서 ‘현행’ 문구가 남았는지 확인 후 **삭제/amend**. 요청 밖·정책 무관 dead code만 언급. **정책 불일치·교체 잔존 → STOP §4 삭제**
 - Entity·스키마 후 ERD 개선 → `harness-follow-up.mdc` 💡 ERD
 - Must Have급 완료 / 사용자 요청 시 후속 제안 → `harness-follow-up.mdc`
 - 「다른 이슈로」범위 미루기 → `harness-follow-up.mdc` ✅ Defer (**이슈만 만들고 끝내지 않음**)
@@ -104,6 +108,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 - 이슈 번호 없는 브랜치명 — CONTRIBUTING 위반
 - 문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋 — STOP §1
+- **교체 후 구 경로·상수·‘현행’ 문서 방치** — STOP §4 (dev에서 호환 레이어 불필요)
 - `git push --force` (main/master), `rm -rf`, 운영 DB 파괴
 - `.env`·API 키를 코드·커밋에 포함
 

@@ -10,8 +10,9 @@ import java.util.UUID;
 
 @Schema(description = "여행방 멤버 전원 effective 일정 달력")
 public record MemberScheduleCalendarResponse(
-    @Schema(description = "조회 시작 날짜") LocalDate startDate,
-    @Schema(description = "조회 종료 날짜") LocalDate endDate,
+    @Schema(description = "조회 시작 날짜 (희망 기간)") LocalDate startDate,
+    @Schema(description = "조회 종료 날짜 (희망 기간)") LocalDate endDate,
+    @Schema(description = "CONFIRMED/TERMINATED면 true (#38)") boolean readOnly,
     @Schema(description = "멤버별 effective 달력") List<MemberCalendar> members
 ) {
 

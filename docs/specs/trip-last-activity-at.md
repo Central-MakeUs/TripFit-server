@@ -13,8 +13,8 @@
 ## 배경
 
 - D5에서 `last_activity_at` 컬럼·정렬은 [#12](https://github.com/Central-MakeUs/TripFit-server/issues/12) Must.
-- 기획상 “최 recent 활동” 이벤트(일정 제출/수정, join, 추천, 확정, PATCH 등)는 [`trip-room-api.md`](trip-room-api.md) §D5에 나열되어 있으나, **User 전역 일정 수정 → 참여 trip 반영(BR-USER-008)** 등 경계가 모호하다.
-- 현재 구현: create/join/patch/submit에서 `Trip.touchLastActivity()` **수동 호출**(최소 C). #13 추천·확정 hook 미연동.
+- 기획상 “최 recent 활동” 이벤트(일정 확인·수정, join, 추천, 확정, PATCH 등)는 [`trip-room-api.md`](trip-room-api.md) §D5에 나열되어 있으나, **User 전역 일정 수정 → 참여 trip 반영(BR-USER-008)** 등 경계가 모호하다.
+- 현재 구현: L1 public 유스케이스에 `@TripActivity` + AOP. (구 `touchLastActivity()` 수동 호출·trip `submit` API는 폐기.) #13 추천·확정은 stub에 어노테이션만.
 
 ## 확정 (L1~L4)
 
@@ -27,14 +27,14 @@
 | 여행방 생성 | ✓ | `created_at`과 동일 시각으로 초기화 ([#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)) |
 | 신규 참여 (join) | ✓ | Implemented |
 | 여행방 정보 수정 (PATCH) | ✓ | Implemented |
-| 일정 확인 완료 (구 trip `submit`) | ✓ | **#22** — submit 폐기 → **확인 완료 API** (`JOINED→RESPONDED`) touch |
+| 일정 확인 완료 (`POST .../schedule/confirm`) | ✓ | **#39** — `JOINED→RESPONDED` · `@TripActivity` (구 trip `submit` 폐기) |
 | 추천 일정 생성 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 일정 확정 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 참여자 내보내기 | ✓ | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) — MEMBER soft delete |
 | Pin 토글 | ✗ | Pin → `pinned_at` 별도 정렬 (D5) |
 | trip soft delete | ✗ | — |
 
-**“일정 제출/수정” 해석:** trip `submit`은 touch. User **전역** regular/personal 일정 PATCH는 touch **하지 않음** (L2).
+**“일정 확인/수정” 해석:** trip `schedule/confirm`은 touch. User **전역** regular/personal 일정 PATCH는 touch **하지 않음** (L2).
 
 **정렬 (D5 SSOT):** 진행 중 캐러셀 — Pin → `pinned_at` → `last_activity_at` 내림차순. 전체 보기 — `last_activity_at`만.
 
@@ -58,7 +58,7 @@
 
 **`TripCommandService`(및 trip command) + `TripRecommendationService`(#13) public 메서드**
 
-- trip 도메인: join · PATCH · submit 등 L1 이벤트.
+- trip 도메인: join · PATCH · `schedule/confirm` · 내보내기 등 L1 이벤트.
 - 추천 도메인(#13): 추천 일정 생성 · 일정 확정 — 동일 `@TripActivity` + aspect.
 
 ## 구현 Must Have

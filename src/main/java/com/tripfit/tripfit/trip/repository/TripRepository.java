@@ -2,10 +2,10 @@ package com.tripfit.tripfit.trip.repository;
 
 import com.tripfit.tripfit.trip.domain.Trip;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,12 +21,12 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
 
   boolean existsByInviteCode(String inviteCode);
 
-  @Modifying
+  // #38 · #27 — freeze 후 TERMINATED 전에 대상 로드 (동일 TX)
   @Query("""
-      UPDATE Trip t SET t.status = com.tripfit.tripfit.trip.domain.TripStatus.TERMINATED
+      SELECT t FROM Trip t
       WHERE t.deletedAt IS NULL
       AND t.status = com.tripfit.tripfit.trip.domain.TripStatus.ONGOING
       AND t.endRange < :today
       """)
-  int terminateExpiredOngoing(@Param("today") LocalDate today);
+  List<Trip> findExpiredOngoing(@Param("today") LocalDate today);
 }

@@ -245,46 +245,67 @@ ResponseEntity<...> updateProfile(
 
 ## Comments
 
-1인 개발·Swagger(springdoc) 전제. **필드 의미는 `@Schema`**, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT. `//`·Javadoc은 **Why·정책·비 obvious·다단계 흐름**을 담는다.
+1인 개발·Swagger(springdoc) 전제. **필드 의미는 `@Schema`**, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT.  
+`//`는 **(1) 메서드가 하는 일(역할)** + **(2) Why·정책·다단계 How** 를 담는다. 메서드명만으로 “무엇을 하는지”가 안 보이면 주석 누락이다.
 
 ### 쓰지 않음
 
-- `@Operation`/`@Parameter`·메서드명·record 필드명만으로 유추 가능한 설명
+- `@Operation`/`@Parameter`·record 필드명과 **완전히 동일한** 문장 반복
 - 단순 `@param`/`@return` Javadoc
-- Controller에서 비즈니스 로직·Service 역할까지 반복하는 설명
+- Controller에서 Service 비즈니스 로직·BR을 장황히 반복
 
 ### 레이어별 초점
 
 | 레이어 | 주석 대상 |
 |--------|-----------|
-| **Controller** | 접근 권한(`@AuthorizedUser`, `@TripMemberOnly` 등)·인터셉터·`@Valid` 검증 흐름. 비즈니스 로직 설명 금지 |
-| **Service** | BR-*·wave 정책, 분기 **이유(Why)**, `@Transactional`·외부 API·Stream에서 non-obvious한 선택. **다단계 유스케이스는 `// 1.` `// 2.` 단계 주석** |
-| **Support / Helper / Resolver** | 공유 매핑·검증·생성 로직의 **정책·에러코드 매핑·배치 vs lazy** Why. 단순 위임 1~2줄은 생략 가능 |
-| **Interceptor / Aspect / Filter / ArgumentResolver** | 진입 조건·권한 분기·silent skip·SecurityContext 전제·Advice 우회 등 **교차 관심사 Why** |
-| **client** | 외부 OAuth·HTTP 검증 흐름 — Service와 동일하게 단계·catch 의도 |
-| **Repository** | `@Query` 정렬·필터·fetch 의도. **파생 API 필드용 EXISTS·집계**는 SSOT 조회임을 한 줄 |
-| **DTO / Entity / 공통 envelope** | 필드는 `@Schema` SSOT. **쿼리 조합 제약·파생 필드·성공/에러 이중 팩토리·formatter off** 등 Schema로 안 담기는 배경만 `//` |
-| **exception** | `ErrorCode` 계약·커스텀 message override·Handler가 다루는 예외 범위 |
+| **Controller** | 접근 권한(`@AuthorizedUser`, `@TripMemberOnly` 등)·인터셉터·`@Valid` 검증. **유스케이스 역할 주석 금지**(Service에 둠) |
+| **Service / facade** | **public 메서드마다** 역할 `//` 한 줄(아래 필수). BR·분기 Why · 다단계 `// 1.` |
+| **Support / Helper / Resolver** | 공유 검증·매핑·가드의 **역할 `//`** + 정책·에러코드·배치 vs lazy Why |
+| **Interceptor / Aspect / Filter / ArgumentResolver / Scheduler** | 엔트리(`preHandle`·advice·`runForDate` 등) **역할 `//`** + 교차 관심사 Why |
+| **client** | Service와 동일 — 역할 `//` + 단계·catch 의도 |
+| **Repository** | `@Query` 정렬·필터·fetch 의도. **파생 API 필드용 EXISTS·집계**는 SSOT 조회 한 줄 |
+| **DTO / Entity / 공통 envelope** | 필드는 `@Schema` SSOT. Schema로 안 담기는 배경만 `//` |
+| **exception** | `ErrorCode` 계약·message override·Handler 범위 |
 
-### Service · client 메서드 주석
+### 메서드 역할 주석 (필수) — Service · Support · Interceptor · Aspect · Scheduler · client
 
-- **public·private 유스케이스 메서드** 바로 위에 `//` 한 줄로 역할 요약 (`AuthService`·`ScheduleService` 기준)
-- 본문이 **2단계 이상**이면 `// 1.` `// 2.` `// 3.` 형태로 **작동 메커니즘(How)** 을 순서대로 표시
-- 같은 블록에 **Why(정책·BR)** 가 필요하면 단계 주석 옆·직후에 짧게 병기 — Why만 또는 How만 강제하지 않음
-- **단순 CRUD·1~2줄 메서드**는 메서드 한 줄 주석 생략 가능
+**위치:** 메서드 시그니처·어노테이션 **바로 위**에 `//` 한 줄 (클래스 Javadoc·본문 `// 1.`만으로 대체 **금지**).
 
-### 메서드 내부 (`//`)
+| 대상 | 규칙 |
+|------|------|
+| **`public` 유스케이스·엔트리** | **항상** 역할 한 줄. **1~2줄 facade 위임·stub도 생략 금지** (`TripService` → Command/Query 포함) |
+| **비자명 `private` 헬퍼** | live/snapshot 빌더·윈도우 검증·복합 매핑 등 — 역할 `//` |
+| **생략 가능** | 생성자 · getter/setter · 이름만으로 자명한 1라이너 (`findUser`, `normalizeX`, 단순 DTO `toXxx`) |
 
-- 외부 API 호출, 복잡 Stream, 트랜잭션 경계, `catch` **의도(Why)** 에 설명
+```java
+// 방장 JOINED → RESPONDED. 이미 RESPONDED면 idempotent (#39)
+@Transactional
+@TripActivity(tripIdParam = "tripId")
+public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) { ... }
+
+// 멤버 목록 조회 — fillRate·displayName 포함
+public TripMembersResponse listMembers(UUID tripId, UUID userId) { ... }
+
+// facade: 참여자 내보내기 → TripCommandService
+public TripMembersResponse removeMember(...) {
+  return tripCommandService.removeMember(...);
+}
+```
+
+### 다단계 · Why (본문)
+
+- 본문이 **2단계 이상**이면 `// 1.` `// 2.` `// 3.` 로 **How** 순서 표시 (역할 한 줄과 **병행**)
+- 정책·BR·에러코드 선택은 단계 옆·직후 **Why** 짧게 — Why만/How만 강제하지 않음
+- 외부 API·복잡 Stream·TX 경계·`catch` 의도(Why)
 - 어조: 간결한 개발자체 (`~함`, `~을 위해 분기`)
 
 ### 기술 부채
 
-- 예외·성능·구조 개선 필요 구간: `// TODO:` 또는 `// FIXME:` + 개선 방향 (wave·이슈 번호 있으면 병기)
+- `// TODO:` / `// FIXME:` + 개선 방향 (wave·이슈 번호 병기)
 
 ### Javadoc (`/** */`)
 
-- 사용 최소화 — public library API 아님. **`//` 한 줄** 또는 `@Schema`로 대체
+- **메서드 역할은 `//`만.** 클래스 한 줄 요약 Javadoc은 허용하되, 메서드 위 `/** */`·`@param`/`@return` 남발 금지
 
 ## API (추가 시)
 

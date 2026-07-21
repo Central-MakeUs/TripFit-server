@@ -24,6 +24,8 @@ erDiagram
     users ||--o{ trip : owns
     trip ||--o{ trip_member : has
     trip ||--o{ recommendation : generates
+    trip ||--o{ trip_member_schedule_snapshot : freezes
+    users ||--o{ trip_member_schedule_snapshot : snapshotted
 
     users {
         uuid id PK
@@ -113,6 +115,20 @@ erDiagram
         datetime joined_at
         datetime responded_at "null if JOINED"
         datetime deleted_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    trip_member_schedule_snapshot {
+        uuid id PK
+        uuid trip_id FK
+        uuid user_id FK
+        date schedule_date
+        string morning_status
+        string afternoon_status
+        string evening_status
+        boolean is_uncertain
+        datetime frozen_at
         datetime created_at
         datetime updated_at
     }
@@ -275,6 +291,28 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 
 **카운트:** `joinedMemberCount` = soft-delete 제외 전 멤버(JOINED 포함). `respondedCount` = `RESPONDED`만.
 
+### `trip_member_schedule_snapshot` (#38)
+
+완료(CONFIRMED)·만료(TERMINATED) 방의 **멤버×날짜 effective** 고정본. 희망 기간·sparse. live `regular`/`personal`과 분리 (BR-USER-008).
+
+- **관련 스펙:** [`trip-schedule-snapshot.md`](../specs/trip-schedule-snapshot.md)
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| trip_id | char(36) | N | FK → trip.id | |
+| user_id | char(36) | N | FK → users.id | |
+| schedule_date | date | N | | |
+| morning_status | varchar | Y | | POSSIBLE/IMPOSSIBLE |
+| afternoon_status | varchar | Y | | |
+| evening_status | varchar | Y | | |
+| is_uncertain | boolean | N | | |
+| frozen_at | timestamptz | N | | freeze 시각 |
+| created_at | timestamptz | N | | |
+| updated_at | timestamptz | N | | |
+
+**UNIQUE:** `(trip_id, user_id, schedule_date)`
+
 ### `recommendation`
 
 **현재 모드 TOP 3만** 유지 (BR-TRIP-005). 갱신 시 **hard DELETE** 후 INSERT (BR-TRIP-010).
@@ -305,6 +343,8 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | users | trip | 1:N | owner_id (방장) |
 | users | refresh_token | 1:N | |
 | trip | trip_member | 1:N | |
+| trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/TERMINATED effective freeze |
+| users | trip_member_schedule_snapshot | 1:N | |
 | trip | recommendation | 1:N | 최대 3 (현재 모드) |
 
 ## 5. MVP 범위와의 매핑

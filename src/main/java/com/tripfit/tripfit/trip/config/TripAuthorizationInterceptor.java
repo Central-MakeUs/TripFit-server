@@ -40,6 +40,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     this.userSummaryService = userSummaryService;
   }
 
+  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly 권한 게이트 (#39 JOINED 방장 면제)
   @Override
   public boolean preHandle(
       HttpServletRequest request,
