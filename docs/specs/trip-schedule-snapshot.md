@@ -2,11 +2,12 @@
 
 > wave: 2  
 > 상태: **Draft**  
-> MVP: In scope (만료 방 조회 정합)  
+> MVP: In scope · **Wave 2 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))  
 > GitHub: **[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**  
 > 선행: [`trip-home-schedulers.md`](trip-home-schedulers.md) (#27), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md)  
 > related: [`trip-room-api.md`](trip-room-api.md) (#12), [`trip-recommendation.md`](trip-recommendation.md) (#13)  
-> 관련 BR: **BR-USER-008** (전역 일정 — **본 확정과 충돌**)
+> 관련 BR: **BR-USER-008** (전역 일정 — **본 확정과 충돌**)  
+> 용어: 희망 기간 · 조회 윈도우(#37) · A1 = **별 축** — [`glossary.md`](../product/glossary.md)
 
 ## 목표
 

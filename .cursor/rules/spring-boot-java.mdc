@@ -44,23 +44,40 @@ com.tripfit.tripfit
 
 ### ErrorCode enum
 
-`*ErrorCode` 상수는 **한 상수 = 한 줄** (`NAME(HttpStatus, "CODE", "메시지"),`). 여러 상수를 한 줄에 이어서 쓰지 않고, 생성자 인자도 같은 줄에 둔다.
+`*ErrorCode` 상수는 **한 상수 = 한 줄** (`NAME(HttpStatus, "CODE", "메시지"),`). 여러 상수를 한 줄에 이어서 쓰지 않고, 생성자 인자도 같은 줄에 둔다. **enum·각 상수에 `@Schema(description)` 필수** (`CommonErrorCode` 기준).
 
 ```java
 // ✅
+@Schema(description = "인증 도메인 에러 코드")
 public enum AuthErrorCode implements ErrorCode {
+  @Schema(description = "소셜 토큰·액세스 JWT 무효")
   AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_TOKEN", "유효하지 않은 소셜 로그인 토큰입니다."),
+  @Schema(description = "액세스 JWT 만료")
   AUTH_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_EXPIRED", "액세스 토큰이 만료되었습니다.");
   // ...
 }
 
-// ❌ 상수·인자를 줄바꿈해 이어서 붙이기
+// ❌ 상수·인자를 줄바꿈해 이어서 붙이기 · @Schema 누락
 AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_TOKEN",
     "…"), AUTH_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_EXPIRED",
         "…");
 ```
 
 Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap 안 함 (`config/tripfit-java-format.xml`).
+
+**새 실패 분기 추가 시 (같은 턴):** enum 상수 → Service/Interceptor throw → 스펙 에러 표 → (필요 시) `api-response.md` 예시. Harness: `.cursor/rules/harness-workflow.mdc` ⛔ ErrorCode 절.
+
+### 교차관심사 (AOP · Interceptor)
+
+| 메커니즘 | 어노테이션 | 역할 |
+|----------|------------|------|
+| Spring AOP | `@TripActivity` | L1 성공 후 `last_activity_at` touch (`TripActivityAspect`) |
+| Interceptor | `@TripMemberOnly` / `@TripOwnerOnly` | 멤버·방장·RESPONDED·`canEnterRoom` (`TripAuthorizationInterceptor`) |
+| ArgumentResolver | `@AuthorizedUser` | JWT → `UUID userId` |
+
+- L1 touch 대상 public 메서드에 `@TripActivity` — create는 엔티티 초기값. 수동 `touchLastActivity()` 호출 금지.
+- 신규 join만 touch — idempotent 재접속은 `@TripActivity` 없는 경로 (`TripJoinService` 주석).
+- Draft(#13) 추천 API는 stub에 `@TripActivity`만 두고, ErrorCode는 **구현 착수 시** 추가.
 
 ## Entity Conventions
 

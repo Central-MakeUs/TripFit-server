@@ -1,0 +1,48 @@
+---
+description: Wave Must/Nice/Out · [미정]#2 · 일정·기간 용어
+alwaysApply: true
+---
+
+# Harness — Wave · 용어 · [미정]
+
+코어 STOP·코딩 흐름: `harness-workflow.mdc`
+
+## `[미정]` chore 트래커 — [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)
+
+기획·스펙·BR에서 **아직 확정하지 않은 `[미정]`** 은 기능 Feat로 쪼개지 말고 **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** (`[Chore] 기획·스펙 [미정] 사항 모음`)에 모은다.
+
+| 할 일 | 규칙 |
+|-------|------|
+| 새 `[미정]` 생김 | 문서(스펙·BR·ERD 등)에 `[미정]` 표기 **+** `#2` 본문 Must 체크리스트에 항목 추가 (`gh issue edit`) |
+| 기획 확정 | 문서 amend → `#2` 해당 항목 `[x]`(+결정·날짜) → 필요 시 **별도 Feat**로 구현 |
+| 브랜치 | `#2`를 `feat/2-...` 구현 타깃으로 **쓰지 않음** (메타 트래커) |
+
+**금지:** `[미정]`을 묻지 않고 임의 확정해 구현·커밋 · `#2`에만 적고 문서 `[미정]`을 빼먹기
+
+## ⛔ Wave Must / Nice / Out · 용어 (단정 금지)
+
+에이전트가 “Must다 / Nice다 / Out이다”를 **Backlog 없이** 단정하지 않는다. 분류 SSOT는 Wave Backlog Issue(`#29`~`#32`).
+
+| 용어 | 의미 | SSOT |
+|------|------|------|
+| **이슈 `## Must Have`** | **그 이슈**를 끝내는 체크리스트 | 해당 Feature Issue |
+| **Wave Must** | 해당 Wave **DoD에 필수** | Backlog **Must** 섹션 |
+| **스펙 `MVP: In scope`** | 제품 범위에 들어감 — **Wave Must 자동 아님** | Must로 쓰려면 Backlog Must에 **명시** |
+| **Nice** | `wave:N`이지만 DoD **불필요** | Backlog **Nice** + 이슈 비고 `분류: Wave N Nice` |
+| **Out** | **이 Wave에서 안 함** (보류·다음 Wave·안 함) | Backlog **Out** — Nice와 **혼용 표기 금지** (`Nice / Out` 금지) |
+
+**금지**
+
+- Backlog에 없는 이슈를 Wave Must/Nice라고 말함
+- `MVP: In scope`만 보고 Wave Must로 취급
+- Nice와 Out을 한 칸에 섞어 씀 (`#19`/`#20` 사고)
+
+## 일정·기간 용어 (혼동 금지 — glossary SSOT)
+
+| 용어 | 의미 | 비고 |
+|------|------|------|
+| **희망 기간** | `trip.startRange`~`endRange` | 추천·조율 탐색 범위 |
+| **조회 윈도우** | 여행방 일정 calendar 조회 가능 구간 (#37) | 희망 기간과 **별 축** · X1 앵커는 Approved 전 `[미정]` |
+| **A1 (730일)** | 본인 `users/schedule/calendar` **요청 구간 길이** 상한 (#17) | 조회 윈도우와 **의미 다름** |
+
+상세: [`docs/product/development-wave.md`](../../docs/product/development-wave.md) · [`docs/product/glossary.md`](../../docs/product/glossary.md)

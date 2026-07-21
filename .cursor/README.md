@@ -13,8 +13,10 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 ├── hooks/                 ← 훅 실행 스크립트
 │   └── block-dangerous.sh
 ├── rules/                 ← 상황별 AI 규칙 (.mdc)
-│   ├── harness-workflow.mdc
-│   ├── superpowers-workflow.mdc
+│   ├── harness-workflow.mdc      # ⛔ STOP · Before/While/After (코어)
+│   ├── harness-wave.mdc          # Wave Must/Nice/Out · [미정]#2 · 일정 용어
+│   ├── harness-follow-up.mdc     # 후속 제안 · Defer · ERD 제안
+│   ├── superpowers-workflow.mdc  # Superpowers 스킬 매핑
 │   ├── spring-boot-java.mdc
 │   ├── figma-product.mdc
 │   ├── client-platform.mdc
@@ -41,22 +43,34 @@ Cursor가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 A
 
 `.mdc` = Markdown + YAML frontmatter. Cursor 규칙 피커에 `description`이 표시됩니다.
 
+### Always-on (하네스 · Superpowers)
+
+| 파일 | 요약 | SSOT 범위 |
+|------|------|-----------|
+| `harness-workflow.mdc` | ⛔ 문서 정합 · ErrorCode/AOP · DB · 레거시 · Before/While/After | **코어 STOP·코딩 흐름** |
+| `harness-wave.mdc` | Wave Must/Nice/Out 단정 금지 · `[미정]`→#2 · 희망기간/조회윈도우/A1 | Wave·용어 |
+| `harness-follow-up.mdc` | 💡 후속 제안 · ✅ Defer 이슈 분리 · 💡 ERD 적극 제안 | 완료 후·범위 미루기 |
+| `superpowers-workflow.mdc` | 스킬 트리거 · harness 우선순위 | Superpowers 연동 |
+
+우선순위: `harness-workflow` ⛔ > specify > Superpowers > 일반 관례
+
+### File-scoped
+
 | 파일 | `alwaysApply` | glob | 요약 |
 |------|---------------|------|------|
-| `harness-workflow.mdc` | ✅ true | — | 계획 → 승인 → 구현 → 검증 · **레거시 삭제** · **ERD 적극 제안** · 후속 제안 · **`[미정]` → [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** |
-| `superpowers-workflow.mdc` | ✅ true | — | Superpowers 스킬 트리거·하네스 우선순위 |
-| `spring-boot-java.mdc` | false | `**/*.java` | 레이어·enum·Entity·OpenAPI JWT·API·예외·**주석(Comments)** 컨벤션 |
-| `figma-product.mdc` | false | domain, service, specs | 도메인·BR·와이어프레임 (API 계약은 client-platform) |
-| `client-platform.mdc` | false | controller, service, config, specs | React 앱·스토어·API·인증 (도메인은 figma-product) |
-| `deployment.mdc` | false | yml, Docker, domain, deploy | 배포 가드레일 — 절차는 deploy/README SSOT |
+| `spring-boot-java.mdc` | false | `**/*.java` | 레이어·enum·Entity·**ErrorCode·AOP**·OpenAPI JWT·주석 |
+| `figma-product.mdc` | false | domain, service, specs | 도메인·BR·와이어프레임 |
+| `client-platform.mdc` | false | controller, service, config, specs | React 앱·스토어·API·인증 |
+| `deployment.mdc` | false | yml, Docker, domain, deploy | 배포 가드레일 — 절차는 `deploy/README.md` |
 | `testing.mdc` | false | `**/*Test.java` | JUnit 5·프로필·테스트 네이밍 |
 
-### 규칙 추가 가이드
+### 규칙 추가·분리 가이드
 
-1. **한 규칙 = 한 관심사** (50줄 이내 권장)
-2. 전역 원칙 → `alwaysApply: true`
-3. 파일 타입별 → `globs` + `alwaysApply: false`
-4. 반복되는 실수가 있으면 해당 규칙 파일에 짧게 추가
+1. **한 규칙 = 한 관심사** (코어 하네스 ~120줄, 형제 ~70줄 권장)
+2. 전역 STOP·코딩 흐름 → `harness-workflow` (`alwaysApply: true`)
+3. Wave/용어 → `harness-wave` · 후속/Defer/ERD → `harness-follow-up` (**중복 금지**, 링크만)
+4. 파일 타입별 → `globs` + `alwaysApply: false`
+5. 반복 실수 → 해당 규칙에 짧게 추가
 
 ## Skills
 
@@ -106,7 +120,7 @@ docs/README.md     → 기획·아키텍처·스펙 문서 인덱스
 deploy/README.md   → Docker·EC2 배포
 .dev/README.md     → 임시 세션 로그 (장기 문서는 docs/로)
 .cursor/rules/     → 어떻게 코딩·배포·검증하는지 (행동 규칙)
-  harness-workflow.mdc, superpowers-workflow.mdc
+  harness-workflow / harness-wave / harness-follow-up / superpowers-workflow
 .cursor/skills/    → 큰 작업의 단계별 절차 (specify = 스펙 SSOT)
 docs/specs/        → 기능별 설계 산출물 (specify 스킬 결과)
 ```
@@ -116,5 +130,7 @@ docs/specs/        → 기능별 설계 산출물 (specify 스킬 결과)
 - [ ] 클라이언트·스토어 전제 변경 시 `docs/product/platform.md` + `client-platform.mdc` 동기화
 - [ ] 새 도메인 enum·상태 추가 시 `figma-product.mdc` 또는 glossary 동기화
 - [ ] ddl-auto·프로필 변경 시 `docs/architecture.md` + `deployment.mdc` 동기화
+- [ ] Wave/`[미정]`/용어 규칙 변경 → `harness-wave.mdc`만 (workflow에 중복 금지)
+- [ ] 후속·Defer·ERD 제안 규칙 변경 → `harness-follow-up.mdc`만
 - [ ] 반복되는 코드 리뷰 코멘트 → 해당 `rules/*.mdc`에 한 줄 규칙으로 승격
 - [ ] 위험 명령 패턴 추가 필요 시 `hooks/block-dangerous.sh` + `hooks.json` matcher 동시 수정

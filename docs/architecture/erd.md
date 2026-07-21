@@ -245,7 +245,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
 
-**제약:** `duration_days`가 있을 때 `duration_days` ≤ `end_range - start_range + 1` (BR-TRIP-008). **당일치기(0박 1일) 허용 여부 `[미정]`** → [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)
+**제약:** `duration_days`가 있을 때 `duration_days` ≤ `end_range - start_range + 1` (BR-TRIP-008). **당일치기(0박 1일) 허용** — `duration_days=1` (API `durationNights=0`) · [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2) 확정 (2026-07-21).
 
 ### `trip_member`
 

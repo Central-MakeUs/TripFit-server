@@ -120,15 +120,15 @@ HTTP `400 Bad Request` + Body:
 
 ## HTTP Status 사용 기준
 
-| 상황 | HTTP Status | `code` 예시 |
-|------|-------------|-------------|
+| 상황 | HTTP Status | `code` 예시 (구현 SSOT) |
+|------|-------------|-------------------------|
 | 조회 성공 | 200 OK | (생략 가능) 또는 `COMMON_SUCCESS` |
 | 생성 성공 | 201 Created | `COMMON_SUCCESS` |
-| 잘못된 요청·검증 실패 | 400 Bad Request | `INVALID_INPUT` |
-| 인증 실패 | 401 Unauthorized | `UNAUTHORIZED`, `LOGIN_REQUIRED`, `TOKEN_EXPIRED` |
-| 권한 없음 | 403 Forbidden | `FORBIDDEN` |
-| 리소스 없음 | 404 Not Found | `*_NOT_FOUND` |
-| 충돌 (중복·상태 불가) | 409 Conflict | `*_CONFLICT` |
+| 잘못된 요청·검증 실패 | 400 Bad Request | `INVALID_INPUT`, `AUTH_INVALID_REQUEST`, `CANNOT_REMOVE_OWNER` |
+| 인증 실패 | 401 Unauthorized | `AUTH_INVALID_TOKEN`, `AUTH_EXPIRED`, `AUTH_INVALID_REFRESH` |
+| 권한 없음 | 403 Forbidden | `AUTH_FORBIDDEN`, `TRIP_FORBIDDEN`, `TRIP_ACCESS_DENIED`, `PROFILE_NAME_REQUIRED`, `SCHEDULE_*` |
+| 리소스 없음 | 404 Not Found | `TRIP_NOT_FOUND`, `INVITE_CODE_NOT_FOUND`, `REGULAR_SCHEDULE_NOT_FOUND`, … |
+| 충돌 (중복·상태 불가) | 409 Conflict | `TRIP_NOT_ONGOING`, `TRIP_ALREADY_CONFIRMED`, `TRIP_MEMBER_FULL`, … |
 | 서버 오류 | 500 Internal Server Error | `INTERNAL_ERROR` |
 
 성공·실패 판단은 **`response.ok`** / HTTP status. Body의 `code`는 **세부 분기**용.
@@ -136,10 +136,10 @@ HTTP `400 Bad Request` + Body:
 ```ts
 // 프론트 분기 예 (합의용)
 switch (body.code) {
-  case 'LOGIN_REQUIRED':
+  case 'AUTH_INVALID_TOKEN':
     // 로그인 이동
     break;
-  case 'TOKEN_EXPIRED':
+  case 'AUTH_EXPIRED':
     // refresh
     break;
   case 'TRIP_NOT_FOUND':
@@ -151,8 +151,21 @@ switch (body.code) {
 ## `code` 네이밍
 
 - `SCREAMING_SNAKE_CASE`
-- 공통: `COMMON_SUCCESS`, `INVALID_INPUT`, `UNAUTHORIZED`, `FORBIDDEN`, `INTERNAL_ERROR`
-- 도메인: `{리소스}_{상황}` — 예: `TRIP_NOT_FOUND`, `TRIP_ALREADY_CONFIRMED`
+- 공통: `INVALID_INPUT`, `INTERNAL_ERROR` (`CommonErrorCode`)
+- 도메인: `{리소스}_{상황}` — 예: `TRIP_NOT_FOUND`, `AUTH_EXPIRED`
+- **구현 SSOT:** `{domain}/exception/*ErrorCode` enum. Draft 스펙 전용 코드는 구현 착수 전까지 enum에 넣지 않음.
+
+### 모듈별 ErrorCode (Implemented)
+
+| 모듈 | enum | 교차관심사 |
+|------|------|------------|
+| common | `CommonErrorCode` | `GlobalExceptionHandler` |
+| auth | `AuthErrorCode` | JWT Filter · `@AuthorizedUser` |
+| user | `UserErrorCode` | 온보딩·`canEnterRoom` · `@TripMemberOnly` 게이트 |
+| user/schedule | `ScheduleErrorCode` | — |
+| trip | `TripErrorCode` | `@TripActivity` AOP · `@TripMemberOnly`/`@TripOwnerOnly` Interceptor |
+
+상세 조건은 각 `docs/specs/` 에러 표. 상수 추가·변경 시 **같은 턴**에 enum + throw + 스펙 표 갱신 (`.cursor/rules/harness-workflow.mdc`).
 
 ## 백엔드 구현 가이드
 
@@ -186,6 +199,7 @@ com.tripfit.tripfit
 
 - `docs/specs/{feature}.md`에 성공·실패 JSON 예시 — **이 초안 기준, 합의 후 갱신**
 - springdoc은 첫 API 공개 시 envelope 반영
+- `*ErrorCode` enum·상수는 `@Schema(description)` 필수
 
 ## 클라이언트 참고안 (합의용 — 프론트 미구현)
 

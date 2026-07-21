@@ -12,7 +12,9 @@ AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되
 |--------|------|
 | [`AGENTS.md`](AGENTS.md) | **프로젝트 지도** — 무엇을 어디서 찾는지, 기술 스택, 금기사항 |
 | [`.cursor/README.md`](.cursor/README.md) | **에이전트 행동 규칙** — rules(`.mdc`) · skills · hooks 구조 |
-| [`.cursor/rules/harness-workflow.mdc`](.cursor/rules/harness-workflow.mdc) | **최우선 규칙** — 문서·스펙·구현이 어긋나면 구현 중단·질문 |
+| [`.cursor/rules/harness-workflow.mdc`](.cursor/rules/harness-workflow.mdc) | **최우선 STOP** — 문서·스펙 정합 · ErrorCode/AOP · DB · 레거시 |
+| [`.cursor/rules/harness-wave.mdc`](.cursor/rules/harness-wave.mdc) | Wave Must/Nice/Out · `[미정]`→#2 · 일정·기간 용어 |
+| [`.cursor/rules/harness-follow-up.mdc`](.cursor/rules/harness-follow-up.mdc) | 후속 제안 · Defer · ERD 적극 제안 |
 | [`.cursor/skills/specify/SKILL.md`](.cursor/skills/specify/SKILL.md) | **승인 게이트** — 큰 변경은 스펙 작성 → 승인 후 구현 |
 | [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
 

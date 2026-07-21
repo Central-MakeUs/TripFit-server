@@ -70,4 +70,8 @@ public class TripService {
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
     return tripMemberQueryService.getMemberScheduleCalendar(tripId, userId);
   }
+
+  public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
+    return tripCommandService.removeMember(tripId, ownerId, targetUserId);
+  }
 }

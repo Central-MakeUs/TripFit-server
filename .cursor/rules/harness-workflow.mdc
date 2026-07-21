@@ -1,174 +1,117 @@
 ---
-description: 계획·승인·실행·검증 워크플로우
+description: 하네스 코어 — STOP·코딩 흐름 (Wave/후속은 형제 규칙)
 alwaysApply: true
 ---
 
 # Harness Workflow
 
-## ⛔ 최우선 — 문서·구현 정합 (모든 규칙보다 우선)
+**형제 규칙 (내용 분리 SSOT):** `harness-wave.mdc` · `harness-follow-up.mdc` · `superpowers-workflow.mdc`  
+Java·ErrorCode 상세: `spring-boot-java.mdc` · Git: `.github/CONTRIBUTING.md`
 
-**이 섹션은 아래 모든 단계·다른 Cursor 규칙·일반 코딩 관례보다 항상 우선한다.**
-구현·기본값 변경·커밋 전에 반드시 확인한다. **위반 시 작업을 중단하고 사용자에게 질문한다.**
+## ⛔ STOP (모든 규칙보다 우선)
+
+구현·기본값 변경·커밋 전 확인. **위반 시 중단·사용자 질문.**
+
+### 1. 문서·구현 정합
 
 1. **문서·스펙·결정 vs 구현** — `docs/specs/`(Approved), `docs/decisions/`(확정), `docs/product/`, `docs/architecture.md`, `deploy/README.md`와 다른 TTL·API 계약·enum·한도·env 이름·패키지 경로를 **조용히 맞추지 않는다**.
-2. **문서 vs 문서** — PRD vs 스펙, 스펙 vs 와이어프레임, decisions vs architecture, 스펙 vs `.env.example`, 문서 간 **서로 다른 값·용어·경로**가 보이면 **한쪽을 임의 선택해 구현하지 않는다**. 충돌을 짧게 목록화해 사용자에게 확인 요청.
-3. **임의 개선·관례 적용 금지** — "더 나은 기본값", "업계 일반값", "코드가 간단해짐"만으로 문서와 다른 수치·구조를 바꾸지 않는다. 변경이 필요하면 **문서 amend 또는 사용자 명시 승인 후** 진행.
-4. **불확실하면 반드시 질문** — 가정을 숨기지 않는다. 질문 없이 진행한 선택은 **잘못된 작업**으로 간주한다.
+2. **문서 vs 문서** — PRD vs 스펙, 스펙 vs 와이어프레임, decisions vs architecture, 스펙 vs `.env.example` 등 **서로 다른 값·용어·경로**면 한쪽을 임의 선택하지 말고 충돌을 짧게 목록화해 확인 요청.
+3. **임의 개선 금지** — "더 나은 기본값", "업계 일반값", "코드가 간단해짐"만으로 문서와 다른 수치·구조를 바꾸지 않는다. 변경 시 **문서 amend 또는 사용자 명시 승인**.
+4. **불확실하면 질문** — 가정을 숨기지 않는다. 질문 없이 진행한 선택은 **잘못된 작업**.
 
-**절대 하지 말 것:** 문서와 다른 access/refresh TTL, API 필드, 에러 코드, env 키 이름을 에이전트가 임의로 정해 구현·커밋.
+**절대 금지:** 문서와 다른 access/refresh TTL, API 필드, 에러 코드, env 키를 임의 구현·커밋. **에러 코드·`@TripActivity`·권한 어노테이션을 “다음 커밋에” 미루기.**
 
-## ⛔ DB 스키마 — 상용 데이터 없음 (마이그레이션 금지)
+### 2. ErrorCode · AOP/Interceptor — 같은 턴 즉시 갱신
 
-**현재는 개발(dev) 단계이며 상용(운영) 보존 데이터가 없다.** 스키마·컬럼·PK 변경 시:
+API·BR 실패 케이스·권한 게이트·`last_activity_at` touch를 **추가·변경하면 같은 PR·같은 턴**에 끝낸다. “나중에” 금지.
 
-1. **Flyway / Liquibase / `V*__*.sql` / 데이터 보존 마이그레이션 코드를 작성·커밋하지 않는다.**
-2. 스키마 SSOT는 **JPA 엔티티(최신 형태 하나)** + Hibernate `ddl-auto` (`docs/architecture.md`).
-3. 로컬·dev DB는 **폐기·재생성**해도 된다 (`docker compose down -v` 등). orphan 컬럼·구 스키마 호환 레이어를 남기지 않는다.
-4. 스펙·주석에 “나중에 Flyway V2 append” 식의 **마이그레이션 예정 코드/파일**을 추가하지 않는다. prod 데이터 보존이 필요해지면 **그때** decisions + 마이그레이션 도입을 별도 결정한다.
+| 변경 | 같은 턴에 필수 |
+|------|----------------|
+| 새 실패 분기·HTTP/`code` | `{Domain\|Feature}ErrorCode` + `TripFitException` throw + **스펙 에러 표** + `@Schema` |
+| L1 touch ([`trip-last-activity-at.md`](../../docs/specs/trip-last-activity-at.md)) | public 유스케이스 `@TripActivity` (create는 엔티티 초기값) |
+| 멤버/방장 전용 API | `@TripMemberOnly` / `@TripOwnerOnly` + Interceptor 계약 유지 |
+| 폐기된 `code`·게이트 | enum·throw·스펙·Swagger **삭제** (아래 레거시 절) |
 
-## ⛔ 레거시·정책 불일치 코드 제거 (dev · 호환 레이어 금지)
+**금지:** throw/`code`만 넣고 enum·스펙 미갱신 · touch인데 `@TripActivity` 누락(또는 수동 `touchLastActivity` 재도입) · Draft 전용 코드를 Approved 전 enum에 미리 넣기 · Filter/Interceptor에서 envelope와 다른 ad-hoc JSON
 
-**현행 Approved 스펙·BR·decisions·구현 계약과 다른 코드·경로·문서를 “호환용”으로 남기지 않는다.** 상용 데이터·구 클라 마이그레이션 부담이 없다.
+SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response.md) · `spring-boot-java.mdc` ErrorCode·AOP 절
 
-1. **삭제 대상:** 폐기 API/path · 정책상 폐기 enum/필드 · 구 스키마 매핑 · 호환 if 분기 · stale `@Schema`/`//`/`docs` 계약 · “나중에 지울” TODO만 남은 잔존물
-2. **삭제 시점:** 정책 amend 구현 **같은 PR**에서 제거. 관련 작업·점검 중 발견해도 **정책 SSOT에 맞춰 삭제** (스펙 **문서 간** 충돌이면 최우선 절에 따라 질문)
-3. **하지 않음:** 구 클라/구 DB 호환 어댑터 · orphan 컬럼 유지 · deprecated를 “혹시 몰라” 방치
-4. **요청 밖 dead code:** 정책과 무관한 dead code는 언급만. **정책 불일치 레거시는 이 절이 우선** (아래 After Coding dead-code 조항보다 강함)
+### 3. DB 스키마 — 마이그레이션 금지 (상용 보존 데이터 없음)
 
-## ERD 적극 제안 (스키마는 고정이 아님)
+1. Flyway / Liquibase / `V*__*.sql` / 데이터 보존 마이그레이션 **작성·커밋 금지**.
+2. 스키마 SSOT = **JPA 엔티티(최신 하나)** + Hibernate `ddl-auto` (`docs/architecture.md`).
+3. 로컬·dev DB **폐기·재생성** 허용 (`docker compose down -v` 등). orphan·구 스키마 호환 레이어 금지.
+4. “나중에 Flyway V2” 식 예정 코드/파일·주석 추가 금지. prod 보존이 필요해지면 **그때** decisions + 마이그레이션 별도 결정.
 
-dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 언제든 바뀔 수 있다.** “ERD에 있으니 못 바꿈”으로 더 나은 모델을 숨기지 않는다.
+### 4. 레거시·정책 불일치 코드 제거 (호환 레이어 금지)
 
-1. **언제:** Entity·API·BR 작업 중, Must Have 완료 후 후속 제안, 또는 사용자가 ERD/스키마를 물을 때
-2. **무엇을:** 컬럼 위치·nullable·상태 표현(enum vs 시각)·인덱스·예약어 rename·파생→저장 전환 등 — **아쉬운 점 → 권장 형태 → (선택) 스펙 amend**를 짧게
-3. **적용:** 사용자 승인 또는 Approved 스펙이 스키마를 바꾸면 **엔티티 + `erd.md`를 최신 하나**로 맞춘다 (Flyway·호환 레이어 금지 — 위 DB 절)
-4. **금지:** 제안 없이 임시/중복 컬럼 누적 · ERD drift를 코드 주석으로만 방치
+현행 Approved 스펙·BR·decisions·구현 계약과 다른 코드·경로·문서를 “호환용”으로 남기지 않는다.
+
+1. **삭제:** 폐기 API/path · 정책상 폐기 enum/필드 · 구 스키마 매핑 · 호환 if · stale `@Schema`/`docs` · “나중에 지울” TODO 잔존물
+2. **시점:** 정책 amend 구현 **같은 PR**. 점검 중 발견해도 정책 SSOT에 맞춰 삭제 (스펙 **문서 간** 충돌이면 §1에 따라 질문)
+3. **하지 않음:** 구 클라/DB 호환 어댑터 · orphan 컬럼 · deprecated 방치
+4. **요청 밖 dead code:** 정책과 무관하면 언급만. **정책 불일치 레거시는 이 절이 우선**
 
 ## 작업 분류 (시작 전 30초)
 
-1. **`docs/product/development-wave.md`** 에서 **활성 Wave·Must** 확인 · 요약 **`docs/product/waves.md`**
-2. **GitHub 이슈** — 작업 범위·완료 기준이 있는 이슈 확인 또는 생성 (**브랜치명에 쓸 `#n` 확정**)
-3. DB·인증·3파일+ 변경이면 `specify` 스킬 → `docs/specs/` 작성 → **승인 후** 구현
-4. 그 외는 `AGENTS.md` + 관련 `docs/product/` 확인 후 바로 구현
+1. `docs/product/development-wave.md` 활성 Wave·Must · 요약 `docs/product/waves.md`
+2. GitHub 이슈 — 범위·완료 기준 확인/생성 (**브랜치용 `#n` 확정**)
+3. DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현
+4. 그 외 → `AGENTS.md` + 관련 `docs/product/` 후 바로 구현
 
-### `[미정]` chore 트래커 — [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)
+**Wave / `[미정]` / 일정 용어:** `harness-wave.mdc` (단정 금지 · #2 트래커)
 
-기획·스펙·BR에서 **아직 확정하지 않은 `[미정]`** 은 기능 Feat로 쪼개지 말고 **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** (`[Chore] 기획·스펙 [미정] 사항 모음`)에 모은다.
+**브랜치:** `main`에서 `{type}/{issue-number}-{description}` — 이슈 번호 생략 금지. SSOT: [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)
 
-| 할 일 | 규칙 |
-|-------|------|
-| 새 `[미정]` 생김 | 문서(스펙·BR·ERD 등)에 `[미정]` 표기 **+** `#2` 본문 Must 체크리스트에 항목 추가 (`gh issue edit`) |
-| 기획 확정 | 문서 amend → `#2` 해당 항목 `[x]`(+결정·날짜) → 필요 시 **별도 Feat**로 구현 |
-| 브랜치 | `#2`를 `feat/2-...` 구현 타깃으로 **쓰지 않음** (메타 트래커) |
-
-**금지:** `[미정]`을 묻지 않고 임의 확정해 구현·커밋 · `#2`에만 적고 문서 `[미정]`을 빼먹기
-
-**브랜치 네이밍 (필수):** `main`에서 `{type}/{issue-number}-{description}` 분기 — **이슈 번호 생략 금지**. SSOT: [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md) (`feat/12-trip-room-create` 등).
-
-**스펙 신호:** DB 스키마 변경, 3개 이상 파일, BR-* 영향, 프로필/배포 변경, **인증·푸시·딥링크·결제** 등 클라이언트 연동 API.
+**스펙 신호:** DB 스키마, 3파일+, BR-*, 프로필/배포, **인증·푸시·딥링크·결제** 등 클라 연동 API
 
 ## Before Coding
 
 1. `AGENTS.md` → `docs/architecture.md` → `docs/product/development-wave.md` → `docs/product/waves.md` → `docs/product/platform.md` → `docs/decisions/002-domain-split-vercel-api.md` → `docs/product/mvp.md`
-2. 스펙 필요 시 Plan 모드 또는 `specify` 스킬 → **사용자 승인 후** 구현
-3. **가정을 명시**하고, 해석이 여러 개면 조용히 고르지 말고 질문. 더 단순한 방법이 있으면 말한다.
-4. 모호한 요구·충돌하는 문서 → **최우선 규칙에 따라 질문 후 진행** (구현 시작 금지)
-5. 구현 전 변경 파일 목록을 머릿속으로 확정 (drive-by 리팩터링 금지)
-6. **`main`에서 `{type}/{issue-number}-{description}` 브랜치 분기** (이슈 번호 없는 `feat/foo-bar` 금지)
-7. 다단계 작업은 `1. [단계] → verify: [확인]` 형태로 계획을 짧게 적는다
+2. 스펙 필요 시 Plan 또는 `specify` → **사용자 승인 후** 구현
+3. 가정 명시 · 해석이 여러 개면 질문 · 더 단순한 방법 있으면 말하기
+4. 모호·문서 충돌 → **STOP §1** (구현 시작 금지)
+5. 변경 파일 목록 확정 (drive-by 리팩터 금지)
+6. **`main`에서 `{type}/{issue-number}-{description}` 분기**
+7. 다단계: `1. [단계] → verify: [확인]`
 
 ## While Coding
 
-- **요청 범위만** 수정 — 인접 코드·주석·포맷 "개선" 금지, 깨지지 않은 것 리팩터 금지
-- 요청 밖 기능·단일 사용 추상화·불필요한 설정 추가 금지
-- **최우선 규칙 재확인** — 스펙·문서와 다른 수치·계약·env를 코드에 넣지 않음
-- 기존 스타일 유지 (Gradle·탭 인덴트·네이밍). 내 변경으로 생긴 unused import/변수만 정리
-- 패키지: `com.tripfit.tripfit` — 도메인 기반 레이어드 (`{domain}/controller|dto|service|domain|repository|client`, 공통 `common/`). 상세: `.cursor/rules/spring-boot-java.mdc`
-- **Entity·DTO·enum 추가/수정 시** `@Schema(description)` 필수 — 클래스·필드·enum 상수마다. **DB 없는 파생 필드**는 `@Schema` + 계산 Service·Repository 주석(`.cursor/rules/spring-boot-java.mdc` § 파생·조회 시 계산 필드). 닫힌 집합은 Java enum 분리. JWT API는 `@Operation` + `bearer-jwt`(상세: `.cursor/rules/spring-boot-java.mdc`)
-- 핵심 로직 변경 시 `./gradlew test` 실행
-- 변경한 모든 줄은 사용자 요청에 직접 연결되어야 한다
+- 요청 범위만 · 인접 “개선”·깨지지 않은 리팩터 금지
+- 요청 밖 기능·단일 사용 추상화·불필요 설정 금지
+- STOP 재확인 — 스펙과 다른 수치·계약·env 금지
+- **ErrorCode·AOP** — 실패·touch·권한 변경 시 **같은 턴** (STOP §2)
+- 기존 스타일 유지. 내 변경으로 생긴 unused만 정리
+- 패키지·Entity·DTO·enum·JWT `@Operation`: `spring-boot-java.mdc`
+- 핵심 로직 변경 시 `./gradlew test`
+- 변경한 모든 줄은 사용자 요청에 직접 연결
 
 ## After Coding
 
-- 변경 요약 + 검증 방법(`./gradlew test` 등)을 사용자에게 전달
-- 스펙이 있었다면 완료 기준 체크리스트 대조
-- **API 추가·변경 요청 시:** `docs/`(스펙·`architecture/`·관련 `decisions/`·`docs/README.md` 인덱스) 동기화 + **관련 GitHub 이슈** 본문·완료 기준 갱신 (`gh issue view`로 범위 확인 후 `gh issue edit`). 구현만 하고 문서·이슈를 빼먹지 않는다.
-- **PR 생성·갱신 전:** 연결 이슈(`Closes #n`)·PR 본문의 체크리스트를 구현·`./gradlew test` 결과와 대조한다. 완료된 항목은 `[x]`로 갱신 (`gh issue edit`, `gh pr edit`). 수동 검증·미구현·`[제안]`·wave 밖 항목은 체크하지 않는다.
-- 커밋·PR 제안 시: `.github/CONTRIBUTING.md` — `{Type}: {한글}` (Type 대문자), base `main`, **Create a merge commit** (Squash merge 금지)
-- **커밋 요청 시:** 변경을 **주제별로 나눠 최대 3개** 커밋으로 만든다 (예: 구현 / 테스트 / 문서·하네스). 한 주제에 묶일 수 있으면 1개로 충분. 인위적 분할·의미 없는 쪼개기 금지
-- 같은 실수가 2회 이상이면 `.cursor/rules/` 추가를 **제안** (자동 추가는 하지 않음)
-- 요청 밖·**정책과 무관한** dead code는 삭제하지 말고 언급만. **현행 정책과 불일치하는 레거시**는 위 ⛔ 레거시 절에 따라 삭제
-- Entity·스키마 작업 후 **ERD 개선이 보이면** 위 ERD 적극 제안 절로 짧게 제안 (후속 제안 §에 포함 가능)
+- 변경 요약 + 검증 (`./gradlew test` 등)
+- 스펙 있으면 완료 기준 체크리스트 대조
+- **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`)
+- **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지
+- 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
+- **커밋 요청 시:** 주제별 **최대 3개** (구현/테스트/문서·하네스). 억지 분할 금지
+- 같은 실수 2회+ → `.cursor/rules/` 추가 **제안** (자동 추가 금지)
+- 요청 밖·정책 무관 dead code는 언급만. **정책 불일치 레거시 → STOP §4 삭제**
+- Entity·스키마 후 ERD 개선 → `harness-follow-up.mdc` 💡 ERD
+- Must Have급 완료 / 사용자 요청 시 후속 제안 → `harness-follow-up.mdc`
+- 「다른 이슈로」범위 미루기 → `harness-follow-up.mdc` ✅ Defer (**이슈만 만들고 끝내지 않음**)
 
-### 구현 후 후속 제안 (Follow-up)
+## 금지 (요약)
 
-**목적:** 이번 요청 범위는 끝냈지만, **다음 이슈·스펙·리팩터**로 넘길 설계·성능·구조 개선을 사용자에게 짧게 알린다. (구현 중 drive-by 리팩터 **금지**와 별개.)
-
-**언제 쓸지**
-
-| 조건 | 후속 제안 |
-|------|-----------|
-| 사용자가 「구현 후 최적화/제안 말해줘」 등 **명시 요청** | **필수** — `./gradlew test` 통과 후 응답 |
-| API·DB·3파일+ 변경 등 **Must Have급** 구현을 방금 완료 | **권장** — 완료 요약 **뒤**에 § 추가 |
-| 한 줄·단일 파일·버그 핫픽스 | 생략 가능 |
-
-**형식 (완료 보고와 분리)**
-
-- 제목: `## 후속 제안` (또는 동등한 한 줄 섹션)
-- **3~8개** bullet, 영향 큰 순
-- 각 bullet: **무엇이 아쉬운지** → **권장 방향** → (선택) wave 밖 / 별도 이슈 / 스펙 amend 필요
-- **이번 PR·커밋에 포함하지 않음** — 사용자 승인·이슈 확정 후 진행
-
-**점검 축 (해당할 때만 골라서)**
-
-| 축 | 예 |
-|----|-----|
-| **ERD·스키마** | 컬럼 위치·nullable·상태 표현 · 예약어 rename · **적극 제안** (스키마 고정 아님 · 마이그레이션 불요) |
-| **API 설계** | 쿼리 파라미터 vs 리소스 분리 · 조회 API의 부수 write · 이벤트별 `last_activity_at` 등 hook 누락 |
-| **DTO** | 목록 vs 상세 분리 · fat response · OpenAPI 계약과 프론트 필드 |
-| **쿼리·성능** | N+1 · batch fetch · 목록 pagination |
-| **패키지·레이어** | API 전용 enum 위치 · `*HomeService` 분리 |
-| **인터셉터·필터** | **필요할 때만** — 기존 `TripAuthorizationInterceptor`·`@TripMemberOnly` 패턴 우선. 단일 Controller 파싱·cross-cutting 로깅 정도는 converter/record로 충분하면 **인터셉터 추가 금지** |
-
-**금지**
-
-- 후속 제안을 핑계로 **같은 턴에** 스펙 밖 리팩터·추상화 구현
-- 「나중에 하면 좋겠다」만 나열하고 **근거·우선순위** 없이 장문
-- verification-before-completion(테스트·체크리스트) **대신** 제안만 하고 완료 선언
-
-**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.cursor/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — 위 After Coding과 동일).
-
-### 후속 작업 이슈 분리 (Defer)
-
-사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「wave 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** 아래를 **같은 턴**에 수행한다.
-
-1. **`docs/specs/{kebab-case}.md`** — Draft 스펙 작성 (`specify` 템플릿 축약 가능). Must Have·완료 기준·선행·wave·Out of Scope 포함
-2. **관련 Approved 스펙** — `deferred:` 헤더 또는 Out of Scope 표에 **스펙 경로 + `#n` 링크** 추가 · 본문에서 lazy/임시 구현을 **#n 위임**으로 명시
-3. **`docs/specs/README.md`** — wave 표·이슈 매핑에 행 추가
-4. **`gh issue create`** — 본문에 스펙 경로·선행 이슈·완료 기준
-5. **현재 구현** — 해당 범위 코드·Must 체크리스트에서 제거 또는 **최소 C(임시)** 로 두고 `#n`·스펙 URL 주석
-6. **사용자 보고** — 이슈 URL + 스펙 경로
-
-**금지:** 이슈만 생성하고 `docs/` 미작성 · Approved 스펙 amend 없이 lazy 동작만 남기기.
-
-## 금지 (AGENTS.md와 동일)
-
-- **이슈 번호 없는 브랜치명** (`feat/trip-room-api` 등) — `.github/CONTRIBUTING.md` `{type}/{issue-number}-{description}` 위반
-- **문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋** (최우선 규칙 위반)
-- `git push --force` (main/master), `rm -rf`, 운영 DB 파괴 명령
+- 이슈 번호 없는 브랜치명 — CONTRIBUTING 위반
+- 문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋 — STOP §1
+- `git push --force` (main/master), `rm -rf`, 운영 DB 파괴
 - `.env`·API 키를 코드·커밋에 포함
 
 ## 도메인·배포 (확정 — 재질문 금지)
 
 | 도메인 | 호스팅 | 이 repo |
 |--------|--------|---------|
-| `tripfit.online` | Vercel (프론트) | **없음** — `FRONTEND_IMAGE`·frontend 컨테이너 추가 금지 |
+| `tripfit.online` | Vercel (프론트) | **없음** — `FRONTEND_IMAGE`·frontend 컨테이너 금지 |
 | `api.tripfit.online` | EC2 Nginx + Spring Boot | `deploy/app/`, `deploy/nginx/` |
 
-- API base URL: `https://api.tripfit.online`
-- 상세: `docs/decisions/002-domain-split-vercel-api.md`, `deploy/README.md`
-
-## Superpowers
-
-- 진입·스킬 매핑: `.cursor/rules/superpowers-workflow.mdc`
-- ⛔ 문서·스펙 정합은 Superpowers보다 **본 파일 최우선** 섹션이 우선
+API: `https://api.tripfit.online` · SSOT: `docs/decisions/002-domain-split-vercel-api.md`, `deploy/README.md`

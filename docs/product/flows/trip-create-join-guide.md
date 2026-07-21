@@ -1,7 +1,7 @@
 # 여행방 생성·참여 — 플로우·정책·시나리오
 
 > SSOT 가이드 (대안 A · [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)).  
-> 계약: [`trip-room-api.md`](../../specs/trip-room-api.md) · [`trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) · 계획: [`2026-07-21-trip-schedule-confirm-joined.md`](../../superpowers/plans/2026-07-21-trip-schedule-confirm-joined.md)  
+> 계약: [`trip-room-api.md`](../../specs/trip-room-api.md) · [`trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) · [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)  
 > 짧은 요약: [`trip-create.md`](trip-create.md) · [`trip-join.md`](trip-join.md)
 
 ---
@@ -178,7 +178,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 일정 confirm | 해당 trip `JOINED` 멤버(방장) |
 | 메타 수정·삭제 | 방장 (JOINED 단계 허용 범위는 Open Q) |
 | Pin·상세·그룹 달력 | **`RESPONDED` + canEnterRoom** |
-| 참여자 내보내기 | Out (#20) |
+| 참여자 내보내기 | Nice (#20) |
 
 ### E. 초대 코드
 
@@ -279,7 +279,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 |------|------|
 | 설계 대안·Open Q | [`trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) |
 | JOINED 단계 초대·PATCH | 미정 |
-| join 전 미리보기 · 내보내기 · 푸시 · hold | #19 · #20 · #21 · #35 |
+| join 전 미리보기 · 내보내기 · 푸시 · hold | #19 **Out** · #20 **Nice** · #21 Wave3 · #35 Wave4 |
 | 이 문서를 정식 SSOT로 승격 | 스펙 Approved 후 현행 guide와 교체 |
 
 ---

@@ -12,6 +12,7 @@ import com.tripfit.tripfit.trip.dto.CreateTripResponse;
 import com.tripfit.tripfit.trip.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
+import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.RecommendationRepository;
@@ -45,6 +46,8 @@ class TripCommandService {
 
   private final TripJoinService tripJoinService;
 
+  private final TripMemberQueryService tripMemberQueryService;
+
   private final UserSummaryService userSummaryService;
 
   TripCommandService(
@@ -55,6 +58,7 @@ class TripCommandService {
       TripServiceSupport support,
       TripQueryService tripQueryService,
       TripJoinService tripJoinService,
+      TripMemberQueryService tripMemberQueryService,
       UserSummaryService userSummaryService) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
@@ -63,6 +67,7 @@ class TripCommandService {
     this.support = support;
     this.tripQueryService = tripQueryService;
     this.tripJoinService = tripJoinService;
+    this.tripMemberQueryService = tripMemberQueryService;
     this.userSummaryService = userSummaryService;
   }
 
@@ -229,6 +234,26 @@ class TripCommandService {
     // Pin 자동 해제는 #27 스케줄러 — 조회 API 부수 write 없음
     membership.applyPin(Boolean.TRUE.equals(request.pinned()));
     return tripQueryService.toDetail(membership.getTrip(), membership);
+  }
+
+  // 방장만 MEMBER soft delete. recommendation 미터치 (#20 #3 보류). 일정 row 유지.
+  @Transactional
+  @TripActivity(tripIdParam = "tripId")
+  public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
+    Trip trip = support.requireActiveTrip(tripId);
+    support.requireOwner(trip, ownerId);
+    support.requireOngoingForMutation(trip);
+
+    TripMember target =
+        tripMemberRepository
+            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, targetUserId)
+            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_MEMBER_NOT_FOUND));
+    if (target.getRole() == TripMemberRole.OWNER) {
+      throw new TripFitException(TripErrorCode.CANNOT_REMOVE_OWNER);
+    }
+
+    target.setDeletedAt(LocalDateTime.now());
+    return tripMemberQueryService.listMembers(tripId, ownerId);
   }
 
 }

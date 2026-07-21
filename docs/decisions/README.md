@@ -47,6 +47,21 @@
 - [ ] 
 ```
 
+## 현재 결정 목록
+
+| 파일 | 주제 |
+|------|------|
+| [`001-auth-mobile-token-verification.md`](001-auth-mobile-token-verification.md) | 모바일 소셜 토큰 서버 검증 |
+| [`002-domain-split-vercel-api.md`](002-domain-split-vercel-api.md) | `tripfit.online` / `api.tripfit.online` 분리 |
+| [`003-architecture-guide.md`](003-architecture-guide.md) | 도메인 레이어드 패키지 |
+| [`004-auth-token-rotation.md`](004-auth-token-rotation.md) | Refresh token rotation (wave 4) |
+| [`005-auth-social-verifier-strategy.md`](005-auth-social-verifier-strategy.md) | OAuth verifier 전략 |
+| [`006-profile-image-url-storage.md`](006-profile-image-url-storage.md) | 프로필 이미지 URL 저장 |
+| [`007-user-profile-onboarding.md`](007-user-profile-onboarding.md) | 온보딩·이름 |
+| [`008-trip-authorization-guard.md`](008-trip-authorization-guard.md) | `@TripMemberOnly` / `@TripOwnerOnly` |
+
+기능 스펙 인덱스: [`../specs/README.md`](../specs/README.md)
+
 ## Agent · 이슈와의 관계
 
 - Issue/PR 본문에 결정 전체를 붙이지 말고 **이 파일 링크**만 건다.

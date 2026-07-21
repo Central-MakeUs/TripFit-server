@@ -186,7 +186,7 @@ class TripServiceSupport {
   }
 
   // 1. 이름 길이 2. 기간·인원 3. 박/일 쌍(둘 다 null=미정) 4. days ≤ range (있을 때)
-  // 당일치기(0박1일) 허용 여부 [미정] — 관계식 nights==days-1 · days≥1 만 검증
+  // 당일치기(0박1일) 허용 — nights==days-1 · days≥1 · nights≥0 (#2 확정)
   void validateTripMeta(
       String name,
       LocalDate startRange,
@@ -214,7 +214,8 @@ class TripServiceSupport {
     }
   }
 
-  // 둘 다 null → null(미정). 둘 다 값 + nights==days-1 → days. 한쪽만·관계 불일치 → 400
+  // 둘 다 null → null(미정). 둘 다 값 + nights==days-1 + days≥1 + nights≥0 → days.
+  // 당일치기: nights=0, days=1 (#2). 한쪽만·관계 불일치·음수 박 → 400
   static Integer resolveDurationDays(Integer durationNights, Integer durationDays) {
     if (durationNights == null && durationDays == null) {
       return null;
@@ -222,6 +223,7 @@ class TripServiceSupport {
     if (durationNights == null
         || durationDays == null
         || durationDays < 1
+        || durationNights < 0
         || durationNights != durationDays - 1) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }

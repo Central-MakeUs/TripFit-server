@@ -11,6 +11,8 @@ alwaysApply: true
 harness-workflow ⛔ (문서·스펙 정합)  >  TripFit specify  >  Superpowers process skills  >  일반 코딩 관례
 ```
 
+Harness 형제: `harness-wave.mdc` (Wave·`[미정]`) · `harness-follow-up.mdc` (후속·Defer·ERD)
+
 ## 진입 (매 턴)
 
 1. **`using-superpowers`** — 응답·탐색·구현 **전** 적용 가능 스킬 확인
@@ -24,7 +26,8 @@ harness-workflow ⛔ (문서·스펙 정합)  >  TripFit specify  >  Superpowers
 | Approved 스펙 구현 (#12 등) | `executing-plans` (또는 단계별 구현) | 스펙·GitHub 이슈 완료 기준 |
 | 버그·테스트 실패 | `systematic-debugging` | `./gradlew test`로 재현 |
 | “완료/통과” 선언 전 | `verification-before-completion` | `./gradlew test` + 이슈·스펙 체크리스트 |
-| Must Have급 구현 완료 후 (또는 사용자 요청) | — | `harness-workflow` **구현 후 후속 제안** § |
+| Must Have급 구현 완료 후 (또는 사용자 요청) | — | `harness-follow-up.mdc` 💡 후속 제안 |
+| 「다른 이슈로」범위 미루기 | — | `harness-follow-up.mdc` ✅ Defer |
 | PR·머지 전 (요청 시) | `requesting-code-review` | `.github/CONTRIBUTING.md` |
 | 독립 작업 병렬 | `dispatching-parallel-agents` | Cursor `Task`/`explore`와 중복 시 택1 |
 
