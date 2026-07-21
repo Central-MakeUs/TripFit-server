@@ -4,10 +4,13 @@
 
 | 파일 | 설명 |
 |------|------|
-| `trip-create.md` | 방장 — 여행방 생성·초대 링크 |
-| `trip-join.md` | 참여자 — 링크/코드 진입·로그인·일정 제출 |
+| **`trip-create-join-guide.md`** | **생성·참여 상세 가이드** — JOINED→confirm (#39) |
+| `trip-create.md` | 방장 — 생성·confirm (단계 요약) |
+| `trip-join.md` | 참여자 — 링크·일정·`POST /join` (단계 요약) |
 | `schedule-edit.md` | 일정·근무/연차 수정 |
 | `trip-confirm.md` | 방장 — 추천 4모드·확정·취소 |
+
+**플로우 재설계:** [`docs/specs/trip-create-join-flow-redesign.md`](../../specs/trip-create-join-flow-redesign.md) · [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)
 
 ## 기획 메모 (NotebookLM)
 

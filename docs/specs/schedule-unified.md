@@ -81,15 +81,15 @@ user/schedule/
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
 | GET/PATCH | `/api/v1/users/schedule/personal` | 조회 / **upsert + `deletedDates`** (#22 Hidden **1단계 해제**) |
 | GET | `/api/v1/users/schedule/calendar` | effective 달력 · 최대 730일 (#17) · Hidden **1단계 해제** |
-| GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 effective · **#39 OpenAPI 공개** · ~~personal-summary~~ **삭제** |
+| GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 effective · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
 
-> 폐기: `/schedule/availability`, per-slot TBD, `note` · ~~BR-USER-006 regular 선행 403~~ (#22 D-BR006-5) · ~~`members/personal-summary`~~ (#39)
+> 폐기: `/schedule/availability`, per-slot TBD, `note` · ~~BR-USER-006 regular 선행 403~~ (#22 D-BR006-5) · ~~`members/personal-summary`~~
 
 ## 잔여
 
 - `uncertain=true`일 때 추천에서 슬롯 무시 여부 (#13) — calendar는 U1(슬롯 그대로 노출) 가정
-- ~~그룹 `members/schedule-calendar` OpenAPI Hidden~~ — **#39 공개 완료**
-- ~~`members/personal-summary`~~ — **#39 삭제 완료**
+- ~~그룹 `members/schedule-calendar` OpenAPI Hidden~~ — **공개 완료**
+- ~~`members/personal-summary`~~ — **삭제 완료**
 
 ## 변경 이력
 

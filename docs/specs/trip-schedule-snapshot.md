@@ -97,7 +97,7 @@ Flyway 금지 — 엔티티 + `ddl-auto`, 로컬 DB 리셋 ([`harness-workflow`]
 | **X8** | **추천 #13** | C1: live resolve 재사용 | TERMINATED·과거 방 추천/재조회 시 snapshot? | #13 Out 또는 “TERMINATED는 추천 불가”와 정합 |
 | **X9** | **CONFIRMED** | 일정 확정 후에도 live | 만료만 snapshot이면 CONFIRMED 중 전역 수정이 방 달력에 반영됨 | 제품: CONFIRMED도 freeze? 만료만? |
 | **X10** | **personal 전역** | personal도 user 전역 | snapshot에 personal 예외 포함 여부 | freeze 대상에 personal 포함 권장 (effective 전체) |
-| **X11** | **OpenAPI 공개** | `members/schedule-calendar` — **#39에서 Hidden 해제·공개** | snapshot은 그 API **읽기 동작** 변경 | 공개와 **독립**. #39 완료 후에도 snapshot(#38)은 별도 Approved 필요 |
+| **X11** | **OpenAPI 공개** | `members/schedule-calendar` — **Hidden 해제·공개** | snapshot은 그 API **읽기 동작** 변경 | 공개와 **독립**. Hidden 공개 완료 후에도 snapshot(#38)은 별도 Approved 필요 |
 | **X12** | **조회 윈도우 W1** | +2년 윈도우 | snapshot 저장량 | freeze 범위를 W1과 맞출지, 희망 `startRange`~`endRange`만 저장할지 결정 |
 
 ## 완료 기준

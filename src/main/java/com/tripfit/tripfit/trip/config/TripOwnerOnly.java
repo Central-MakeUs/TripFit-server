@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-// TripAuthorizationInterceptor: 방장 + canEnterRoom → 403 TRIP_FORBIDDEN / SCHEDULE_ENTRY_REQUIRED
+// TripAuthorizationInterceptor: 방장만 (JOINED 허용). RESPONDED·canEnterRoom 면제 — PATCH/DELETE (#39)
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TripOwnerOnly {

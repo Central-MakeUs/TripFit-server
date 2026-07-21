@@ -26,6 +26,24 @@ alwaysApply: true
 3. 로컬·dev DB는 **폐기·재생성**해도 된다 (`docker compose down -v` 등). orphan 컬럼·구 스키마 호환 레이어를 남기지 않는다.
 4. 스펙·주석에 “나중에 Flyway V2 append” 식의 **마이그레이션 예정 코드/파일**을 추가하지 않는다. prod 데이터 보존이 필요해지면 **그때** decisions + 마이그레이션 도입을 별도 결정한다.
 
+## ⛔ 레거시·정책 불일치 코드 제거 (dev · 호환 레이어 금지)
+
+**현행 Approved 스펙·BR·decisions·구현 계약과 다른 코드·경로·문서를 “호환용”으로 남기지 않는다.** 상용 데이터·구 클라 마이그레이션 부담이 없다.
+
+1. **삭제 대상:** 폐기 API/path · 정책상 폐기 enum/필드 · 구 스키마 매핑 · 호환 if 분기 · stale `@Schema`/`//`/`docs` 계약 · “나중에 지울” TODO만 남은 잔존물
+2. **삭제 시점:** 정책 amend 구현 **같은 PR**에서 제거. 관련 작업·점검 중 발견해도 **정책 SSOT에 맞춰 삭제** (스펙 **문서 간** 충돌이면 최우선 절에 따라 질문)
+3. **하지 않음:** 구 클라/구 DB 호환 어댑터 · orphan 컬럼 유지 · deprecated를 “혹시 몰라” 방치
+4. **요청 밖 dead code:** 정책과 무관한 dead code는 언급만. **정책 불일치 레거시는 이 절이 우선** (아래 After Coding dead-code 조항보다 강함)
+
+## ERD 적극 제안 (스키마는 고정이 아님)
+
+dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 언제든 바뀔 수 있다.** “ERD에 있으니 못 바꿈”으로 더 나은 모델을 숨기지 않는다.
+
+1. **언제:** Entity·API·BR 작업 중, Must Have 완료 후 후속 제안, 또는 사용자가 ERD/스키마를 물을 때
+2. **무엇을:** 컬럼 위치·nullable·상태 표현(enum vs 시각)·인덱스·예약어 rename·파생→저장 전환 등 — **아쉬운 점 → 권장 형태 → (선택) 스펙 amend**를 짧게
+3. **적용:** 사용자 승인 또는 Approved 스펙이 스키마를 바꾸면 **엔티티 + `erd.md`를 최신 하나**로 맞춘다 (Flyway·호환 레이어 금지 — 위 DB 절)
+4. **금지:** 제안 없이 임시/중복 컬럼 누적 · ERD drift를 코드 주석으로만 방치
+
 ## 작업 분류 (시작 전 30초)
 
 1. **`docs/product/development-wave.md`** 에서 **활성 Wave·Must** 확인 · 요약 **`docs/product/waves.md`**
@@ -67,7 +85,8 @@ alwaysApply: true
 - 커밋·PR 제안 시: `.github/CONTRIBUTING.md` — `{Type}: {한글}` (Type 대문자), base `main`, **Create a merge commit** (Squash merge 금지)
 - **커밋 요청 시:** 변경을 **주제별로 나눠 최대 3개** 커밋으로 만든다 (예: 구현 / 테스트 / 문서·하네스). 한 주제에 묶일 수 있으면 1개로 충분. 인위적 분할·의미 없는 쪼개기 금지
 - 같은 실수가 2회 이상이면 `.cursor/rules/` 추가를 **제안** (자동 추가는 하지 않음)
-- 요청 밖 dead code를 발견하면 삭제하지 말고 언급만 한다
+- 요청 밖·**정책과 무관한** dead code는 삭제하지 말고 언급만. **현행 정책과 불일치하는 레거시**는 위 ⛔ 레거시 절에 따라 삭제
+- Entity·스키마 작업 후 **ERD 개선이 보이면** 위 ERD 적극 제안 절로 짧게 제안 (후속 제안 §에 포함 가능)
 
 ### 구현 후 후속 제안 (Follow-up)
 
@@ -92,7 +111,7 @@ alwaysApply: true
 
 | 축 | 예 |
 |----|-----|
-| **ERD·스키마** | 컬럼 위치·nullable·기존 row backfill · effectiveStatus vs DB `status` |
+| **ERD·스키마** | 컬럼 위치·nullable·상태 표현 · 예약어 rename · **적극 제안** (스키마 고정 아님 · 마이그레이션 불요) |
 | **API 설계** | 쿼리 파라미터 vs 리소스 분리 · 조회 API의 부수 write · 이벤트별 `last_activity_at` 등 hook 누락 |
 | **DTO** | 목록 vs 상세 분리 · fat response · OpenAPI 계약과 프론트 필드 |
 | **쿼리·성능** | N+1 · batch fetch · 목록 pagination |

@@ -4,11 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "여행방 참여자 멤버십 상태")
 public enum TripMemberStatus {
-  /** @deprecated 신규 플로우 미사용 — create/join은 {@link #RESPONDED}만 INSERT (#22) */
-  @Deprecated
-  @Schema(description = "deprecated — 신규 미사용. 구 미확인 상태")
+  @Schema(description = "멤버 row 있음 · 이 방 일정 확인 미완료 (방장 create 직후). 방 입장 불가 (#39)")
   JOINED,
 
-  @Schema(description = "확인·가입 완료 (멤버 = RESPONDED)")
+  @Schema(description = "일정 확인·가입 완료 — 방 입장 가능 (canEnterRoom도 필요)")
   RESPONDED
 }

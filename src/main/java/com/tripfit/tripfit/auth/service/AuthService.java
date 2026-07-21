@@ -89,7 +89,8 @@ public class AuthService {
     refreshTokenService.delete(refreshTokenValue);
   }
 
-  // JWT userId → UserSummary — hasPreSchedule은 regular/personal EXISTS 파생 (D-JOIN-3, 일정 CRUD 후 me
+  // JWT userId → UserSummary — hasPreSchedule은 regular/personal EXISTS 파생 (D-JOIN-ENTRY, 일정 CRUD 후
+  // me
   // 재조회)
   @Transactional(readOnly = true)
   public UserSummaryResponse getCurrentUser(UUID userId) {

@@ -55,6 +55,10 @@ public class TripService {
     return tripCommandService.joinTrip(userId, request);
   }
 
+  public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) {
+    return tripCommandService.confirmSchedule(tripId, userId);
+  }
+
   public TripDetailResponse updatePin(UUID tripId, UUID userId, UpdateTripPinRequest request) {
     return tripCommandService.updatePin(tripId, userId, request);
   }

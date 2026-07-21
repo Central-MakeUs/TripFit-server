@@ -42,7 +42,8 @@ public class TripController {
     this.tripService = tripService;
   }
 
-  @Operation(summary = "여행방 생성", description = "방장 OWNER + inviteCode 발급. BR-USER-001 이름 필수")
+  @Operation(summary = "여행방 생성",
+      description = "방장 OWNER+JOINED + inviteCode. 일정 confirm 후 입장 (#39). BR-USER-001 이름 필수")
   @PostMapping
   ResponseEntity<ApiResponse<CreateTripResponse>> createTrip(
       @AuthorizedUser UUID userId,
@@ -95,12 +96,22 @@ public class TripController {
 
   @Operation(
       summary = "초대 링크로 참여",
-      description = "링크 URL의 inviteCode로 멤버 등록. 이미 참여 시 idempotent 200")
+      description = "링크 URL의 inviteCode로 멤버 등록(RESPONDED). 이미 RESPONDED면 idempotent 200. JOINED면 confirm 필요")
   @PostMapping("/join")
   ResponseEntity<ApiResponse<TripDetailResponse>> joinTrip(
       @AuthorizedUser UUID userId,
       @Valid @RequestBody JoinTripRequest request) {
     return ResponseEntity.ok(ApiResponse.of(tripService.joinTrip(userId, request)));
+  }
+
+  @Operation(
+      summary = "여행방 일정 확인 완료",
+      description = "JOINED → RESPONDED. Skip+0행 시 is_all_free. 이미 RESPONDED면 idempotent. 방 입장 전 필수 (#39)")
+  @PostMapping("/{tripId}/schedule/confirm")
+  ResponseEntity<ApiResponse<TripDetailResponse>> confirmSchedule(
+      @PathVariable UUID tripId,
+      @AuthorizedUser UUID userId) {
+    return ResponseEntity.ok(ApiResponse.of(tripService.confirmSchedule(tripId, userId)));
   }
 
   @TripMemberOnly

@@ -35,7 +35,7 @@ globs:
 - `globally_quoted_identifiers: true` **사용 금지** (TEXT quoting 등과 조합 시 DDL 실패 유발)
 - 스키마 drift 원인은 보통 **단일 설정이 아니라** TEXT quoting + 예약어(`user`, `rank`) + dialect + naming strategy **조합**
 - 예약어 컬럼: `@Column(name = "...")` (`rank` → `recommendation_rank`)
-- 테이블명 `user`: MySQL 예약어 — **향후 `users`/`member` 등으로 rename 검토** (기술 부채)
+- 테이블명: **`users`** (구 `user` — MySQL 예약어 회피). Java 엔티티는 `User`
 
 ## 검증
 

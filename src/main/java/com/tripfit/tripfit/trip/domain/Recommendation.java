@@ -67,8 +67,8 @@ public class Recommendation {
   @Column(columnDefinition = "TEXT")
   private String riskNote;
 
-  // [제안] 추천 디버깅·고도화용
-  @Schema(description = "추천 점수 (디버깅·고도화용)", nullable = true, example = "0.92")
+  // #13 추천 순위·동점 비교용 (trip-recommendation.md)
+  @Schema(description = "추천 점수 (#13 순위·동점 비교)", nullable = true, example = "0.92")
   @Column
   private Double score;
 

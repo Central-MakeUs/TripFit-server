@@ -1,26 +1,20 @@
 # 여행방 생성 플로우
 
-> NotebookLM 기획 자료 정리본.
+> 상세: [`trip-create-join-guide.md`](trip-create-join-guide.md) · [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)
 
-- **목적:** 방장이 새로운 여행 조율 방을 생성하고 참여자를 초대할 준비를 마침
+- **목적:** 방장이 여행방을 만들고 일정 확인 후 입장·초대 준비
 - **액터:** 방장(총대)
-- **사전 조건:** 서비스 로그인 및 프로필 이름 완료 (BR-USER-001)
+- **사전 조건:** 로그인 + 프로필 이름 (BR-USER-001)
 
 **단계:**
 
-1. 홈 화면에서 「여행방 신규 생성하기」 또는 「+」 클릭
-2. 여행방 이름 입력 (최대 **15자** — BR-TRIP-001)
-3. 여행 희망 기간(Calendar Range) 및 희망 여행 일수 선택 (BR-TRIP-008)
-4. 참여 인원 설정 (**1~10**, BR-TRIP-001)
-5. (선택) 여행지 입력 → `trip.destination` (BR-TRIP-001)
-6. (선택) 방장 본인 해당 기간 일정 입력
-7. 생성 완료 및 초대 링크 발급
+1. 홈에서 「여행방 신규 생성하기」
+2. 방 생성 폼 (이름·기간·일수·인원·선택 여행지)
+3. `POST /trips` → OWNER **`JOINED`** + inviteCode (`needsScheduleConfirm=true`)
+4. **정기→개별** 일정 확인 (수정/Skip) — `canEnterRoom`이어도 강제
+5. `POST /trips/{tripId}/schedule/confirm` → **`RESPONDED`**
+6. 방 상세 · 초대 공유
 
-**성공 종료 조건:** 여행방 상세(달력) 진입 및 초대 링크 발급
-
-**예외 / 분기:**
-
-- 필수 정보 누락 시 다음 단계 비활성화 (BR-TRIP-001)
-- 참여 인원(`member_count`) **도달 시** 신규 join 409 · 공유 UI alert (D8). `end_range` 경과(TERMINATED) 시 초대·신규 join 불가
+**예외:** confirm 전 이탈 → 재진입 시 일정 플로우. 상세 API는 `SCHEDULE_CONFIRM_REQUIRED`.
 
 **MVP 포함 여부:** In

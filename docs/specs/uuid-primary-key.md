@@ -50,7 +50,7 @@
 - SQL 마이그레이션 / 데이터 보존 마이그레이션 (harness 금지)
 - UUID v7 (시간순)
 - BINARY(16) 저장
-- 테이블 rename (`user` → `users` 등)
+- ~~테이블 rename (`user` → `users`)~~ — **반영 완료** (2026-07-21, `erd.md`)
 
 ## API / 인터페이스
 

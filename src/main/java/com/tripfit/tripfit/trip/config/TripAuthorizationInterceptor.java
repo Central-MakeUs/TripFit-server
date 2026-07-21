@@ -2,9 +2,12 @@ package com.tripfit.tripfit.trip.config;
 
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.trip.domain.TripMember;
+import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
+import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,7 +20,8 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-// @TripMemberOnly / @TripOwnerOnly — JWT + path tripId로 멤버십 검사 후 D-JOIN-ENTRY(일정 또는 is_all_free)
+// @TripMemberOnly: 멤버 + RESPONDED + canEnterRoom
+// @TripOwnerOnly: 방장만 (JOINED 허용 · RESPONDED/canEnterRoom 면제 — PATCH/DELETE)
 @Component
 public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
@@ -67,11 +71,21 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
       if (!tripRepository.existsByIdAndOwner_IdAndDeletedAtIsNull(tripId, userId)) {
         throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
       }
-    } else if (!tripMemberRepository.existsByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)) {
-      throw new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED);
+      // JOINED 방장 PATCH/DELETE 허용 — RESPONDED·canEnterRoom 게이트 면제 (#39)
+      return true;
     }
 
-    // D-JOIN-ENTRY: 멤버·방장 공통 — 일정 또는 is_all_free
+    TripMember membership =
+        tripMemberRepository
+            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
+            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+
+    // trip별 일정 확인 미완료 — 전역 canEnterRoom과 별개 (#39)
+    if (membership.getStatus() != TripMemberStatus.RESPONDED) {
+      throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
+    }
+
+    // D-JOIN-ENTRY: 전역 일정 또는 is_all_free
     userSummaryService.requireCanEnterRoom(userId);
     return true;
   }

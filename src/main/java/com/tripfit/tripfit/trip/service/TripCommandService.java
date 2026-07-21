@@ -18,6 +18,7 @@ import com.tripfit.tripfit.trip.repository.RecommendationRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.service.UserProfileService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDateTime;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-// trip 생성·join·변경·submit 등 쓰기 유스케이스 — submit은 #22에서 regular EXISTS 게이트 제거(D-BR006-5)
+// trip 생성·join·confirm·변경 등 쓰기 유스케이스 (#39 JOINED→confirm, #22 D-BR006-5)
 class TripCommandService {
 
   private final TripRepository tripRepository;
@@ -77,9 +78,6 @@ class TripCommandService {
         request.durationDays(),
         request.memberCount());
 
-    // Skip+0행 → is_all_free=true (D-JOIN-TRIP-FLOW)
-    userSummaryService.markAllFreeIfNoSchedules(owner);
-
     Trip trip =
         new Trip(
             owner,
@@ -93,17 +91,45 @@ class TripCommandService {
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
     tripRepository.save(trip);
 
+    // create 직후는 JOINED — 일정 confirm 후에 RESPONDED (#39). markAllFree는 confirm/join에서.
     TripMember ownerMember =
         new TripMember(
             trip,
             owner,
             TripMemberRole.OWNER,
-            TripMemberStatus.RESPONDED,
+            TripMemberStatus.JOINED,
             LocalDateTime.now());
     tripMemberRepository.save(ownerMember);
 
     return new CreateTripResponse(
-        trip.getId(), trip.getInviteCode(), support.effectiveStatus(trip));
+        trip.getId(),
+        trip.getInviteCode(),
+        support.effectiveStatus(trip),
+        TripMemberStatus.JOINED,
+        true);
+  }
+
+  // JOINED → RESPONDED. 이미 RESPONDED면 idempotent detail (#39)
+  @Transactional
+  @TripActivity(tripIdParam = "tripId")
+  public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) {
+    Trip trip = support.requireActiveTrip(tripId);
+    TripMember membership =
+        tripMemberRepository
+            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
+            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+
+    User user = membership.getUser();
+    if (membership.getStatus() == TripMemberStatus.RESPONDED) {
+      userSummaryService.requireCanEnterRoom(user);
+      return tripQueryService.toDetail(trip, membership);
+    }
+
+    // Skip+0행 → is_all_free=true 후 canEnterRoom 게이트 (동일 User 인스턴스)
+    userSummaryService.markAllFreeIfNoSchedules(user);
+    userSummaryService.requireCanEnterRoom(user);
+    membership.markResponded();
+    return tripQueryService.toDetail(trip, membership);
   }
 
   @Transactional
@@ -170,7 +196,12 @@ class TripCommandService {
     var existing =
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {
-      return tripQueryService.toDetail(trip, existing.get());
+      TripMember membership = existing.get();
+      // JOINED면 join 경로로 상세 우회 금지 — confirm 유도
+      if (membership.getStatus() != TripMemberStatus.RESPONDED) {
+        throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
+      }
+      return tripQueryService.toDetail(trip, membership);
     }
 
     TripStatus status = support.effectiveStatus(trip);

@@ -7,25 +7,25 @@
 
 - **데이터 모델 설계 목적:** 다수 참여자 일정 수집·가중치 기반 추천·확정을 지원하는 MVP 데이터 구조
 - **설계 원칙:**
-  - **snake_case**, **단수형** 테이블명
-  - **Soft delete:** `user`, `trip`, `trip_member` — `deleted_at`
-  - **UUID v4 PK** (`char(36)`), BR-* 및 백엔드 확정 사항 반영 — [`uuid-primary-key.md`](../specs/uuid-primary-key.md)
-  - **User 전역 일정:** `regular_schedule`(정기) + `personal_schedule`(개별) — 모든 여행방에 자동 반영 (BR-USER-008)
-- **대상 DB:** MySQL 8.0 (예약어 `user`, `rank` 등 — JPA `@Column` 명시)
+    - **snake_case**, **단수형** 테이블명 (`users`만 복수 — MySQL 예약어 `user` 회피)
+    - **Soft delete:** `users`, `trip`, `trip_member` — `deleted_at`
+    - **UUID v4 PK** (`char(36)`), BR-* 및 백엔드 확정 사항 반영 — [`uuid-primary-key.md`](../specs/uuid-primary-key.md)
+    - **User 전역 일정:** `regular_schedule`(정기) + `personal_schedule`(개별) — 모든 여행방에 자동 반영 (BR-USER-008)
+- **대상 DB:** MySQL 8.0 (예약어 `rank` 등 — JPA `@Column` 명시. 구 `user` 테이블 → **`users`**)
 
 ## 2. Mermaid ERD (정기·개별 분리 — SSOT)
 
 ```mermaid
 erDiagram
-    user ||--o{ refresh_token : issues
-    user ||--o{ regular_schedule : owns
-    user ||--o{ personal_schedule : owns
-    user ||--o{ trip_member : participates
-    user ||--o{ trip : owns
+    users ||--o{ refresh_token : issues
+    users ||--o{ regular_schedule : owns
+    users ||--o{ personal_schedule : owns
+    users ||--o{ trip_member : participates
+    users ||--o{ trip : owns
     trip ||--o{ trip_member : has
     trip ||--o{ recommendation : generates
 
-    user {
+    users {
         uuid id PK
         string social_id
         string provider
@@ -93,6 +93,7 @@ erDiagram
         string invite_code
         string status
         string last_recommendation_mode
+        string cancel_reason "wave 4"
         date confirmed_start_date
         date confirmed_end_date
         datetime last_activity_at
@@ -106,10 +107,11 @@ erDiagram
         uuid trip_id FK
         uuid user_id FK
         string role
-        string status
+        string status "JOINED|RESPONDED"
         boolean is_pinned
         datetime pinned_at
         datetime joined_at
+        datetime responded_at "null if JOINED"
         datetime deleted_at
         datetime created_at
         datetime updated_at
@@ -130,10 +132,11 @@ erDiagram
 
 ## 3. 테이블 정의 (MVP In Scope)
 
-### `user`
+### `users`
 
 - **관련 BR:** BR-USER-001, BR-USER-003(wave 4)
 - **관련 결정:** [`007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md), [`006-profile-image-url-storage.md`](../decisions/006-profile-image-url-storage.md)
+- **테이블명:** `users` (MySQL 예약어 `user` 회피). Java 엔티티는 `User`.
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
@@ -151,7 +154,7 @@ erDiagram
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
 
-**API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`user.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
+**API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`users.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
 
 ### `refresh_token`
 
@@ -160,7 +163,7 @@ wave 1+. [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md)
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
 | id | char(36) | N | PK | UUID v4 |
-| user_id | char(36) | N | FK → user.id | |
+| user_id | char(36) | N | FK → users.id | |
 | token | varchar(255) | N | | UNIQUE |
 | family_id | char(36) | N | | UUID |
 | revoked_at | timestamptz | Y | | wave 4 RTR |
@@ -176,11 +179,11 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
 | id | char(36) | N | PK | UUID v4 |
-| user_id | char(36) | N | FK → user.id | |
+| user_id | char(36) | N | FK → users.id | |
 | title | varchar | N | | 출근·수업·회의 등 표시명 |
-| days_of_week | varchar | Y | | `MON,TUE,...` (구 work_days) |
-| start_time | time | Y | | (구 work_start_time) |
-| end_time | time | Y | | (구 work_end_time) |
+| days_of_week | varchar | Y | | `MON,TUE,...` |
+| start_time | time | Y | | |
+| end_time | time | Y | | |
 | morning_status | varchar | Y | | 계산: MORNING 슬롯 POSSIBLE/IMPOSSIBLE |
 | afternoon_status | varchar | Y | | AFTERNOON |
 | evening_status | varchar | Y | | EVENING |
@@ -202,7 +205,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
 | id | char(36) | N | PK | UUID v4 |
-| user_id | char(36) | N | FK → user.id | |
+| user_id | char(36) | N | FK → users.id | |
 | schedule_date | date | N | | |
 | morning_status | varchar | N | | POSSIBLE / IMPOSSIBLE (`SlotStatuses`) |
 | afternoon_status | varchar | N | | POSSIBLE / IMPOSSIBLE |
@@ -224,7 +227,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
 | id | char(36) | N | PK | UUID v4 |
-| owner_id | char(36) | N | FK → user.id | 방장 |
+| owner_id | char(36) | N | FK → users.id | 방장 |
 | name | varchar | N | | 최대 **15자** (BR-TRIP-001) |
 | destination | varchar | Y | | 여행지 MVP In |
 | start_range | date | N | | 희망 기간 시작 |
@@ -237,7 +240,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | cancel_reason | varchar | Y | | 취소·삭제 VOC. **wave 4** 구현 — Figma 플로우 있음 |
 | confirmed_start_date | date | Y | | |
 | confirmed_end_date | date | Y | | |
-| last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·submit·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip-room-api.md) D5) |
+| last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·**confirm**·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip-room-api.md) D5 · #39) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
@@ -246,27 +249,31 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 
 ### `trip_member`
 
-방별 **참여·응답 완료** 상태. 일정 데이터는 User `personal_schedule`에 있음 (BR-USER-007).
+방별 **참여·일정 확인** 상태. 일정 데이터는 User `personal_schedule`/`regular_schedule`에 있음 (BR-USER-007 · #39).
 
 - **관련 BR:** BR-USER-002, BR-USER-007
+- **관련 스펙:** [`trip-create-join-flow-redesign.md`](../specs/trip-create-join-flow-redesign.md) (#39), [`trip-room-api.md`](../specs/trip-room-api.md) D1
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
 | id | char(36) | N | PK | UUID v4 |
 | trip_id | char(36) | N | FK → trip.id | |
-| user_id | char(36) | N | FK → user.id | NOT NULL |
+| user_id | char(36) | N | FK → users.id | NOT NULL |
 | role | varchar | N | | OWNER, MEMBER |
-| status | varchar | N | | **`RESPONDED`** (멤버 = 확인 완료). ~~JOINED~~ 신규 미사용 — [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md) |
+| status | varchar | N | | **`JOINED`** = 멤버 row 있음·이 방 일정 확인 미완료(방장 create 직후, 입장 불가). **`RESPONDED`** = 확인·가입 완료(방 입장 가능, `canEnterRoom`도 필요) |
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
-| joined_at | timestamptz | N | | |
+| joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |
+| responded_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **JOINED면 null**. confirm/join(RESPONDED INSERT) 시 set |
 | deleted_at | timestamptz | Y | | **trip soft delete 시 연쇄 soft** |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
-**인덱스:** `UNIQUE (trip_id, user_id)` (삭제되지 않은 행 기준 — 구현 시 partial 또는 soft-delete-aware)
+**활성 유일성:** `(trip_id, user_id)` where `deleted_at IS NULL` — **앱 레이어 강제** (`findByTripIdAndUserIdAndDeletedAtIsNull`). MySQL은 partial unique 미지원 → JPA `@UniqueConstraint` **없음**. soft-deleted row 재가입(신규 INSERT) 허용.
 
 동명이인 `(2)` 표시: **DB 컬럼 없음** — BR-USER-009 조회 로직
+
+**카운트:** `joinedMemberCount` = soft-delete 제외 전 멤버(JOINED 포함). `respondedCount` = `RESPONDED`만.
 
 ### `recommendation`
 
@@ -283,7 +290,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | end_date | date | N | | |
 | reason | text | Y | | 추천 근거 |
 | risk_note | text | Y | | |
-| score | float | Y | | `[제안]` 디버깅 |
+| score | float | Y | | #13 순위·동점 비교 ([`trip-recommendation.md`](../specs/trip-recommendation.md)) |
 | created_at | timestamptz | N | | |
 
 **정책:** 모드 변경·trip 기간/일수 변경·trip soft delete → 해당 trip `recommendation` **hard DELETE**. `trip.last_recommendation_mode` 갱신.
@@ -292,11 +299,11 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 
 | From | To | 관계 | 설명 |
 |------|-----|------|------|
-| user | regular_schedule | 1:N | 정기 일정 (출근·수업·회의 등) |
-| user | personal_schedule | 1:N | 개인 일정 (날짜당 1행) |
-| user | trip_member | 1:N | 여행방별 참여 |
-| user | trip | 1:N | owner_id (방장) |
-| user | refresh_token | 1:N | |
+| users | regular_schedule | 1:N | 정기 일정 (출근·수업·회의 등) |
+| users | personal_schedule | 1:N | 개인 일정 (날짜당 1행) |
+| users | trip_member | 1:N | 여행방별 참여 |
+| users | trip | 1:N | owner_id (방장) |
+| users | refresh_token | 1:N | |
 | trip | trip_member | 1:N | |
 | trip | recommendation | 1:N | 최대 3 (현재 모드) |
 
@@ -304,7 +311,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 
 | MVP 기능 | 테이블 |
 |----------|--------|
-| 소셜 로그인·프로필 | `user`, `refresh_token` |
+| 소셜 로그인·프로필 | `users`, `refresh_token` |
 | 정기·개별 일정 | `regular_schedule`, `personal_schedule` |
 | 여행방·초대·여행지 | `trip`, `trip_member` |
 | 추천 4모드·TOP3·확정 | `recommendation`, `trip.last_recommendation_mode`, `trip.confirmed_*` |
@@ -338,8 +345,10 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 
 ## 기획 메모 (NotebookLM + 확정)
 
-1. **MVP 핵심:** `user`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation` + `refresh_token`
+1. **MVP 핵심:** `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation` + `refresh_token`
 2. **2026-07-08:** TERMINATED, Pin(`is_pinned`), cancel_reason wave 4, 전역 연동
 3. **2026-07-13:** A안 폐기 → 정기/개별 2테이블, 정기 N행·title·범용 시간 필드
 4. **2026-07-20:** 홈 D5 — `trip.last_activity_at`, `trip_member.pinned_at` ([`trip-room-api.md`](../specs/trip-room-api.md))
-5. 알림 이력 테이블 — ERD 범위 외 (wave 3)
+5. **2026-07-21:** `#39` — `trip_member.status` **JOINED|RESPONDED** 부활 (방장 create=`JOINED` → confirm=`RESPONDED`)
+6. **2026-07-21:** ERD 개선 반영 — `users` rename · `responded_at` · active UNIQUE(app) · `score`=#13 유지
+7. 알림 이력 테이블 — ERD 범위 외 (wave 3)

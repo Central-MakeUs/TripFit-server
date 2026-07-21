@@ -159,11 +159,14 @@ class TripServiceTest {
     ArgumentCaptor<TripMember> memberCaptor = ArgumentCaptor.forClass(TripMember.class);
     verify(tripMemberRepository).save(memberCaptor.capture());
     assertThat(memberCaptor.getValue().getRole()).isEqualTo(TripMemberRole.OWNER);
-    assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+    assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.JOINED);
+    assertThat(memberCaptor.getValue().getRespondedAt()).isNull();
+    assertThat(response.myMemberStatus()).isEqualTo(TripMemberStatus.JOINED);
+    assertThat(response.needsScheduleConfirm()).isTrue();
   }
 
   @Test
-  void createTrip_setsAllFreeWhenNoSchedules() {
+  void createTrip_doesNotMarkAllFree() {
     owner.setAllFree(false);
     when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
     when(tripRepository.existsByInviteCode(any())).thenReturn(false);
@@ -174,8 +177,6 @@ class TripServiceTest {
               saved.setId(TRIP_ID);
               return saved;
             });
-    when(regularScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
-    when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
 
     tripService.createTrip(
         OWNER_ID,
@@ -187,7 +188,52 @@ class TripServiceTest {
             6,
             "제주"));
 
+    assertThat(owner.isAllFree()).isFalse();
+    verify(regularScheduleRepository, never()).existsByUserId(OWNER_ID);
+  }
+
+  @Test
+  void confirmSchedule_joinedToResponded_andMarksAllFree() {
+    owner.setAllFree(false);
+    TripMember joined =
+        new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.JOINED,
+            LocalDateTime.now());
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(joined));
+    when(regularScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
+    when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
+    when(
+        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
+            TRIP_ID,
+            TripMemberStatus.RESPONDED))
+        .thenReturn(1L);
+
+    var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
+
+    assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+    assertThat(joined.getRespondedAt()).isNotNull();
     assertThat(owner.isAllFree()).isTrue();
+    assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+  }
+
+  @Test
+  void confirmSchedule_alreadyResponded_idempotent() {
+    TripMember responded = tripMember(owner, TripMemberRole.OWNER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(responded));
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
+    when(
+        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
+            TRIP_ID,
+            TripMemberStatus.RESPONDED))
+        .thenReturn(1L);
+
+    var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
+
+    assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.RESPONDED);
   }
 
   @Test

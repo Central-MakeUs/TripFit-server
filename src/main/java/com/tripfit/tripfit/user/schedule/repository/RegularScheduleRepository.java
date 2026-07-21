@@ -12,6 +12,6 @@ public interface RegularScheduleRepository extends JpaRepository<RegularSchedule
 
   Optional<RegularSchedule> findByIdAndUserId(UUID id, UUID userId);
 
-  // UserSummaryService.hasPreSchedule SSOT — regular_schedule row ≥1 (D-BR006-C, D-JOIN-3)
+  // UserSummaryService.hasPreSchedule SSOT — regular_schedule row ≥1 (D-JOIN-ENTRY)
   boolean existsByUserId(UUID userId);
 }

@@ -15,7 +15,8 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`uuid-primary-key.md`](uuid-primary-key.md) | **Implemented** | 전 테이블 PK/FK bigint → UUID CHAR(36), JWT `sub`, Cursor 규칙 | — |
-| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Draft** (#22) | late-join · 방장 A · `memberFillRate` · submit 폐기 · hold→#35 | user-onboarding · schedule-unified |
+| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Draft** (#22 · **#39 amend**) | join 게이트 · `JOINED`→confirm · submit 폐기 · hold→#35 | user-onboarding · trip-create-join-flow-redesign |
+| [`trip-create-join-flow-redesign.md`](trip-create-join-flow-redesign.md) | **Implemented (core)** · **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)** | 생성→일정 confirm · [계획](../superpowers/plans/2026-07-21-trip-schedule-confirm-joined.md) | trip-room-api · [가이드](../product/flows/trip-create-join-guide.md) |
 
 ## wave 2
 
@@ -25,7 +26,7 @@
 | [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A·A1=730일 | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) |
 | [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Draft** (#37) | 여행방 일정 조회 윈도우 (시작 기준 +2년) · A1 재정의 | #17 · #12 |
 | [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) | **Draft** (#38) | TERMINATED 방 일정 snapshot | #27 · #17 · #12 |
-| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 2뷰 · submit→**#22** | 여행방 CRUD·홈 목록·Pin | #17 · **#22** |
+| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 · **#39** JOINED/confirm | 여행방 CRUD·홈 목록·Pin · schedule/confirm | #17 · #22 · #39 |
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | TERMINATED DB·Pin batch · 00:05 KST | #12 |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft | 추천 4모드·TOP 3·확정·취소 | 위 2개 |

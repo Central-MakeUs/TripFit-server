@@ -69,7 +69,9 @@ class TripControllerTest {
   @Test
   void createTrip_created() throws Exception {
     when(tripService.createTrip(eq(USER_ID), any()))
-        .thenReturn(new CreateTripResponse(TRIP_ID, "ABC234", TripStatus.ONGOING));
+        .thenReturn(
+            new CreateTripResponse(
+                TRIP_ID, "ABC234", TripStatus.ONGOING, TripMemberStatus.JOINED, true));
 
     mockMvc
         .perform(
