@@ -689,6 +689,20 @@ class TripServiceTest {
         .isEqualTo(TripErrorCode.TRIP_NOT_ONGOING);
   }
 
+  @Test
+  void getMemberScheduleCalendar_whenCanceled_throws409() {
+    trip.setStatus(TripStatus.CANCELED);
+    TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(ownerMembership));
+
+    assertThatThrownBy(() -> tripService.getMemberScheduleCalendar(TRIP_ID, OWNER_ID))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_CANCELED);
+  }
+
   private static PatchTripRequest patchRequest() {
     return new PatchTripRequest(
         "제주",

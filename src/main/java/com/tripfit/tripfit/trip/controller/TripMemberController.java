@@ -43,7 +43,8 @@ public class TripMemberController {
   @TripMemberOnly
   @Operation(
       summary = "멤버 effective 일정 달력",
-      description = "trip 기간 멤버 전원 effective (#17 resolve). personal+regular 병합")
+      description = "희망 기간(startRange~endRange) 멤버 전원 effective (#17·#37). "
+          + "ONGOING=live. CONFIRMED/TERMINATED=snapshot(#38). CANCELED=409 TRIP_CANCELED")
   @GetMapping("/schedule-calendar")
   ResponseEntity<ApiResponse<MemberScheduleCalendarResponse>> getScheduleCalendar(
       @PathVariable UUID tripId,

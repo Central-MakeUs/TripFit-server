@@ -65,7 +65,12 @@
 
 - 알림 발송 (wave 3 #21)
 - `last_activity_at` 갱신 정책 — [`trip-last-activity-at.md`](trip-last-activity-at.md)
-- **만료 방 일정 snapshot freeze** — [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)** Draft). 본 job은 status/Pin만; snapshot은 후속에서 #27 job 확장 여부 결정
+- CONFIRMED 시점 snapshot — 확정 API 경로 ([#38](https://github.com/Central-MakeUs/TripFit-server/issues/38))
+
+## 후속 (본 job 확장 — #38 Approved)
+
+`TripHomeMaintenanceService` **동일 `@Transactional` job**에 TERMINATED 전환 시 희망 기간 **effective snapshot** 작성 추가.  
+상세: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) R-freeze · R-gap(공백 불허) · R-model A.
 
 ## 변경 이력
 
@@ -74,4 +79,4 @@
 | 2026-07-19 | Draft — #12 후속 분리 |
 | 2026-07-19 | **S1~S4 확정 · Approved** — DB TERMINATED · 00:05 KST · 통합 job · local/dev 포함 |
 | 2026-07-19 | **Implemented** — `TripHomeScheduler` · batch UPDATE (#27) |
-| 2026-07-21 | Out of Scope에 schedule snapshot Draft 링크 |
+| 2026-07-21 | #38 Approved — TERMINATED snapshot을 본 job 후속 Must로 연결 |

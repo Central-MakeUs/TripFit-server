@@ -51,6 +51,7 @@
 - [ ] confirm → `status=CONFIRMED`, `confirmedStartDate`/`confirmedEndDate` 설정
 - [ ] `POST /api/v1/trips/{tripId}/cancel` — 방장만 → `status=CANCELED` (**`cancel_reason` null**, wave 4)
 - [ ] `POST .../recommendations` · confirm · cancel — **`status=ONGOING`만** (D4 → 409 `TRIP_NOT_ONGOING`)
+- [ ] confirm 성공 시 **일정 snapshot** (#38 R-freeze — 동일 TX). 추천 재실행은 CONFIRMED/TERMINATED에서 불가(X8)
 - [ ] trip PATCH(기간·일수) / DELETE / mode POST 시 recommendation hard DELETE (BR-TRIP-010)
 - [ ] `./gradlew test` — 모드별·동점·hard filter 단위 테스트
 

@@ -374,12 +374,21 @@ class ScheduleServiceTest {
   }
 
   @Test
-  void getCalendar_whenRangeExceedsTwoYears_throws400() {
+  void getCalendar_whenStartBeforeToday_throws400() {
+    LocalDate today = LocalDate.now();
     assertThatThrownBy(
-        () -> scheduleService.getCalendar(
-            USER_ID,
-            LocalDate.of(2026, 1, 1),
-            LocalDate.of(2028, 1, 2)))
+        () -> scheduleService.getCalendar(USER_ID, today.minusDays(1), today.plusDays(7)))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  void getCalendar_whenEndAfterWindow_throws400() {
+    LocalDate today = LocalDate.now();
+    LocalDate windowEnd = today.plusYears(2).minusDays(1);
+    assertThatThrownBy(
+        () -> scheduleService.getCalendar(USER_ID, today, windowEnd.plusDays(1)))
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
@@ -387,6 +396,13 @@ class ScheduleServiceTest {
 
   @Test
   void getCalendar_resolvesSparseWeekdays() {
+    LocalDate start = LocalDate.now().plusDays(1);
+    // 다음 월요일부터 7일 — 주중 5일만 regular가 펼쳐짐
+    while (start.getDayOfWeek().getValue() != 1) {
+      start = start.plusDays(1);
+    }
+    LocalDate end = start.plusDays(6);
+
     RegularSchedule work =
         RegularSchedule.create(
             user,
@@ -403,17 +419,13 @@ class ScheduleServiceTest {
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
             USER_ID,
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 7)))
+            start,
+            end))
         .thenReturn(List.of());
 
-    var response =
-        scheduleService.getCalendar(
-            USER_ID,
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 7));
+    var response = scheduleService.getCalendar(USER_ID, start, end);
 
     assertThat(response.days()).hasSize(5);
-    assertThat(response.days().getFirst().date()).isEqualTo(LocalDate.of(2026, 8, 3));
+    assertThat(response.days().getFirst().date()).isEqualTo(start);
   }
 }

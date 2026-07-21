@@ -1,13 +1,16 @@
 package com.tripfit.tripfit.trip.service;
 
+import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberStatus;
+import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.CalendarDay;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.MemberCalendar;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse.TripMemberItemResponse;
+import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
@@ -83,10 +86,14 @@ class TripMemberQueryService {
         memberCount, joinedMemberCount, respondedCount, memberFillRate, items);
   }
 
+  // #37 C2/C3: 희망 기간 live resolve · CANCELED 거부(R1). CONFIRMED/TERMINATED snapshot은 #38
   @Transactional(readOnly = true)
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
     support.requireActiveMember(tripId, userId);
     Trip trip = support.requireActiveTrip(tripId);
+    if (support.effectiveStatus(trip) == TripStatus.CANCELED) {
+      throw new TripFitException(TripErrorCode.TRIP_CANCELED);
+    }
     LocalDate startDate = trip.getStartRange();
     LocalDate endDate = trip.getEndRange();
 

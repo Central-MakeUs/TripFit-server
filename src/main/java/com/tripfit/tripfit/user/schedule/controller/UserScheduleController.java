@@ -104,8 +104,9 @@ public class UserScheduleController {
 
   @Operation(
       summary = "일정 달력(effective) 조회",
-      description = "기간 내 날짜별 합친 슬롯. personal 우선(S1), regular 복수는 IMPOSSIBLE 우선(R2=A). "
-          + "빈 날은 omit. start~end 최대 730일(약 2년)")
+      description = "본인 전역 effective. personal 우선(S1), regular 복수 IMPOSSIBLE 우선(R2=A). "
+          + "빈 날 omit. 요청 구간은 today~today+2년−1 안이어야 함(#37 C1). "
+          + "마이페이지 여행 칩 인덱싱은 GET /trips?scope=ongoing 재사용")
   @GetMapping("/calendar")
   ResponseEntity<ApiResponse<ScheduleCalendarResponse>> getCalendar(
       @AuthorizedUser UUID userId,
