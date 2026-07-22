@@ -50,7 +50,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `harness-workflow.md` | ⛔ 문서 정합 · ErrorCode/AOP · DB · **레거시(교체=같은 PR 삭제)** · Before/While/After | **코어 STOP·코딩 흐름** |
 | `harness-wave.md` | Wave Must/Nice/Out 단정 금지 · `[미정]`→#2 · 희망기간/조회윈도우/A1 | Wave·용어 |
 | `harness-follow-up.md` | 💡 후속 제안 · ✅ Defer 이슈 분리 · 💡 ERD 적극 제안 | 완료 후·범위 미루기 |
-| `workflow-tools.md` | Claude Code 도구 매핑 · harness 우선순위 | 워크플로 도구 연동 |
+| `workflow-tools.md` | **도구 우선순위**(Claude Code 기본 > OMC > Superpowers > 프로젝트 문서) · Claude Code 도구 매핑 | 워크플로 도구 연동·채택 판단 |
 
 우선순위: `harness-workflow` ⛔ > specify > workflow-tools > 일반 관례
 

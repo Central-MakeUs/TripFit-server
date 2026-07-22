@@ -1,12 +1,33 @@
 # Workflow Tools × TripFit
 
-Cursor 시절 Superpowers 플러그인 스킬(`brainstorming`, `systematic-debugging` 등)을 쓰던 자리를 Claude Code 네이티브 기능으로 대체한 매핑이다.
+이 프로젝트는 **Claude Code를 기본 개발 환경**으로 쓴다. 워크플로 도구(계획·검증·리뷰·병렬 작업 등)를 고르거나 문서를 개선할 때는 아래 우선순위를 **반드시** 따른다.
 
-## 우선순위
+## 도구 우선순위
 
 ```
-harness-workflow ⛔ (문서·스펙 정합)  >  TripFit specify  >  Claude Code 워크플로 도구  >  일반 코딩 관례
+1. Claude Code 기본 기능
+2. OMC (Oh My Claude Code)
+3. Superpowers
+4. 프로젝트 문서 (.claude/rules/, .claude/skills/)
 ```
+
+상위 단계로 필요를 충분히 채우면 하위 단계로 내려가지 않는다. OMC·Superpowers는 **서드파티 플러그인**이며 이 저장소에는 설치돼 있지 않다 — 실제로 쓰려면 `/plugin marketplace add`로 먼저 설치해야 하고, 이는 새 의존성을 들이는 결정이므로 사용자 승인 없이 임의로 설치하지 않는다. ("OMC"라는 이름은 서로 무관한 여러 서드파티 프로젝트가 공유하고 있어 공식으로 통용되는 단일 표준이 없다 — 특정 OMC를 지목하지 않는 한 실질적으로 "해당 없음"으로 취급한다.)
+
+### OMC·Superpowers를 채택하는 경우 (전부 만족해야 함)
+
+- 문서를 더 단순하게 만들 수 있다
+- 반복 작업을 제거할 수 있다
+- 유지보수성을 높인다
+- 토큰 사용량 또는 작업량이 감소한다
+
+### 채택하지 않는 경우 (하나라도 해당하면 배제)
+
+- 기능이 있다는 이유만으로 쓴다
+- 기존 문서보다 복잡해진다
+- 토큰 소비만 증가한다
+- Claude Code 기본 기능으로 충분히 해결 가능하다
+
+**이 저장소의 현재 결론 (2026-07-23 감사):** Superpowers가 제공하는 `brainstorming`/`writing-plans`/`executing-plans`는 Plan Mode로, `requesting-code-review`는 이미 설치된 `code-review`/`simplify` 스킬로, `dispatching-parallel-agents`는 `Agent` 툴로 이미 충분히 대체돼 있어 위 배제 조건("Claude Code 기본 기능으로 충분히 해결 가능")에 해당 — 설치하지 않는다. 유일한 gap인 `systematic-debugging`도 아래 3줄 프로즈 절차로 충분해 플러그인 설치 비용을 정당화하지 못한다. `test-driven-development`는 오히려 이 저장소의 "유의미한 테스트만" 원칙(`testing.md`)보다 엄격해 **기존 문서보다 복잡해지는** 배제 조건에 해당한다. 상황이 바뀌면(예: 이 gap이 실제로 반복 비용을 유발하면) 이 절을 갱신하고 재평가한다.
 
 Harness 형제: `harness-wave.md` (Wave·`[미정]`) · `harness-follow-up.md` (후속·Defer·ERD)
 
