@@ -250,15 +250,16 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 
 **User Journey:** (없음 — 기존 기능의 품질·안정성 향상)
 
-**Definition of Done:** Wave별로 **팀이 합의한 체크리스트** (출시 게이트). 예:
+**Definition of Done:** #44는 **확정 Must** (아래), 나머지는 Wave별로 **팀이 합의한 체크리스트** (출시 게이트). 예:
 
+- [x] Google Calendar OAuth (**#44**) — 확정 Must, Implemented (`docs/specs/google-calendar-oauth.md`)
 - [ ] RTR + Redis (#4)
 - [ ] Apple S2S (#5)
 - [ ] 프로필 S3 미러 (#9)
 - [ ] 소셜 계정 연결 (#6)
 - [ ] (선택) 모니터링·부하 테스트
 
-**포함:** #4, #5, #6, #9, **#44** Google Calendar OAuth, cancel_reason, BR-NOTI-005 스케줄러
+**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #5, #6, #9(팀 합의 시), cancel_reason, BR-NOTI-005 스케줄러
 
 **포함하면 안 됨:**
 
@@ -395,7 +396,7 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 | **1** | **#29** | #22 | #24 ✓ | trip·추천 → Wave 2 |
 | **2** | **#30** | #13 (#11·#12·#17·#37·#38 ✓) | #20, #26✓, #27✓ | #21·#19 → Wave 3 |
 | **3** | **#31** | #21 · **#19** | — | NOTI-005 → Wave 4 |
-| **4** | **#32** | (팀 합의 시) #4 · #5 · #6 · #9 · **#44** | — | — |
+| **4** | **#32** | **#44**(확정) · (팀 합의 시) #4 · #5 · #6 · #9 | — | — |
 
 ---
 
@@ -451,4 +452,4 @@ Wave Backlog Issue는 **코드 구현 Issue가 아님** — `kind: chore` + `are
 
 ---
 
-*최종 갱신: 2026-07-20 · TripFit 백엔드 2~3명 · Spring Boot 단일 모듈*
+*최종 갱신: 2026-07-23 (§5.6 백로그 스냅샷·#44 Must 확정) · TripFit 백엔드 2~3명 · Spring Boot 단일 모듈*

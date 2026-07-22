@@ -249,7 +249,7 @@ trip CRUD 전이면 **①만** 구현.
 - [x] S1 병합·personal 3슬롯 필수·sparse·effective-only shape **문서 확정**
 - [x] R2=A (슬롯별 IMPOSSIBLE 우선) **문서 확정**
 - [x] `schedule-unified.md` 동기화
-- [x] A1 기간 상한 **730일(약 2년)** 확정
+- [x] A1 기간 상한 확정 — **현행 (#37 C1): `today`~`today+2y−1`** (최초 확정치는 730일 길이였으나 #37에서 폐기·대체)
 - [ ] (선택) T1/T2/T3, `source` 여부
 
 ### Must Have (구현 — 스펙 Approved 후)
@@ -257,7 +257,7 @@ trip CRUD 전이면 **①만** 구현.
 - [x] resolve 로직 + 단위 테스트 (S1, R2=A, omit, weekday expand)
 - [x] `GET /api/v1/users/schedule/calendar`
 - [x] OpenAPI `@Schema`
-- [x] 기간 상한 730일 검증
+- [x] 기간 상한 검증 — 현행 `today`~`today+2y−1` (#37)
 - [x] `GET /api/v1/users/schedule/calendar` (#17)
 - [ ] `GET /api/v1/trips/{tripId}/members/schedule-calendar` — **#12** (T1 · summary deprecate)
 
@@ -337,7 +337,7 @@ function combineRegularsImpossibleWins(regulars):
 
 - [x] S1·sparse·effective-only·**R2=A** 문서 확정  
 - [x] 관련 스펙 인덱스·`schedule-unified` 동기화  
-- [x] A1=730일 확정  
+- [x] A1 확정 — 최초 730일, **현행은 #37로 대체** (`today`~`today+2y−1`)  
 
 ### 구현
 
