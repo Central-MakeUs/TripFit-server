@@ -191,7 +191,7 @@ class TripServiceTest {
 
     assertThat(response.tripId()).isEqualTo(TRIP_ID);
     assertThat(response.status()).isEqualTo(TripStatus.ONGOING);
-    assertThat(response.inviteCode()).hasSize(6);
+    // create는 JOINED — inviteCode는 응답에 없음(방 입장·공유는 confirm 후)
 
     ArgumentCaptor<TripMember> memberCaptor = ArgumentCaptor.forClass(TripMember.class);
     verify(tripMemberRepository).save(memberCaptor.capture());
@@ -200,6 +200,10 @@ class TripServiceTest {
     assertThat(memberCaptor.getValue().getRespondedAt()).isNull();
     assertThat(response.myMemberStatus()).isEqualTo(TripMemberStatus.JOINED);
     assertThat(response.needsScheduleConfirm()).isTrue();
+
+    ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
+    verify(tripRepository).save(tripCaptor.capture());
+    assertThat(tripCaptor.getValue().getInviteCode()).hasSize(6);
   }
 
   @Test

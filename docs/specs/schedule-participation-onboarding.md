@@ -183,7 +183,8 @@ canEnterRoom(user) =
 - 방장(및 JOINED) 일정 확인: `POST /api/v1/trips/{tripId}/schedule/confirm`
 - **구 `POST .../schedule/submit` — 삭제·재사용 금지.**
 
-**`JOINED`:** 방장 create 직후 **사용** (#39). 멤버 신규 INSERT는 **`RESPONDED`만**.
+**`JOINED`:** 방장 create 직후 **사용** (#39). 멤버 신규 INSERT는 **`RESPONDED`만**.  
+**초대 공유:** 방장 ∧ **`RESPONDED`(방 입장 후)** 만 — JOINED는 입장 불가 → 공유 불가. create 응답에 `inviteCode` 없음 ([`kakao-invite-share.md`](kakao-invite-share.md) S-1·S-2).
 
 **정원 경쟁 (MVP 감수):** join INSERT 시 409. hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35).
 

@@ -276,7 +276,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | trip_id | char(36) | N | FK → trip.id | |
 | user_id | char(36) | N | FK → users.id | NOT NULL |
 | role | varchar | N | | OWNER, MEMBER |
-| status | varchar | N | | **`JOINED`** = 멤버 row 있음·이 방 일정 확인 미완료(방장 create 직후, 입장 불가). **`RESPONDED`** = 확인·가입 완료(방 입장 가능, `canEnterRoom`도 필요) |
+| status | varchar | N | | **`JOINED`** = **방장 전용**(create 직후·confirm 전, 입장·공유 불가). **`RESPONDED`** = 방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 JOINED 없음 |
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |

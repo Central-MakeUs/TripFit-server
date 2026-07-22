@@ -10,7 +10,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Schema(
-    description = "여행방 상세. GET /trips/{tripId} · POST /trips/{tripId}/join · PATCH /trips/{tripId} · PATCH /trips/{tripId}/pin · POST /trips/{tripId}/schedule/confirm")
+    description = """
+        여행방 상세. GET/join/confirm/patch/pin 등.
+        호출 전제=RESPONDED+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.
+        JOINED 방장이 호출하면 SCHEDULE_CONFIRM_REQUIRED.
+        """)
 // @formatter:off
 public record TripDetailResponse(
     @Schema(description = "여행방 ID") UUID tripId,
@@ -39,7 +43,10 @@ public record TripDetailResponse(
             "여행방 진행 상태(effectiveStatus). end_range 경과·방장 취소 등 반영된 화면 표시용")
     TripStatus status,
 
-    @Schema(description = "초대 코드 (6자)") String inviteCode,
+    @Schema(
+            description =
+                "초대 코드 (6자). 방 입장(RESPONDED) 후 상세에서만 노출 — 공유용. create(JOINED) 응답에는 없음")
+        String inviteCode,
 
     @Schema(description = "확정 시작일. CONFIRMED/TERMINATED에서만 값 있음", nullable = true)
     LocalDate confirmedStartDate,
@@ -58,7 +65,7 @@ public record TripDetailResponse(
 
     @Schema(
         description =
-            "본인 멤버십 상태. JOINED=일정 확인 전(방 입장 불가), RESPONDED=일정 확인 완료(방 입장 가능)")
+            "본인 멤버십 상태. JOINED=방장 create 직후만(입장·공유 불가), RESPONDED=방장 confirm 후·멤버 join 시(입장 가능)")
     TripMemberStatus myMemberStatus,
 
     @Schema(description = "일정 확인 완료(RESPONDED) 멤버 수") int respondedCount,

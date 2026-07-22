@@ -20,8 +20,9 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-// @TripMemberOnly: 멤버 + RESPONDED + canEnterRoom
-// @TripOwnerOnly: 방장만 (JOINED 허용 · RESPONDED/canEnterRoom 면제 — PATCH/DELETE)
+// @TripMemberOnly: 멤버 + RESPONDED + canEnterRoom (방 입장·상세·공유 데이터)
+// @TripOwnerOnly: 방장만 (JOINED 허용 · RESPONDED/canEnterRoom 면제 — PATCH/DELETE 메타만.
+// 초대 공유는 방 입장 후 → 상세 inviteCode · JOINED create 응답에 inviteCode 없음)
 @Component
 public class TripAuthorizationInterceptor implements HandlerInterceptor {
 

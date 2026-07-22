@@ -10,10 +10,10 @@
 
 1. 홈에서 「여행방 신규 생성하기」
 2. 방 생성 폼 (이름·기간·일수·인원·선택 여행지)
-3. `POST /trips` → OWNER **`JOINED`** + inviteCode (`needsScheduleConfirm=true`)
+3. `POST /trips` → OWNER **`JOINED`** (`needsScheduleConfirm=true`). DB에 invite_code 발급하나 **응답에 inviteCode 없음**
 4. **정기→개별** 일정 확인 (수정/Skip) — `canEnterRoom`이어도 강제
 5. `POST /trips/{tripId}/schedule/confirm` → **`RESPONDED`**
-6. 방 상세 · 초대 공유
+6. 방 상세(`inviteCode`) · **초대 공유** (방장·RESPONDED 이후만)
 
 **예외:** confirm 전 이탈 → 재진입 시 일정 플로우. 상세 API는 `SCHEDULE_CONFIRM_REQUIRED`.
 

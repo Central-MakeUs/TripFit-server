@@ -110,12 +110,9 @@ class TripCommandService {
             LocalDateTime.now());
     tripMemberRepository.save(ownerMember);
 
+    // inviteCode는 DB에만 발급 — JOINED(방 입장 전) 응답에 노출하지 않음. 공유는 confirm→RESPONDED 후 상세
     return new CreateTripResponse(
-        trip.getId(),
-        trip.getInviteCode(),
-        support.effectiveStatus(trip),
-        TripMemberStatus.JOINED,
-        true);
+        trip.getId(), support.effectiveStatus(trip), TripMemberStatus.JOINED, true);
   }
 
   // JOINED → RESPONDED. 이미 RESPONDED면 idempotent detail (#39)

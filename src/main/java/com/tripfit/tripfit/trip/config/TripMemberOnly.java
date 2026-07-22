@@ -5,8 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-// TripAuthorizationInterceptor: 참여자 + RESPONDED + canEnterRoom
-// → 403 TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED / SCHEDULE_ENTRY_REQUIRED
+// 방 입장 API용: 멤버 + RESPONDED + canEnterRoom.
+// JOINED(방장 confirm 전) → SCHEDULE_CONFIRM_REQUIRED. 초대 공유 데이터도 이 게이트 뒤(상세).
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TripMemberOnly {

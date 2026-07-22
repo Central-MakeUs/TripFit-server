@@ -71,7 +71,7 @@ class TripControllerTest {
     when(tripService.createTrip(eq(USER_ID), any()))
         .thenReturn(
             new CreateTripResponse(
-                TRIP_ID, "ABC234", TripStatus.ONGOING, TripMemberStatus.JOINED, true));
+                TRIP_ID, TripStatus.ONGOING, TripMemberStatus.JOINED, true));
 
     mockMvc
         .perform(
@@ -90,7 +90,10 @@ class TripControllerTest {
                         }
                         """))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.data.inviteCode").value("ABC234"));
+        .andExpect(jsonPath("$.data.tripId").value(TRIP_ID.toString()))
+        .andExpect(jsonPath("$.data.myMemberStatus").value("JOINED"))
+        .andExpect(jsonPath("$.data.needsScheduleConfirm").value(true))
+        .andExpect(jsonPath("$.data.inviteCode").doesNotExist());
   }
 
   @Test
