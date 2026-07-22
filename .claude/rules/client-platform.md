@@ -1,12 +1,14 @@
 ---
-description: React 앱·스토어 런칭 맥락 — API·인증·클라이언트 계약
-globs: **/controller/**,**/service/**,**/config/**,docs/specs/**
-alwaysApply: false
+paths:
+  - "**/controller/**"
+  - "**/service/**"
+  - "**/config/**"
+  - "docs/specs/**"
 ---
 
 # Client Platform (React → Play / App Store)
 
-도메인·BR·와이어프레임 매핑은 **`figma-product.mdc`** 참고.
+도메인·BR·와이어프레임 매핑은 **`figma-product.md`** 참고.
 
 이 저장소는 **백엔드만**. 클라이언트는 **React(프론트 2명)**, 최종 **Play·App Store** 앱 배포 목표.
 

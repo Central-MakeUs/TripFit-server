@@ -1,7 +1,6 @@
 ---
-description: Spring Boot·Java 코딩 규칙
-globs: **/*.java
-alwaysApply: false
+paths:
+  - "**/*.java"
 ---
 
 # Spring Boot / Java
@@ -65,7 +64,7 @@ AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_TOKEN",
 
 Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap 안 함 (`config/tripfit-java-format.xml`).
 
-**새 실패 분기 추가 시 (같은 턴):** enum 상수 → Service/Interceptor throw → 스펙 에러 표 → (필요 시) `api-response.md` 예시. Harness: `.cursor/rules/harness-workflow.mdc` ⛔ ErrorCode 절.
+**새 실패 분기 추가 시 (같은 턴):** enum 상수 → Service/Interceptor throw → 스펙 에러 표 → (필요 시) `api-response.md` 예시. Harness: `.claude/rules/harness-workflow.md` ⛔ ErrorCode 절.
 
 ### 교차관심사 (AOP · Interceptor)
 

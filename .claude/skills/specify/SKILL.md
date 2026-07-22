@@ -21,7 +21,7 @@ description: 요구사항을 정리하고 docs/specs/에 스펙 파일을 생성
 1. **의도 정리** — 사용자 요청을 한 문단으로 미러링
 2. **범위 확인** — `docs/product/mvp.md`에 포함되는지 표시
 3. **클라이언트 전제** — API·인증·푸시·링크면 `docs/product/platform.md`와 충돌 없는지
-4. **모호함 해소** — 불명확하면 `AskQuestion` (API shape, 권한, 엣지 케이스)
+4. **모호함 해소** — 불명확하면 `AskUserQuestion` (API shape, 권한, 엣지 케이스)
 5. **스펙 작성** — `docs/specs/{kebab-case}.md` ([템플릿](references/spec-template.md))
 6. **충돌 검토** — `docs/architecture.md`, `erd.md`, 기존 specs
 7. **승인 대기** — 구현 시작 전 사용자 OK

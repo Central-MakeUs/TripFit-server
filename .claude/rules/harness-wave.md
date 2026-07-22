@@ -1,11 +1,6 @@
----
-description: Wave Must/Nice/Out · [미정]#2 · 일정·기간 용어
-alwaysApply: true
----
-
 # Harness — Wave · 용어 · [미정]
 
-코어 STOP·코딩 흐름: `harness-workflow.mdc`
+코어 STOP·코딩 흐름: `harness-workflow.md`
 
 ## `[미정]` chore 트래커 — [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)
 

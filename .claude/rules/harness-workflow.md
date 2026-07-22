@@ -1,12 +1,7 @@
----
-description: 하네스 코어 — STOP·코딩 흐름 (Wave/후속은 형제 규칙)
-alwaysApply: true
----
-
 # Harness Workflow
 
-**형제 규칙 (내용 분리 SSOT):** `harness-wave.mdc` · `harness-follow-up.mdc` · `superpowers-workflow.mdc`  
-Java·ErrorCode 상세: `spring-boot-java.mdc` · Git: `.github/CONTRIBUTING.md`
+**형제 규칙 (내용 분리 SSOT):** `harness-wave.md` · `harness-follow-up.md` · `workflow-tools.md`  
+Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 
 ## ⛔ STOP (모든 규칙보다 우선)
 
@@ -34,7 +29,7 @@ API·BR 실패 케이스·권한 게이트·`last_activity_at` touch를 **추가
 
 **금지:** throw/`code`만 넣고 enum·스펙 미갱신 · touch인데 `@TripActivity` 누락(또는 수동 `touchLastActivity` 재도입) · Draft 전용 코드를 Approved 전 enum에 미리 넣기 · Filter/Interceptor에서 envelope와 다른 ad-hoc JSON
 
-SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response.md) · `spring-boot-java.mdc` ErrorCode·AOP 절
+SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response.md) · `spring-boot-java.md` ErrorCode·AOP 절
 
 ### 3. DB 스키마 — 마이그레이션 금지 (상용 보존 데이터 없음)
 
@@ -62,7 +57,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 3. DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현
 4. 그 외 → `AGENTS.md` + 관련 `docs/product/` 후 바로 구현
 
-**Wave / `[미정]` / 일정 용어:** `harness-wave.mdc` (단정 금지 · #2 트래커)
+**Wave / `[미정]` / 일정 용어:** `harness-wave.md` (단정 금지 · #2 트래커)
 
 **브랜치:** `main`에서 `{type}/{issue-number}-{description}` — 이슈 번호 생략 금지. SSOT: [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)
 
@@ -86,7 +81,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - **레거시** — 경로·상수·검증·API를 바꾸면 **구 구현·미사용 메서드·구 assert·‘현행’ 문서 문구를 같은 변경에서 삭제** (STOP §4). “나중에” 금지
 - **ErrorCode·AOP** — 실패·touch·권한 변경 시 **같은 턴** (STOP §2)
 - 기존 스타일 유지. 내 변경으로 생긴 unused만 정리
-- 패키지·Entity·DTO·enum·JWT `@Operation`·**메서드 역할 `//` 주석**: `spring-boot-java.mdc` (Comments — public 유스케이스 생략 금지)
+- 패키지·Entity·DTO·enum·JWT `@Operation`·**메서드 역할 `//` 주석**: `spring-boot-java.md` (Comments — public 유스케이스 생략 금지)
 - 핵심 로직 변경 시 `./gradlew test`
 - 변경한 모든 줄은 사용자 요청에 직접 연결
 
@@ -98,11 +93,11 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지
 - 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
 - **커밋 요청 시:** 주제별 **최대 3개** (구현/테스트/문서·하네스). 억지 분할 금지
-- 같은 실수 2회+ → `.cursor/rules/` 추가 **제안** (자동 추가 금지)
+- 같은 실수 2회+ → `.claude/rules/` 추가 **제안** (자동 추가 금지)
 - **레거시 재점검:** 이번 PR이 대체한 구 경로·상수·문서 ‘현행’ 문구가 남았는지 확인 후 **삭제/amend**. 요청 밖·정책 무관 dead code만 언급. **정책 불일치·교체 잔존 → STOP §4 삭제**
-- Entity·스키마 후 ERD 개선 → `harness-follow-up.mdc` 💡 ERD
-- Must Have급 완료 / 사용자 요청 시 후속 제안 → `harness-follow-up.mdc`
-- 「다른 이슈로」범위 미루기 → `harness-follow-up.mdc` ✅ Defer (**이슈만 만들고 끝내지 않음**)
+- Entity·스키마 후 ERD 개선 → `harness-follow-up.md` 💡 ERD
+- Must Have급 완료 / 사용자 요청 시 후속 제안 → `harness-follow-up.md`
+- 「다른 이슈로」범위 미루기 → `harness-follow-up.md` ✅ Defer (**이슈만 만들고 끝내지 않음**)
 
 ## 금지 (요약)
 

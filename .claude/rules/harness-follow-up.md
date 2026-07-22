@@ -1,12 +1,7 @@
----
-description: 구현 후 후속 제안 · Defer 이슈 분리 · ERD 적극 제안
-alwaysApply: true
----
-
 # Harness — 후속 제안 · Defer · ERD
 
-코어 STOP·코딩 흐름: `harness-workflow.mdc`  
-Wave·용어: `harness-wave.mdc`
+코어 STOP·코딩 흐름: `harness-workflow.md`  
+Wave·용어: `harness-wave.md`
 
 ## 💡 ERD 적극 제안 (스키마는 고정이 아님)
 
@@ -14,7 +9,7 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 
 1. **언제:** Entity·API·BR 작업 중, Must Have 완료 후 후속 제안, 또는 사용자가 ERD/스키마를 물을 때
 2. **무엇을:** 컬럼 위치·nullable·상태 표현(enum vs 시각)·인덱스·예약어 rename·파생→저장 전환 등 — **아쉬운 점 → 권장 형태 → (선택) 스펙 amend**를 짧게
-3. **적용:** 사용자 승인 또는 Approved 스펙이 스키마를 바꾸면 **엔티티 + `erd.md`를 최신 하나**로 맞춘다 (Flyway·호환 레이어 금지 — `harness-workflow` ⛔ STOP — DB 스키마 절)
+3. **적용:** 사용자 승인 또는 Approved 스펙이 스키마를 바꾸면 **엔티티 + `erd.md`를 최신 하나**로 맞춘다 (Flyway·호환 레이어 금지 — `harness-workflow.md` ⛔ STOP — DB 스키마 절)
 4. **금지:** 제안 없이 임시/중복 컬럼 누적 · ERD drift를 코드 주석으로만 방치
 
 ## 💡 구현 후 후속 제안 (Follow-up)
@@ -51,15 +46,15 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 
 - 후속 제안을 핑계로 **같은 턴에** 스펙 밖 리팩터·추상화 구현
 - 「나중에 하면 좋겠다」만 나열하고 **근거·우선순위** 없이 장문
-- verification-before-completion(테스트·체크리스트) **대신** 제안만 하고 완료 선언
+- 완료 선언 전 검증(테스트·체크리스트) **대신** 제안만 하고 완료 선언
 
-**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.cursor/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `harness-workflow` After Coding과 동일).
+**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.claude/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `harness-workflow.md` After Coding과 동일).
 
 ## ✅ 후속 작업 이슈 분리 (Defer)
 
 사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「wave 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** 아래를 **같은 턴**에 수행한다.
 
-1. **`docs/specs/{kebab-case}.md`** — Draft 스펙 작성 (`specify` 템플릿 축약 가능). Must Have·완료 기준·선행·wave·Out of Scope 포함
+1. **`docs/specs/{kebab-case}.md`** — Draft 스펙 작성 (`specify` 템플릿 축약 가능). Must Have·완료 기준·선행·wave 밖·Out of Scope 포함
 2. **관련 Approved 스펙** — `deferred:` 헤더 또는 Out of Scope 표에 **스펙 경로 + `#n` 링크** 추가 · 본문에서 lazy/임시 구현을 **#n 위임**으로 명시
 3. **`docs/specs/README.md`** — wave 표·이슈 매핑에 행 추가
 4. **`gh issue create`** — 본문에 스펙 경로·선행 이슈·완료 기준

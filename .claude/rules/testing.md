@@ -1,7 +1,7 @@
 ---
-description: JUnit 5·Spring Boot 테스트 규칙
-globs: **/*Test.java,**/src/test/**
-alwaysApply: false
+paths:
+  - "**/*Test.java"
+  - "src/test/**"
 ---
 
 # Testing

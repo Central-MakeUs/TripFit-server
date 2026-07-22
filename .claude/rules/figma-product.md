@@ -1,12 +1,13 @@
 ---
-description: Figma 와이어프레임 기반 TripFit 도메인·비즈니스 규칙 가이드
-globs: **/domain/**,**/service/**,docs/specs/**
-alwaysApply: false
+paths:
+  - "**/domain/**"
+  - "**/service/**"
+  - "docs/specs/**"
 ---
 
 # Figma Product Context
 
-API 계약·CORS·인증·DTO는 **`client-platform.mdc`** 참고.
+API 계약·CORS·인증·DTO는 **`client-platform.md`** 참고.
 
 API·도메인 작업 전 **순서대로** 확인:
 

@@ -1,6 +1,5 @@
 ---
-description: Docker/EC2 배포 시 스키마·설정 실수 방지
-globs:
+paths:
   - "**/application*.yml"
   - "**/docker-compose.yml"
   - "**/Dockerfile"
@@ -27,7 +26,7 @@ globs:
 ## 스키마
 
 - **Flyway / Liquibase / SQL 마이그레이션 미사용·작성 금지.** Hibernate `ddl-auto`만 — 프로필별 값은 `architecture.md` SSOT.
-- **상용 보존 데이터 없음(dev).** 스키마 변경 시 엔티티를 최신 형태로만 두고 DB는 리셋(`docker compose down -v` 등). 구 스키마 호환·데이터 보존 마이그레이션 코드 금지. 상세: `harness-workflow.mdc` ⛔ DB 스키마 절.
+- **상용 보존 데이터 없음(dev).** 스키마 변경 시 엔티티를 최신 형태로만 두고 DB는 리셋(`docker compose down -v` 등). 구 스키마 호환·데이터 보존 마이그레이션 코드 금지. 상세: `harness-workflow.md` ⛔ DB 스키마 절.
 - prod `update`: 기동 시 엔티티 기준으로 스키마 자동 반영. 스키마 변경은 local/dev에서 검증 후 배포(필요 시 volume 재생성).
 
 ## MySQL / JPA 주의
