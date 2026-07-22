@@ -15,7 +15,7 @@ paths:
 |------|------|
 | 배포 절차·환경변수·검증 스크립트 | [`deploy/README.md`](../../deploy/README.md) |
 | 프로필·ddl-auto·레이어 | [`docs/architecture.md`](../../docs/architecture.md) |
-| VPC·SG·1→2 EC2 마이그레이션 | [`docs/architecture/ec2-split-deployment.md`](../../docs/architecture/ec2-split-deployment.md) |
+| VPC·SG·1→2 EC2 마이그레이션 | [`deploy/ec2-split-deployment.md`](../../deploy/ec2-split-deployment.md) |
 
 ## 도메인 (확정)
 

@@ -326,7 +326,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 방별 **참여·일정 확인** 상태. 일정 데이터는 User `personal_schedule`/`regular_schedule`에 있음 (BR-USER-007 · #39).
 
 - **관련 BR:** BR-USER-002, BR-USER-007
-- **관련 스펙:** [`trip-create-join-flow-redesign.md`](../specs/trip-create-join-flow-redesign.md) (#39), [`trip-room-api.md`](../specs/trip-room-api.md) D1
+- **관련 스펙:** [`trip-room-api.md`](../specs/trip-room-api.md) D1 (#39), [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md)
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|

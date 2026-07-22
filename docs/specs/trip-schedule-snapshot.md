@@ -14,14 +14,12 @@
 
 ## 제품 확정
 
+대상(CONFIRMED∪TERMINATED)·조회 기간(`startRange`~`endRange`)·읽기 전용·CANCELED 제외는 [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) C3/CANCELED 행이 SSOT — 여기서 중복 정의하지 않는다. 본 스펙 고유 내용:
+
 | ID | 확정 |
 |----|------|
-| **S1** | 대상: **CONFIRMED ∪ TERMINATED** |
-| **S2** | 기간: **`startRange` ~ `endRange`** |
-| **S3** | 멤버 전원 **effective** (regular⊕personal, S1·R2=A) |
-| **S4** | **읽기 전용** |
-| **S5** | ONGOING = live (본 스펙 밖) |
-| **S6** | CANCELED = 대상 아님 (#37 R1) |
+| **S3** | 멤버 전원 **effective** (regular⊕personal, R2=A — [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md)) — freeze 시점 값을 snapshot 테이블에 저장 |
+| **S5** | ONGOING = live (본 스펙 밖, `trip-schedule-calendar-window.md` C2) |
 
 ### Freeze 시점 (R-freeze) — 공백 없음 (R-gap)
 

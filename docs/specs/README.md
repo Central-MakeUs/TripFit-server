@@ -18,8 +18,7 @@
 | [`auth-social-login.md`](auth-social-login.md) | **Approved** / Implemented | Google·Kakao·Apple · JWT access/refresh | — |
 | [`user-onboarding.md`](user-onboarding.md) | **Approved** | 성·이름 · 재진입 D-REENTRY | auth-social-login |
 | [`user-my-page.md`](user-my-page.md) | **Approved** / Implemented | 마이페이지 이름 PATCH | user-onboarding |
-| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Draft** (#22 · **#39 amend**) | join 게이트 · `JOINED`→confirm · submit 폐기 · hold→#35 | user-onboarding · trip-create-join-flow-redesign |
-| [`trip-create-join-flow-redesign.md`](trip-create-join-flow-redesign.md) | **Implemented (core)** · **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)** | 생성→일정 confirm | trip-room-api · [가이드](../product/flows/trip-create-join-guide.md) |
+| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Implemented** (#22 · **#39 amend**) | join 게이트 · `JOINED`→confirm · submit 폐기 · hold→#35 | user-onboarding |
 
 ## wave 2
 

@@ -42,7 +42,6 @@
 
 ### Nice to Have
 
-- [x] `docs/prompts/notebooklm/03-erd.md`의 bigint PK 문구 동기화
 - [ ] `docs/decisions/`에 짧은 ADR (008) — 선택. 스펙+erd+규칙으로 충분하면 생략
 
 ### Out of Scope

@@ -18,7 +18,7 @@
 
 `NNN-짧은-제목.md` — 예: `003-rds-mysql-cutover.md`
 
-번호는 순서대로. 이미 긴 가이드가 있으면 중복 작성하지 않고 링크만 — 예: [ec2-split-deployment.md](../architecture/ec2-split-deployment.md)
+번호는 순서대로. 이미 긴 가이드가 있으면 중복 작성하지 않고 링크만 — 예: [ec2-split-deployment.md](../../deploy/ec2-split-deployment.md)
 
 ## 템플릿 (1페이지 이내)
 

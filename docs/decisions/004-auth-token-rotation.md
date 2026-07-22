@@ -32,26 +32,13 @@ wave 1(MVP)은 `POST /auth/login`, `/refresh`, `/logout`과 DB 기반 opaque ref
 
 ### `[미정]` — Redis access JWT 전략
 
-블랙리스트 vs 화이트리스트는 **wave 4 구현 착수 전** 팀 합의한다.
-
-| 전략 | 개요 | 장점 | 단점 |
-|------|------|------|------|
-| **Blacklist** | logout·강제 revoke 시 `jti`를 Redis에 TTL=access 남은 수명으로 등록 | stateless 발급 유지, 2h TTL이라 키 수 적음 | 평소에는 Redis 미조회, revoke 시에만 기록 |
-| **Whitelist** | 유효 access마다 `jti`를 Redis에 TTL=access 수명으로 등록, 매 API 요청 시 존재 확인 | 즉시 전역 세션 통제·강제 로그아웃 용이 | 모든 인증 API마다 Redis 조회 |
+블랙리스트 vs 화이트리스트는 **wave 4 구현 착수 전** 팀 합의한다. 옵션 비교·Redis 키 설계는 [`docs/specs/auth-token-rotation.md`](../specs/auth-token-rotation.md) §"[미정] — Redis access 전략"이 SSOT — 여기서 중복 정의하지 않는다.
 
 **현재 가이드 (결정 전 참고):** access TTL 2h·하이브리드 앱 기준 **blacklist 우선 검토**. whitelist는 “전 기기 즉시 차단” 요구가 명확해질 때 decisions amend.
 
 ## wave 1 → wave 4 관계
 
-| 영역 | wave 1 (MVP) | wave 4 (본 결정) |
-|------|---------------|--------------|
-| login API | `POST /auth/login` | 변경 없음 |
-| refresh API | access JWT만 재발급, refresh row **유지** | access + **새 refreshToken** 재발급, 구 token revoke |
-| refresh 저장 | MySQL | MySQL (RTR) |
-| access JWT | stateless, `jti` claim **포함** (wave 4 대비) | + Redis 검증 (blacklist 또는 whitelist) |
-| logout | refresh row 삭제 | refresh revoke + access `jti` Redis 등록 (전략 확정 후) |
-
-wave 1 코드는 wave 4를 막지 않도록 **`jti`**, **`family_id`**, **`TokenRevocationChecker` interface(NoOp)** 를 포함한다.
+전환 상세(API 응답 변경·데이터 모델·환경 변수)는 [`docs/specs/auth-token-rotation.md`](../specs/auth-token-rotation.md)가 SSOT. 요지만: wave 1 코드는 wave 4를 막지 않도록 **`jti`**, **`family_id`**, **`TokenRevocationChecker` interface(NoOp)** 를 이미 포함한다 — wave 4는 RTR 로직 + Redis 연동을 **추가**할 뿐 wave 1 API 계약(`POST /auth/login`)은 바꾸지 않는다.
 
 ## 고려한 대안
 

@@ -31,23 +31,8 @@
 
 ## 개발 물결 (wave)
 
-기능 우선순위·출시 단계는 [`waves.md`](waves.md) **wave 1~4** 만 사용한다.  
+기능 우선순위·출시 단계는 [`waves.md`](waves.md) **wave 1~4** 만 사용한다. 기능→wave 매핑 표는 [`waves.md`](waves.md)가 SSOT — 여기서 중복 정의하지 않는다.  
 **운영·판단·Backlog:** [`development-wave.md`](development-wave.md) · 요약표: [`waves.md`](waves.md)
-
-| 기능 (MVP) | wave |
-|--------------|------|
-| 사용자 인증·소셜 로그인 | 1 |
-| **일정 참여·온보딩·submit 흐름 (#22)** | **1** |
-| 여행방 생성·옵션·초대·참여·여행지 | 2 |
-| 일정 응답·근무/연차 조건·추천(4모드)·확정 | 2 · **#22 선행** |
-| 홈 여행방 (진행 중/전체 · Pin · `last_activity_at`) | 2 |
-| 그룹 달력 시각화 | 3 |
-| 리마인드 알림·메시지 공유 | 3 |
-| 소셜 계정 연동 (BR-USER-003) | 4 |
-| 알림 상세 설정 | 4 |
-| 정기 리마인드 스케줄러 (BR-NOTI-005) | 4 |
-| 여행방 취소·삭제 VOC (`trip.cancel_reason`) | 4 |
-| 프로필 이미지 S3 미러 (B안) | 4 |
 
 ## MVP 완료 기준
 
@@ -55,9 +40,9 @@
 
 ## 의존성 / 선행 조건
 
-- **#22 Approved** — 일정 참여·submit·sparse·온보딩 skip SSOT 확정 후 wave 2 일정 응답·추천(#13)·알림(#21) 본격 착수
-- 외부 캘린더(구글 등) API 연동 규격 확인 — `[제안]`, wave 4 후보
-- 가중치 기반 추천 엔진(4모드) 페널티 점수 산출 로직 검증 — wave 2
+- **#22 확정 완료 (2026-07-21, #39 amend까지 반영)** — 일정 참여·submit·sparse·온보딩 skip SSOT 확정됨. wave 2 일정 응답·추천(#13)은 이 SSOT 위에서 진행
+- 외부 캘린더(구글 등) API 연동 — Google Calendar OAuth(#44)로 wave 4 진행 중, 상세: [`google-calendar-oauth.md`](../specs/google-calendar-oauth.md)
+- 가중치 기반 추천 엔진(4모드) 페널티 점수 산출 로직 검증 — wave 2, [`trip-recommendation.md`](../specs/trip-recommendation.md) (Draft)
 
 ## 기획 메모 (NotebookLM)
 

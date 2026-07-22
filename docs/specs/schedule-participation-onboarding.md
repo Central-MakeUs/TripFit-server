@@ -3,10 +3,9 @@
 > wave: **1**
 > implements: BR-USER-001(이름 게이트), BR-USER-006(부분), BR-USER-007(부분)
 > deferred: BR-NOTI-001/002(wave 3), **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)
-> 상태: **Draft** — 2026-07-21 #22 핵심 + **#39 amend** (방장 `JOINED`→`schedule/confirm`→`RESPONDED`). submit 삭제 · `is_all_free` · canEnterRoom · hold→#35
-> 다음: #39 정합 잔여 amend · 인벤토리 stale 정리 · PR
+> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend** (방장 `JOINED`→`schedule/confirm`→`RESPONDED`). submit 삭제 · `is_all_free` · canEnterRoom · hold→#35. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
 > GitHub: **#22** · amend **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)**
-> 선행: [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md), [`trip-create-join-flow-redesign.md`](trip-create-join-flow-redesign.md)
+> 선행: [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
 > 결정 amend: [`007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md) (D-REENTRY-2)
 
 ## 목표
@@ -341,7 +340,7 @@ canEnterRoom(user) =
 | [`glossary.md`](../product/glossary.md) | “참여자” 정의(RESPONDED) → `[미정]` |
 | [`business-rules/user.md`](../product/business-rules/user.md) | BR-USER-006·007 → `[미정]` |
 | [`business-rules/notification.md`](../product/business-rules/notification.md) | BR-NOTI-001/002 트리거 → `[미정]` |
-| [`flows/trip-join.md`](../product/flows/trip-join.md) | 4~7단계 submit → `[미정]` |
+| [`flows/trip-create-join-guide.md`](../product/flows/trip-create-join-guide.md) | 참여 플로우 4~7단계 submit → `[미정]` |
 | [`flows/schedule-edit.md`](../product/flows/schedule-edit.md) | submit 분기 → `[미정]` |
 | [`flows/trip-confirm.md`](../product/flows/trip-confirm.md) | “1명 이상 제출” 전제 → `[미정]` |
 | [`design/figma-wireframe-v1.md`](../product/design/figma-wireframe-v1.md) | RESPONDED·isScheduleRegistered → `[미정]` |

@@ -37,10 +37,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 
 | 문서 | 내용 |
 |------|------|
-| `docs/product/flows/trip-create-join-guide.md` | 생성·참여 상세(시나리오·정책) |
-| `docs/specs/trip-create-join-flow-redesign.md` | JOINED→confirm 재설계 (#39) |
-| `docs/product/flows/trip-create.md` | 생성 플로우 (요약) |
-| `docs/product/flows/trip-join.md` | 참여 (요약) |
+| `docs/product/flows/trip-create-join-guide.md` | 생성·참여 상세(빠른 요약·시나리오·정책, JOINED→confirm 포함) |
 | `docs/product/business-rules/trip.md` | BR-TRIP-001, 008, 009, 013 |
 | `docs/product/design/figma-wireframe-v1.md` | 홈 캐러셀·전체 보기·Pin |
 | `docs/architecture/erd.md` | `trip`, `trip_member` (`last_activity_at`, `pinned_at`) |
