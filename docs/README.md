@@ -3,7 +3,7 @@
 기획·아키텍처·스펙의 **단일 진실 공급원(SSOT)** 입니다.  
 코드·배포 설정과 충돌 시: **PRD > MVP 범위 컷 > 구현 코드** 순으로 해석하고, 불일치는 스펙 또는 이 README에 기록합니다.
 
-에이전트 행동 규칙: [`.cursor/README.md`](../.cursor/README.md) · 하네스 코어 [`harness-workflow.mdc`](../.cursor/rules/harness-workflow.mdc)
+에이전트 행동 규칙: [`.claude/rules/README.md`](../.claude/rules/README.md) · 하네스 코어 [`harness-workflow.md`](../.claude/rules/harness-workflow.md)
 
 ## 디렉터리 맵
 
@@ -22,7 +22,7 @@ docs/
 │   ├── design/ · business-rules/ · flows/ · templates/
 ├── specs/                    ← 기능 스펙 — 목록 SSOT: specs/README.md
 ├── decisions/                ← 아키텍처 결정 — 목록: decisions/README.md
-└── prompts/                  ← NotebookLM·Cursor import
+└── prompts/                  ← NotebookLM·에이전트 import
 ```
 
 **상세 목록은 하위 README를 SSOT로 둔다** (이 파일에 스펙 전수를 중복하지 않음).
@@ -42,10 +42,10 @@ docs/
 3. `product/mvp.md` · `product/platform.md`
 4. `product/prd.md` + `business-rules/` · `glossary.md`
 5. `architecture.md` + `architecture/erd.md` + `architecture/api-response.md`
-6. `specs/{feature}.md` — [`specs/README.md`](specs/README.md)에서 선택 (`.cursor/skills/specify`)
+6. `specs/{feature}.md` — [`specs/README.md`](specs/README.md)에서 선택 (`.claude/skills/specify`)
 7. 구현 후 `docs/`·이슈 동기화 (하네스 After Coding)
 
-**Wave Must/Nice/Out·`[미정]`:** `.cursor/rules/harness-wave.mdc`
+**Wave Must/Nice/Out·`[미정]`:** `.claude/rules/harness-wave.md`
 
 ## 런타임 vs 문서
 
@@ -57,7 +57,7 @@ docs/
 | 배포 절차 | [`../deploy/README.md`](../deploy/README.md) | `deploy/`, 루트 `docker-compose.yml` |
 | VPC·SG 심화 | `architecture/ec2-split-deployment.md` | AWS 인프라 (참고) |
 
-기획 수정 반영: [`prompts/README.md`](prompts/README.md) — NotebookLM **01→02→03→(04)**, repo는 Cursor [`cursor-import-checklist.md`](prompts/cursor-import-checklist.md). ERD는 **MySQL 8.0** 기준.
+기획 수정 반영: [`prompts/README.md`](prompts/README.md) — NotebookLM **01→02→03→(04)**, repo는 AI 코딩 에이전트 [`agent-import-checklist.md`](prompts/agent-import-checklist.md). ERD는 **MySQL 8.0** 기준.
 
 ## 관련 경로
 
@@ -66,8 +66,8 @@ docs/
 | [`AGENTS.md`](../AGENTS.md) | AI·개발자 프로젝트 지도 |
 | [`deploy/README.md`](../deploy/README.md) | Docker·EC2 배포 |
 | [`.dev/README.md`](../.dev/README.md) | 임시 작업 로그 (장기 문서는 여기로 이관) |
-| [`.cursor/README.md`](../.cursor/README.md) | Cursor AI 규칙·스킬 |
+| [`.claude/rules/README.md`](../.claude/rules/README.md) | Claude Code AI 규칙·스킬 |
 
 ## 스펙 작성
 
-큰 기능은 `docs/specs/{kebab-case}.md`에 작성합니다. 템플릿: `.cursor/skills/specify/references/spec-template.md`
+큰 기능은 `docs/specs/{kebab-case}.md`에 작성합니다. 템플릿: `.claude/skills/specify/references/spec-template.md`

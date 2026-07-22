@@ -4,7 +4,7 @@
 > MVP: In scope (인프라·스키마)  
 > 관련 BR: 해당 없음  
 > wave: 1  
-> implements: PK/FK UUID 통일, JWT `sub` UUID, Cursor 규칙  
+> implements: PK/FK UUID 통일, JWT `sub` UUID, 에이전트 규칙  
 > deferred: UUID v7, BINARY(16) 저장 (Flyway·데이터 보존 마이그레이션은 **도입하지 않음** — harness ⛔ DB)
 
 ## 목표
@@ -15,7 +15,7 @@
 
 - 현재 ERD·엔티티는 **bigint + `GenerationType.IDENTITY`**
 - 클라이언트 미연결 · prod 데이터 폐기 가능 → in-place 마이그레이션 없이 스키마 리셋으로 전환
-- 관련 문서: `docs/architecture/erd.md`, `docs/architecture.md`, `.cursor/rules/spring-boot-java.mdc`
+- 관련 문서: `docs/architecture/erd.md`, `docs/architecture.md`, `.claude/rules/spring-boot-java.md`
 
 ## 확정 결정 (2026-07-13)
 
@@ -25,7 +25,7 @@
 | 생성 | UUID v4 — Hibernate `@UuidGenerator` (또는 `GenerationType.UUID`) |
 | 기존 데이터 | local/dev/prod **폐기·재생성** (`docker compose down -v` 등). SQL 마이그레이션 없음 |
 | API | `id`·path param·JWT `sub` → **UUID 문자열**. 프론트 미연결로 breaking OK |
-| 규칙 | `.cursor/rules/spring-boot-java.mdc` Entity 섹션 + `erd.md` 설계 원칙 |
+| 규칙 | `.claude/rules/spring-boot-java.md` Entity 섹션 + `erd.md` 설계 원칙 |
 
 ## 요구사항
 
@@ -37,7 +37,7 @@
 - [x] Hibernate가 MySQL에서 UUID를 **BINARY(16)이 아닌 CHAR(36)** 으로 매핑되도록 명시 (`@JdbcTypeCode(SqlTypes.CHAR)` 또는 동등)
 - [x] `docs/architecture/erd.md` — 설계 원칙·Mermaid·컬럼 표의 bigint PK/FK → uuid/`char(36)`
 - [x] 관련 스펙·API 예시의 숫자 `id` → UUID 문자열 (최소: `auth-social-login`, `user-onboarding`, `schedule-unified`, `api-response.md` 예시)
-- [x] `.cursor/rules/spring-boot-java.mdc` — Entity Conventions에 **PK = UUID (CHAR(36), v4)** 규칙 추가
+- [x] `.claude/rules/spring-boot-java.md` — Entity Conventions에 **PK = UUID (CHAR(36), v4)** 규칙 추가
 - [x] 테스트·fixture의 `1L` / `Long` ID → `UUID`로 갱신, `./gradlew test` 통과
 
 ### Nice to Have

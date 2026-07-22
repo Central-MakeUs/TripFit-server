@@ -2,7 +2,7 @@
 
 > **생성 대상:** `docs/architecture/erd.md`  
 > **입력:** 노트북 기획 자료 + **01·02단계 NotebookLM 출력** (아래 `[선택]`에 붙여넣기)  
-> **Cursor 후속:** [../cursor-import-checklist.md](../cursor-import-checklist.md)
+> **에이전트 후속:** [../agent-import-checklist.md](../agent-import-checklist.md)
 
 ---
 
@@ -71,7 +71,7 @@
 **enum·상태값 (문서에 명시):**
 - `member_schedule.time_slot`: MORNING, AFTERNOON, EVENING
 - `member_schedule.status`: POSSIBLE, IMPOSSIBLE, TBD
-| `trip.status` | `ONGOING`(조율 중), `CONFIRMED`, `CANCELED`, `TERMINATED`(종료) — UI 매핑: `figma-product.mdc` |
+| `trip.status` | `ONGOING`(조율 중), `CONFIRMED`, `CANCELED`, `TERMINATED`(종료) — UI 매핑: `figma-product.md` |
 - `trip_member.role`: OWNER, MEMBER
 - `trip_member.status`: JOINED, RESPONDED
 - `user.provider`: KAKAO, GOOGLE, APPLE

@@ -3,7 +3,7 @@
 > **상태: 확정**  
 > 백엔드 REST API의 JSON envelope SSOT. Controller·`GlobalExceptionHandler`·`docs/specs/`는 이 문서를 따른다.
 
-백엔드 구현·Agent 작업 시 참고: `.cursor/rules/spring-boot-java.mdc`, `client-platform.mdc`  
+백엔드 구현·Agent 작업 시 참고: `.claude/rules/spring-boot-java.md`, `client-platform.md`  
 프론트 협의 맥락: `docs/product/platform.md`
 
 ## 확정 항목
@@ -165,7 +165,7 @@ switch (body.code) {
 | user/schedule | `ScheduleErrorCode` | — |
 | trip | `TripErrorCode` | `@TripActivity` AOP · `@TripMemberOnly`/`@TripOwnerOnly` Interceptor |
 
-상세 조건은 각 `docs/specs/` 에러 표. 상수 추가·변경 시 **같은 턴**에 enum + throw + 스펙 표 갱신 (`.cursor/rules/harness-workflow.mdc`).
+상세 조건은 각 `docs/specs/` 에러 표. 상수 추가·변경 시 **같은 턴**에 enum + throw + 스펙 표 갱신 (`.claude/rules/harness-workflow.md`).
 
 ## 백엔드 구현 가이드
 

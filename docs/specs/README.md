@@ -4,8 +4,8 @@
 
 ## 작성 방법
 
-1. Cursor에서 `specify` 스킬 사용 (또는 Plan 모드)
-2. 템플릿: [`.cursor/skills/specify/references/spec-template.md`](../../.cursor/skills/specify/references/spec-template.md)
+1. `specify` 스킬 사용 (또는 Plan Mode)
+2. 템플릿: [`.claude/skills/specify/references/spec-template.md`](../../.claude/skills/specify/references/spec-template.md)
 3. 파일명: kebab-case — 예) `trip-room-create.md` (접미사 `mvp`, `phase`, `p2` 금지)
 4. 상단 메타: `wave`, `implements`, `deferred` — [`waves.md`](../product/waves.md)
 5. 사용자 승인 후 구현 시작

@@ -1,6 +1,6 @@
 # GitHub 워크플로
 
-Issue · PR · Milestone · CI를 TripFit 하네스(`docs/`, `.cursor/`)와 연결합니다.
+Issue · PR · Milestone · CI를 TripFit 하네스(`docs/`, `.claude/`)와 연결합니다.
 
 계획·우선순위 SSOT: [`docs/product/development-wave.md`](../docs/product/development-wave.md) · 요약: [`waves.md`](../docs/product/waves.md)
 
@@ -105,7 +105,7 @@ Nice/Must 구분은 **Wave Backlog Issue** 본문 + 실행 Issue **비고** — 
 
 ### `[미정]` chore 트래커
 
-기획·스펙·BR의 **`[미정]`** 항목은 **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** 에 모은다 (`kind: chore`). 상세: `.cursor/rules/harness-wave.mdc`.
+기획·스펙·BR의 **`[미정]`** 항목은 **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** 에 모은다 (`kind: chore`). 상세: `.claude/rules/harness-wave.md`.
 
 ### 마일스톤 (= wave)
 

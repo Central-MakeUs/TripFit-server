@@ -2,7 +2,7 @@
 
 - **상태:** 확정
 - **날짜:** 2026-07-06 (2026-07-07 구조 통일, **2026-07-13** `user/schedule` feature 패키지, **2026-07-20** auth 기술축·trip projection·TripService 분리)
-- **관련:** `docs/architecture.md`, `.cursor/rules/spring-boot-java.mdc`
+- **관련:** `docs/architecture.md`, `.claude/rules/spring-boot-java.md`
 
 ## 맥락
 

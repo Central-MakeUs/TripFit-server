@@ -29,4 +29,4 @@ AI·개발 세션 중 생기는 **임시 메모**를 둡니다. 장기 문서는
 |------|------|
 | [`docs/README.md`](../docs/README.md) | 공식 문서 인덱스 |
 | [`deploy/README.md`](../deploy/README.md) | 배포·환경 변수 |
-| [`.cursor/README.md`](../.cursor/README.md) | AI 에이전트 규칙 |
+| [`.claude/rules/README.md`](../.claude/rules/README.md) | AI 에이전트 규칙 |

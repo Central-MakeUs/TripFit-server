@@ -1,6 +1,6 @@
-# Cursor — NotebookLM 출력 repo 반영 체크리스트
+# AI 코딩 에이전트 — NotebookLM 출력 repo 반영 체크리스트
 
-NotebookLM에서 **01~04 출력**을 받은 뒤, Cursor(또는 PR)에서만 수행합니다.  
+NotebookLM에서 **01~04 출력**을 받은 뒤, AI 코딩 에이전트(또는 PR)에서만 수행합니다.  
 NotebookLM에는 repo 내용을 넣지 않습니다.
 
 ## 1. 파일 저장
@@ -36,7 +36,7 @@ docs/product/design/figma-wireframe-v1.md   ← 04 실행 시만
 | `docs/specs/auth-social-login.md` | TTL, `POST /api/v1/auth/login` |
 | JPA 엔티티 (`src/main/java/...`) | ERD 컬럼·enum 정합 |
 
-## 3. 정합 검사 (Cursor Agent 또는 수동)
+## 3. 정합 검사 (AI 코딩 에이전트 또는 수동)
 
 - [ ] prd In/Out ↔ mvp 체크리스트
 - [ ] mvp wave 표 ↔ `waves.md` MVP 매핑

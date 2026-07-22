@@ -11,20 +11,20 @@ AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되
 | 진입점 | 역할 |
 |--------|------|
 | [`AGENTS.md`](AGENTS.md) | **프로젝트 지도** — 무엇을 어디서 찾는지, 기술 스택, 금기사항 |
-| [`.cursor/README.md`](.cursor/README.md) | **에이전트 행동 규칙** — rules(`.mdc`) · skills · hooks 구조 |
-| [`.cursor/rules/harness-workflow.mdc`](.cursor/rules/harness-workflow.mdc) | **최우선 STOP** — 문서·스펙 정합 · ErrorCode/AOP · DB · 레거시 |
-| [`.cursor/rules/harness-wave.mdc`](.cursor/rules/harness-wave.mdc) | Wave Must/Nice/Out · `[미정]`→#2 · 일정·기간 용어 |
-| [`.cursor/rules/harness-follow-up.mdc`](.cursor/rules/harness-follow-up.mdc) | 후속 제안 · Defer · ERD 적극 제안 |
-| [`.cursor/skills/specify/SKILL.md`](.cursor/skills/specify/SKILL.md) | **승인 게이트** — 큰 변경은 스펙 작성 → 승인 후 구현 |
+| [`.claude/rules/README.md`](.claude/rules/README.md) | **에이전트 행동 규칙** — rules(`.md`) · skills · hooks 구조 |
+| [`.claude/rules/harness-workflow.md`](.claude/rules/harness-workflow.md) | **최우선 STOP** — 문서·스펙 정합 · ErrorCode/AOP · DB · 레거시 |
+| [`.claude/rules/harness-wave.md`](.claude/rules/harness-wave.md) | Wave Must/Nice/Out · `[미정]`→#2 · 일정·기간 용어 |
+| [`.claude/rules/harness-follow-up.md`](.claude/rules/harness-follow-up.md) | 후속 제안 · Defer · ERD 적극 제안 |
+| [`.claude/skills/specify/SKILL.md`](.claude/skills/specify/SKILL.md) | **승인 게이트** — 큰 변경은 스펙 작성 → 승인 후 구현 |
 | [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
 
 ### 실행 경로를 제한하는 3가지 장치
 
-- **다층 SSOT** — 기획(`docs/product/`) → 기능 스펙(`docs/specs/`) → 아키텍처 결정(`docs/decisions/`) → 규칙(`.cursor/rules/`). 값·계약이 문서와 다르면 조용히 맞추지 않고 질문한다.
+- **다층 SSOT** — 기획(`docs/product/`) → 기능 스펙(`docs/specs/`) → 아키텍처 결정(`docs/decisions/`) → 규칙(`.claude/rules/`). 값·계약이 문서와 다르면 조용히 맞추지 않고 질문한다.
 - **승인 게이트** — DB·인증·다파일 변경은 `specify` 스킬로 Approved 스펙을 만든 뒤에만 코드를 작성한다. 예: [`docs/specs/trip-room-api.md`](docs/specs/trip-room-api.md) (BR·wave·미정 항목까지 명시).
-- **안전 하한선** — `beforeShellExecution` 훅([`hooks.json`](.cursor/hooks.json))이 `git push --force`·`rm -rf` 등 파괴적 명령을 **fail-closed**로 차단한다.
+- **안전 하한선** — `PreToolUse` 훅([`.claude/settings.json`](.claude/settings.json))이 `git push --force`·`rm -rf` 등 파괴적 명령을 **fail-closed**로 차단한다.
 
-**워크플로:** `wave 확인 → (brainstorming) → specify/Approved → 구현 → ./gradlew test → verification → PR`
+**워크플로:** `wave 확인 → (Plan Mode) → specify/Approved → 구현 → ./gradlew test → verify → PR`
 
 ## Tech Stack
 

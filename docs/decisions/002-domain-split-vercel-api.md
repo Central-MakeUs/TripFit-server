@@ -51,7 +51,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 | `deploy/app/docker-compose.yml` | nginx + certbot + app |
 | `scripts/init-letsencrypt.sh` | `CERTBOT_DOMAIN=api.tripfit.online` 기본 |
 | `docs/product/platform.md` | 플랫폼 맥락 |
-| `.cursor/rules/deployment.mdc` | Agent 배포 규칙 |
+| `.claude/rules/deployment.md` | Agent 배포 규칙 |
 
 ## Agent 금지 사항
 

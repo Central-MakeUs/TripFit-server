@@ -33,8 +33,8 @@
 ## waves · 엔지니어링 경계
 
 - `mvp.md`: [`waves.md`](../../product/waves.md) **링크 + wave↔기능 매핑 표**만. wave 1~4 정의 문구 복사 금지.
-- ERD(03): 프롬프트에 적힌 **백엔드 확정 사항**(refresh_token 등)은 기획서에 없어도 포함. 그 외 인프라·TTL·배포는 Cursor [import-checklist](../cursor-import-checklist.md)에서 검증.
+- ERD(03): 프롬프트에 적힌 **백엔드 확정 사항**(refresh_token 등)은 기획서에 없어도 포함. 그 외 인프라·TTL·배포는 [import-checklist](../agent-import-checklist.md)에서 검증.
 
-## Cursor 후속
+## 에이전트 후속
 
-NotebookLM 출력 저장 후 → [../cursor-import-checklist.md](../cursor-import-checklist.md)
+NotebookLM 출력 저장 후 → [../agent-import-checklist.md](../agent-import-checklist.md)
