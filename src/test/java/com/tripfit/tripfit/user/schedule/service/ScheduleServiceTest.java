@@ -21,11 +21,13 @@ import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.Perso
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +56,9 @@ class ScheduleServiceTest {
 
   @Mock
   private UserSummaryService userSummaryService;
+
+  @Mock
+  private GoogleCalendarService googleCalendarService;
 
   @InjectMocks
   private ScheduleService scheduleService;
@@ -422,6 +427,7 @@ class ScheduleServiceTest {
             start,
             end))
         .thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, start, end)).thenReturn(Map.of());
 
     var response = scheduleService.getCalendar(USER_ID, start, end);
 

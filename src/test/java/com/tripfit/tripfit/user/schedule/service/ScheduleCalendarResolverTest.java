@@ -130,4 +130,59 @@ class ScheduleCalendarResolverTest {
     assertThat(ScheduleCalendarResolver.parseDaysOfWeek(" mon , Tue "))
         .containsExactlyInAnyOrder(DayOfWeek.MONDAY, DayOfWeek.TUESDAY);
   }
+
+  @Test
+  void resolve_googleOnlyDay_appearsWithImpossibleSlots() {
+    LocalDate date = LocalDate.of(2026, 8, 10);
+    var googleBusy =
+        com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay.create(
+            user,
+            date,
+            true,
+            false,
+            false);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(),
+            List.of(),
+            date,
+            date,
+            Map.of(date, googleBusy));
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+  }
+
+  @Test
+  void resolve_mergeWithGoogle_orImpossibleWins() {
+    LocalDate date = LocalDate.of(2026, 8, 11);
+    PersonalSchedule personal =
+        PersonalSchedule.create(
+            user,
+            date,
+            ScheduleStatus.POSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            false);
+    var googleBusy =
+        com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay.create(
+            user,
+            date,
+            false,
+            true,
+            false);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(),
+            List.of(personal),
+            date,
+            date,
+            Map.of(date, googleBusy));
+
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+  }
 }

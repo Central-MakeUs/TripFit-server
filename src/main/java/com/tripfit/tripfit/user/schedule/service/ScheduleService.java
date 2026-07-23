@@ -20,6 +20,7 @@ import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.exception.ScheduleErrorCode;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
@@ -46,15 +47,19 @@ public class ScheduleService {
 
   private final UserSummaryService userSummaryService;
 
+  private final GoogleCalendarService googleCalendarService;
+
   public ScheduleService(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
       UserRepository userRepository,
-      UserSummaryService userSummaryService) {
+      UserSummaryService userSummaryService,
+      GoogleCalendarService googleCalendarService) {
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
     this.userRepository = userRepository;
     this.userSummaryService = userSummaryService;
+    this.googleCalendarService = googleCalendarService;
   }
 
   // 정기 일정 목록 조회 — 생성 시각 오름차순
@@ -240,7 +245,12 @@ public class ScheduleService {
     return new ScheduleCalendarResponse(
         startDate,
         endDate,
-        ScheduleCalendarResolver.resolve(regulars, personals, startDate, endDate));
+        ScheduleCalendarResolver.resolve(
+            regulars,
+            personals,
+            startDate,
+            endDate,
+            googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate)));
   }
 
   private void validateCreateRegular(CreateRegularScheduleRequest request) {
