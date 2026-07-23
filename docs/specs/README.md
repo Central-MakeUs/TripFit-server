@@ -47,7 +47,7 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md) | **Draft** (#35) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
-| [`google-calendar-oauth.md`](google-calendar-oauth.md) | **Draft** (#44) | Google Calendar OAuth · `is_google_calendar_connected` | auth-social-login · user-onboarding |
+| [`google-calendar-oauth.md`](google-calendar-oauth.md) | **Approved** (#44) | Google Calendar OAuth · busy Merge · AES-256 | auth-social-login · user-onboarding |
 | [`auth-token-rotation.md`](auth-token-rotation.md) | Draft | RTR + Redis | auth-social-login · decision 004 |
 | [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md) | Draft | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
