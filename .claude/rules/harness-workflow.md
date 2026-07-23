@@ -92,6 +92,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`)
 - **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지
 - 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
+- **PR merge 확인 후:** 작업 브랜치 삭제 (원격+로컬) — CONTRIBUTING Pull Request "merge 후" 절. merge 안 된 브랜치는 삭제 금지
 - **커밋 요청 시:** 주제별 **최대 3개** (구현/테스트/문서·하네스). 억지 분할 금지
 - 같은 실수 2회+ → `.claude/rules/` 추가 **제안** (자동 추가 금지)
 - **레거시 재점검:** 이번 PR이 대체한 구 경로·상수·문서 ‘현행’ 문구가 남았는지 확인 후 **삭제/amend**. 요청 밖·정책 무관 dead code만 언급. **정책 불일치·교체 잔존 → STOP §4 삭제**

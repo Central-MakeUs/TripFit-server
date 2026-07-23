@@ -57,6 +57,7 @@ main  ←  {type}/{issue-number}-{description}
 | **이슈 연결** | `Closes #n` |
 | **스펙** | DB·인증·다파일 변경 시 `docs/specs/` 링크 |
 | **merge** | **Create a merge commit** — PR 브랜치 커밋 히스토리 유지 |
+| **merge 후** | 작업 브랜치 삭제 — 원격(`git push origin --delete {branch}`) + 로컬(`git branch -d {branch}`). GitHub PR 화면 "Delete branch" 버튼도 동일 |
 
 ### Merge 정책 (금지: Squash merge)
 
