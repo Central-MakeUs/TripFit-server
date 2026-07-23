@@ -9,7 +9,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** #27 S1~S3 + #38 — end_range 경과 → freeze → TERMINATED · Pin 해제 (동일 TX). */
+/** 홈 유지보수 배치 — 희망 기간이 지난 조율 중 방을 종료하고, 만료 Pin을 해제한다. */
 @Service
 public class TripHomeMaintenanceService {
 
@@ -28,10 +28,10 @@ public class TripHomeMaintenanceService {
     this.tripScheduleSnapshotService = tripScheduleSnapshotService;
   }
 
-  // 일 배치: 만료 ONGOING freeze→TERMINATED + Pin 해제 (#27·#38)
+  // 일 배치: endRange 지난 ONGOING을 스냅샷 고정 후 TERMINATED로 바꾸고, 만료 Pin을 해제한다
   @Transactional
   public void runForDate(LocalDate today) {
-    // 1. 만료 ONGOING 로드 → effective freeze → TERMINATED (R-freeze · R-gap 공백 불허)
+    // 1. 만료 ONGOING 로드 → 일정 스냅샷 freeze → TERMINATED (확정·종료 공백 없이 고정)
     List<Trip> expired = tripRepository.findExpiredOngoing(today);
     for (Trip trip : expired) {
       tripScheduleSnapshotService.freezeTrip(trip);

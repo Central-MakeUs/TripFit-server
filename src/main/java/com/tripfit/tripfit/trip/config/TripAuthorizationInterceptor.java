@@ -41,7 +41,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     this.userSummaryService = userSummaryService;
   }
 
-  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly 권한 게이트 (#39 JOINED 방장 면제)
+  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly 권한 검사 — JOINED 방장은 메타 API만 면제
   @Override
   public boolean preHandle(
       HttpServletRequest request,
@@ -73,7 +73,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
       if (!tripRepository.existsByIdAndOwner_IdAndDeletedAtIsNull(tripId, userId)) {
         throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
       }
-      // JOINED 방장 PATCH/DELETE 허용 — RESPONDED·canEnterRoom 게이트 면제 (#39)
+      // JOINED 방장도 PATCH/DELETE(메타)는 허용 — RESPONDED·입장 조건 검사 생략
       return true;
     }
 
@@ -82,12 +82,12 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
             .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
             .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
 
-    // trip별 일정 확인 미완료 — 전역 canEnterRoom과 별개 (#39)
+    // 이 방 일정 확인 미완료(JOINED) — 전역 입장 조건과 별개로 차단
     if (membership.getStatus() != TripMemberStatus.RESPONDED) {
       throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
     }
 
-    // D-JOIN-ENTRY: 전역 일정 또는 is_all_free
+    // 전역 입장 조건: 일정≥1 또는 전부 free
     userSummaryService.requireCanEnterRoom(userId);
     return true;
   }

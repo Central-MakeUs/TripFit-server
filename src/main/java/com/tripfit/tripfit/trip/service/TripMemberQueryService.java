@@ -16,6 +16,8 @@ import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
@@ -34,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+// 여행방 멤버 목록·멤버별 일정 달력 조회
 class TripMemberQueryService {
 
   private final TripMemberRepository tripMemberRepository;
@@ -46,20 +49,24 @@ class TripMemberQueryService {
 
   private final TripServiceSupport support;
 
+  private final GoogleCalendarService googleCalendarService;
+
   TripMemberQueryService(
       TripMemberRepository tripMemberRepository,
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
       TripMemberScheduleSnapshotRepository snapshotRepository,
-      TripServiceSupport support) {
+      TripServiceSupport support,
+      GoogleCalendarService googleCalendarService) {
     this.tripMemberRepository = tripMemberRepository;
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
     this.snapshotRepository = snapshotRepository;
     this.support = support;
+    this.googleCalendarService = googleCalendarService;
   }
 
-  // 멤버 목록 — joined/responded·memberFillRate·displayName
+  // 멤버 목록 조회 — 모집률·동명이인 displayName 포함
   @Transactional(readOnly = true)
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
     support.requireActiveMember(tripId, userId);
@@ -96,7 +103,7 @@ class TripMemberQueryService {
         memberCount, joinedMemberCount, respondedCount, memberFillRate, items);
   }
 
-  // #37·#38: CANCELED 거부 · ONGOING live · CONFIRMED/TERMINATED snapshot
+  // 희망 기간 멤버 전원 일정 달력 — 조율 중은 실시간, 확정·종료는 스냅샷(읽기 전용). 취소 방은 거부
   @Transactional(readOnly = true)
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
     support.requireActiveMember(tripId, userId);
@@ -124,12 +131,16 @@ class TripMemberQueryService {
     return new MemberScheduleCalendarResponse(startDate, endDate, readOnly, memberCalendars);
   }
 
-  // ONGOING — regular+personal resolve (live)
+  // 조율 중(ONGOING) — 정기·개인 일정을 합쳐 effective 달력 생성
   private List<MemberCalendar> buildLive(
       List<TripMember> members,
       Map<UUID, String> displayNames,
       LocalDate startDate,
       LocalDate endDate) {
+    List<UUID> memberUserIds = members.stream().map(m -> m.getUser().getId()).toList();
+    Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser =
+        googleCalendarService.findBusyDaysByUserIds(memberUserIds, startDate, endDate);
+
     List<MemberCalendar> memberCalendars = new ArrayList<>();
     for (TripMember member : members) {
       UUID memberUserId = member.getUser().getId();
@@ -141,7 +152,12 @@ class TripMemberQueryService {
               startDate,
               endDate);
       List<CalendarDayResponse> resolved =
-          ScheduleCalendarResolver.resolve(regulars, personals, startDate, endDate);
+          ScheduleCalendarResolver.resolve(
+              regulars,
+              personals,
+              startDate,
+              endDate,
+              googleBusyByUser.getOrDefault(memberUserId, Map.of()));
       List<CalendarDay> days =
           resolved.stream()
               .map(
@@ -163,7 +179,7 @@ class TripMemberQueryService {
     return memberCalendars;
   }
 
-  // CONFIRMED/TERMINATED — snapshot row → calendar (#38)
+  // 확정·종료 — 저장해 둔 스냅샷 row로 달력 구성
   private List<MemberCalendar> buildFromSnapshots(
       UUID tripId,
       List<TripMember> members,

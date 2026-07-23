@@ -18,3 +18,5 @@ tripfit:
     google-client-id-ios: test-google-ios-client-id
     google-client-id-android: test-google-android-client-id
     apple-client-id: test-apple-client-id
+  google-calendar:
+    token-aes-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=

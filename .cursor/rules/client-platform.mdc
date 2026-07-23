@@ -24,7 +24,7 @@ alwaysApply: false
 
 | 기능 | 규칙 |
 |------|------|
-| 소셜 로그인 | 모바일 OAuth·딥링크 고려 — `docs/specs/` 스펙 필수 |
+| 소셜 로그인 · Google Calendar | **환경 A**(네이티브 앱) / **환경 B**(카카오 인앱·모바일 웹) — [`platform.md`](../../docs/product/platform.md). **서버 302 OAuth 금지**. 클라이언트가 토큰/`authorizationCode` → REST |
 | 초대 링크 | PRD·플로우 따름. Universal/App Link는 `[미정]`이면 추측 구현 금지 |
 | **멤버십 JOINED/RESPONDED** | **JOINED=방장 create 직후만**(멤버 아님). 멤버 join=`RESPONDED` 즉시. 공유=방장∧RESPONDED. create에 `inviteCode` 없음 — Swagger Info · `glossary.md` · `trip-room-api` 필독 절 |
 | 푸시 (FCM/APNs) | wave 3 — **스펙 없으면** 엔티티·발송 API 추가 금지 |

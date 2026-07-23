@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// 여행방 목록·상세 조회 (쓰기 없음)
 @Service
 class TripQueryService {
 
@@ -27,6 +28,7 @@ class TripQueryService {
     this.support = support;
   }
 
+  // 내 여행방 홈 카드 목록을 scope(ongoing|all)·status·ownerOnly로 조회한다
   @Transactional(readOnly = true)
   public TripListResponse listMyTrips(UUID userId, TripListQuery query) {
     LocalDate today = LocalDate.now();
@@ -71,12 +73,14 @@ class TripQueryService {
     return new TripListResponse(trips);
   }
 
+  // 여행방 상세 조회 — 활성 멤버십이 있어야 함
   @Transactional(readOnly = true)
   public TripDetailResponse getTrip(UUID tripId, UUID userId) {
     TripMember membership = support.requireActiveMember(tripId, userId);
     return support.toDetail(membership.getTrip(), membership);
   }
 
+  // Trip·멤버십으로 상세 DTO 매핑 (command 경로에서도 재사용)
   TripDetailResponse toDetail(com.tripfit.tripfit.trip.domain.Trip trip, TripMember membership) {
     return support.toDetail(trip, membership);
   }

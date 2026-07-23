@@ -1,6 +1,6 @@
 # TripFit ERD
 
-> NotebookLM 03 + 2026-07-08 확정 병합. 비즈니스 규칙: `docs/product/business-rules/`.  
+> NotebookLM 03 + 2026-07-08 확정 병합. 비즈니스 규칙: `docs/product/business-rules/`.
 > **구현 상태:** wave 1 UUID PK 전환 완료. wave 2 `#11` — **정기/개별 2테이블** (`regular_schedule` · `personal_schedule`). A안 단일 `schedule` 폐기. 여행방 CRUD·추천은 후속 이슈.
 
 ## 1. 개요
@@ -20,6 +20,8 @@ erDiagram
     users ||--o{ refresh_token : issues
     users ||--o{ regular_schedule : owns
     users ||--o{ personal_schedule : owns
+    users ||--o| google_calendar_credential : has
+    users ||--o{ google_calendar_busy_day : caches
     users ||--o{ trip_member : participates
     users ||--o{ trip : owns
     trip ||--o{ trip_member : has
@@ -80,6 +82,29 @@ erDiagram
         string evening_status
         boolean is_uncertain
         datetime created_at
+        datetime updated_at
+    }
+
+    google_calendar_credential {
+        uuid id PK
+        uuid user_id FK UK
+        string google_account_email
+        text refresh_token_ciphertext
+        text access_token_ciphertext
+        datetime access_token_expires_at
+        datetime last_synced_at
+        text last_sync_error
+        datetime created_at
+        datetime updated_at
+    }
+
+    google_calendar_busy_day {
+        uuid id PK
+        uuid user_id FK
+        date schedule_date UK
+        boolean morning_busy
+        boolean afternoon_busy
+        boolean evening_busy
         datetime updated_at
     }
 
@@ -236,6 +261,39 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 
 **trip 조회:** `trip.start_range`~`end_range`로 해당 user의 `personal_schedule` 행 필터
 
+### `google_calendar_credential` (Google Calendar OAuth)
+
+User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-calendar-oauth.md`](../specs/google-calendar-oauth.md)
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| user_id | char(36) | N | FK → users.id, **UNIQUE** | |
+| google_account_email | varchar(255) | Y | | 연동된 구글 계정 이메일 (재연동 UX·운영 추적용) |
+| refresh_token_ciphertext | text | N | | AES-256-GCM 암호문 (Base64) |
+| access_token_ciphertext | text | N | | access token AES-256-GCM 암호문 (Base64, 캐시) |
+| access_token_expires_at | timestamptz | Y | | access token 만료 시각 (UTC) |
+| last_synced_at | timestamptz | Y | | 마지막 freeBusy sync 시각 |
+| last_sync_error | text | Y | | 내부용 |
+| created_at | timestamptz | N | | |
+| updated_at | timestamptz | N | | |
+
+### `google_calendar_busy_day` (Google freeBusy 캐시)
+
+날짜×슬롯 busy boolean. **sparse** — busy 슬롯이 있는 날만 저장. C1 윈도우(`today`~`today+2년−1`) 내 sync.
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| user_id | char(36) | N | FK → users.id | |
+| schedule_date | date | N | | Asia/Seoul |
+| morning_busy | boolean | N | | |
+| afternoon_busy | boolean | N | | |
+| evening_busy | boolean | N | | |
+| updated_at | timestamptz | N | | |
+
+**제약:** `UNIQUE (user_id, schedule_date)`
+
 ### `trip`
 
 - **관련 BR:** BR-TRIP-001, 007–011
@@ -372,7 +430,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 
 ## 7. 폐기 — A안 단일 `schedule`
 
-2026-07-13 이전 SSOT였던 `schedule` + `row_type` 단일 테이블은 **폐기**.  
+2026-07-13 이전 SSOT였던 `schedule` + `row_type` 단일 테이블은 **폐기**.
 현재 SSOT는 §2~3 `regular_schedule` + `personal_schedule`. (구 B안 `user_work_profile` 명칭은 쓰지 않음 — 정기 일정은 근무 전용 아님)
 
 ## 8. 미정 / 구현 전

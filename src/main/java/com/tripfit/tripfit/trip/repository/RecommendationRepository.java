@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface RecommendationRepository extends JpaRepository<Recommendation, UUID> {
 
-  // BR-TRIP-010: 희망 기간·일수 변경 시 recommendation hard DELETE (#13 연동)
+  // 여행방 메타(희망 기간·일수 등) 변경 시 기존 추천 후보를 hard DELETE
   @Modifying
   @Query("DELETE FROM Recommendation r WHERE r.trip.id = :tripId")
   void deleteByTripId(@Param("tripId") UUID tripId);

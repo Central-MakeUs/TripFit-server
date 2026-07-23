@@ -47,7 +47,7 @@ public class TripMember extends SoftDeleteEntity {
   @JoinColumn(name = "trip_id", nullable = false)
   private Trip trip;
 
-  @Schema(description = "참여 사용자. 소셜 로그인 필수 (BR-USER-002)",
+  @Schema(description = "참여 사용자 (소셜 로그인으로 생성된 User)",
       requiredMode = Schema.RequiredMode.REQUIRED)
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
@@ -78,7 +78,7 @@ public class TripMember extends SoftDeleteEntity {
   @Column(name = "is_pinned", nullable = false)
   private boolean pinned;
 
-  @Schema(description = "Pin ON 시각. OFF면 null (D5)", nullable = true,
+  @Schema(description = "Pin을 켠 시각. Pin OFF면 null", nullable = true,
       example = "2026-07-19T14:00:00")
   @Column(name = "pinned_at")
   private LocalDateTime pinnedAt;
@@ -96,13 +96,13 @@ public class TripMember extends SoftDeleteEntity {
     }
   }
 
-  // Pin ON/OFF — pinned_at 동기화 (D5)
+  // Pin on/off — on이면 pinnedAt=now, off이면 null
   public void applyPin(boolean pinned) {
     this.pinned = pinned;
     this.pinnedAt = pinned ? LocalDateTime.now() : null;
   }
 
-  // JOINED → RESPONDED (#39 schedule confirm)
+  // 일정 확인 완료 — JOINED에서 RESPONDED로 바꾸고 respondedAt 설정
   public void markResponded() {
     this.status = TripMemberStatus.RESPONDED;
     this.respondedAt = LocalDateTime.now();

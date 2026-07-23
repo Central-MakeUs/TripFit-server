@@ -2,7 +2,7 @@
 
 > wave: 2  
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-TRIP-006, BR-USER-008  
-> deferred: Google Calendar OAuth → [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](google-calendar-oauth.md) (wave 4), 연차 복수 행 집계 (#13)  
+> deferred: 연차 복수 행 집계 (#13) — Google Calendar OAuth는 [`google-calendar-oauth.md`](google-calendar-oauth.md) **Implemented** (#44)  
 > 상태: Approved  
 > supersedes: A안 `schedule`; `Availability` → `PersonalSchedule`
 

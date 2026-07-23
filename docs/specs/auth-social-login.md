@@ -203,7 +203,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 - 자체 이메일/비밀번호 회원가입
 - 계정 연결 — BR-USER-003 (Kakao + Google → 하나의 user)
 - `user_identity` 테이블 분리
-- Google Calendar OAuth 연동 API 본체 — [`user-onboarding.md`](user-onboarding.md) Deferred; boolean·온보딩 PATCH만 wave 1
+- Google Calendar OAuth 연동 API — [`google-calendar-oauth.md`](google-calendar-oauth.md) **Implemented** (#44). 로그인 OAuth와 별 scope·별 API
 - Apple Sign In **Server-to-Server Notification** — 스토어 제출 전 별도 스펙 [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md)
 - FCM/APNs 디바이스 토큰
 - 비회원(게스트) 세션 — **Out of Scope** (BR-USER-002 확정: 참여자 소셜 로그인 필수)
@@ -557,7 +557,7 @@ com.tripfit.tripfit
 | Refresh token rotation (RTR) | **wave 4 확정** | [`004`](../decisions/004-auth-token-rotation.md) — wave 1 Out |
 | Redis (access JWT) | **wave 4 확정** | blacklist vs whitelist `[미정]` |
 | JWT 서명 알고리즘 HS256 vs RS256 | `[미정]` | 단일 서버 MVP는 HS256으로 시작 가능 |
-| Google Calendar OAuth API | **Deferred** | [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](google-calendar-oauth.md); wave 1은 boolean·`PATCH /users/onboarding` — [`user-onboarding.md`](user-onboarding.md) |
+| Google Calendar OAuth API | **Implemented** | [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](google-calendar-oauth.md) |
 
 ## 구현 단계 제안 (이슈 분할 참고)
 

@@ -5,6 +5,7 @@ import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberScheduleSnapshot;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
@@ -20,7 +21,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** #38 — CONFIRMED/TERMINATED 시 희망 기간 effective freeze (R-model A · R-gap 공백 불허). */
+/** 확정·종료 시 희망 기간의 멤버 effective 일정을 스냅샷으로 고정한다 (이후 읽기 전용). */
 @Service
 public class TripScheduleSnapshotService {
 
@@ -32,18 +33,22 @@ public class TripScheduleSnapshotService {
 
   private final PersonalScheduleRepository personalScheduleRepository;
 
+  private final GoogleCalendarService googleCalendarService;
+
   public TripScheduleSnapshotService(
       TripMemberRepository tripMemberRepository,
       TripMemberScheduleSnapshotRepository snapshotRepository,
       RegularScheduleRepository regularScheduleRepository,
-      PersonalScheduleRepository personalScheduleRepository) {
+      PersonalScheduleRepository personalScheduleRepository,
+      GoogleCalendarService googleCalendarService) {
     this.tripMemberRepository = tripMemberRepository;
     this.snapshotRepository = snapshotRepository;
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
+    this.googleCalendarService = googleCalendarService;
   }
 
-  // status=CONFIRMED|TERMINATED 전환과 동일 TX에서 호출. 이미 freeze된 trip은 no-op (idempotent)
+  // CONFIRMED|TERMINATED 전환과 같은 TX에서 호출 — 이미 freeze된 방은 no-op(idempotent)
   @Transactional
   public void freezeTrip(Trip trip) {
     UUID tripId = trip.getId();
@@ -70,7 +75,12 @@ public class TripScheduleSnapshotService {
               startDate,
               endDate);
       List<CalendarDayResponse> days =
-          ScheduleCalendarResolver.resolve(regulars, personals, startDate, endDate);
+          ScheduleCalendarResolver.resolve(
+              regulars,
+              personals,
+              startDate,
+              endDate,
+              googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate));
       for (CalendarDayResponse day : days) {
         rows.add(
             TripMemberScheduleSnapshot.create(

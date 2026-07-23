@@ -25,6 +25,7 @@ public class UserProfileService {
     this.userSummaryService = userSummaryService;
   }
 
+  // 온보딩 프로필(성·이름) 저장
   @Transactional
   public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
     User user = findUser(userId);
@@ -34,12 +35,13 @@ public class UserProfileService {
     return userSummaryService.toSummary(user);
   }
 
+  // 마이페이지 성·이름 수정 — updateProfile과 동일 저장
   @Transactional
   public UserSummaryResponse updateMyPage(UUID userId, UpdateMyPageRequest request) {
     return updateProfile(userId, new UpdateProfileRequest(request.firstName(), request.lastName()));
   }
 
-  // BR-USER-001 · D-NAME-1: trip 생성·join 등 핵심 API — first/last null이면 403 PROFILE_NAME_REQUIRED
+  // 성·이름 미입력이면 trip 생성·참여 등에서 PROFILE_NAME_REQUIRED
   public void requireProfileNameComplete(User user) {
     if (!user.hasProfileNameComplete()) {
       throw new TripFitException(UserErrorCode.PROFILE_NAME_REQUIRED);

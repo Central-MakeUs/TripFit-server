@@ -33,6 +33,7 @@ import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
@@ -84,6 +85,9 @@ class TripServiceTest {
   @Mock
   private TripMemberScheduleSnapshotRepository snapshotRepository;
 
+  @Mock
+  private GoogleCalendarService googleCalendarService;
+
   private TripService tripService;
 
   private User owner;
@@ -112,7 +116,8 @@ class TripServiceTest {
             regularScheduleRepository,
             personalScheduleRepository,
             snapshotRepository,
-            support);
+            support,
+            googleCalendarService);
     TripJoinService tripJoinService =
         new TripJoinService(tripMemberRepository, tripQueryService, userSummaryService);
     TripActivityAspect tripActivityAspect = new TripActivityAspect(tripRepository);

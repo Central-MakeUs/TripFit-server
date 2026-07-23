@@ -30,7 +30,7 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "regular_schedule")
-@Schema(description = "User 정기 일정 (출근·수업·회의 등). trip FK 없음. user당 N행 (BR-TRIP-006)")
+@Schema(description = "User 정기 일정 (출근·수업·회의 등). 여행방 FK 없음. 사용자당 여러 행")
 public class RegularSchedule extends BaseTimeEntity {
 
   public static final int DEFAULT_MAX_VACATION_DAYS = 2;

@@ -22,7 +22,7 @@ public interface PersonalScheduleRepository extends JpaRepository<PersonalSchedu
 
   Optional<PersonalSchedule> findByUserIdAndScheduleDate(UUID userId, LocalDate scheduleDate);
 
-  // UserSummaryService.hasPreSchedule SSOT — personal_schedule row ≥1 (D-JOIN-ENTRY)
+  // hasPreSchedule 파생용 — personal_schedule row ≥1
   boolean existsByUserId(UUID userId);
 
   void deleteByUserIdAndScheduleDateIn(UUID userId, Collection<LocalDate> scheduleDates);

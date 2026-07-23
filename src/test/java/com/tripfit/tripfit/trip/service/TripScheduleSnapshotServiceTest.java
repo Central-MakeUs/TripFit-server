@@ -18,6 +18,7 @@ import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDate;
@@ -51,6 +52,9 @@ class TripScheduleSnapshotServiceTest {
   @Mock
   private PersonalScheduleRepository personalScheduleRepository;
 
+  @Mock
+  private GoogleCalendarService googleCalendarService;
+
   private TripScheduleSnapshotService snapshotService;
 
   private User user;
@@ -64,7 +68,8 @@ class TripScheduleSnapshotServiceTest {
             tripMemberRepository,
             snapshotRepository,
             regularScheduleRepository,
-            personalScheduleRepository);
+            personalScheduleRepository,
+            googleCalendarService);
     user = new User("sub", SocialProvider.GOOGLE, "a@b.c", "nick", null);
     user.setId(USER_ID);
     user.setLastName("홍");
@@ -108,6 +113,12 @@ class TripScheduleSnapshotServiceTest {
             trip.getStartRange(),
             trip.getEndRange()))
         .thenReturn(List.of());
+    when(
+        googleCalendarService.findBusyDaysByUserId(
+            USER_ID,
+            trip.getStartRange(),
+            trip.getEndRange()))
+        .thenReturn(java.util.Map.of());
 
     snapshotService.freezeTrip(trip);
 

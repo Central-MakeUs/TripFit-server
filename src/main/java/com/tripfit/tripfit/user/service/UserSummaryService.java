@@ -12,7 +12,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// login · GET /auth/me · PATCH profile 응답용 UserSummary + 방 입장 게이트(D-JOIN-ENTRY)
+// login · GET /auth/me · PATCH profile 응답용 UserSummary + 방 입장 조건 검사
 @Service
 public class UserSummaryService {
 
@@ -31,6 +31,7 @@ public class UserSummaryService {
     this.userRepository = userRepository;
   }
 
+  // User → UserSummary DTO. hasPreSchedule은 정기/개인 일정 EXISTS로 매번 계산
   @Transactional(readOnly = true)
   public UserSummaryResponse toSummary(User user) {
     return new UserSummaryResponse(
@@ -53,12 +54,13 @@ public class UserSummaryService {
         || personalScheduleRepository.existsByUserId(userId);
   }
 
-  // D-JOIN-ENTRY: 정기≥1 OR 개별≥1 OR is_all_free
+  // 방 입장 가능 여부 — 정기≥1 OR 개별≥1 OR 전부 free
   @Transactional(readOnly = true)
   public boolean canEnterRoom(User user) {
     return user.isAllFree() || hasPreSchedule(user.getId());
   }
 
+  // 입장 조건 미충족 시 SCHEDULE_ENTRY_REQUIRED
   public void requireCanEnterRoom(User user) {
     if (!canEnterRoom(user)) {
       throw new TripFitException(UserErrorCode.SCHEDULE_ENTRY_REQUIRED);
@@ -81,7 +83,7 @@ public class UserSummaryService {
     }
   }
 
-  // 일정 추가 시 is_all_free=false (D-JOIN-CLEAR)
+  // 일정이 한 건이라도 생기면 전부 free 선언을 해제한다
   public void clearAllFreeOnScheduleAdded(User user) {
     if (user.isAllFree()) {
       user.setAllFree(false);

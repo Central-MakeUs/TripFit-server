@@ -20,6 +20,7 @@ import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.exception.ScheduleErrorCode;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
@@ -29,13 +30,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// User 전역 regular·personal CRUD·effective calendar — #22 D-BR006-5: BR-USER-006 regular 선행 게이트 삭제
+// 사용자 정기·개별 일정 CRUD와 합산 달력 조회 — 정기 일정 없이 개별만 등록 가능
 // hasPreSchedule은 본 Service 응답에 없음 — row INSERT/DELETE 후 UserSummaryService EXISTS → GET /auth/me 등
 // 재조회
 @Service
 public class ScheduleService {
 
-  // 마이페이지 calendar 윈도우 — #37 C1: today ~ today+2y−1
+  // 마이페이지 달력 조회 가능 기간(년) — today ~ today+2년−1
   public static final int CALENDAR_WINDOW_YEARS = 2;
 
   private final RegularScheduleRepository regularScheduleRepository;
@@ -46,18 +47,22 @@ public class ScheduleService {
 
   private final UserSummaryService userSummaryService;
 
+  private final GoogleCalendarService googleCalendarService;
+
   public ScheduleService(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
       UserRepository userRepository,
-      UserSummaryService userSummaryService) {
+      UserSummaryService userSummaryService,
+      GoogleCalendarService googleCalendarService) {
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
     this.userRepository = userRepository;
     this.userSummaryService = userSummaryService;
+    this.googleCalendarService = googleCalendarService;
   }
 
-  // 사용자의 정기 일정 목록을 생성 시각 오름차순으로 조회함
+  // 정기 일정 목록 조회 — 생성 시각 오름차순
   @Transactional(readOnly = true)
   public RegularScheduleListResponse listRegular(UUID userId) {
     return new RegularScheduleListResponse(
@@ -66,7 +71,7 @@ public class ScheduleService {
             .toList());
   }
 
-  // 정기 일정 생성 — start/end로 슬롯 계산 후 저장. 첫 regular row → hasPreSchedule true (다음 login/me/profile)
+  // 정기 일정 생성 — start/end로 슬롯 계산 후 저장, 첫 row면 hasPreSchedule true(다음 login/me/profile 재조회)
   @Transactional
   public RegularScheduleResponse createRegular(UUID userId, CreateRegularScheduleRequest request) {
     // 1. 제목·시각·연차 필드 입력을 검증함
@@ -90,7 +95,7 @@ public class ScheduleService {
     return toRegularResponse(schedule);
   }
 
-  // 정기 일정 전체를 수정하고 start/end로 슬롯을 재계산함
+  // 정기 일정 전체 수정 — start/end로 슬롯 재계산
   @Transactional
   public RegularScheduleResponse updateRegular(
       UUID userId,
@@ -124,7 +129,7 @@ public class ScheduleService {
     userSummaryService.markAllFreeIfSchedulesCleared(findUser(userId));
   }
 
-  // D-BR006-5: regular 없이 personal-only 허용 (구 REGULAR_SCHEDULE_REQUIRED 게이트 제거됨)
+  // 개별 일정 기간 조회 — 정기 일정 없이 개별만 있어도 허용
   @Transactional(readOnly = true)
   public PersonalScheduleResponse getPersonal(
       UUID userId,
@@ -140,7 +145,7 @@ public class ScheduleService {
     return new PersonalScheduleResponse(items);
   }
 
-  // personal bulk upsert + deletedDates — D-BR006-5 · D-JOIN-CLEAR · D-PERSONAL-6
+  // 개별 일정 일괄 저장·삭제 — items upsert와 deletedDates 삭제를 한 요청에서 처리
   @Transactional
   public PersonalScheduleResponse upsertPersonal(
       UUID userId,
@@ -155,7 +160,7 @@ public class ScheduleService {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
 
-    // items ∩ deletedDates → 400
+    // items와 deletedDates에 같은 날짜가 있으면 400
     for (PersonalScheduleItem item : items) {
       if (deletedDates.contains(item.scheduleDate())) {
         throw new TripFitException(CommonErrorCode.INVALID_INPUT);
@@ -165,7 +170,7 @@ public class ScheduleService {
     LocalDate minDate = null;
     LocalDate maxDate = null;
 
-    // 1. deletedDates 먼저 삭제 (CLEAR)
+    // 1. deletedDates에 해당하는 날짜 row를 먼저 삭제
     if (!deletedDates.isEmpty()) {
       personalScheduleRepository.deleteByUserIdAndScheduleDateIn(userId, deletedDates);
       for (LocalDate d : deletedDates) {
@@ -178,7 +183,7 @@ public class ScheduleService {
       }
     }
 
-    // 2. items upsert
+    // 2. items를 insert 또는 update
     for (PersonalScheduleItem item : items) {
       validatePersonalItem(item);
       PersonalSchedule existing =
@@ -219,14 +224,14 @@ public class ScheduleService {
     return getPersonal(userId, minDate, maxDate);
   }
 
-  // effective 달력 — D-BR006-5 regular 미등록도 403 없음 · regular+personal 모두 없는 날은 응답 omit
-  // D-SPARSE-3: 방 입장 후 omit 해석=POSSIBLE은 trip UI/추천 쪽 — 본 API는 sparse day를 날짜 키 자체 생략
+  // 합산 달력 조회 — 정기 일정 미등록도 403 없음, 일정 없는 날은 응답에서 날짜 키 생략(sparse)
+  // sparse day(키 생략)를 POSSIBLE로 해석하는 것은 여행방 UI·추천 쪽 — 본 API는 날짜 키 자체를 omit
   @Transactional(readOnly = true)
   public ScheduleCalendarResponse getCalendar(
       UUID userId,
       LocalDate startDate,
       LocalDate endDate) {
-    // 1. #37 C1 윈도우 검증 (today ~ today+2y−1)
+    // 1. 조회 구간이 today ~ today+2년−1 안에 있는지 검증
     validateCalendarDateRange(startDate, endDate);
 
     // 2. regular·personal을 읽어 날짜별 effective로 합침
@@ -240,7 +245,12 @@ public class ScheduleService {
     return new ScheduleCalendarResponse(
         startDate,
         endDate,
-        ScheduleCalendarResolver.resolve(regulars, personals, startDate, endDate));
+        ScheduleCalendarResolver.resolve(
+            regulars,
+            personals,
+            startDate,
+            endDate,
+            googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate)));
   }
 
   private void validateCreateRegular(CreateRegularScheduleRequest request) {
@@ -304,7 +314,7 @@ public class ScheduleService {
     requireSlotStatus(item.eveningStatus());
   }
 
-  // calendar API는 POSSIBLE/IMPOSSIBLE만 허용 — ON_LEAVE 등은 wave 3+
+  // 달력 API 슬롯 값 검증 — POSSIBLE/IMPOSSIBLE만 허용, ON_LEAVE 등은 추후 wave
   private void requireSlotStatus(ScheduleStatus status) {
     if (status != ScheduleStatus.POSSIBLE && status != ScheduleStatus.IMPOSSIBLE) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
@@ -317,7 +327,7 @@ public class ScheduleService {
     }
   }
 
-  // #37 C1·R2: 요청 구간 ⊆ [today, today+2y−1] · today 이전 포함 시 400
+  // 달력 조회 구간 검증 — [today, today+2년−1] 범위 밖이거나 today 이전이면 400
   private void validateCalendarDateRange(LocalDate startDate, LocalDate endDate) {
     validateDateRange(startDate, endDate);
     LocalDate today = LocalDate.now();
@@ -355,7 +365,7 @@ public class ScheduleService {
         schedule.isUncertain());
   }
 
-  // BR-USER-009 + glossary: 성·이름 → nickname → 기본값
+  // 사용자 표시명 결정 — 성+이름 → nickname → "사용자" 기본값
   public static String displayName(User user) {
     if (user.hasProfileNameComplete()) {
       return user.getLastName() + user.getFirstName();

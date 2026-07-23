@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 신규 join만 분리 — idempotent 재접속은 {@link TripActivity} 미적용 (#26 L1). */
+/** 신규 초대 참여만 분리 — 이미 멤버인 재접속(idempotent)은 last_activity touch를 하지 않는다. */
 @Service
 class TripJoinService {
 
@@ -32,10 +32,11 @@ class TripJoinService {
     this.userSummaryService = userSummaryService;
   }
 
+  // 신규 멤버를 RESPONDED로 등록하고 상세를 반환한다 — 일정 0건이면 전부 free 처리
   @Transactional
   @TripActivity(tripIdFromReturn = true)
   public TripDetailResponse joinAsNewMember(Trip trip, User user) {
-    // Skip+0행 → is_all_free=true (D-JOIN-TRIP-FLOW)
+    // 일정이 없으면 전부 free로 표시 (입장 조건 충족용)
     userSummaryService.markAllFreeIfNoSchedules(user);
 
     TripMember member =
