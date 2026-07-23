@@ -32,6 +32,8 @@
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | TERMINATED DB·Pin batch · 00:05 KST | #12 |
 | [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
+| [`trip-member-leave.md`](trip-member-leave.md) | Draft (#47) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관 · 회원 탈퇴 선행 | #12 · #20 · #26 |
+| [`user-account-withdrawal.md`](user-account-withdrawal.md) | Draft (#48) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · User soft delete + PII 스크럽 | #47 · user-my-page |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 4모드·TOP 3·확정·취소 | #12 · #17 · #22 |
 
 ## wave 3
@@ -39,7 +41,7 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`kakao-invite-share.md`](kakao-invite-share.md) | **Approved** (#19) | 카카오·링크 공유 A/B/C · create에 inviteCode 없음 · 신규 API 없음 | trip-room-api D3 · #12 |
-| (알림) | Draft 예정 (#21) | FCM/APNs · BR-NOTI-001~004 | #12 · #13 · 참여 완료 정의 |
+| [`notification.md`](notification.md) | **Draft** (#21) · D1~D5 확정 | FCM 푸시 · BR-NOTI-001~005·009 · BR-USER-005 · 알림센터 | #12 · #13 · 참여 완료 정의 |
 
 ## wave 4
 
@@ -71,6 +73,8 @@
 | **#37** | trip-schedule-calendar-window | Closed |
 | **#38** | trip-schedule-snapshot | Closed |
 | **#44** | google-calendar-oauth | Open · **Wave 4 Must** (구 Swagger chore 폐기) |
+| **#47** | trip-member-leave | Open · **Wave 2 Nice** |
+| **#48** | user-account-withdrawal | Open · **Wave 2 Nice** |
 
 ## 완료 후
 
