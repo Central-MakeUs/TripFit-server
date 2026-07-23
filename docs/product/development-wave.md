@@ -234,7 +234,7 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 - [ ] 그룹 달력 API·프론트 연동 가능
 - [ ] `./gradlew test` · **베타 시나리오** 1회
 
-**포함:** #21, **#19**, 그룹 달력, 리마인드(단 **BR-NOTI-005 정기 스케줄러는 Wave 4**)
+**포함:** #21(BR-NOTI-005 정기 리마인드 포함 — 2026-07-23 wave 4→3 재분류), **#19**, 그룹 달력
 
 **포함하면 안 됨:**
 
@@ -259,7 +259,7 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 - [ ] 소셜 계정 연결 (#6)
 - [ ] (선택) 모니터링·부하 테스트
 
-**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #5, #6, #9(팀 합의 시), cancel_reason, BR-NOTI-005 스케줄러
+**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #5, #6, #9(팀 합의 시), cancel_reason
 
 **포함하면 안 됨:**
 

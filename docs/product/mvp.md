@@ -47,5 +47,5 @@
 ## 기획 메모 (NotebookLM)
 
 - **근거 약한 In Scope:** 외부 캘린더 연동 — Pain Point 해결용 `[제안]`
-- **`[미정]`:** 리마인드 발송 주기·채널 상세
-- **확정 (2026-07-08):** 참여자 소셜 로그인 필수, 추천 4모드 wave 2, `trip.destination` MVP In, BR-NOTI-005 wave 4
+- **확정 (2026-07-08):** 참여자 소셜 로그인 필수, 추천 4모드 wave 2, `trip.destination` MVP In, ~~BR-NOTI-005 wave 4~~ (2026-07-23 번복)
+- **확정 (2026-07-23):** BR-NOTI-005 wave 4 → **wave 3** 재분류, 발송 주기 매월 1·15일 09:00, 채널 FCM 단일 (`docs/specs/notification.md` D1·D4)

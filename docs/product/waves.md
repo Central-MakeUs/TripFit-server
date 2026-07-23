@@ -37,11 +37,11 @@
 | 추천 4모드·확정 | 2 | Must |
 | `last_activity_at` hook · TERMINATED 스케줄러 (#26, #27) | 2 | **Nice** |
 | 참여자 내보내기 (#20) | 2 | **Nice** |
-| 알림 (#21) · 카카오·링크 공유 (#19) · 그룹 달력 | 3 | Must |
+| 알림(BR-NOTI-005 정기 리마인드 포함) (#21) · 카카오·링크 공유 (#19) · 그룹 달력 | 3 | Must |
 | RTR·Redis · Apple S2S · S3 · 계정 연결 | 4 | — |
 | Google Calendar OAuth (#44) | 4 | Must |
 | join 정원 hold (#35) | 4 | — |
-| BR-NOTI-005 · cancel_reason | 4 | — |
+| cancel_reason | 4 | — |
 
 상세 Must/Nice/Out: [`development-wave.md` §3](development-wave.md#3-wave-14-재정의).
 

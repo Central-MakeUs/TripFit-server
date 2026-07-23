@@ -10,6 +10,7 @@
 
 ## 기획 메모 (NotebookLM)
 
-- **MVP Out:** Phase 수익화(광고 후 추천), 퍼널 분석, BR-NOTI-005 정기 스케줄러 (wave 4)
+- **MVP Out:** Phase 수익화(광고 후 추천), 퍼널 분석
+- BR-NOTI-005 정기 리마인드 스케줄러: wave 4 → **wave 3로 재분류** (2026-07-23, `docs/specs/notification.md` D1)
 - **`[미정]`:** 참여 코드만 입력 UI 상세 (BR-USER-002)
 - **확정:** `schedule` A안 (User 전역), B안 `erd.md` §7
