@@ -104,6 +104,13 @@ class TripMemberControllerTest {
   }
 
   @Test
+  void leaveTrip_noContent() throws Exception {
+    mockMvc
+        .perform(delete("/api/v1/trips/" + TRIP_ID + "/members/me"))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
   void getScheduleCalendar_ok() throws Exception {
     when(tripService.getMemberScheduleCalendar(TRIP_ID, USER_ID))
         .thenReturn(

@@ -26,4 +26,7 @@ public interface PersonalScheduleRepository extends JpaRepository<PersonalSchedu
   boolean existsByUserId(UUID userId);
 
   void deleteByUserIdAndScheduleDateIn(UUID userId, Collection<LocalDate> scheduleDates);
+
+  // 회원 탈퇴 cascade — userId 기준 전체 hard delete
+  void deleteByUserId(UUID userId);
 }

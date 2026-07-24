@@ -257,4 +257,20 @@ class TripCommandService {
     return tripMemberQueryService.listMembers(tripId, ownerId);
   }
 
+  // 멤버가 스스로 여행방에서 나간다 — 방 상태 무관(내보내기와 달리 ONGOING 게이트 없음), 방장은 불가
+  @Transactional
+  @TripActivity(tripIdParam = "tripId")
+  public void leaveTrip(UUID tripId, UUID callerId) {
+    support.requireActiveTrip(tripId);
+    TripMember membership =
+        tripMemberRepository
+            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, callerId)
+            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+    if (membership.getRole() == TripMemberRole.OWNER) {
+      throw new TripFitException(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);
+    }
+
+    membership.setDeletedAt(LocalDateTime.now());
+  }
+
 }

@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.service;
 
+import com.tripfit.tripfit.trip.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
 import com.tripfit.tripfit.trip.dto.JoinTripRequest;
@@ -85,5 +86,24 @@ public class TripService {
   // facade: 참여자 내보내기 → TripCommandService
   public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
     return tripCommandService.removeMember(tripId, ownerId, targetUserId);
+  }
+
+  // facade: 멤버 자진 나가기 → TripCommandService
+  public void leaveTrip(UUID tripId, UUID userId) {
+    tripCommandService.leaveTrip(tripId, userId);
+  }
+
+  // 회원 탈퇴 cascade — MEMBER인 활성 방 전부 자진 나가기 처리(각 leaveTrip 호출이 프록시를 거치도록 파사드에서 반복)
+  public void leaveAllActiveTripsAsMember(UUID userId) {
+    for (UUID tripId : tripQueryService.listActiveTripIdsByRole(userId, TripMemberRole.MEMBER)) {
+      tripCommandService.leaveTrip(tripId, userId);
+    }
+  }
+
+  // 회원 탈퇴 cascade — OWNER인 활성 방 전부 삭제 처리(각 deleteTrip 호출이 프록시를 거치도록 파사드에서 반복)
+  public void deleteAllOwnedActiveTrips(UUID userId) {
+    for (UUID tripId : tripQueryService.listActiveTripIdsByRole(userId, TripMemberRole.OWNER)) {
+      tripCommandService.deleteTrip(tripId, userId);
+    }
   }
 }

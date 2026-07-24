@@ -67,4 +67,10 @@ public class RefreshTokenService {
               }
             });
   }
+
+  // 회원 탈퇴 cascade — 해당 사용자의 리프레시 토큰을 전부 hard delete
+  @Transactional
+  public void revokeAllForUser(UUID userId) {
+    refreshTokenRepository.deleteAllByUserId(userId);
+  }
 }

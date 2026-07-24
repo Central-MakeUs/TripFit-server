@@ -14,6 +14,7 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserSummaryService;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,11 +100,15 @@ public class AuthService {
     return userSummaryService.toSummary(user);
   }
 
-  // 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함
+  // 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함 — 탈퇴(soft-deleted) 계정은 재로그인 차단
   private User upsertUser(OAuthProfile profile) {
-    return userRepository
-        .findByProviderAndSocialId(profile.provider(), profile.providerUserId())
-        .map(existing -> updateFromProfile(existing, profile))
+    Optional<User> existing =
+        userRepository.findByProviderAndSocialId(profile.provider(), profile.providerUserId());
+    if (existing.isPresent() && existing.get().getDeletedAt() != null) {
+      throw new TripFitException(AuthErrorCode.AUTH_WITHDRAWN_ACCOUNT);
+    }
+    return existing
+        .map(user -> updateFromProfile(user, profile))
         .orElseGet(() -> userRepository.save(createUserFromProfile(profile)));
   }
 

@@ -43,7 +43,7 @@ public class AuthController {
 
           결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
 
-          주요 에러: AUTH_INVALID_TOKEN — 소셜 로그인 토큰 무효
+          주요 에러: AUTH_INVALID_TOKEN — 소셜 로그인 토큰 무효 · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정
           """,
       security = {})
   @PostMapping("/login")
