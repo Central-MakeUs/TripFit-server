@@ -12,6 +12,8 @@ spring:
       keepalive-time: 300000
       connection-timeout: 30000
   jpa:
+  server:
+    forward-headers-strategy: framework
     open-in-view: false
     properties:
       hibernate:
