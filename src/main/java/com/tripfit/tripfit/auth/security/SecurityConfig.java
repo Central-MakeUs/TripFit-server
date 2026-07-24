@@ -27,7 +27,8 @@ public class SecurityConfig {
   }
 
   @Bean
-  // login/refresh/logout·actuator·swagger는 공개. logout은 만료·폐기 토큰도 body로 처리하기 위해 permitAll
+  // login/refresh/logout/dev-login·actuator·swagger는 공개. logout은 만료·폐기 토큰도 body로 처리하기 위해 permitAll.
+  // dev-login은 local/dev 프로필에서만 빈 존재
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.disable())
         .sessionManagement(
@@ -40,6 +41,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh")
                 .permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout")
+                .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/dev-login")
                 .permitAll()
                 .requestMatchers("/actuator/**")
                 .permitAll()

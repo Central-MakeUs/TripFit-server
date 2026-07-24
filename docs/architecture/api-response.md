@@ -175,7 +175,7 @@ switch (body.code) {
 com.tripfit.tripfit
 ├── common/
 │   ├── api/
-│   │   ├── ApiResponse.java       # data, message, code (status 필드 없음)
+│   │   ├── SuccessResponse.java   # data, message, code (status 필드 없음)
 │   │   ├── FieldError.java        # field, message
 │   │   ├── PageResponse.java      # items + pageInfo (목록용)
 │   │   ├── PageInfo.java

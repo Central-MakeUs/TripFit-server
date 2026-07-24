@@ -7,9 +7,15 @@ import com.tripfit.tripfit.auth.dto.LogoutRequest;
 import com.tripfit.tripfit.auth.dto.RefreshRequest;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.service.AuthService;
-import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.common.api.ErrorResponse;
+import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import jakarta.validation.Valid;
@@ -46,11 +52,30 @@ public class AuthController {
           주요 에러: AUTH_INVALID_TOKEN — 소셜 로그인 토큰 무효 · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정
           """,
       security = {})
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "token", "message": "필수 값입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "AUTH_INVALID_TOKEN — 소셜 로그인 토큰 무효 · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_INVALID_TOKEN", "message": "유효하지 않은 소셜 로그인 토큰입니다."}
+                  """)))
+  })
   @PostMapping("/login")
-  ResponseEntity<ApiResponse<LoginResponse>> login(
+  ResponseEntity<SuccessResponse<LoginResponse>> login(
       @Valid @RequestBody LoginRequest request) {
     LoginResponse response = authService.login(request.provider(), request.token());
-    return ResponseEntity.ok(ApiResponse.of(response));
+    return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
   @Operation(
@@ -67,11 +92,30 @@ public class AuthController {
           주요 에러: AUTH_INVALID_REFRESH — refresh 무효·만료
           """,
       security = {})
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "refreshToken", "message": "필수 값입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "AUTH_INVALID_REFRESH — refresh 무효·만료",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_INVALID_REFRESH", "message": "유효하지 않은 리프레시 토큰입니다."}
+                  """)))
+  })
   @PostMapping("/refresh")
-  ResponseEntity<ApiResponse<RefreshResponse>> refresh(
+  ResponseEntity<SuccessResponse<RefreshResponse>> refresh(
       @Valid @RequestBody RefreshRequest request) {
     RefreshResponse response = authService.refresh(request.refreshToken());
-    return ResponseEntity.ok(ApiResponse.of(response));
+    return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
   @Operation(
@@ -86,6 +130,17 @@ public class AuthController {
           결과: 204 No Content. access는 만료까지 유효할 수 있다.
           """,
       security = {})
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "refreshToken", "message": "필수 값입니다."}]}
+                      """)))
+  })
   @PostMapping("/logout")
   ResponseEntity<Void> logout(
       @Valid @RequestBody LogoutRequest request) {
@@ -102,9 +157,19 @@ public class AuthController {
 
           결과: UserSummary. hasPreSchedule은 일정 row 존재 여부(파생), isAllFree는 DB 컬럼.
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @GetMapping("/me")
-  ResponseEntity<ApiResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) {
+  ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) {
     UserSummaryResponse response = authService.getCurrentUser(userId);
-    return ResponseEntity.ok(ApiResponse.of(response));
+    return ResponseEntity.ok(SuccessResponse.of(response));
   }
 }

@@ -350,7 +350,7 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 
 ```java
 // ✅
-ResponseEntity<ApiResponse<UserSummaryResponse>> updateProfile(
+ResponseEntity<SuccessResponse<UserSummaryResponse>> updateProfile(
 		@AuthorizedUser UUID userId,
 		@Valid @RequestBody UpdateProfileRequest request) { ... }
 

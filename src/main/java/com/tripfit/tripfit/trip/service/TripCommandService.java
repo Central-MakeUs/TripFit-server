@@ -187,6 +187,8 @@ class TripCommandService {
   @Transactional
   public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
     User user = support.findUser(userId);
+    // 성·이름 미완료면 참여 불가
+    userProfileService.requireProfileNameComplete(user);
     String inviteCode = request.inviteCode().trim().toUpperCase();
 
     Trip trip =

@@ -26,6 +26,42 @@ AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되
 
 **워크플로:** `wave 확인 → (Plan Mode) → specify/Approved → 구현 → ./gradlew test → verify → PR`
 
+## AI 개발 워크플로 — 단계별 활용
+
+이 저장소는 기획 확인부터 커밋까지, 각 단계에서 AI 코딩 에이전트(Claude Code)가 실행 주체를 맡고 사람은 **승인·리뷰 게이트**로 개입하는 방식으로 개발됩니다. 코드 자체뿐 아니라 스펙·ADR·규칙 문서도 대부분 AI가 초안을 작성하고 사람이 확정합니다.
+
+```mermaid
+flowchart TD
+    A["범위 확인<br/>Wave · GitHub 이슈"] --> B{"DB·인증·다파일<br/>변경인가?"}
+    B -- Yes --> C["스펙 초안 작성<br/>(specify 스킬)"]
+    C --> D{"사용자 승인?"}
+    D -- "반려·수정" --> C
+    D -- Approved --> E["구현<br/>(.claude/rules 준수)"]
+    B -- No --> E
+    E --> F{"문서·스펙과<br/>충돌하는가?"}
+    F -- Yes --> G["질문 — STOP<br/>(임의로 맞추지 않음)"]
+    G --> C
+    F -- No --> H["검증<br/>./gradlew test · verify"]
+    H --> I["자체·교차 리뷰<br/>code-review / simplify"]
+    I --> J{"사용자 커밋<br/>요청?"}
+    J -- No --> K["대기 — 임의 커밋 금지"]
+    J -- Yes --> L["커밋<br/>Co-Authored-By: Claude"]
+```
+
+| 단계 | AI의 역할 | 산출물·도구 |
+|------|-----------|-------------|
+| **범위 확인** | 활성 Wave·GitHub 이슈로 작업 범위를 먼저 확인 — Backlog 없이 Must/Nice를 임의 단정하지 않음 | `docs/product/development-wave.md`, `.claude/rules/harness-wave.md` |
+| **설계·스펙 작성** | 요구사항을 정리해 `specify` 스킬로 스펙 문서를 초안 작성 — DB·인증·다파일 변경은 **스펙 승인 전 구현 착수 금지** | `docs/specs/*.md` (Draft → Approved) |
+| **아키텍처 결정** | 구조적 트레이드오프·대안을 ADR로 기록 | `docs/decisions/00N-*.md` |
+| **구현** | Approved 스펙의 계약(API·에러코드·enum·DB) 안에서만 코드 작성. 레이어·네이밍·주석 규칙은 `.claude/rules/`가 강제 | `src/main/java/com/tripfit/tripfit/...` |
+| **검증** | 단위·통합 테스트 작성 및 회귀 확인, 필요 시 실제 구동으로 동작 확인 | `./gradlew test`, `verify` 스킬 |
+| **자체·교차 리뷰** | 정확성·중복·단순화 관점의 자체 리뷰, 필요 시 다중 에이전트 클라우드 리뷰 | `code-review`/`simplify` 스킬, `/code-review ultra` |
+| **문서 동기화** | 구현이 문서와 어긋나면 임의로 맞추지 않고 **질문** — 문서·스펙·결정 간 충돌은 사람에게 확인 | `.claude/rules/harness-workflow.md` STOP 절 |
+| **커밋·이력** | 사람이 명시적으로 요청할 때만 커밋, 주제별로 분할 | `Co-Authored-By: Claude` 커밋 트레일러 |
+| **안전장치** | `git push --force`·`rm -rf` 등 파괴적 명령을 실행 전 차단 | `PreToolUse` 훅([`.claude/hooks/block-dangerous.sh`](.claude/hooks/block-dangerous.sh)) |
+
+이 저장소의 커밋 이력 상당수가 이 워크플로로 생성되었습니다(`git log --grep "Co-Authored-By: Claude"`로 확인 가능). 스펙·ADR 전체 목록은 [`docs/specs/README.md`](docs/specs/README.md)·[`docs/decisions/README.md`](docs/decisions/README.md) 참고.
+
 ## Tech Stack
 
 - Java 21 · Spring Boot 4.1.0 · Gradle (wrapper 포함)
