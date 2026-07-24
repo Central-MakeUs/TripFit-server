@@ -93,8 +93,8 @@ public class TripController {
   })
   @PostMapping
   ResponseEntity<SuccessResponse<CreateTripResponse>> createTrip(
-      @AuthorizedUser UUID userId,
-      @Valid @RequestBody CreateTripRequest request) {
+      @Valid @RequestBody CreateTripRequest request,
+      @AuthorizedUser UUID userId) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(SuccessResponse.of(tripService.createTrip(userId, request)));
   }
