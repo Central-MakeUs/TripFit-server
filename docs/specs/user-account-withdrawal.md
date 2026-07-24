@@ -1,12 +1,12 @@
 # 회원 탈퇴
 
-> 상태: Draft
+> 상태: Implemented
 > MVP: In scope
 > 관련 BR: BR-USER-004
 > wave: 2 (Nice)
 > implements: BR-USER-004 `[미정]` 해소 — "진행 중 방" 처리 정책 확정
 > deferred: (해당 없음)
-> GitHub: 정책 근거 `#47`(hotfix, 확정) · 구현 이슈 TBD
+> GitHub: 정책 근거 `#47`(hotfix, 확정) · 구현도 `#47` 브랜치(`docs/47-trip-status-policy-alignment`)에서 완료(별도 구현 이슈 없이 진행)
 > 선행: [`trip-member-leave.md`](trip-member-leave.md) · [`user-my-page.md`](user-my-page.md) · `trip-room-api.md`(여행방 삭제)
 
 ## 목표
@@ -36,16 +36,16 @@
 
 ### Must Have
 
-- [ ] `DELETE /api/v1/users/me` — JWT 필수
-- [ ] 차단 없이 항상 진행. 호출자가 활성(`deleted_at IS NULL`) `TripMember` row로 역할이 `MEMBER`인 것이 있으면(상태 무관) 전부 [`trip-member-leave.md`](trip-member-leave.md) 로직으로 자동 나가기 처리
-- [ ] 호출자가 활성 `TripMember` row로 역할이 `OWNER`인 것이 있으면(상태 무관) 소유한 해당 Trip을 전부 `deleteTrip()` 로직으로 자동 삭제 처리
-- [ ] 위 cascade 완료 후 탈퇴 진행:
-  - [ ] 개인 전용 데이터 **hard delete**: `PersonalSchedule`, `RegularSchedule`, `GoogleCalendarCredential`, `GoogleCalendarBusyDay`, `RefreshToken` (전부 `userId` 기준)
-  - [ ] `User` row **soft delete**(`deleted_at` set) + 개인정보 스크럽: `email`·`firstName`·`lastName`·`nickname`·`profileImageUrl` → `null`, `isGoogleCalendarConnected` → `false`
-  - [ ] `socialId`·`provider`·`id`는 그대로 유지 — FK 무결성(다른 사용자의 Trip/TripMember 참조) 및 재로그인 차단 판별에 필요
-- [ ] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 `AUTH_WITHDRAWN_ACCOUNT`(401, 신규 `AuthErrorCode`)로 차단 — soft-deleted 계정으로 조용히 로그인/JWT 발급되는 것을 방지
-- [ ] 성공 시 `204 No Content`
-- [ ] `./gradlew test` 통과, OpenAPI 반영
+- [x] `DELETE /api/v1/users/me` — JWT 필수
+- [x] 차단 없이 항상 진행. 호출자가 활성(`deleted_at IS NULL`) `TripMember` row로 역할이 `MEMBER`인 것이 있으면(상태 무관) 전부 [`trip-member-leave.md`](trip-member-leave.md) 로직으로 자동 나가기 처리
+- [x] 호출자가 활성 `TripMember` row로 역할이 `OWNER`인 것이 있으면(상태 무관) 소유한 해당 Trip을 전부 `deleteTrip()` 로직으로 자동 삭제 처리
+- [x] 위 cascade 완료 후 탈퇴 진행:
+  - [x] 개인 전용 데이터 **hard delete**: `PersonalSchedule`, `RegularSchedule`, `GoogleCalendarCredential`, `GoogleCalendarBusyDay`, `RefreshToken` (전부 `userId` 기준)
+  - [x] `User` row **soft delete**(`deleted_at` set) + 개인정보 스크럽: `email`·`firstName`·`lastName`·`nickname`·`profileImageUrl` → `null`, `isGoogleCalendarConnected` → `false`
+  - [x] `socialId`·`provider`·`id`는 그대로 유지 — FK 무결성(다른 사용자의 Trip/TripMember 참조) 및 재로그인 차단 판별에 필요
+- [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 `AUTH_WITHDRAWN_ACCOUNT`(401, 신규 `AuthErrorCode`)로 차단 — soft-deleted 계정으로 조용히 로그인/JWT 발급되는 것을 방지
+- [x] 성공 시 `204 No Content`
+- [x] `./gradlew test` 통과, OpenAPI 반영
 
 ### Out of Scope (이번 스펙)
 
@@ -97,17 +97,17 @@
 
 ### 정상
 
-- [ ] 활성 방 멤버십이 전혀 없는 사용자 → 탈퇴 성공(204), 개인 데이터 hard delete, `users.deleted_at` set, PII null
-- [ ] `ONGOING` 방에 MEMBER로 참여 중인 사용자 → 탈퇴 시 해당 방 자동 나가기 처리 후 탈퇴 성공
-- [ ] `ONGOING` 방에 OWNER인 사용자 → 탈퇴 시 해당 방 자동 삭제(soft delete) 후 탈퇴 성공. 그 방의 다른 멤버도 더 이상 해당 방을 조회할 수 없음
-- [ ] `CONFIRMED`/`TERMINATED` 방에 OWNER·MEMBER로 남아 있어도 동일하게 cascade 처리 후 탈퇴 성공
-- [ ] 탈퇴 후 같은 소셜 계정으로 재로그인 시도 → 401 `AUTH_WITHDRAWN_ACCOUNT`
-- [ ] 탈퇴한 사용자가 과거 멤버였던(soft-deleted) 다른 방의 `TripMember` 이력은 그대로 남음(FK 위반 없음)
+- [x] 활성 방 멤버십이 전혀 없는 사용자 → 탈퇴 성공(204), 개인 데이터 hard delete, `users.deleted_at` set, PII null
+- [x] `ONGOING` 방에 MEMBER로 참여 중인 사용자 → 탈퇴 시 해당 방 자동 나가기 처리 후 탈퇴 성공
+- [x] `ONGOING` 방에 OWNER인 사용자 → 탈퇴 시 해당 방 자동 삭제(soft delete) 후 탈퇴 성공. 그 방의 다른 멤버도 더 이상 해당 방을 조회할 수 없음(기존 `deleteTrip()` cascade 재사용 — 별도 신규 검증 없이 회귀 없음 확인)
+- [x] `CONFIRMED`/`TERMINATED` 방에 OWNER·MEMBER로 남아 있어도 동일하게 cascade 처리 후 탈퇴 성공(상태 게이트 없는 `leaveTrip`/`deleteTrip` 재사용)
+- [x] 탈퇴 후 같은 소셜 계정으로 재로그인 시도 → 401 `AUTH_WITHDRAWN_ACCOUNT`
+- [ ] 탈퇴한 사용자가 과거 멤버였던(soft-deleted) 다른 방의 `TripMember` 이력은 그대로 남음(FK 위반 없음) — 기존 soft delete 패턴 재사용으로 구조상 보장, 별도 통합 테스트는 생략
 
 ### 엣지 · 실패
 
-- [ ] 방장으로 있는 방이 여러 개(상태 혼합) → 전부 자동 삭제 후 탈퇴 성공
-- [ ] 멤버로 있는 방과 방장인 방이 동시에 있음 → 멤버인 방은 나가기, 방장인 방은 삭제, 둘 다 처리 후 탈퇴 성공
+- [x] 방장으로 있는 방이 여러 개(상태 혼합) → 전부 자동 삭제 후 탈퇴 성공
+- [x] 멤버로 있는 방과 방장인 방이 동시에 있음 → 멤버인 방은 나가기, 방장인 방은 삭제, 둘 다 처리 후 탈퇴 성공(각 cascade facade 메서드 호출 검증)
 
 ### 수동 / 통합 (해당 시)
 
@@ -116,11 +116,11 @@
 
 ## 완료 기준
 
-- [ ] Must Have 전부
-- [ ] `docs/product/business-rules/user.md` BR-USER-004 `[미정]` 해소 반영
-- [ ] `user-my-page.md` Out of Scope에 본 스펙 deferred 링크 추가
-- [ ] `docs/specs/README.md` wave 2 표·이슈 매핑 갱신
-- [ ] Wave 2 Backlog(`#30`) Nice 섹션에 추가
+- [x] Must Have 전부
+- [x] `docs/product/business-rules/user.md` BR-USER-004 `[미정]` 해소 반영
+- [x] `user-my-page.md` Out of Scope에 본 스펙 deferred 링크 추가
+- [x] `docs/specs/README.md` wave 2 표·이슈 매핑 갱신
+- [x] Wave 2 Backlog(`#30`) Nice 섹션에 추가
 
 ## 리스크·미결정
 
@@ -135,6 +135,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | 구현 완료(`#47` 브랜치) — `UserWithdrawalService`(cascade→hard delete→soft delete/PII 스크럽), `AUTH_WITHDRAWN_ACCOUNT` 로그인 차단, `./gradlew test` 통과 |
 | 2026-07-24 | `src/new_decision.md` 최종 확정 반영 — `CANCELED` 관련 항목을 "결과 대기"에서 "해당 없음(enum 삭제 확정)"으로 정리 |
 | 2026-07-24 | 정책 전면 수정(`#47` hotfix, 기획자 확인) — "ONGOING 있으면 차단" 폐기, **차단 없이 자동 cascade**로 전환(참여자: 전 방 자동 나가기, 방장: 전 방 자동 삭제). `USER_HAS_OWNED_TRIPS`/`USER_HAS_JOINED_TRIPS` 에러 폐기 |
 | 2026-07-23 | 탈퇴 차단 조건을 `ONGOING`으로 좁힘 — `#20`·`#47`과 게이트 대칭 (**2026-07-24 폐기**) |

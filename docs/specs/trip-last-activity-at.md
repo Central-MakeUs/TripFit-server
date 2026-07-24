@@ -31,7 +31,7 @@
 | 추천 일정 생성 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 일정 확정 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 참여자 내보내기 | ✓ | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) — MEMBER soft delete |
-| 방 나가기 (멤버 자진 탈퇴) | ✓ | [`trip-member-leave.md`](trip-member-leave.md) — 정책 근거 `#47`, 구현 이슈 TBD |
+| 방 나가기 (멤버 자진 탈퇴) | ✓ | [`trip-member-leave.md`](trip-member-leave.md) — Implemented(`#47` 브랜치) |
 | Pin 토글 | ✗ | Pin → `pinned_at` 별도 정렬 (D5) |
 | trip soft delete | ✗ | — |
 

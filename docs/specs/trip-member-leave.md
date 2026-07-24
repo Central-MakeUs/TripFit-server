@@ -1,12 +1,12 @@
 # 방 나가기 (멤버 자진 탈퇴)
 
-> 상태: Draft
+> 상태: Implemented
 > MVP: In scope
 > 관련 BR: BR-USER-004 (회원 탈퇴 cascade 시 자동 호출 + 사용자 자진 나가기)
 > wave: 2 (Nice)
 > implements: (없음 — Figma ROOM_02, 마이페이지 탈퇴 플로우 전제)
 > deferred: (해당 없음)
-> GitHub: 정책 근거 `#47`(hotfix, 확정) · 구현 이슈 TBD
+> GitHub: 정책 근거 `#47`(hotfix, 확정) · 구현도 `#47` 브랜치(`docs/47-trip-status-policy-alignment`)에서 완료(별도 구현 이슈 없이 진행)
 > 선행: [`trip-room-api.md`](trip-room-api.md) · [`trip-member-remove.md`](trip-member-remove.md) · [`trip-last-activity-at.md`](trip-last-activity-at.md)
 
 ## 목표
@@ -23,16 +23,16 @@
 
 ### Must Have
 
-- [ ] `DELETE /api/v1/trips/{tripId}/members/me` — JWT 필수. `@TripMemberOnly`/`@TripOwnerOnly` 인터셉터 미사용(방 입장 조건 RESPONDED·canEnterRoom과 무관하게 나갈 수 있어야 하므로 서비스 레벨에서 직접 멤버십 검증)
-- [ ] 호출자의 해당 방 활성(`deleted_at IS NULL`) `TripMember` row가 없으면 `TRIP_ACCESS_DENIED`
-- [ ] 호출자 역할이 `OWNER`면 `TRIP_OWNER_CANNOT_LEAVE` — 방장은 나갈 수 없고 "여행방 삭제"를 사용해야 함(방장 위임 기능 없음)
-- [ ] 호출자 역할이 `MEMBER`면 해당 `TripMember.deleted_at` soft delete
-- [ ] **모든 상태(ONGOING/CONFIRMED/TERMINATED)에서 허용** — 상태 게이트 없음(`TRIP_NOT_ONGOING` 미적용, `#20`과 달리 나가기는 상태 무관). `TripStatus.CANCELED`는 `src/new_decision.md`에서 **삭제 확정**돼 더 이상 고려 대상 아님(enum 자체 삭제는 별도 이슈에서 진행)
-- [ ] 성공 시 `204 No Content`
-- [ ] `last_activity_at` touch (`@TripActivity`) — L1 갱신 이벤트 추가
-- [ ] 재가입: soft delete 후 같은 초대로 재 join 허용 (기존 join 경로 그대로, #20과 동일)
-- [ ] `recommendation` 테이블/서비스 **미터치** (#20과 동일 정책, #13 보류)
-- [ ] `./gradlew test` 통과, OpenAPI 반영
+- [x] `DELETE /api/v1/trips/{tripId}/members/me` — JWT 필수. `@TripMemberOnly`/`@TripOwnerOnly` 인터셉터 미사용(방 입장 조건 RESPONDED·canEnterRoom과 무관하게 나갈 수 있어야 하므로 서비스 레벨에서 직접 멤버십 검증)
+- [x] 호출자의 해당 방 활성(`deleted_at IS NULL`) `TripMember` row가 없으면 `TRIP_ACCESS_DENIED`
+- [x] 호출자 역할이 `OWNER`면 `TRIP_OWNER_CANNOT_LEAVE` — 방장은 나갈 수 없고 "여행방 삭제"를 사용해야 함(방장 위임 기능 없음)
+- [x] 호출자 역할이 `MEMBER`면 해당 `TripMember.deleted_at` soft delete
+- [x] **모든 상태(ONGOING/CONFIRMED/TERMINATED)에서 허용** — 상태 게이트 없음(`TRIP_NOT_ONGOING` 미적용, `#20`과 달리 나가기는 상태 무관). `TripStatus.CANCELED`는 `src/new_decision.md`에서 **삭제 확정**돼 더 이상 고려 대상 아님(enum 자체 삭제는 별도 이슈에서 진행)
+- [x] 성공 시 `204 No Content`
+- [x] `last_activity_at` touch (`@TripActivity`) — L1 갱신 이벤트 추가
+- [x] 재가입: soft delete 후 같은 초대로 재 join 허용 (기존 join 경로 그대로, #20과 동일)
+- [x] `recommendation` 테이블/서비스 **미터치** (#20과 동일 정책, #13 보류)
+- [x] `./gradlew test` 통과, OpenAPI 반영
 
 ### Out of Scope (이번 스펙)
 
@@ -71,24 +71,24 @@
 
 ### 정상
 
-- [ ] MEMBER가 ONGOING 방에서 나가기 → 204, `trip_member.deleted_at` 설정, `last_activity_at` touch
-- [ ] MEMBER가 CONFIRMED 방에서 나가기 → 204 (상태 게이트 없음)
-- [ ] MEMBER가 TERMINATED 방에서 나가기 → 204 (상태 게이트 없음)
-- [ ] 나간 후 같은 초대 코드로 재 join → 신규 `TripMember` row INSERT 허용
+- [x] MEMBER가 ONGOING 방에서 나가기 → 204, `trip_member.deleted_at` 설정, `last_activity_at` touch
+- [x] MEMBER가 CONFIRMED 방에서 나가기 → 204 (상태 게이트 없음)
+- [x] MEMBER가 TERMINATED 방에서 나가기 → 204 (상태 게이트 없음)
+- [ ] 나간 후 같은 초대 코드로 재 join → 신규 `TripMember` row INSERT 허용 (기존 join 경로 재사용 — 별도 신규 테스트 없이 회귀 없음 확인)
 
 ### 엣지 · 실패
 
-- [ ] OWNER가 호출 → 400 `TRIP_OWNER_CANNOT_LEAVE`
-- [ ] 멤버가 아닌 사용자가 호출 → 403 `TRIP_ACCESS_DENIED`
-- [ ] 이미 나간(soft-deleted) 멤버가 재호출 → 403 `TRIP_ACCESS_DENIED`
-- [ ] 존재하지 않는 tripId → 404 `TRIP_NOT_FOUND`
+- [x] OWNER가 호출 → 400 `TRIP_OWNER_CANNOT_LEAVE`
+- [x] 멤버가 아닌 사용자가 호출 → 403 `TRIP_ACCESS_DENIED`
+- [x] 이미 나간(soft-deleted) 멤버가 재호출 → 403 `TRIP_ACCESS_DENIED` (동일 로직 — soft-deleted는 `findByTripIdAndUserIdAndDeletedAtIsNull` 미조회)
+- [x] 존재하지 않는 tripId → 404 `TRIP_NOT_FOUND`
 
 ## 완료 기준
 
-- [ ] Must Have 전부
-- [ ] `#26`(`trip-last-activity-at.md`) L1 표에 "방 나가기" touch 행 추가
-- [ ] `docs/specs/README.md` wave 2 표·이슈 매핑 갱신
-- [ ] Wave 2 Backlog(`#30`) Nice 섹션에 추가
+- [x] Must Have 전부
+- [x] `#26`(`trip-last-activity-at.md`) L1 표에 "방 나가기" touch 행 추가
+- [x] `docs/specs/README.md` wave 2 표·이슈 매핑 갱신
+- [x] Wave 2 Backlog(`#30`) Nice 섹션에 추가
 
 ## 리스크·미결정
 
@@ -103,6 +103,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | 구현 완료(`#47` 브랜치) — `TripCommandService.leaveTrip`·`TripMemberController DELETE /members/me`·`TRIP_OWNER_CANNOT_LEAVE`, `./gradlew test` 통과 |
 | 2026-07-24 | `src/new_decision.md` 최종 확정 반영 — `CANCELED` 관련 항목을 "결과 대기"에서 "해당 없음(enum 삭제 확정)"으로 정리, "확정 취소" 지연 삭제 로직은 별도 메커니즘 불필요로 결론(기존 `#38` 스냅샷으로 충분) |
 | 2026-07-24 | 정책 전면 수정(`#47` hotfix, 기획자 확인) — 나가기 허용 상태를 `ONGOING`만 → **상태 무관**(ONGOING/CONFIRMED/TERMINATED)으로 변경. `TRIP_NOT_ONGOING` 게이트 제거 |
 | 2026-07-23 | `ONGOING`만 허용으로 수정 — 회원 탈퇴 차단 조건도 `ONGOING`으로 좁혀짐에 따라 `#20`과 대칭 유지 (**2026-07-24 폐기**) |
