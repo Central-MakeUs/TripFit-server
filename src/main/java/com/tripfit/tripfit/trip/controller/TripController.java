@@ -184,7 +184,7 @@ public class TripController {
 
           주의: 멤버는 JOINED 없이 join 한 번에 RESPONDED. 방장 create 직후(JOINED)는 이 API가 아니라 schedule/confirm.
 
-          주요 에러: INVITE_CODE_NOT_FOUND · TRIP_MEMBER_FULL · PROFILE_NAME_REQUIRED · SCHEDULE_ENTRY_REQUIRED · TRIP_ALREADY_CONFIRMED · TRIP_CANCELED · TRIP_TERMINATED · SCHEDULE_CONFIRM_REQUIRED(방장이 join으로 우회 시도)
+          주요 에러: INVITE_CODE_NOT_FOUND · TRIP_MEMBER_FULL · PROFILE_NAME_REQUIRED · SCHEDULE_ENTRY_REQUIRED · TRIP_ALREADY_CONFIRMED · TRIP_EXPIRED · SCHEDULE_CONFIRM_REQUIRED(방장이 join으로 우회 시도)
           """)
   @PostMapping("/join")
   ResponseEntity<ApiResponse<TripDetailResponse>> joinTrip(

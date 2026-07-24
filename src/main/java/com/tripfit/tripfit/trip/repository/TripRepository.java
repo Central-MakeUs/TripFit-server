@@ -21,7 +21,7 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
 
   boolean existsByInviteCode(String inviteCode);
 
-  // endRange가 지난 ONGOING — 스냅샷 freeze 후 TERMINATED로 바꿀 대상
+  // endRange가 지난 ONGOING — 스냅샷 freeze 후 EXPIRED로 바꿀 대상
   @Query("""
       SELECT t FROM Trip t
       WHERE t.deletedAt IS NULL

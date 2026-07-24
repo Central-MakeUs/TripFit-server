@@ -20,6 +20,6 @@
 - 본인 데이터만 수정 (BR-TRIP-004)
 - 정기·개별 **둘 다 0행**(CLEAR) → `is_all_free=true` (BR-USER-011). 개별 삭제는 `deletedDates`
 - 방장만 trip 메타 수정 (BR-TRIP-009)
-- `TERMINATED` 후 메타·추천·초대 제한
+- `EXPIRED` 후 메타·추천·초대 제한
 
 **MVP 포함 여부:** In

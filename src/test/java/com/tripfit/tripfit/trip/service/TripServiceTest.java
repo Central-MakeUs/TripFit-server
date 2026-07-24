@@ -833,8 +833,8 @@ class TripServiceTest {
   }
 
   @Test
-  void getMemberScheduleCalendar_whenTerminated_readsSnapshots() {
-    trip.setStatus(TripStatus.TERMINATED);
+  void getMemberScheduleCalendar_whenExpired_readsSnapshots() {
+    trip.setStatus(TripStatus.EXPIRED);
     TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
@@ -862,20 +862,6 @@ class TripServiceTest {
     assertThat(response.members().getFirst().days().getFirst().morningStatus())
         .isEqualTo(ScheduleStatus.IMPOSSIBLE);
     verify(regularScheduleRepository, never()).findByUserIdOrderByCreatedAtAsc(any());
-  }
-
-  @Test
-  void getMemberScheduleCalendar_whenCanceled_throws409() {
-    trip.setStatus(TripStatus.CANCELED);
-    TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
-    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
-        .thenReturn(Optional.of(ownerMembership));
-
-    assertThatThrownBy(() -> tripService.getMemberScheduleCalendar(TRIP_ID, OWNER_ID))
-        .isInstanceOf(TripFitException.class)
-        .extracting(ex -> ((TripFitException) ex).getErrorCode())
-        .isEqualTo(TripErrorCode.TRIP_CANCELED);
   }
 
   private static PatchTripRequest patchRequest() {

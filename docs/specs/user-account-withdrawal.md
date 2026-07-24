@@ -28,7 +28,7 @@
 1. **진행 중 방 처리(확정)**: 탈퇴를 차단하지 않는다.
    - **참여자(MEMBER)**: 참여 중인 모든 방(상태 무관, `ONGOING` 포함)에서 자동으로 나가기 처리([`trip-member-leave.md`](trip-member-leave.md) 로직 내부 재사용) 후 탈퇴 진행.
    - **방장(OWNER)**: 소유한 모든 방(상태 무관, `ONGOING` 포함)을 자동으로 삭제(`deleteTrip()` 로직 재사용, soft delete) 후 탈퇴 진행. 기획자 근거: "방장이 탈퇴를 누르는 건 여행이 무산됐거나 더 이상 방을 유지할 필요가 없는 상황으로 볼 수 있다 — 탈퇴 전에 방 삭제를 유도하면 번거로운 절차만 추가된다."
-   - `CANCELED` 상태는 `src/new_decision.md`에서 **enum 자체가 삭제되기로 확정** — 더 이상 별도로 고려할 상태가 아님(enum 삭제 실행은 별도 이슈 TBD).
+   - `CANCELED` 상태는 `#48`에서 **enum 자체가 삭제 완료** — 더 이상 별도로 고려할 상태가 아님.
 2. **데이터 처리(확정, 변경 없음)**: 최초 "Hard delete"로 검토했으나, `Trip.owner_id`/`TripMember.user_id`가 `nullable=false` FK이고 `deleteTrip()`이 soft delete만 하므로(row 존속), User row를 진짜 hard delete하면 그 사람이 방장이었던 Trip(다른 참여자 포함)까지 연쇄 삭제해야 하는 충돌이 발견됨. 사용자 결정: **User도 다른 엔티티와 동일하게 Soft Delete 사용** — Trip·TripMember는 FK 그대로 두어 다른 참여자의 이력을 보존하고, 개인 전용 테이블(일정·구글 캘린더·리프레시 토큰)만 실제로 hard delete.
 3. **방장 소유 방 자동 삭제의 부수 효과(리스크로 인지, 수용 확정)**: `deleteTrip()`은 방 자체와 그 방의 모든 `TripMember`를 soft delete하므로, 방장이 탈퇴하면 그 방은 **방장뿐 아니라 다른 멤버 전원에게도** 더 이상 조회되지 않는다. "방장이 탈퇴하면 여행이 무산된 것"이라는 전제를 받아들인 결과이며, `src/new_decision.md`가 `CANCELED`(별도 "취소됨" 표시로 이력을 남기는 안) 자체를 없애기로 확정했으므로 이 부수효과도 그대로 수용하는 것으로 확정됨.
 
@@ -100,7 +100,7 @@
 - [x] 활성 방 멤버십이 전혀 없는 사용자 → 탈퇴 성공(204), 개인 데이터 hard delete, `users.deleted_at` set, PII null
 - [x] `ONGOING` 방에 MEMBER로 참여 중인 사용자 → 탈퇴 시 해당 방 자동 나가기 처리 후 탈퇴 성공
 - [x] `ONGOING` 방에 OWNER인 사용자 → 탈퇴 시 해당 방 자동 삭제(soft delete) 후 탈퇴 성공. 그 방의 다른 멤버도 더 이상 해당 방을 조회할 수 없음(기존 `deleteTrip()` cascade 재사용 — 별도 신규 검증 없이 회귀 없음 확인)
-- [x] `CONFIRMED`/`TERMINATED` 방에 OWNER·MEMBER로 남아 있어도 동일하게 cascade 처리 후 탈퇴 성공(상태 게이트 없는 `leaveTrip`/`deleteTrip` 재사용)
+- [x] `CONFIRMED`/`EXPIRED` 방에 OWNER·MEMBER로 남아 있어도 동일하게 cascade 처리 후 탈퇴 성공(상태 게이트 없는 `leaveTrip`/`deleteTrip` 재사용)
 - [x] 탈퇴 후 같은 소셜 계정으로 재로그인 시도 → 401 `AUTH_WITHDRAWN_ACCOUNT`
 - [ ] 탈퇴한 사용자가 과거 멤버였던(soft-deleted) 다른 방의 `TripMember` 이력은 그대로 남음(FK 위반 없음) — 기존 soft delete 패턴 재사용으로 구조상 보장, 별도 통합 테스트는 생략
 
@@ -129,12 +129,13 @@
 | 탈퇴 계정 재가입(부활) 정책 | `[미정]` | 현재는 재로그인 자체를 막음(`AUTH_WITHDRAWN_ACCOUNT`). "재가입 허용" 요구 생기면 별도 스펙 필요 |
 | 액세스 토큰 즉시 무효화 | 확정(Out of Scope) | Wave 4 `#4` RTR/Redis 인프라 선행 필요 |
 | 방장 탈퇴 시 소유 방이 다른 멤버에게도 통째로 안 보이게 됨 | 확정(수용된 결과) | `deleteTrip()` soft delete가 방 전체를 대상으로 함(방장만이 아님). 별도 "취소됨" 표시로 이력을 남기는 기능은 두지 않기로 확정(`CANCELED` 삭제 결정과 일관) |
-| `CANCELED` 상태 방 처리 | 확정 — 해당 없음 | enum 자체 삭제(`src/new_decision.md`). 실행은 별도 이슈(TBD) |
+| `CANCELED` 상태 방 처리 | **#48 Implemented** — 해당 없음 | enum 자체 삭제 완료 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조 동기화 |
 | 2026-07-24 | 구현 완료(`#47` 브랜치) — `UserWithdrawalService`(cascade→hard delete→soft delete/PII 스크럽), `AUTH_WITHDRAWN_ACCOUNT` 로그인 차단, `./gradlew test` 통과 |
 | 2026-07-24 | `src/new_decision.md` 최종 확정 반영 — `CANCELED` 관련 항목을 "결과 대기"에서 "해당 없음(enum 삭제 확정)"으로 정리 |
 | 2026-07-24 | 정책 전면 수정(`#47` hotfix, 기획자 확인) — "ONGOING 있으면 차단" 폐기, **차단 없이 자동 cascade**로 전환(참여자: 전 방 자동 나가기, 방장: 전 방 자동 삭제). `USER_HAS_OWNED_TRIPS`/`USER_HAS_JOINED_TRIPS` 에러 폐기 |

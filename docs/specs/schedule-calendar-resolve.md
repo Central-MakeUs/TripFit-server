@@ -3,7 +3,7 @@
 > wave: 2  
 > implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008  
 > related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](trip-room-api.md), [`trip-recommendation.md`](trip-recommendation.md)  
-> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 → 마이페이지 today+2년** [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)** C1) · **CONFIRMED/TERMINATED snapshot** [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)  
+> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 → 마이페이지 today+2년** [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)** C1) · **CONFIRMED/EXPIRED snapshot** [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)  
 > 상태: **Implemented** (#17) — S1·R2=A · sparse. **A1:** #37에서 today~+2년 윈도우로 amend (**Implemented** on feat/37)  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 

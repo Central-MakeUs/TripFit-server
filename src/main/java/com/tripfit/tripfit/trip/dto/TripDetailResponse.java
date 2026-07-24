@@ -40,7 +40,7 @@ public record TripDetailResponse(
 
     @Schema(
         description =
-            "여행방 진행 상태(effectiveStatus). end_range 경과·방장 취소 등 반영된 화면 표시용")
+            "여행방 진행 상태(effectiveStatus). end_range 경과 등 반영된 화면 표시용")
     TripStatus status,
 
     @Schema(
@@ -48,10 +48,10 @@ public record TripDetailResponse(
                 "초대 코드 (6자). 방 입장(RESPONDED) 후 상세에서만 노출 — 공유용. create(JOINED) 응답에는 없음")
         String inviteCode,
 
-    @Schema(description = "확정 시작일. CONFIRMED/TERMINATED에서만 값 있음", nullable = true)
+    @Schema(description = "확정 시작일. CONFIRMED/EXPIRED에서만 값 있음", nullable = true)
     LocalDate confirmedStartDate,
 
-    @Schema(description = "확정 종료일. CONFIRMED/TERMINATED에서만 값 있음", nullable = true)
+    @Schema(description = "확정 종료일. CONFIRMED/EXPIRED에서만 값 있음", nullable = true)
     LocalDate confirmedEndDate,
 
     @Schema(description = "마지막 추천 모드. 아직 추천 전이면 null", nullable = true)

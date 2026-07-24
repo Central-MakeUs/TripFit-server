@@ -24,11 +24,8 @@ public enum TripErrorCode implements ErrorCode {
   @Schema(description = "CONFIRMED 방 신규 join")
   TRIP_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "TRIP_ALREADY_CONFIRMED", "일정이 확정된 여행방에는 참여할 수 없습니다."),
 
-  @Schema(description = "CANCELED 방 신규 join")
-  TRIP_CANCELED(HttpStatus.CONFLICT, "TRIP_CANCELED", "취소된 여행방에는 참여할 수 없습니다."),
-
-  @Schema(description = "TERMINATED 방 신규 join")
-  TRIP_TERMINATED(HttpStatus.CONFLICT, "TRIP_TERMINATED", "종료된 여행방에는 참여할 수 없습니다."),
+  @Schema(description = "EXPIRED 방 신규 join")
+  TRIP_EXPIRED(HttpStatus.CONFLICT, "TRIP_EXPIRED", "종료된 여행방에는 참여할 수 없습니다."),
 
   @Schema(description = "정원 초과 신규 join")
   TRIP_MEMBER_FULL(HttpStatus.CONFLICT, "TRIP_MEMBER_FULL", "참여 인원이 가득 찼습니다."),

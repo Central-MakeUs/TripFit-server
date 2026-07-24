@@ -208,8 +208,7 @@ class TripCommandService {
     TripStatus status = support.effectiveStatus(trip);
     switch (status) {
       case CONFIRMED -> throw new TripFitException(TripErrorCode.TRIP_ALREADY_CONFIRMED);
-      case CANCELED -> throw new TripFitException(TripErrorCode.TRIP_CANCELED);
-      case TERMINATED -> throw new TripFitException(TripErrorCode.TRIP_TERMINATED);
+      case EXPIRED -> throw new TripFitException(TripErrorCode.TRIP_EXPIRED);
       case ONGOING -> {
         long joinedMemberCount =
             tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());

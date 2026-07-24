@@ -48,7 +48,7 @@ public class TripScheduleSnapshotService {
     this.googleCalendarService = googleCalendarService;
   }
 
-  // CONFIRMED|TERMINATED 전환과 같은 TX에서 호출 — 이미 freeze된 방은 no-op(idempotent)
+  // CONFIRMED|EXPIRED 전환과 같은 TX에서 호출 — 이미 freeze된 방은 no-op(idempotent)
   @Transactional
   public void freezeTrip(Trip trip) {
     UUID tripId = trip.getId();

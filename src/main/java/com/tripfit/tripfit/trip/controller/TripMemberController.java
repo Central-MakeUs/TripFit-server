@@ -68,7 +68,7 @@ public class TripMemberController {
 
           결과: 멤버별 날짜 슬롯. 조율 중(ONGOING)은 실시간 일정, 확정·종료 방은 당시 스냅샷(읽기 전용).
 
-          주요 에러: TRIP_CANCELED — 취소된 방 · TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED
+          주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED
           """)
   @GetMapping("/schedule-calendar")
   ResponseEntity<ApiResponse<MemberScheduleCalendarResponse>> getScheduleCalendar(
@@ -112,7 +112,7 @@ public class TripMemberController {
 
           전제: 호출자가 이 방의 활성 멤버(MEMBER)다. 방장은 사용할 수 없다.
 
-          결과: 본인 참여 기록이 soft delete되고 204를 반환한다. 방 상태(ONGOING/CONFIRMED/TERMINATED)와 무관하게 항상 허용된다.
+          결과: 본인 참여 기록이 soft delete되고 204를 반환한다. 방 상태(ONGOING/CONFIRMED/EXPIRED)와 무관하게 항상 허용된다.
 
           주의: 같은 초대 코드로 다시 참여할 수 있다. 방장은 이 API 대신 여행방 삭제를 사용해야 한다.
 

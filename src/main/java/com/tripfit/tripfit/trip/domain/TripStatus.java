@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(
     description = """
-        여행방 진행 상태 (ONGOING | CONFIRMED | CANCELED | TERMINATED).
+        여행방 진행 상태 (ONGOING | CONFIRMED | EXPIRED).
         목록 필터·상세 status 등에 사용.
         """)
 public enum TripStatus {
@@ -30,21 +30,11 @@ public enum TripStatus {
 
   @Schema(
       description = """
-          의미: 방장이 여행을 취소함.
-
-          언제: 방장 취소 API(구현 시).
-
-          불가: 신규 참여·일정 조율. 멤버 달력 조회도 거부.
-          """)
-  CANCELED,
-
-  @Schema(
-      description = """
           의미: 희망 여행 기간(endRange)이 지나 종료됨.
 
           언제: endRange < today (조회 시 lazy 또는 일 배치).
 
           가능: 기존 멤버 조회. 일정 달력은 스냅샷(읽기 전용).
           """)
-  TERMINATED
+  EXPIRED
 }
