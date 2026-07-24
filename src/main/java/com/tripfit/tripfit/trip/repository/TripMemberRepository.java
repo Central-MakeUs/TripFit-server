@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.trip.repository;
 
 import com.tripfit.tripfit.trip.domain.TripMember;
+import com.tripfit.tripfit.trip.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberPreviewProjection;
 import java.time.LocalDate;
@@ -18,6 +19,9 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
   boolean existsByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
 
   Optional<TripMember> findByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
+
+  // 회원 탈퇴 cascade — 특정 role로 활성 참여 중인 멤버십 목록
+  List<TripMember> findByUser_IdAndRoleAndDeletedAtIsNull(UUID userId, TripMemberRole role);
 
   @Query("""
       SELECT tm FROM TripMember tm

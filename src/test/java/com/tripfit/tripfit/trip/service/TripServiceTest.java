@@ -706,6 +706,130 @@ class TripServiceTest {
   }
 
   @Test
+  void leaveTrip_softDeletesMembership_touchesLastActivity() {
+    trip.setLastActivityAt(LocalDateTime.of(2026, 1, 1, 0, 0));
+    TripMember target = tripMember(member, TripMemberRole.MEMBER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.of(target));
+
+    tripService.leaveTrip(TRIP_ID, MEMBER_ID);
+
+    assertThat(target.getDeletedAt()).isNotNull();
+    assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
+  }
+
+  @Test
+  void leaveTrip_whenTripConfirmedOrTerminated_stillSucceeds() {
+    trip.setStatus(TripStatus.CONFIRMED);
+    TripMember target = tripMember(member, TripMemberRole.MEMBER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.of(target));
+
+    tripService.leaveTrip(TRIP_ID, MEMBER_ID);
+
+    assertThat(target.getDeletedAt()).isNotNull();
+  }
+
+  @Test
+  void leaveTrip_whenCallerIsOwner_throwsOwnerCannotLeave() {
+    TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(ownerMembership));
+
+    assertThatThrownBy(() -> tripService.leaveTrip(TRIP_ID, OWNER_ID))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);
+    assertThat(ownerMembership.getDeletedAt()).isNull();
+  }
+
+  @Test
+  void leaveTrip_whenCallerNotMember_throwsAccessDenied() {
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> tripService.leaveTrip(TRIP_ID, MEMBER_ID))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_ACCESS_DENIED);
+  }
+
+  @Test
+  void leaveTrip_whenTripNotFound_throwsNotFound() {
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> tripService.leaveTrip(TRIP_ID, MEMBER_ID))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_NOT_FOUND);
+  }
+
+  @Test
+  void leaveAllActiveTripsAsMember_leavesEveryActiveMembership() {
+    UUID tripId2 = UUID.fromString("550e8400-e29b-41d4-a716-446655440011");
+    Trip trip2 = otherTrip(tripId2);
+    TripMember membership1 = tripMember(member, TripMemberRole.MEMBER);
+    TripMember membership2 =
+        new TripMember(trip2, member, TripMemberRole.MEMBER, TripMemberStatus.RESPONDED,
+            LocalDateTime.now());
+
+    when(
+        tripMemberRepository
+            .findByUser_IdAndRoleAndDeletedAtIsNull(MEMBER_ID, TripMemberRole.MEMBER))
+        .thenReturn(List.of(membership1, membership2));
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdAndDeletedAtIsNull(tripId2)).thenReturn(Optional.of(trip2));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.of(membership1));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(tripId2, MEMBER_ID))
+        .thenReturn(Optional.of(membership2));
+
+    tripService.leaveAllActiveTripsAsMember(MEMBER_ID);
+
+    assertThat(membership1.getDeletedAt()).isNotNull();
+    assertThat(membership2.getDeletedAt()).isNotNull();
+  }
+
+  @Test
+  void leaveAllActiveTripsAsMember_whenNoMemberships_doesNothing() {
+    when(
+        tripMemberRepository
+            .findByUser_IdAndRoleAndDeletedAtIsNull(MEMBER_ID, TripMemberRole.MEMBER))
+        .thenReturn(List.of());
+
+    tripService.leaveAllActiveTripsAsMember(MEMBER_ID);
+
+    verify(tripRepository, never()).findByIdAndDeletedAtIsNull(any());
+  }
+
+  @Test
+  void deleteAllOwnedActiveTrips_deletesEveryOwnedTrip() {
+    UUID tripId2 = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
+    Trip trip2 = otherTrip(tripId2);
+    TripMember ownerMembership1 = tripMember(owner, TripMemberRole.OWNER);
+    TripMember ownerMembership2 =
+        new TripMember(trip2, owner, TripMemberRole.OWNER, TripMemberStatus.RESPONDED,
+            LocalDateTime.now());
+
+    when(
+        tripMemberRepository.findByUser_IdAndRoleAndDeletedAtIsNull(OWNER_ID, TripMemberRole.OWNER))
+        .thenReturn(List.of(ownerMembership1, ownerMembership2));
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdAndDeletedAtIsNull(tripId2)).thenReturn(Optional.of(trip2));
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(List.of());
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId2)).thenReturn(List.of());
+
+    tripService.deleteAllOwnedActiveTrips(OWNER_ID);
+
+    assertThat(trip.getDeletedAt()).isNotNull();
+    assertThat(trip2.getDeletedAt()).isNotNull();
+  }
+
+  @Test
   void getMemberScheduleCalendar_whenTerminated_readsSnapshots() {
     trip.setStatus(TripStatus.TERMINATED);
     TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
@@ -772,6 +896,21 @@ class TripServiceTest {
             "ABC234",
             TripStatus.ONGOING);
     t.setId(TRIP_ID);
+    return t;
+  }
+
+  private Trip otherTrip(UUID id) {
+    Trip t =
+        new Trip(
+            owner,
+            "부산 2박3일",
+            LocalDate.of(2026, 9, 1),
+            LocalDate.of(2026, 9, 10),
+            3,
+            4,
+            "XYZ999",
+            TripStatus.ONGOING);
+    t.setId(id);
     return t;
   }
 

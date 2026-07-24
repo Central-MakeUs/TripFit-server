@@ -19,7 +19,10 @@ public enum AuthErrorCode implements ErrorCode {
   AUTH_INVALID_REFRESH(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_REFRESH", "유효하지 않은 리프레시 토큰입니다."),
 
   @Schema(description = "인증됐으나 권한 없음")
-  AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_FORBIDDEN", "접근 권한이 없습니다.");
+  AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_FORBIDDEN", "접근 권한이 없습니다."),
+
+  @Schema(description = "탈퇴(soft-deleted)한 계정으로 재로그인 시도")
+  AUTH_WITHDRAWN_ACCOUNT(HttpStatus.UNAUTHORIZED, "AUTH_WITHDRAWN_ACCOUNT", "탈퇴한 계정입니다.");
 
   private final HttpStatus httpStatus;
 

@@ -101,4 +101,26 @@ public class TripMemberController {
       @AuthorizedUser UUID ownerId) {
     return ResponseEntity.ok(ApiResponse.of(tripService.removeMember(tripId, ownerId, userId)));
   }
+
+  // 방 입장 조건(RESPONDED·canEnterRoom)과 무관하게 나갈 수 있어야 하므로 @TripMemberOnly 미부착 — 서비스에서 직접 멤버십 검증
+  @Operation(
+      summary = "여행방 나가기",
+      description = """
+          목적: 참여자(MEMBER)가 스스로 여행방에서 나간다.
+
+          호출 시점: 마이페이지·방 안 메뉴에서 나가기 확인.
+
+          전제: 호출자가 이 방의 활성 멤버(MEMBER)다. 방장은 사용할 수 없다.
+
+          결과: 본인 참여 기록이 soft delete되고 204를 반환한다. 방 상태(ONGOING/CONFIRMED/TERMINATED)와 무관하게 항상 허용된다.
+
+          주의: 같은 초대 코드로 다시 참여할 수 있다. 방장은 이 API 대신 여행방 삭제를 사용해야 한다.
+
+          주요 에러: TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감 · TRIP_OWNER_CANNOT_LEAVE — 방장
+          """)
+  @DeleteMapping("/me")
+  ResponseEntity<Void> leaveTrip(@PathVariable UUID tripId, @AuthorizedUser UUID userId) {
+    tripService.leaveTrip(tripId, userId);
+    return ResponseEntity.noContent().build();
+  }
 }

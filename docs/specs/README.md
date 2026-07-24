@@ -32,8 +32,8 @@
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | TERMINATED DB·Pin batch · 00:05 KST | #12 |
 | [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
-| [`trip-member-leave.md`](trip-member-leave.md) | Draft (#47) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관 · 회원 탈퇴 선행 | #12 · #20 · #26 |
-| [`user-account-withdrawal.md`](user-account-withdrawal.md) | Draft (#48) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · User soft delete + PII 스크럽 | #47 · user-my-page |
+| [`trip-member-leave.md`](trip-member-leave.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관(CANCELED만 #48 대기) | #12 · #20 · #26 |
+| [`user-account-withdrawal.md`](user-account-withdrawal.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · 차단 없이 자동 cascade · User soft delete + PII 스크럽 | trip-member-leave · user-my-page |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 4모드·TOP 3·확정·취소 | #12 · #17 · #22 |
 
 ## wave 3
@@ -73,8 +73,8 @@
 | **#37** | trip-schedule-calendar-window | Closed |
 | **#38** | trip-schedule-snapshot | Closed |
 | **#44** | google-calendar-oauth | Open · **Wave 4 Must** (구 Swagger chore 폐기) |
-| **#47** | trip-member-leave | Open · **Wave 2 Nice** |
-| **#48** | user-account-withdrawal | Open · **Wave 2 Nice** |
+| **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
+| **#48** | `TripStatus.CANCELED` 존치 여부 검토 (chore) | Open |
 
 ## 완료 후
 

@@ -3,7 +3,9 @@ package com.tripfit.tripfit.user.controller;
 import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -13,6 +15,7 @@ import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
+import com.tripfit.tripfit.user.service.UserWithdrawalService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,13 +33,16 @@ class UserControllerTest {
   @Mock
   private UserProfileService userProfileService;
 
+  @Mock
+  private UserWithdrawalService userWithdrawalService;
+
   private MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
     SecurityContextHolder.getContext().setAuthentication(
         new JwtAuthentication(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")));
-    UserController userController = new UserController(userProfileService);
+    UserController userController = new UserController(userProfileService, userWithdrawalService);
     mockMvc =
         MockMvcBuilders.standaloneSetup(userController)
             .setCustomArgumentResolvers(
@@ -138,5 +144,13 @@ class UserControllerTest {
                         """))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+  }
+
+  @Test
+  void withdraw_noContent() throws Exception {
+    mockMvc.perform(delete("/api/v1/users/me")).andExpect(status().isNoContent());
+
+    verify(userWithdrawalService)
+        .withdraw(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
   }
 }

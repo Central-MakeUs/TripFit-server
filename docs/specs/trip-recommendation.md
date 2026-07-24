@@ -2,7 +2,7 @@
 
 > wave: 2  
 > implements: BR-TRIP-005, BR-TRIP-007, BR-TRIP-010, BR-TRIP-011, BR-TRIP-012  
-> deferred: BR-NOTI-004 확정 알림 (wave 3), `cancel_reason` VOC (wave 4), 추천 가중치 수치 튜닝  
+> deferred: BR-NOTI-004 확정 알림 (wave 3), 추천 가중치 수치 튜닝  
 > 상태: Draft  
 > 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (RESPONDED·sparse·submit)
 
@@ -49,8 +49,10 @@
 - [ ] **동점:** BR-TRIP-012 — 1) 연차 적은 순 2) 기간 긴 순 3) 주말·공휴일 포함 순 `[제안]`
 - [ ] `POST /api/v1/trips/{tripId}/confirm` — 방장만 (BR-TRIP-007): `{ recommendationRank }` 또는 `{ startDate, endDate }`
 - [ ] confirm → `status=CONFIRMED`, `confirmedStartDate`/`confirmedEndDate` 설정
-- [ ] `POST /api/v1/trips/{tripId}/cancel` — 방장만 → `status=CANCELED` (**`cancel_reason` null**, wave 4)
-- [ ] `POST .../recommendations` · confirm · cancel — **`status=ONGOING`만** (D4 → 409 `TRIP_NOT_ONGOING`)
+- [ ] `POST /api/v1/trips/{tripId}/unconfirm`("확정 취소") — 방장만, `status=CONFIRMED`일 때만 호출 가능 (아니면 409 `TRIP_NOT_CONFIRMED`) → `status=ONGOING`으로 되돌리고 `confirmedStartDate`/`confirmedEndDate`를 `null`로 초기화. **새 `TripStatus` 값을 추가하지 않음** — 기존 `ONGOING`으로 단순 복귀(2026-07-24 확정, 근거: `src/new_decision.md` Q1)
+- [ ] unconfirm 시 `#38` 확정 스냅샷(freeze 결과)을 폐기하고 `ONGOING` 라이브 조회로 되돌림 — 이후 재확정 전까지는 스냅샷 없이 라이브 데이터 사용
+- [ ] unconfirm 시 기존 `recommendation` TOP 3 hard DELETE (BR-TRIP-010과 동일 정책 — 재확정하려면 추천을 다시 계산해야 함)
+- [ ] `POST .../recommendations` · confirm — **`status=ONGOING`만** (D4 → 409 `TRIP_NOT_ONGOING`)
 - [ ] confirm 성공 시 **일정 snapshot** (#38 R-freeze — 동일 TX). 추천 재실행은 CONFIRMED/TERMINATED에서 불가(X8)
 - [ ] trip PATCH(기간·일수) / DELETE / mode POST 시 recommendation hard DELETE (BR-TRIP-010)
 - [ ] `./gradlew test` — 모드별·동점·hard filter 단위 테스트
@@ -74,7 +76,7 @@
 | POST | `/api/v1/trips/{tripId}/recommendations` | JWT + owner | 모드별 TOP 3 재계산·저장 |
 | GET | `/api/v1/trips/{tripId}/recommendations` | JWT + member | 저장된 TOP 3 조회 |
 | POST | `/api/v1/trips/{tripId}/confirm` | JWT + owner | 일정 확정 |
-| POST | `/api/v1/trips/{tripId}/cancel` | JWT + owner | 일정 취소 (CANCELED) |
+| POST | `/api/v1/trips/{tripId}/unconfirm` | JWT + owner | 확정 취소 (CONFIRMED→ONGOING) |
 
 ### `POST .../recommendations` 요청
 
@@ -123,6 +125,10 @@
 
 직접 입력 시 `durationDays`와 일수 일치 검증 `[제안]`.
 
+### `POST .../unconfirm`
+
+Body 없음. 성공 시 `204 No Content` — 확정된 여행방을 다시 조율 중(ONGOING) 상태로 되돌린다.
+
 ### 주요 에러 코드
 
 | HTTP | code | 조건 |
@@ -131,7 +137,8 @@
 | 400 | `NO_RECOMMENDATION_CANDIDATES` | ALL_ATTEND 등 후보 0건 |
 | 403 | `TRIP_FORBIDDEN` | 방장 아님 |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 중복 confirm |
-| 409 | `TRIP_NOT_ONGOING` | CANCELED/TERMINATED |
+| 409 | `TRIP_NOT_ONGOING` | recommendations/confirm 호출 시 상태가 ONGOING이 아님(CONFIRMED/TERMINATED) |
+| 409 | `TRIP_NOT_CONFIRMED` (신규) | unconfirm 호출 시 상태가 CONFIRMED가 아님 |
 | 404 | `RECOMMENDATION_NOT_FOUND` | rank 없음 |
 
 ## 데이터 모델
@@ -146,7 +153,8 @@
 | POST recommendations (mode 변경) | DELETE all + INSERT 3 |
 | PATCH trip **duration** | DELETE all, `lastRecommendationMode=null` `[제안]` (기간은 create 후 불변) |
 | DELETE trip | DELETE all |
-| confirm / cancel | recommendation 유지 `[제안]` (확정 후 조회용) |
+| confirm | recommendation 유지 `[제안]` (확정 후 조회용) |
+| unconfirm | recommendation hard DELETE — 재확정하려면 재계산 필요 |
 
 ## 알고리즘 (구현 가이드)
 
@@ -191,13 +199,15 @@
 - [ ] ALL_ATTEND — target 6, 5명만 가능한 후보 제외
 - [ ] confirm rank 1 → CONFIRMED + dates
 - [ ] confirm custom dates → CONFIRMED
+- [ ] unconfirm → ONGOING, `confirmedStartDate`/`confirmedEndDate` null, 기존 recommendation hard DELETE, `#38` 스냅샷 폐기
 
 ### 엣지 · 실패
 
 - [ ] 참여자 confirm → 403
 - [ ] ALL_ATTEND 후보 없음 → 400 `NO_RECOMMENDATION_CANDIDATES`
 - [ ] PATCH trip endRange → GET recommendations empty
-- [ ] cancel → CANCELED, cancelReason null
+- [ ] unconfirm 호출 시 상태가 CONFIRMED 아님 → 409 `TRIP_NOT_CONFIRMED`
+- [ ] 참여자가 unconfirm 호출 → 403 `TRIP_FORBIDDEN`
 
 ### 단위 테스트 (필수)
 
@@ -221,11 +231,14 @@
 | 공휴일 데이터 | `[미정]` | KR 공휴일 static table vs API |
 | confirm 후 recommendation 유지 | `[제안]` | UI 재조회용 |
 | NOTI on confirm | wave 3 | stub 없음 |
+| `TripStatus.CANCELED` 제거 | 확정 (`src/new_decision.md`) | 이 스펙이 유일한 프로듀서였던 `cancel`(→CANCELED) API를 삭제하고 `unconfirm`으로 교체 완료. enum 값 삭제 자체는 별도 이슈(TBD)에서 코드로 실행 |
+| `TERMINATED` → `EXPIRED` 리네임 | 확정(방향), 미실행 | 이미 Implemented인 `#27`/`#37`/`#38`과 코드가 함께 바뀌어야 문서-코드 불일치가 안 생겨서, 실제 반영은 별도 리네임 이슈(TBD)에서 코드와 동시에 진행 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | `src/new_decision.md` 확정 반영 — `cancel`(→`CANCELED`) API를 **삭제**, `unconfirm`(CONFIRMED→ONGOING, 새 Status 없음) API로 교체. 관련 에러 코드·시나리오 갱신 |
 | 2026-07-08 | 초안 |
 | 2026-07-17 | #17 resolve 재사용(C1) · trip-room D4 ONGOING만 · calendar Implemented |
 | 2026-07-13 | AVAILABILITY → `regular`/`personal` + `uncertain` |
