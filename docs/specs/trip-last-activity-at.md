@@ -31,6 +31,7 @@
 | 추천 일정 생성 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 일정 확정 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 참여자 내보내기 | ✓ | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) — MEMBER soft delete |
+| 방 나가기 (멤버 자진 탈퇴) | ✓ | [`trip-member-leave.md`](trip-member-leave.md) — 정책 근거 `#47`, 구현 이슈 TBD |
 | Pin 토글 | ✗ | Pin → `pinned_at` 별도 정렬 (D5) |
 | trip soft delete | ✗ | — |
 
@@ -81,3 +82,4 @@
 | 2026-07-19 | **L1·L2 확정** — 갱신 이벤트 목록 · 전역 일정 PATCH touch 안 함 |
 | 2026-07-19 | **L3·L4 확정 · Approved** — `@TripActivity` AOP · `TripRecommendationService` 포함 |
 | 2026-07-21 | L1 — 참여자 내보내기 touch (#20) |
+| 2026-07-24 | L1 — 방 나가기(멤버 자진 탈퇴) touch 추가 (`trip-member-leave.md`, 정책 근거 `#47`) |
