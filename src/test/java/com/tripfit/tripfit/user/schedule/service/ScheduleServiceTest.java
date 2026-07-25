@@ -22,7 +22,7 @@ import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
-import com.tripfit.tripfit.user.repository.UserRepository;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -52,7 +52,7 @@ class ScheduleServiceTest {
   private PersonalScheduleRepository personalScheduleRepository;
 
   @Mock
-  private UserRepository userRepository;
+  private UserLookupService userLookupService;
 
   @Mock
   private UserSummaryService userSummaryService;
@@ -75,7 +75,7 @@ class ScheduleServiceTest {
 
   @Test
   void createRegular_computesSlotStatusesViaSharedTimeSlot() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(regularScheduleRepository.save(any(RegularSchedule.class)))
         .thenAnswer(
             invocation -> {
@@ -106,7 +106,7 @@ class ScheduleServiceTest {
 
   @Test
   void createRegular_appliesVacationDefaultsWhenOmitted() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(regularScheduleRepository.save(any(RegularSchedule.class)))
         .thenAnswer(
             invocation -> {
@@ -153,7 +153,7 @@ class ScheduleServiceTest {
 
   @Test
   void createRegular_normalizesDaysOfWeek() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(regularScheduleRepository.save(any(RegularSchedule.class)))
         .thenAnswer(
             invocation -> {
@@ -224,7 +224,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_dateLevelUncertain() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(
         personalScheduleRepository.findByUserIdAndScheduleDate(
             USER_ID,
@@ -279,7 +279,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_withoutRegular_succeeds() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(
         personalScheduleRepository.findByUserIdAndScheduleDate(
             USER_ID,
@@ -330,7 +330,7 @@ class ScheduleServiceTest {
   @Test
   void upsertPersonal_deletedDates_clearsAllFreeWhenNoSchedulesLeft() {
     user.setAllFree(false);
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
             USER_ID,
@@ -349,7 +349,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_rejectsEmptyItemsAndDeletedDates() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     assertThatThrownBy(
         () -> scheduleService.upsertPersonal(

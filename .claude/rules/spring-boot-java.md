@@ -40,6 +40,8 @@ com.tripfit.tripfit
 - **repository**: `JpaRepository`만. Entity는 `domain/`에 둔다.
 - **client**: 외부 OAuth·HTTP 연동, 토큰 검증 adapter. service에서 호출.
 - 예외 → `GlobalExceptionHandler`가 `ErrorCode` 인터페이스로 envelope 변환. 공통은 `CommonErrorCode`, 도메인별은 `{domain}/exception/{Domain}ErrorCode`, feature별은 `{domain}/{feature}/exception/{Feature}ErrorCode` (예: `ScheduleErrorCode`).
+- **Support 헬퍼 재사용:** `{Domain}ServiceSupport`에 이미 있는 조회·검증(`requireActiveTrip`·`requireActiveMember`·`requireOwner` 등)을 다른 Service 메서드에서 `repository.findBy...().orElseThrow(...)`로 **인라인 재구현하지 않는다** — 같은 예외·조건이면 Support 메서드를 호출. 새 조회가 필요하면 Support에 메서드를 추가하고 호출부를 그쪽으로 통일.
+- **User 조회 SSOT:** `userId`로 `User`를 로드하고 없으면 `AUTH_FORBIDDEN`을 던지는 로직은 `user/service/UserLookupService.requireUser(userId)`가 SSOT다. `auth`·`user`·`user/schedule`·`user/googlecalendar` 등 다른 도메인 Service에서 `userRepository.findById(userId).orElseThrow(...)`를 각자 private 메서드로 재구현하지 않는다.
 
 ### ErrorCode enum
 

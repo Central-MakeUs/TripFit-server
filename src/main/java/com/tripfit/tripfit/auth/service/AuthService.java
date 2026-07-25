@@ -13,6 +13,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.repository.UserRepository;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,17 +33,21 @@ public class AuthService {
 
   private final UserSummaryService userSummaryService;
 
+  private final UserLookupService userLookupService;
+
   public AuthService(
       SocialTokenVerifierRegistry verifierRegistry,
       UserRepository userRepository,
       JwtService jwtService,
       RefreshTokenService refreshTokenService,
-      UserSummaryService userSummaryService) {
+      UserSummaryService userSummaryService,
+      UserLookupService userLookupService) {
     this.verifierRegistry = verifierRegistry;
     this.userRepository = userRepository;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
     this.userSummaryService = userSummaryService;
+    this.userLookupService = userLookupService;
   }
 
   // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함
@@ -93,11 +98,7 @@ public class AuthService {
   // JWT userId로 현재 사용자 요약 조회 — hasPreSchedule은 일정 EXISTS 파생(일정 CRUD 후 me 재조회)
   @Transactional(readOnly = true)
   public UserSummaryResponse getCurrentUser(UUID userId) {
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
-    return userSummaryService.toSummary(user);
+    return userSummaryService.toSummary(userLookupService.requireUser(userId));
   }
 
   // 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함 — 탈퇴(soft-deleted) 계정은 재로그인 차단

@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.user.schedule.service;
 
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.ScheduleStatus;
@@ -21,7 +20,7 @@ import com.tripfit.tripfit.user.schedule.exception.ScheduleErrorCode;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
-import com.tripfit.tripfit.user.repository.UserRepository;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -43,7 +42,7 @@ public class ScheduleService {
 
   private final PersonalScheduleRepository personalScheduleRepository;
 
-  private final UserRepository userRepository;
+  private final UserLookupService userLookupService;
 
   private final UserSummaryService userSummaryService;
 
@@ -52,12 +51,12 @@ public class ScheduleService {
   public ScheduleService(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
-      UserRepository userRepository,
+      UserLookupService userLookupService,
       UserSummaryService userSummaryService,
       GoogleCalendarService googleCalendarService) {
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
-    this.userRepository = userRepository;
+    this.userLookupService = userLookupService;
     this.userSummaryService = userSummaryService;
     this.googleCalendarService = googleCalendarService;
   }
@@ -78,7 +77,7 @@ public class ScheduleService {
     validateCreateRegular(request);
 
     // 2. start/end로 슬롯을 계산해 정기 일정을 저장함
-    User user = findUser(userId);
+    User user = userLookupService.requireUser(userId);
     RegularSchedule schedule =
         RegularSchedule.create(
             user,
@@ -102,10 +101,7 @@ public class ScheduleService {
       UUID regularId,
       UpdateRegularScheduleRequest request) {
     validateUpdateRegular(request);
-    RegularSchedule schedule =
-        regularScheduleRepository
-            .findByIdAndUserId(regularId, userId)
-            .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
+    RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     schedule.applyUpdate(
         request.title().trim(),
         normalizeDaysOfWeek(request.daysOfWeek()),
@@ -121,12 +117,16 @@ public class ScheduleService {
   // 정기 일정 삭제 — regular 0건 + personal 0건이면 hasPreSchedule false (다음 login/me/profile)
   @Transactional
   public void deleteRegular(UUID userId, UUID regularId) {
-    RegularSchedule schedule =
-        regularScheduleRepository
-            .findByIdAndUserId(regularId, userId)
-            .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
+    RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     regularScheduleRepository.delete(schedule);
-    userSummaryService.markAllFreeIfSchedulesCleared(findUser(userId));
+    userSummaryService.markAllFreeIfSchedulesCleared(userLookupService.requireUser(userId));
+  }
+
+  // 본인 소유 정기 일정 로드 — 없거나 타인 소유면 REGULAR_SCHEDULE_NOT_FOUND
+  private RegularSchedule requireOwnedRegularSchedule(UUID regularId, UUID userId) {
+    return regularScheduleRepository
+        .findByIdAndUserId(regularId, userId)
+        .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
   }
 
   // 개별 일정 기간 조회 — 정기 일정 없이 개별만 있어도 허용
@@ -150,7 +150,7 @@ public class ScheduleService {
   public PersonalScheduleResponse upsertPersonal(
       UUID userId,
       UpdatePersonalScheduleRequest request) {
-    User user = findUser(userId);
+    User user = userLookupService.requireUser(userId);
     List<PersonalScheduleItem> items =
         request.items() == null ? List.of() : request.items();
     List<LocalDate> deletedDates =
@@ -374,11 +374,5 @@ public class ScheduleService {
       return user.getNickname();
     }
     return "사용자";
-  }
-
-  private User findUser(UUID userId) {
-    return userRepository
-        .findById(userId)
-        .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
   }
 }

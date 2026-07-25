@@ -13,8 +13,6 @@ import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
-import com.tripfit.tripfit.user.repository.UserRepository;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UserProfileServiceTest {
 
   @Mock
-  private UserRepository userRepository;
+  private UserLookupService userLookupService;
 
   @Mock
   private UserSummaryService userSummaryService;
@@ -43,8 +41,8 @@ class UserProfileServiceTest {
 
   @Test
   void updateProfile_savesFirstAndLastName() {
-    when(userRepository.findById(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
-        .thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn(user);
     when(userSummaryService.toSummary(user))
         .thenReturn(
             new UserSummaryResponse(
@@ -73,8 +71,8 @@ class UserProfileServiceTest {
   void updateMyPage_savesFirstAndLastName() {
     user.setFirstName("길동");
     user.setLastName("홍");
-    when(userRepository.findById(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
-        .thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn(user);
     when(userSummaryService.toSummary(user))
         .thenReturn(
             new UserSummaryResponse(
@@ -118,7 +116,8 @@ class UserProfileServiceTest {
   @Test
   void updateProfile_whenUserMissing_throwsForbidden() {
     UUID missingId = UUID.fromString("550e8400-e29b-41d4-a716-446655440099");
-    when(userRepository.findById(missingId)).thenReturn(Optional.empty());
+    when(userLookupService.requireUser(missingId))
+        .thenThrow(new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
 
     assertThatThrownBy(
         () -> userProfileService.updateProfile(missingId, new UpdateProfileRequest("길동", "홍")))

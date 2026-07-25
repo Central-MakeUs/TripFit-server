@@ -12,11 +12,9 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +27,7 @@ class UserWithdrawalServiceTest {
   private static final UUID USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
 
   @Mock
-  private UserRepository userRepository;
+  private UserLookupService userLookupService;
 
   @Mock
   private TripService tripService;
@@ -55,7 +53,7 @@ class UserWithdrawalServiceTest {
   void setUp() {
     userWithdrawalService =
         new UserWithdrawalService(
-            userRepository,
+            userLookupService,
             tripService,
             personalScheduleRepository,
             regularScheduleRepository,
@@ -67,7 +65,7 @@ class UserWithdrawalServiceTest {
   @Test
   void withdraw_cascadesLeavesAndDeletesTrips() {
     User user = user();
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     userWithdrawalService.withdraw(USER_ID);
 
@@ -78,7 +76,7 @@ class UserWithdrawalServiceTest {
   @Test
   void withdraw_hardDeletesPersonalDataAndRevokesRefreshTokens() {
     User user = user();
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     userWithdrawalService.withdraw(USER_ID);
 
@@ -92,7 +90,7 @@ class UserWithdrawalServiceTest {
   @Test
   void withdraw_softDeletesUserAndScrubsPii() {
     User user = user();
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     userWithdrawalService.withdraw(USER_ID);
 
@@ -111,7 +109,7 @@ class UserWithdrawalServiceTest {
   void withdraw_whenAlreadyWithdrawn_isIdempotentNoOp() {
     User user = user();
     user.setDeletedAt(LocalDateTime.now().minusDays(1));
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     userWithdrawalService.withdraw(USER_ID);
 

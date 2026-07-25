@@ -20,6 +20,7 @@ import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -48,6 +49,9 @@ class AuthServiceTest {
 
   @Mock
   private UserSummaryService userSummaryService;
+
+  @Mock
+  private UserLookupService userLookupService;
 
   @Mock
   private SocialTokenVerifier socialTokenVerifier;

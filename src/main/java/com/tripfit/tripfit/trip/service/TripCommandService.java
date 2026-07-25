@@ -120,10 +120,7 @@ class TripCommandService {
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) {
     Trip trip = support.requireActiveTrip(tripId);
-    TripMember membership =
-        tripMemberRepository
-            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
-            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+    TripMember membership = support.requireActiveMember(tripId, userId);
 
     User user = membership.getUser();
     if (membership.getStatus() == TripMemberStatus.RESPONDED) {
@@ -169,10 +166,7 @@ class TripCommandService {
       recommendationRepository.deleteByTripId(tripId);
     }
 
-    TripMember membership =
-        tripMemberRepository
-            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
-            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+    TripMember membership = support.requireActiveMember(tripId, userId);
     return tripQueryService.toDetail(trip, membership);
   }
 
@@ -262,10 +256,7 @@ class TripCommandService {
   @TripActivity(tripIdParam = "tripId")
   public void leaveTrip(UUID tripId, UUID callerId) {
     support.requireActiveTrip(tripId);
-    TripMember membership =
-        tripMemberRepository
-            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, callerId)
-            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+    TripMember membership = support.requireActiveMember(tripId, callerId);
     if (membership.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);
     }

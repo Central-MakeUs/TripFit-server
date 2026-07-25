@@ -8,7 +8,6 @@ import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
-import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.util.UUID;
@@ -29,7 +28,7 @@ class UserSummaryServiceTest {
   private PersonalScheduleRepository personalScheduleRepository;
 
   @Mock
-  private UserRepository userRepository;
+  private UserLookupService userLookupService;
 
   @InjectMocks
   private UserSummaryService userSummaryService;

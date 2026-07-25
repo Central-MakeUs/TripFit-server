@@ -19,7 +19,7 @@ import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarAuthExcep
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.repository.UserRepository;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.Instant;
 import java.util.List;
@@ -50,7 +50,7 @@ class GoogleCalendarServiceTest {
   private GoogleCalendarBusyDayRepository busyDayRepository;
 
   @Mock
-  private UserRepository userRepository;
+  private UserLookupService userLookupService;
 
   @Mock
   private UserSummaryService userSummaryService;
@@ -68,7 +68,7 @@ class GoogleCalendarServiceTest {
 
   @Test
   void connect_setsFlagAndSyncs() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code"))
         .thenReturn(
             new GoogleOAuthTokenResponse(
@@ -117,7 +117,7 @@ class GoogleCalendarServiceTest {
   @Test
   void syncUser_onAuthFailure_clearsFlagAndGoogleLayer() {
     user.setGoogleCalendarConnected(true);
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     GoogleCalendarCredential credential =
         GoogleCalendarCredential.create(
             user,
@@ -140,7 +140,7 @@ class GoogleCalendarServiceTest {
   @Test
   void disconnect_keepsPersonalSchedules() {
     user.setGoogleCalendarConnected(true);
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     GoogleCalendarCredential credential =
         GoogleCalendarCredential.create(user, "enc-refresh", null, null, "a@gmail.com");
     when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(credential));
@@ -168,7 +168,7 @@ class GoogleCalendarServiceTest {
 
   @Test
   void disconnect_whenNotConnected_throws409() {
-    when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     assertThatThrownBy(() -> googleCalendarService.disconnect(USER_ID))
         .isInstanceOf(TripFitException.class)

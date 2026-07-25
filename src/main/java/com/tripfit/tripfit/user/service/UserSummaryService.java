@@ -1,11 +1,9 @@
 package com.tripfit.tripfit.user.service;
 
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
-import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.util.UUID;
@@ -20,15 +18,15 @@ public class UserSummaryService {
 
   private final PersonalScheduleRepository personalScheduleRepository;
 
-  private final UserRepository userRepository;
+  private final UserLookupService userLookupService;
 
   public UserSummaryService(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
-      UserRepository userRepository) {
+      UserLookupService userLookupService) {
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
-    this.userRepository = userRepository;
+    this.userLookupService = userLookupService;
   }
 
   // User → UserSummary DTO. hasPreSchedule은 정기/개인 일정 EXISTS로 매번 계산
@@ -69,11 +67,7 @@ public class UserSummaryService {
 
   // @TripMemberOnly / @TripOwnerOnly 인터셉터용 — userId로 로드 후 게이트
   public void requireCanEnterRoom(UUID userId) {
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
-    requireCanEnterRoom(user);
+    requireCanEnterRoom(userLookupService.requireUser(userId));
   }
 
   // Skip+0행 / create·join — 일정 없으면 is_all_free=true (이미 일정이면 유지)

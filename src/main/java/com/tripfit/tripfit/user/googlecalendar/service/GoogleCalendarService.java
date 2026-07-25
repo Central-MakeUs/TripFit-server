@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.user.googlecalendar.service;
 
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -14,8 +13,8 @@ import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarBusyMapper.SlotBusyFlags;
-import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,7 +39,7 @@ public class GoogleCalendarService {
 
   private final GoogleCalendarBusyDayRepository busyDayRepository;
 
-  private final UserRepository userRepository;
+  private final UserLookupService userLookupService;
 
   private final UserSummaryService userSummaryService;
 
@@ -49,20 +48,20 @@ public class GoogleCalendarService {
       GoogleCalendarTokenCrypto tokenCrypto,
       GoogleCalendarCredentialRepository credentialRepository,
       GoogleCalendarBusyDayRepository busyDayRepository,
-      UserRepository userRepository,
+      UserLookupService userLookupService,
       UserSummaryService userSummaryService) {
     this.googleCalendarOAuthClient = googleCalendarOAuthClient;
     this.tokenCrypto = tokenCrypto;
     this.credentialRepository = credentialRepository;
     this.busyDayRepository = busyDayRepository;
-    this.userRepository = userRepository;
+    this.userLookupService = userLookupService;
     this.userSummaryService = userSummaryService;
   }
 
   // authorization code로 연동 — credential 저장·flag=true·즉시 1회 sync
   @Transactional
   public UserSummaryResponse connect(UUID userId, String authorizationCode) {
-    User user = findUser(userId);
+    User user = userLookupService.requireUser(userId);
     GoogleOAuthTokenResponse tokens;
     try {
       tokens = googleCalendarOAuthClient.exchangeAuthorizationCode(authorizationCode);
@@ -104,7 +103,7 @@ public class GoogleCalendarService {
   // 의도적 해제 — revoke(best-effort)·credential·busy_day 삭제·flag=false (수동 일정 유지)
   @Transactional
   public UserSummaryResponse disconnect(UUID userId) {
-    User user = findUser(userId);
+    User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
       throw new TripFitException(GoogleCalendarErrorCode.GOOGLE_CALENDAR_NOT_CONNECTED);
     }
@@ -123,7 +122,7 @@ public class GoogleCalendarService {
   // freeBusy → busy_day 갱신 (C1 윈도우) — 권한 영구 실패 시 flag=false·Google 레이어 정리
   @Transactional
   public void syncUser(UUID userId) {
-    User user = findUser(userId);
+    User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
       return;
     }
@@ -263,9 +262,4 @@ public class GoogleCalendarService {
     busyDayRepository.deleteByUser_Id(userId);
   }
 
-  private User findUser(UUID userId) {
-    return userRepository
-        .findById(userId)
-        .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
-  }
 }

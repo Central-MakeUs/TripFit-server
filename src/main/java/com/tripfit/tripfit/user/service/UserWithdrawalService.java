@@ -1,13 +1,10 @@
 package com.tripfit.tripfit.user.service;
 
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
-import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
@@ -19,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 // 회원 탈퇴 유스케이스 — cascade(참여 방 나가기·소유 방 삭제) → 개인 데이터 hard delete → User soft delete·PII 스크럽
 public class UserWithdrawalService {
 
-  private final UserRepository userRepository;
+  private final UserLookupService userLookupService;
 
   private final TripService tripService;
 
@@ -34,14 +31,14 @@ public class UserWithdrawalService {
   private final RefreshTokenService refreshTokenService;
 
   public UserWithdrawalService(
-      UserRepository userRepository,
+      UserLookupService userLookupService,
       TripService tripService,
       PersonalScheduleRepository personalScheduleRepository,
       RegularScheduleRepository regularScheduleRepository,
       GoogleCalendarCredentialRepository googleCalendarCredentialRepository,
       GoogleCalendarBusyDayRepository googleCalendarBusyDayRepository,
       RefreshTokenService refreshTokenService) {
-    this.userRepository = userRepository;
+    this.userLookupService = userLookupService;
     this.tripService = tripService;
     this.personalScheduleRepository = personalScheduleRepository;
     this.regularScheduleRepository = regularScheduleRepository;
@@ -53,7 +50,7 @@ public class UserWithdrawalService {
   // 차단 없이 항상 진행 — 참여 방 자동 나가기·소유 방 자동 삭제 후 개인 데이터 hard delete, User는 soft delete+PII 스크럽
   @Transactional
   public void withdraw(UUID userId) {
-    User user = findUser(userId);
+    User user = userLookupService.requireUser(userId);
     if (user.getDeletedAt() != null) {
       // 이미 탈퇴한 계정(액세스 토큰 만료 전 재호출) — 중복 처리 없이 idempotent 종료
       return;
@@ -78,11 +75,5 @@ public class UserWithdrawalService {
     user.setNickname(null);
     user.setProfileImageUrl(null);
     user.setGoogleCalendarConnected(false);
-  }
-
-  private User findUser(UUID userId) {
-    return userRepository
-        .findById(userId)
-        .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
   }
 }

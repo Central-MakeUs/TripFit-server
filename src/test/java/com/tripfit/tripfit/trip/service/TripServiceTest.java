@@ -38,6 +38,7 @@ import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.service.UserProfileService;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -106,7 +107,9 @@ class TripServiceTest {
 
     UserSummaryService userSummaryService =
         new UserSummaryService(
-            regularScheduleRepository, personalScheduleRepository, userRepository);
+            regularScheduleRepository,
+            personalScheduleRepository,
+            new UserLookupService(userRepository));
     TripServiceSupport support =
         new TripServiceSupport(tripRepository, tripMemberRepository, userRepository);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
