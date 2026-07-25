@@ -13,7 +13,7 @@ public record MemberScheduleCalendarResponse(
     @Schema(description = "조회 시작 날짜 (여행방 희망 기간 startRange)") LocalDate startDate,
     @Schema(description = "조회 종료 날짜 (여행방 희망 기간 endRange)") LocalDate endDate,
     @Schema(
-        description = "읽기 전용 여부. CONFIRMED·TERMINATED이면 true — 일정 snapshot 고정, 수정 불가") boolean readOnly,
+        description = "읽기 전용 여부. CONFIRMED·EXPIRED이면 true — 일정 snapshot 고정, 수정 불가") boolean readOnly,
     @Schema(description = "멤버별 effective 달력") List<MemberCalendar> members
 ) {
 

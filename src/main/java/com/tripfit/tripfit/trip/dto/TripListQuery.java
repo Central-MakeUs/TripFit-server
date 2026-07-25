@@ -32,7 +32,7 @@ public record TripListQuery(
     }
   }
 
-  // TripStatus 재사용. ALL=필터 없음. ONGOING|CONFIRMED만 (CANCELED/TERMINATED 단독 필터 금지)
+  // TripStatus 재사용. ALL=필터 없음. ONGOING|CONFIRMED만 (EXPIRED 단독 필터 금지)
   private static Optional<TripStatus> parseStatusFilter(String status) {
     if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status.trim())) {
       return Optional.empty();

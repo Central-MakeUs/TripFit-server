@@ -172,18 +172,18 @@ class TripServiceSupport {
     }
   }
 
-  // 조율 중(ONGOING)만 변경 허용 — effectiveStatus 기준(기간 경과면 TERMINATED로 봄)
+  // 조율 중(ONGOING)만 변경 허용 — effectiveStatus 기준(기간 경과면 EXPIRED로 봄)
   void requireOngoingForMutation(Trip trip) {
     if (effectiveStatus(trip) != TripStatus.ONGOING) {
       throw new TripFitException(TripErrorCode.TRIP_NOT_ONGOING);
     }
   }
 
-  // 화면용 상태 — ONGOING이어도 endRange가 지났으면 TERMINATED (배치 전이라도 UX 동일)
+  // 화면용 상태 — ONGOING이어도 endRange가 지났으면 EXPIRED (배치 전이라도 UX 동일)
   TripStatus effectiveStatus(Trip trip) {
     if (trip.getStatus() == TripStatus.ONGOING
         && trip.getEndRange().isBefore(LocalDate.now())) {
-      return TripStatus.TERMINATED;
+      return TripStatus.EXPIRED;
     }
     return trip.getStatus();
   }

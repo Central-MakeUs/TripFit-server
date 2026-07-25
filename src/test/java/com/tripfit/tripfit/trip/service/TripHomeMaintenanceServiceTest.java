@@ -40,7 +40,7 @@ class TripHomeMaintenanceServiceTest {
   private TripHomeMaintenanceService tripHomeMaintenanceService;
 
   @Test
-  void runForDate_freezesThenTerminatesExpiredOngoing() {
+  void runForDate_freezesThenExpiresExpiredOngoing() {
     User owner = new User("sub", SocialProvider.GOOGLE, "a@b.c", "n", null);
     owner.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
     Trip trip =
@@ -60,7 +60,7 @@ class TripHomeMaintenanceServiceTest {
     tripHomeMaintenanceService.runForDate(TODAY);
 
     verify(tripScheduleSnapshotService).freezeTrip(trip);
-    org.assertj.core.api.Assertions.assertThat(trip.getStatus()).isEqualTo(TripStatus.TERMINATED);
+    org.assertj.core.api.Assertions.assertThat(trip.getStatus()).isEqualTo(TripStatus.EXPIRED);
     verify(tripMemberRepository).clearExpiredPins(TODAY);
   }
 

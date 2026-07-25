@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.trip.service;
 
-import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.SlotStatuses;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
@@ -12,7 +11,6 @@ import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.CalendarDay;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.MemberCalendar;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse.TripMemberItemResponse;
-import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.user.domain.User;
@@ -103,15 +101,12 @@ class TripMemberQueryService {
         memberCount, joinedMemberCount, respondedCount, memberFillRate, items);
   }
 
-  // 희망 기간 멤버 전원 일정 달력 — 조율 중은 실시간, 확정·종료는 스냅샷(읽기 전용). 취소 방은 거부
+  // 희망 기간 멤버 전원 일정 달력 — 조율 중은 실시간, 확정·종료는 스냅샷(읽기 전용)
   @Transactional(readOnly = true)
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
     support.requireActiveMember(tripId, userId);
     Trip trip = support.requireActiveTrip(tripId);
     TripStatus status = support.effectiveStatus(trip);
-    if (status == TripStatus.CANCELED) {
-      throw new TripFitException(TripErrorCode.TRIP_CANCELED);
-    }
 
     LocalDate startDate = trip.getStartRange();
     LocalDate endDate = trip.getEndRange();
@@ -122,7 +117,7 @@ class TripMemberQueryService {
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
-    boolean readOnly = status == TripStatus.CONFIRMED || status == TripStatus.TERMINATED;
+    boolean readOnly = status == TripStatus.CONFIRMED || status == TripStatus.EXPIRED;
     List<MemberCalendar> memberCalendars =
         readOnly
             ? buildFromSnapshots(tripId, members, displayNames)
