@@ -240,7 +240,7 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 
 - RTR·Redis (#4)
 - 소셜 계정 다중 연결 (#6)
-- cancel_reason VOC (wave 4)
+- 여행방 삭제 시 VOC 사유 (wave 4, unconfirm 사유와 별개)
 
 ---
 
@@ -259,7 +259,7 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 - [ ] 소셜 계정 연결 (#6)
 - [ ] (선택) 모니터링·부하 테스트
 
-**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #5, #6, #9(팀 합의 시), cancel_reason
+**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #5, #6, #9(팀 합의 시), 여행방 삭제 시 VOC 사유
 
 **포함하면 안 됨:**
 

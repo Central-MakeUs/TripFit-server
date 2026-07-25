@@ -120,7 +120,8 @@ erDiagram
         string invite_code
         string status
         string last_recommendation_mode
-        string cancel_reason "wave 4"
+        string unconfirm_reason "wave 2 — #13, enum"
+        string unconfirm_reason_detail "nullable, OTHER일 때만"
         date confirmed_start_date
         date confirmed_end_date
         datetime last_activity_at
@@ -311,7 +312,8 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | invite_code | varchar | N | | UNIQUE |
 | status | varchar | N | | `ONGOING`, `CONFIRMED`, `CANCELED`, **`TERMINATED`** (기간 만료·종료) |
 | last_recommendation_mode | varchar | Y | | BASIC, ALL_ATTEND, SAVE_VACATION, CERTAIN |
-| cancel_reason | varchar | Y | | 취소·삭제 VOC. **wave 4** 구현 — Figma 플로우 있음 |
+| unconfirm_reason | varchar | Y | | `unconfirm` 사유 enum. **wave 2**(#13) — 최신값만 저장(이력 아님) |
+| unconfirm_reason_detail | varchar | Y | | `unconfirm_reason=OTHER`일 때만 직접 입력 텍스트 |
 | confirmed_start_date | date | Y | | |
 | confirmed_end_date | date | Y | | |
 | last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·**confirm**·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip-room-api.md) D5 · #39) |
@@ -439,7 +441,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 |------|------|
 | `[미정]` | BR-TRIP-005 가중치 · BR-TRIP-012 동점 · TERMINATED **전환 시점**(lazy vs 배치) |
 | wave 2 잔여 | `#12` trip CRUD · members schedule-calendar · `#13` 추천 |
-| wave 4 | `trip.cancel_reason` VOC API·UI |
+| wave 4 | 여행방 **삭제** 시 VOC 사유 API·UI (unconfirm 사유와 별개) |
 
 ## 기획 메모 (NotebookLM + 확정)
 

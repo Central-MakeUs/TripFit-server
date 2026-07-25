@@ -85,7 +85,8 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 
 ### 6. wave 4 (문서만 — MVP Out)
 
-- **`trip.cancel_reason`** — 취소·삭제 VOC 사유 수집 (Figma 플로우 있음, 구현 wave 4)
+- **`trip.unconfirmReason`** — 확정 취소(unconfirm) 사유 수집, wave 2 확정 (#13, `trip-recommendation.md`)
+- 여행방 **삭제** 시 VOC 사유 — 별개 항목, 미구현 wave 4 (Figma 플로우 있음)
 
 ---
 
@@ -103,7 +104,8 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 | 확정 | status → CONFIRMED | BR-TRIP-007 | 2 |
 | Pin 토글 | `trip_member.is_pinned` + `pinned_at` | D5 | 2 |
 | 알림센터 | 알림 이력 | BR-NOTI-* | 3 |
-| 취소 사유 | cancel_reason | `[wave 4]` | 4 |
+| 확정 취소 사유 | unconfirmReason | wave 2 (#13) | 2 |
+| 삭제 사유 | — | `[wave 4]` | 4 |
 
 ---
 

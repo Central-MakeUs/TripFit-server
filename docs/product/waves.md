@@ -41,7 +41,7 @@
 | RTR·Redis · Apple S2S · S3 · 계정 연결 | 4 | — |
 | Google Calendar OAuth (#44) | 4 | Must |
 | join 정원 hold (#35) | 4 | — |
-| cancel_reason | 4 | — |
+| 여행방 삭제 시 VOC 사유 (unconfirm 사유와 별개) | 4 | — |
 
 상세 Must/Nice/Out: [`development-wave.md` §3](development-wave.md#3-wave-14-재정의).
 
