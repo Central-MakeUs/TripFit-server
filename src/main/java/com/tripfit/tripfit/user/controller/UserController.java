@@ -1,13 +1,19 @@
 package com.tripfit.tripfit.user.controller;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
-import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.common.api.ErrorResponse;
+import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
 import com.tripfit.tripfit.user.service.UserWithdrawalService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import jakarta.validation.Valid;
@@ -46,12 +52,31 @@ public class UserController {
 
           주의: 성·이름 미완료면 이후 여행방 생성·참여가 PROFILE_NAME_REQUIRED로 거부된다.
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "name", "message": "이름은 필수입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @PatchMapping("/profile")
-  ResponseEntity<ApiResponse<UserSummaryResponse>> updateProfile(
+  ResponseEntity<SuccessResponse<UserSummaryResponse>> updateProfile(
       @AuthorizedUser UUID userId,
       @Valid @RequestBody UpdateProfileRequest request) {
     UserSummaryResponse response = userProfileService.updateProfile(userId, request);
-    return ResponseEntity.ok(ApiResponse.of(response));
+    return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
   @Operation(
@@ -65,12 +90,31 @@ public class UserController {
 
           결과: UserSummary. hasPreSchedule은 login/me와 동일하게 조회 시 파생.
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "name", "message": "이름은 필수입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @PatchMapping("/my-page")
-  ResponseEntity<ApiResponse<UserSummaryResponse>> updateMyPage(
+  ResponseEntity<SuccessResponse<UserSummaryResponse>> updateMyPage(
       @AuthorizedUser UUID userId,
       @Valid @RequestBody UpdateMyPageRequest request) {
     UserSummaryResponse response = userProfileService.updateMyPage(userId, request);
-    return ResponseEntity.ok(ApiResponse.of(response));
+    return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
   @Operation(
@@ -86,6 +130,16 @@ public class UserController {
 
           주의: 소유한 방이 있으면 그 방은 다른 참여자에게도 더 이상 보이지 않는다. 액세스 토큰은 자연 만료 전까지 유효할 수 있다.
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @DeleteMapping("/me")
   ResponseEntity<Void> withdraw(@AuthorizedUser UUID userId) {
     userWithdrawalService.withdraw(userId);

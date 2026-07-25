@@ -1,7 +1,8 @@
 package com.tripfit.tripfit.user.schedule.controller;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
-import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.common.api.ErrorResponse;
+import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.user.schedule.dto.CreateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
@@ -12,6 +13,11 @@ import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -47,10 +53,20 @@ public class UserScheduleController {
 
           결과: 생성 시각 오름차순. 오전·오후·저녁 슬롯은 start/end로 계산된 값.
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @GetMapping("/regular")
-  ResponseEntity<ApiResponse<RegularScheduleListResponse>> listRegular(
+  ResponseEntity<SuccessResponse<RegularScheduleListResponse>> listRegular(
       @AuthorizedUser UUID userId) {
-    return ResponseEntity.ok(ApiResponse.of(scheduleService.listRegular(userId)));
+    return ResponseEntity.ok(SuccessResponse.of(scheduleService.listRegular(userId)));
   }
 
   @Operation(
@@ -66,12 +82,31 @@ public class UserScheduleController {
 
           주의: 첫 정기 일정 생성 시 hasPreSchedule이 true가 된다(GET /auth/me 등으로 재조회).
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "daysOfWeek", "message": "필수 값입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @PostMapping("/regular")
-  ResponseEntity<ApiResponse<RegularScheduleResponse>> createRegular(
+  ResponseEntity<SuccessResponse<RegularScheduleResponse>> createRegular(
       @AuthorizedUser UUID userId,
       @Valid @RequestBody CreateRegularScheduleRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(ApiResponse.of(scheduleService.createRegular(userId, request)));
+        .body(SuccessResponse.of(scheduleService.createRegular(userId, request)));
   }
 
   @Operation(
@@ -87,13 +122,40 @@ public class UserScheduleController {
 
           주요 에러: REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "daysOfWeek", "message": "필수 값입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "404",
+          description = "REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "REGULAR_SCHEDULE_NOT_FOUND", "message": "정기 일정을 찾을 수 없습니다."}
+                  """)))
+  })
   @PatchMapping("/regular/{id}")
-  ResponseEntity<ApiResponse<RegularScheduleResponse>> updateRegular(
+  ResponseEntity<SuccessResponse<RegularScheduleResponse>> updateRegular(
       @AuthorizedUser UUID userId,
       @PathVariable UUID id,
       @Valid @RequestBody UpdateRegularScheduleRequest request) {
     return ResponseEntity.ok(
-        ApiResponse.of(scheduleService.updateRegular(userId, id, request)));
+        SuccessResponse.of(scheduleService.updateRegular(userId, id, request)));
   }
 
   @Operation(
@@ -111,6 +173,24 @@ public class UserScheduleController {
 
           주요 에러: REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "404",
+          description = "REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "REGULAR_SCHEDULE_NOT_FOUND", "message": "정기 일정을 찾을 수 없습니다."}
+                  """)))
+  })
   @DeleteMapping("/regular/{id}")
   ResponseEntity<Void> deleteRegular(
       @AuthorizedUser UUID userId,
@@ -130,15 +210,25 @@ public class UserScheduleController {
 
           결과: 날짜당 오전·오후·저녁 슬롯과 uncertain 플래그.
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @GetMapping("/personal")
-  ResponseEntity<ApiResponse<PersonalScheduleResponse>> getPersonal(
+  ResponseEntity<SuccessResponse<PersonalScheduleResponse>> getPersonal(
       @AuthorizedUser UUID userId,
       @Parameter(description = "조회 시작일(포함)", example = "2026-08-01") @RequestParam @DateTimeFormat(
           iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
       @Parameter(description = "조회 종료일(포함)", example = "2026-08-31") @RequestParam @DateTimeFormat(
           iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
     return ResponseEntity.ok(
-        ApiResponse.of(scheduleService.getPersonal(userId, startDate, endDate)));
+        SuccessResponse.of(scheduleService.getPersonal(userId, startDate, endDate)));
   }
 
   @Operation(
@@ -156,11 +246,29 @@ public class UserScheduleController {
 
           주요 에러: INVALID_INPUT — items·deletedDates 교집합 날짜 또는 둘 다 비어 있음
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "INVALID_INPUT — 요청 값 검증 실패 또는 items·deletedDates 교집합 날짜·둘 다 비어 있음",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @PatchMapping("/personal")
-  ResponseEntity<ApiResponse<PersonalScheduleResponse>> upsertPersonal(
+  ResponseEntity<SuccessResponse<PersonalScheduleResponse>> upsertPersonal(
       @AuthorizedUser UUID userId,
       @Valid @RequestBody UpdatePersonalScheduleRequest request) {
-    return ResponseEntity.ok(ApiResponse.of(scheduleService.upsertPersonal(userId, request)));
+    return ResponseEntity.ok(SuccessResponse.of(scheduleService.upsertPersonal(userId, request)));
   }
 
   @Operation(
@@ -178,8 +286,26 @@ public class UserScheduleController {
 
           주요 에러: INVALID_INPUT — 조회 구간이 허용 윈도우 밖
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "INVALID_INPUT — 조회 구간이 허용 윈도우(오늘~오늘+2년−1) 밖",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
   @GetMapping("/calendar")
-  ResponseEntity<ApiResponse<ScheduleCalendarResponse>> getCalendar(
+  ResponseEntity<SuccessResponse<ScheduleCalendarResponse>> getCalendar(
       @AuthorizedUser UUID userId,
       @Parameter(description = "달력 시작일(포함). 오늘~오늘+2년−1 안",
           example = "2026-07-22") @RequestParam @DateTimeFormat(
@@ -188,6 +314,6 @@ public class UserScheduleController {
           example = "2026-08-31") @RequestParam @DateTimeFormat(
               iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
     return ResponseEntity.ok(
-        ApiResponse.of(scheduleService.getCalendar(userId, startDate, endDate)));
+        SuccessResponse.of(scheduleService.getCalendar(userId, startDate, endDate)));
   }
 }

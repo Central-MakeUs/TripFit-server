@@ -1,13 +1,19 @@
 package com.tripfit.tripfit.trip.controller;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
-import com.tripfit.tripfit.common.api.ApiResponse;
+import com.tripfit.tripfit.common.api.ErrorResponse;
+import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.trip.config.TripMemberOnly;
 import com.tripfit.tripfit.trip.config.TripOwnerOnly;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.service.TripService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -18,13 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(
-    name = "Trip Members",
-    description = """
-        참여자 목록·그룹 달력·내보내기. 전제=방 입장(RESPONDED+입장조건).
-
-        JOINED(방장 confirm 전)는 호출 불가(SCHEDULE_CONFIRM_REQUIRED).
-        """)
+@Tag(name = "Trip Members", description = "여행방 참여자 목록·그룹 달력·내보내기")
 @RestController
 @RequestMapping("/api/v1/trips/{tripId}/members")
 @SecurityRequirement(name = "bearer-jwt")
@@ -49,11 +49,37 @@ public class TripMemberController {
 
           결과: 상태·역할·Pin·모집률 등. 동명이인은 표시명에 `(2)`처럼 번호가 붙는다.
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "403",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료(JOINED) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "SCHEDULE_CONFIRM_REQUIRED", "message": "이 여행방 일정 확인을 완료해야 입장할 수 있습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "404",
+          description = "TRIP_NOT_FOUND — 여행방 없음·soft deleted",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_NOT_FOUND", "message": "여행방을 찾을 수 없습니다."}
+                  """)))
+  })
   @GetMapping
-  ResponseEntity<ApiResponse<TripMembersResponse>> listMembers(
+  ResponseEntity<SuccessResponse<TripMembersResponse>> listMembers(
       @PathVariable UUID tripId,
       @AuthorizedUser UUID userId) {
-    return ResponseEntity.ok(ApiResponse.of(tripService.listMembers(tripId, userId)));
+    return ResponseEntity.ok(SuccessResponse.of(tripService.listMembers(tripId, userId)));
   }
 
   @TripMemberOnly
@@ -70,12 +96,38 @@ public class TripMemberController {
 
           주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "403",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_ACCESS_DENIED", "message": "여행방 참여 권한이 없습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "404",
+          description = "TRIP_NOT_FOUND — 여행방 없음·soft deleted",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_NOT_FOUND", "message": "여행방을 찾을 수 없습니다."}
+                  """)))
+  })
   @GetMapping("/schedule-calendar")
-  ResponseEntity<ApiResponse<MemberScheduleCalendarResponse>> getScheduleCalendar(
+  ResponseEntity<SuccessResponse<MemberScheduleCalendarResponse>> getScheduleCalendar(
       @PathVariable UUID tripId,
       @AuthorizedUser UUID userId) {
     return ResponseEntity.ok(
-        ApiResponse.of(tripService.getMemberScheduleCalendar(tripId, userId)));
+        SuccessResponse.of(tripService.getMemberScheduleCalendar(tripId, userId)));
   }
 
   @TripOwnerOnly
@@ -94,12 +146,54 @@ public class TripMemberController {
 
           주요 에러: TRIP_FORBIDDEN · TRIP_NOT_ONGOING · CANNOT_REMOVE_OWNER · TRIP_MEMBER_NOT_FOUND
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "CANNOT_REMOVE_OWNER — 방장은 내보낼 수 없음",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "CANNOT_REMOVE_OWNER", "message": "방장은 내보낼 수 없습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "403",
+          description = "TRIP_FORBIDDEN — 방장 아님",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_FORBIDDEN", "message": "여행방 방장만 수행할 수 있습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "404",
+          description = "TRIP_NOT_FOUND — 여행방 없음 · TRIP_MEMBER_NOT_FOUND — 대상 참여자 없음·이미 내보냄",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_MEMBER_NOT_FOUND", "message": "여행방 참여자를 찾을 수 없습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "409",
+          description = "TRIP_NOT_ONGOING — 조율 중이 아닌 여행방",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_NOT_ONGOING", "message": "조율 중인 여행방만 수정·내보내기·일정 확인할 수 있습니다."}
+                  """)))
+  })
   @DeleteMapping("/{userId}")
-  ResponseEntity<ApiResponse<TripMembersResponse>> removeMember(
+  ResponseEntity<SuccessResponse<TripMembersResponse>> removeMember(
       @PathVariable UUID tripId,
       @PathVariable UUID userId,
       @AuthorizedUser UUID ownerId) {
-    return ResponseEntity.ok(ApiResponse.of(tripService.removeMember(tripId, ownerId, userId)));
+    return ResponseEntity.ok(SuccessResponse.of(tripService.removeMember(tripId, ownerId, userId)));
   }
 
   // 방 입장 조건(RESPONDED·canEnterRoom)과 무관하게 나갈 수 있어야 하므로 @TripMemberOnly 미부착 — 서비스에서 직접 멤버십 검증
@@ -118,6 +212,33 @@ public class TripMemberController {
 
           주요 에러: TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감 · TRIP_OWNER_CANNOT_LEAVE — 방장
           """)
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "400",
+          description = "TRIP_OWNER_CANNOT_LEAVE — 방장은 나갈 수 없음(방 삭제 사용)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "TRIP_OWNER_CANNOT_LEAVE", "message": "방장은 여행방을 나갈 수 없습니다. 여행방 삭제를 이용해주세요."}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "403",
+          description = "TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_ACCESS_DENIED", "message": "여행방 참여 권한이 없습니다."}
+                  """)))
+  })
   @DeleteMapping("/me")
   ResponseEntity<Void> leaveTrip(@PathVariable UUID tripId, @AuthorizedUser UUID userId) {
     tripService.leaveTrip(tripId, userId);
