@@ -1,14 +1,16 @@
 # 추천 4모드 · TOP 3 · 확정·취소
 
 > wave: 2  
-> implements: BR-TRIP-005, BR-TRIP-007, BR-TRIP-010, BR-TRIP-011, BR-TRIP-012  
-> deferred: BR-NOTI-004 확정 알림 (wave 3), 추천 가중치 수치 튜닝  
+> implements: BR-TRIP-007, BR-TRIP-010 (API·DTO·ERD·상태전이만 — 계산 로직은 `#50`)  
+> deferred: BR-NOTI-004 확정 알림 (wave 3), **추천 계산 로직(후보 윈도우·모드별 스코어링·ALL_ATTEND 필터·동점) → [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) (#50, BR-TRIP-005·011·012)**  
 > 상태: Draft  
 > 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (RESPONDED·sparse·submit)
 
 ## 목표
 
 방장이 **4가지 추천 모드**로 TOP 3 후보를 받고, 후보 선택 또는 직접 날짜 입력으로 일정을 확정·취소한다. wave 2 MVP 완료 기준의 **추천·확정** 축.
+
+**2026-07-24 범위 분리:** 이 스펙은 **API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·hard DELETE 트리거**만 담당한다. `POST /recommendations`가 실제로 반환할 **TOP 3 계산 로직**(후보 윈도우 생성·모드별 스코어링·`ALL_ATTEND` 필터·동점 처리)은 [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md)(`#50`)로 분리했다. 이 스펙만으로 구현하는 동안 `POST /recommendations`는 **플레이스홀더 값**으로 응답해 API 계약만 검증한다.
 
 ## 배경
 
@@ -55,13 +57,8 @@
 ### Must Have
 
 - [ ] `RecommendationMode` enum (4값 + `trip.last_recommendation_mode`)
-- [ ] `POST /api/v1/trips/{tripId}/recommendations` — `{ mode }` → 계산 → 기존 rows **hard DELETE** → TOP 3 INSERT
+- [ ] `POST /api/v1/trips/{tripId}/recommendations` — `{ mode }` → **계산은 `#50`(`RecommendationEngine`)에 위임** → 기존 rows **hard DELETE** → 결과 TOP 3 INSERT. `#50` 완료 전까지는 플레이스홀더 결과로 계약만 검증
 - [ ] `GET /api/v1/trips/{tripId}/recommendations` — 현재 저장된 TOP 3 (+ `mode`, `generatedAt` `[제안]`)
-- [ ] 후보 윈도우: `[startRange, endRange]` 내 **연속 `durationDays`일** 슬라이딩 `[제안]`
-- [ ] **입력 resolve:** #17 `ScheduleCalendarResolveService` **재사용** (C1 — 별도 병합 로직 금지). 멤버×날짜 effective
-- [ ] TBD = 날짜 단위 `uncertain` (CERTAIN 모드 · U1 달력과 동일)
-- [ ] **ALL_ATTEND:** `memberCount` 미달 후보 **제외** (BR-TRIP-011)
-- [ ] **동점:** BR-TRIP-012 — 1) 연차 적은 순 2) 기간 긴 순 3) 주말·공휴일 포함 순 `[제안]`
 - [ ] `POST /api/v1/trips/{tripId}/confirm` — 방장만 (BR-TRIP-007): `{ recommendationRank }` 또는 `{ startDate, endDate }`
 - [ ] confirm → `status=CONFIRMED`, `confirmedStartDate`/`confirmedEndDate` 설정
 - [ ] `POST /api/v1/trips/{tripId}/unconfirm`("확정 취소") — 방장만, `status=CONFIRMED`일 때만 호출 가능 (아니면 409 `TRIP_NOT_CONFIRMED`) → `status=ONGOING`으로 되돌리고 `confirmedStartDate`/`confirmedEndDate`를 `null`로 초기화. **새 `TripStatus` 값을 추가하지 않음** — 기존 `ONGOING`으로 단순 복귀(2026-07-24 확정, 근거: `src/new_decision.md` Q1)
@@ -69,9 +66,9 @@
 - [ ] unconfirm 시 `#38` 확정 스냅샷(freeze 결과)을 폐기하고 `ONGOING` 라이브 조회로 되돌림 — 이후 재확정 전까지는 스냅샷 없이 라이브 데이터 사용
 - [ ] unconfirm 시 기존 `recommendation` TOP 3 hard DELETE (BR-TRIP-010과 동일 정책 — 재확정하려면 추천을 다시 계산해야 함)
 - [ ] `POST .../recommendations` · confirm — **`status=ONGOING`만** (D4 → 409 `TRIP_NOT_ONGOING`)
-- [ ] confirm 성공 시 **일정 snapshot** (#38 R-freeze — 동일 TX). 추천 재실행은 CONFIRMED/TERMINATED에서 불가(X8)
+- [ ] confirm 성공 시 **일정 snapshot** (#38 R-freeze — 동일 TX). 추천 재실행은 CONFIRMED/EXPIRED에서 불가(X8)
 - [ ] trip PATCH(기간·일수) / DELETE / mode POST 시 recommendation hard DELETE (BR-TRIP-010)
-- [ ] `./gradlew test` — 모드별·동점·hard filter 단위 테스트
+- [ ] `./gradlew test` — 상태 전이·hard DELETE 트리거 단위 테스트 (모드별 rank·동점·`ALL_ATTEND` 필터 테스트는 `#50` 소관)
 
 ### Nice to Have
 
@@ -80,10 +77,11 @@
 
 ### Out of Scope
 
+- **추천 계산 로직 전체**(후보 윈도우 생성·`#17` resolve 집계·모드별 스코어링·`ALL_ATTEND` 필터·BR-TRIP-012 동점) — `#50`([`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md))
 - 알림 발송 (BR-NOTI-004) — wave 3
 - 여행방 **삭제** 시 VOC 사유 — `unconfirm` 사유와 별개, 미정(wave 4)
 - 가격·날씨 등 외부 데이터
-- 공휴일 API — 주말만 `[제안]` 또는 static `[미정]`
+- 공휴일 API — 주말만 `[제안]` 또는 static `[미정]` (`#50` 소관)
 
 ## API / 인터페이스
 
@@ -168,7 +166,7 @@
 | 400 | `NO_RECOMMENDATION_CANDIDATES` | ALL_ATTEND 등 후보 0건 |
 | 403 | `TRIP_FORBIDDEN` | 방장 아님 |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 중복 confirm |
-| 409 | `TRIP_NOT_ONGOING` | recommendations/confirm 호출 시 상태가 ONGOING이 아님(CONFIRMED/TERMINATED) |
+| 409 | `TRIP_NOT_ONGOING` | recommendations/confirm 호출 시 상태가 ONGOING이 아님(CONFIRMED/EXPIRED) |
 | 409 | `TRIP_NOT_CONFIRMED` (신규) | unconfirm 호출 시 상태가 CONFIRMED가 아님 |
 | 400 | `INVALID_UNCONFIRM_REASON` (신규) | `reason` enum 밖 또는 `OTHER`인데 `reasonDetail` 없음 |
 | 404 | `RECOMMENDATION_NOT_FOUND` | rank 없음 |
@@ -191,89 +189,70 @@
 
 ## 알고리즘 (구현 가이드)
 
-> 가중치 수치는 `[미정]`. wave 2는 **모드별 분기 + 테스트 가능한 deterministic 점수**를 목표로 한다.
-
-### 공통
-
-1. 후보: `durationDays` **필수**(null이면 추천 불가). `startRange`~`endRange`에서 길이=`durationDays`인 모든 `[startDate, endDate]`
-2. 각 후보·각 멤버·각 슬롯: **#17 resolve** effective 집계 (S1·R2=A)
-3. TBD: `personal_schedule.uncertain=true`인 날짜 (CERTAIN 모드)
-4. 정기 일정 연차: `maxVacationDays`·`VacationApplyPeriod`·반차·공휴일 휴무 필드 참고 (BR-TRIP-006). 필요일 추정 `[제안]` — workday IMPOSSIBLE → +1 (복수 행 집계 `[미정]`)
-
-### 모드별
-
-| 모드 | 점수화 `[제안]` | 필터 |
-|------|-----------------|------|
-| BASIC | `w1*attendRate - w2*vacationDays - w3*tbdRate` | 없음 |
-| ALL_ATTEND | BASIC과 동일 sort | **가능 인원 < memberCount 제외** |
-| SAVE_VACATION | `-vacationDays` primary | 없음 |
-| CERTAIN | `-tbdCount` primary | 없음 |
-
-### BR-TRIP-012 동점
-
-동일 `score` 시 comparator chain: `vacationDays ASC` → `durationDays DESC` → `weekendHolidayCount DESC`
+**계산 로직 전체가 `#50`([`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md))로 이동했다.** 이 스펙은 `#50`이 반환하는 `List<RecommendationCandidate>`를 저장·조회하는 것까지만 다룬다.
 
 ## 비즈니스 규칙
 
 | BR | 적용 내용 | 구현 위치 (예정) |
 |----|-----------|------------------|
-| BR-TRIP-005 | 4모드 TOP 3 | RecommendationService |
-| BR-TRIP-007 | owner confirm/cancel | TripConfirmService |
+| BR-TRIP-005 | 4모드 TOP 3 계산 | `#50` `RecommendationEngine` |
+| BR-TRIP-007 | owner confirm/unconfirm | TripConfirmService |
 | BR-TRIP-010 | hard DELETE | RecommendationRepository.deleteByTripId |
-| BR-TRIP-011 | ALL_ATTEND filter | candidate filter |
-| BR-TRIP-012 | tie-break | comparator |
+| BR-TRIP-011 | ALL_ATTEND filter | `#50` `RecommendationEngine` |
+| BR-TRIP-012 | tie-break | `#50` `RecommendationEngine` |
 
 ## 검증 시나리오
 
 ### 정상
 
-- [ ] BASIC POST → 3 rows, GET 동일
-- [ ] mode SAVE_VACATION POST → 이전 BASIC rows 삭제됨
-- [ ] ALL_ATTEND — target 6, 5명만 가능한 후보 제외
+- [ ] POST(플레이스홀더 or `#50` 연결 후 실값) → 3 rows, GET 동일
+- [ ] mode 변경 POST → 이전 rows 삭제됨(hard DELETE)
 - [ ] confirm rank 1 → CONFIRMED + dates
 - [ ] confirm custom dates → CONFIRMED
-- [ ] unconfirm → ONGOING, `confirmedStartDate`/`confirmedEndDate` null, 기존 recommendation hard DELETE, `#38` 스냅샷 폐기
+- [ ] unconfirm → ONGOING, `confirmedStartDate`/`confirmedEndDate` null, 기존 recommendation hard DELETE, snapshot 폐기
 
 ### 엣지 · 실패
 
 - [ ] 참여자 confirm → 403
-- [ ] ALL_ATTEND 후보 없음 → 400 `NO_RECOMMENDATION_CANDIDATES`
 - [ ] PATCH trip endRange → GET recommendations empty
 - [ ] unconfirm 호출 시 상태가 CONFIRMED 아님 → 409 `TRIP_NOT_CONFIRMED`
 - [ ] 참여자가 unconfirm 호출 → 403 `TRIP_FORBIDDEN`
 - [ ] unconfirm `reason` 누락 → 400 `INVALID_UNCONFIRM_REASON`
 - [ ] unconfirm `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_UNCONFIRM_REASON`
+- [ ] `ALL_ATTEND` 후보 없음 → 400 `NO_RECOMMENDATION_CANDIDATES` — 실제 필터링은 `#50`, 이 스펙은 예외→HTTP 매핑만
 
-### 단위 테스트 (필수)
+### 단위 테스트 (필수, 이 스펙 범위)
 
-- [ ] 고정 fixture 멤버·`regular_schedule`/`personal_schedule` → 모드별 rank 1 기대값
-- [ ] 동점 comparator 순서
 - [ ] hard DELETE 후 count=0
+- [ ] confirm/unconfirm 상태 전이(`ONGOING`↔`CONFIRMED`)
+- [ ] (모드별 rank·동점 comparator·`ALL_ATTEND` 필터 단위 테스트는 `#50` 소관)
 
 ## 완료 기준
 
 - [ ] `./gradlew test` 통과 (RecommendationServiceTest 등)
 - [ ] OpenAPI 반영
-- [ ] wave 2 MVP 완료 기준: 방장이 4모드 중 하나로 TOP 3 확인 후 확정 가능
+- [ ] `#50` 연결 완료 시점에 wave 2 MVP 완료 기준(방장이 4모드 중 하나로 **실제 계산된** TOP 3 확인 후 확정) 충족 — 이 스펙만으로는 API 계약까지만 검증
 
 ## 리스크·미결정
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| BR-TRIP-005 가중치 w1/w2/w3 | `[미정]` | MVP는 상대 순위만 맞으면 됨 — 튜닝은 prod 전 |
-| 연차 산출 규칙 | `[제안]` | IMPOSSIBLE on workday → 1일; `halfVacationAvailable` 반영 `[미정]` |
-| regular vs personal 병합 | **Implemented** (#17) | 추천은 resolve **재사용** (C1) |
-| 공휴일 데이터 | `[미정]` | KR 공휴일 static table vs API |
+| BR-TRIP-005 가중치 w1/w2/w3 | `[미정]` → `#50` | MVP는 상대 순위만 맞으면 됨 — 튜닝은 prod 전 |
+| 연차 산출 규칙 | `[제안]` → `#50` | IMPOSSIBLE on workday → 1일; `halfVacationAvailable` 반영 `[미정]` |
+| regular vs personal 병합 | **Implemented** (#17) | 추천은 resolve **재사용** (C1), 호출은 `#50` |
+| 공휴일 데이터 | `[미정]` → `#50` | KR 공휴일 static table vs API |
 | confirm 후 recommendation 유지 | `[제안]` | UI 재조회용 |
 | NOTI on confirm | wave 3 | stub 없음 |
-| `TripStatus.CANCELED` 제거 | 확정 (`src/new_decision.md`) | 이 스펙이 유일한 프로듀서였던 `cancel`(→CANCELED) API를 삭제하고 `unconfirm`으로 교체 완료. enum 값 삭제 자체는 별도 이슈(#48)에서 코드로 실행 |
-| unconfirm 사유 입력 | 확정 (2026-07-24, 기획자 답변) | 라디오 6종(`OTHER`는 직접입력) — `UnconfirmReason` enum 신설. 구 `cancel_reason`(VOC, wave4) 개념과는 분리 — 여행방 **삭제** 시 VOC 사유는 여전히 미정 |
-| `TERMINATED` → `EXPIRED` 리네임 | 확정(방향), 미실행 | 이미 Implemented인 `#27`/`#37`/`#38`과 코드가 함께 바뀌어야 문서-코드 불일치가 안 생겨서, 실제 반영은 별도 리네임 이슈(TBD)에서 코드와 동시에 진행 |
+| `TripStatus.CANCELED` 제거 | **#48 Implemented** | 이 스펙이 유일한 프로듀서였던 `cancel`(→CANCELED) API를 삭제하고 `unconfirm`으로 교체 완료. enum 값 삭제 자체도 `#48`에서 코드로 실행 완료 |
+| unconfirm 사유 입력 | 확정 (2026-07-24, 기획자 답변) | 라디오 6종(`OTHER`는 직접입력) — `UnconfirmReason` enum 신설. 구 `cancel_reason`(VOC, wave4) 개념과는 분리 — 여행방 **삭제** 시 VOC 사유는 여전히 미정. 실제 `Trip.unconfirmReason`/`unconfirmReasonDetail` 필드·API 구현은 본 스펙(`#13`)에서 진행 |
+| `TERMINATED` → `EXPIRED` 리네임 | **#48 Implemented** | `#27`/`#37`/`#38` 등 관련 스펙 문구도 함께 `EXPIRED`로 갱신 완료 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | 사용자 요청으로 범위 분리 — 이 스펙은 API 설계·DTO·ERD·상태 전이·hard DELETE 트리거만, **추천 계산 로직 전체는 `#50`([`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md))로 이동** |
+| 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조도 `EXPIRED`로 동기화 |
 | 2026-07-24 | `unconfirm` 사유 입력 필수로 확정(기획자 답변) — `UnconfirmReason` enum 6종 + `reasonDetail`(`OTHER`). 관련 문서(`mvp.md`·`waves.md`·`erd.md`·`trip-room-api.md`·`figma-wireframe-v1.md`·`#48`) wave 재분류 동기화 |
 | 2026-07-24 | `src/new_decision.md` 확정 반영 — `cancel`(→`CANCELED`) API를 **삭제**, `unconfirm`(CONFIRMED→ONGOING, 새 Status 없음) API로 교체. 관련 에러 코드·시나리오 갱신 |
 | 2026-07-08 | 초안 |

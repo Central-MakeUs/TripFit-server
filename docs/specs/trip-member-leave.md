@@ -27,7 +27,7 @@
 - [x] 호출자의 해당 방 활성(`deleted_at IS NULL`) `TripMember` row가 없으면 `TRIP_ACCESS_DENIED`
 - [x] 호출자 역할이 `OWNER`면 `TRIP_OWNER_CANNOT_LEAVE` — 방장은 나갈 수 없고 "여행방 삭제"를 사용해야 함(방장 위임 기능 없음)
 - [x] 호출자 역할이 `MEMBER`면 해당 `TripMember.deleted_at` soft delete
-- [x] **모든 상태(ONGOING/CONFIRMED/TERMINATED)에서 허용** — 상태 게이트 없음(`TRIP_NOT_ONGOING` 미적용, `#20`과 달리 나가기는 상태 무관). `TripStatus.CANCELED`는 `src/new_decision.md`에서 **삭제 확정**돼 더 이상 고려 대상 아님(enum 자체 삭제는 별도 이슈에서 진행)
+- [x] **모든 상태(ONGOING/CONFIRMED/EXPIRED)에서 허용** — 상태 게이트 없음(`TRIP_NOT_ONGOING` 미적용, `#20`과 달리 나가기는 상태 무관). `TripStatus.CANCELED`는 `#48`에서 **enum 자체 삭제 완료**돼 더 이상 고려 대상 아님
 - [x] 성공 시 `204 No Content`
 - [x] `last_activity_at` touch (`@TripActivity`) — L1 갱신 이벤트 추가
 - [x] 재가입: soft delete 후 같은 초대로 재 join 허용 (기존 join 경로 그대로, #20과 동일)
@@ -39,7 +39,7 @@
 - 방장 위임(ownership transfer) — 명시적으로 없는 기능
 - 나간 후 알림 (`#21`)
 - 추천 캐시 무효화·재계산 (`#13`, #20과 동일 보류)
-- `CANCELED` 상태 처리 — enum 자체가 삭제되므로 해당 없음
+- `CANCELED` 상태 처리 — `#48`에서 enum 자체 삭제 완료, 해당 없음
 - "확정 취소" 시점의 멤버 제외 처리 — **별도 로직 불필요로 확정.** 나간 멤버는 상태 무관 항상 **즉시** `trip_member` soft delete되고, CONFIRMED 방에서 다른 멤버가 계속 보게 되는 건 이 스펙이 아니라 `trip-schedule-snapshot.md`(#38)가 이미 confirm 시점에 얼려둔(freeze) 스냅샷이 그대로 유지되기 때문. "확정 취소"(`trip-recommendation.md`의 `unconfirm`)가 그 스냅샷을 폐기하는 순간에야 다른 멤버가 라이브 데이터(나간 사람 제외)를 다시 보게 됨 — 자세한 내용은 `trip-recommendation.md` `unconfirm` Must Have 참고
 
 ## API
@@ -73,7 +73,7 @@
 
 - [x] MEMBER가 ONGOING 방에서 나가기 → 204, `trip_member.deleted_at` 설정, `last_activity_at` touch
 - [x] MEMBER가 CONFIRMED 방에서 나가기 → 204 (상태 게이트 없음)
-- [x] MEMBER가 TERMINATED 방에서 나가기 → 204 (상태 게이트 없음)
+- [x] MEMBER가 EXPIRED 방에서 나가기 → 204 (상태 게이트 없음)
 - [ ] 나간 후 같은 초대 코드로 재 join → 신규 `TripMember` row INSERT 허용 (기존 join 경로 재사용 — 별도 신규 테스트 없이 회귀 없음 확인)
 
 ### 엣지 · 실패
@@ -94,15 +94,16 @@
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 나가기 허용 상태(ONGOING/CONFIRMED/TERMINATED) | 확정 (2026-07-24, `#47`) | 방장 위임 없음, 나가기는 상태 무관 — 내보내기(`#20`, ONGOING만)와는 의도적 비대칭 |
-| `CANCELED` 상태 | 확정 — 해당 없음 | enum 자체 삭제(`src/new_decision.md`). 실행은 별도 이슈(TBD) |
+| 나가기 허용 상태(ONGOING/CONFIRMED/EXPIRED) | 확정 (2026-07-24, `#47`) | 방장 위임 없음, 나가기는 상태 무관 — 내보내기(`#20`, ONGOING만)와는 의도적 비대칭 |
+| `CANCELED` 상태 | **#48 Implemented** — 해당 없음 | enum 자체 삭제 완료 |
 | "확정 취소" 시점의 멤버 제외 처리 | 확정 — 별도 메커니즘 불필요 | 즉시 soft delete + 기존 `#38` 스냅샷 freeze/폐기로 충분 (위 Out of Scope 참고) |
-| `TERMINATED` → `EXPIRED` 리네임 | 확정(방향), 미실행 | 코드·`#27`/`#37`/`#38` 스펙과 동시에 별도 이슈(TBD)에서 반영 예정 — 본 스펙은 아직 `TERMINATED` 표기 유지 |
+| `TERMINATED` → `EXPIRED` 리네임 | **#48 Implemented** | 코드·`#27`/`#37`/`#38` 스펙과 함께 반영 완료 — 본 스펙도 `EXPIRED` 표기로 동기화 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조 동기화 |
 | 2026-07-24 | 구현 완료(`#47` 브랜치) — `TripCommandService.leaveTrip`·`TripMemberController DELETE /members/me`·`TRIP_OWNER_CANNOT_LEAVE`, `./gradlew test` 통과 |
 | 2026-07-24 | `src/new_decision.md` 최종 확정 반영 — `CANCELED` 관련 항목을 "결과 대기"에서 "해당 없음(enum 삭제 확정)"으로 정리, "확정 취소" 지연 삭제 로직은 별도 메커니즘 불필요로 결론(기존 `#38` 스냅샷으로 충분) |
 | 2026-07-24 | 정책 전면 수정(`#47` hotfix, 기획자 확인) — 나가기 허용 상태를 `ONGOING`만 → **상태 무관**(ONGOING/CONFIRMED/TERMINATED)으로 변경. `TRIP_NOT_ONGOING` 게이트 제거 |

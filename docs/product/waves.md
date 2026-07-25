@@ -33,9 +33,9 @@
 | 여행방·참여·홈 D5 | 2 | Must |
 | 일정 CRUD · calendar resolve | 2 | Must |
 | 여행방 일정 조회 윈도우 (+2년) (#37) | 2 | **Must** |
-| TERMINATED 일정 snapshot (#38) | 2 | **Must** |
+| EXPIRED 일정 snapshot (#38) | 2 | **Must** |
 | 추천 4모드·확정 | 2 | Must |
-| `last_activity_at` hook · TERMINATED 스케줄러 (#26, #27) | 2 | **Nice** |
+| `last_activity_at` hook · EXPIRED 스케줄러 (#26, #27) | 2 | **Nice** |
 | 참여자 내보내기 (#20) | 2 | **Nice** |
 | 알림(BR-NOTI-005 정기 리마인드 포함) (#21) · 카카오·링크 공유 (#19) · 그룹 달력 | 3 | Must |
 | RTR·Redis · Apple S2S · S3 · 계정 연결 | 4 | — |
@@ -65,7 +65,7 @@
 | 3 | [#31](https://github.com/Central-MakeUs/TripFit-server/issues/31) | Wave 3 — 출시 UX |
 | 4 | [#32](https://github.com/Central-MakeUs/TripFit-server/issues/32) | Wave 4 — 운영·확장 |
 
-**활성 Wave (2026-07-22):** Wave 2 Must Open = **#13** (Closed Must: #11 · #12 · #17 · #37 · #38). Nice: #20 · #26✓ · #27✓. Wave 3 Must: **#21** · **#19**. Wave 4: **#44** Google Calendar.
+**활성 Wave (2026-07-24):** Wave 2 Must Open = **#13 · #50**(#13에서 계산 로직 분리) (Closed Must: #11 · #12 · #17 · #37 · #38). Nice: #20 · #26✓ · #27✓. Wave 3 Must: **#21** · **#19**. Wave 4: **#44** Google Calendar.
 
 > **용어:** 이슈 `## Must Have` ≠ Wave Must. `MVP: In scope` ≠ Wave Must. SSOT: [`development-wave.md`](development-wave.md) · harness `Wave Must / Nice / Out`.
 

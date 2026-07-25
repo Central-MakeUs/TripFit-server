@@ -310,7 +310,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | duration_days | int | Y | | **m일만 저장**. null = 일정 미정. n박은 API 파생(`days-1`) · 요청 시 `durationNights`+`durationDays` 검증 |
 | member_count | int | N | | **1~10** (BR-TRIP-001) |
 | invite_code | varchar | N | | UNIQUE |
-| status | varchar | N | | `ONGOING`, `CONFIRMED`, `CANCELED`, **`TERMINATED`** (기간 만료·종료) |
+| status | varchar | N | | `ONGOING`, `CONFIRMED`, `EXPIRED`(기간 만료·종료) — 구 `CANCELED`는 삭제, 구 `TERMINATED`는 `EXPIRED`로 리네임(#48) |
 | last_recommendation_mode | varchar | Y | | BASIC, ALL_ATTEND, SAVE_VACATION, CERTAIN |
 | unconfirm_reason | varchar | Y | | `unconfirm` 사유 enum. **wave 2**(#13) — 최신값만 저장(이력 아님) |
 | unconfirm_reason_detail | varchar | Y | | `unconfirm_reason=OTHER`일 때만 직접 입력 텍스트 |
@@ -353,7 +353,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 ### `trip_member_schedule_snapshot` (#38)
 
-완료(CONFIRMED)·만료(TERMINATED) 방의 **멤버×날짜 effective** 고정본. 희망 기간·sparse. live `regular`/`personal`과 분리 (BR-USER-008).
+완료(CONFIRMED)·만료(EXPIRED) 방의 **멤버×날짜 effective** 고정본. 희망 기간·sparse. live `regular`/`personal`과 분리 (BR-USER-008).
 
 - **관련 스펙:** [`trip-schedule-snapshot.md`](../specs/trip-schedule-snapshot.md)
 
@@ -403,7 +403,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | users | trip | 1:N | owner_id (방장) |
 | users | refresh_token | 1:N | |
 | trip | trip_member | 1:N | |
-| trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/TERMINATED effective freeze |
+| trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/EXPIRED effective freeze |
 | users | trip_member_schedule_snapshot | 1:N | |
 | trip | recommendation | 1:N | 최대 3 (현재 모드) |
 
@@ -439,7 +439,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 | 항목 | 내용 |
 |------|------|
-| `[미정]` | BR-TRIP-005 가중치 · BR-TRIP-012 동점 · TERMINATED **전환 시점**(lazy vs 배치) |
+| `[미정]` | BR-TRIP-005 가중치 · BR-TRIP-012 동점 · EXPIRED **전환 시점**(lazy vs 배치) |
 | wave 2 잔여 | `#12` trip CRUD · members schedule-calendar · `#13` 추천 |
 | wave 4 | 여행방 **삭제** 시 VOC 사유 API·UI (unconfirm 사유와 별개) |
 

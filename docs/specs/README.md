@@ -26,15 +26,16 @@
 |------|------|------|------|
 | [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
 | [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A · **A1→#37** (today~+2년) | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) · #37 |
-| [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · CANCELED 거부 · ONGOING 칩 | #17 · #12 |
-| [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) | **Approved** (#38) · **구현 중** · Wave 2 Must | CONFIRMED/TERMINATED snapshot · R-model A | #27 · #17 · #37 |
+| [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · ONGOING 칩 (구 CANCELED 거부 — #48 enum 삭제로 해당 없음) | #17 · #12 |
+| [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) | **Approved** (#38) · **구현 중** · Wave 2 Must | CONFIRMED/EXPIRED snapshot · R-model A | #27 · #17 · #37 |
 | [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 · **#39** JOINED/confirm | 여행방 CRUD·홈 목록·Pin · schedule/confirm | #17 · #22 · #39 |
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
-| [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | TERMINATED DB·Pin batch · 00:05 KST | #12 |
+| [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | EXPIRED DB·Pin batch · 00:05 KST | #12 |
 | [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
-| [`trip-member-leave.md`](trip-member-leave.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관(CANCELED만 #48 대기) | #12 · #20 · #26 |
+| [`trip-member-leave.md`](trip-member-leave.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관(ONGOING/CONFIRMED/EXPIRED) | #12 · #20 · #26 |
 | [`user-account-withdrawal.md`](user-account-withdrawal.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · 차단 없이 자동 cascade · User soft delete + PII 스크럽 | trip-member-leave · user-my-page |
-| [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 4모드·TOP 3·확정·취소 | #12 · #17 · #22 |
+| [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
+| [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) | Draft (#50) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 | #13 · #17 |
 
 ## wave 3
 
@@ -53,7 +54,7 @@
 | [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md) | Draft | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
 
-**구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation(#13)
+**구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
 ## GitHub 이슈 매핑
 
@@ -62,7 +63,8 @@
 | #11 | schedule-unified | Closed |
 | #17 | schedule-calendar-resolve (본인 calendar) | Closed |
 | #12 | trip-room-api | Closed / Implemented |
-| #13 | trip-recommendation | Open |
+| #13 | trip-recommendation (API 껍데기·DTO·ERD) | Open |
+| **#50** | trip-recommendation-algorithm (계산 로직) | Open |
 | **#19** | kakao-invite-share | **Approved** · Wave 3 Must · create inviteCode 미노출 Implemented |
 | #20 | trip-member-remove | Implemented · **Wave 2 Nice** |
 | **#21** | 알림 (Draft 예정) | Open · **Wave 3 Must** |
@@ -74,7 +76,7 @@
 | **#38** | trip-schedule-snapshot | Closed |
 | **#44** | google-calendar-oauth | Open · **Wave 4 Must** (구 Swagger chore 폐기) |
 | **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
-| **#48** | `TripStatus.CANCELED` 존치 여부 검토 (chore) | Open |
+| **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |
 
 ## 완료 후
 

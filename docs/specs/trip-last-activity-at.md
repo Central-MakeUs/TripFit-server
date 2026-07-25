@@ -72,7 +72,7 @@
 ## Out of Scope
 
 - 홈 정렬·`scope` API — [`trip-room-api.md`](trip-room-api.md) D5 (Implemented)
-- TERMINATED·Pin 스케줄러 — [`trip-home-schedulers.md`](trip-home-schedulers.md)
+- EXPIRED·Pin 스케줄러 — [`trip-home-schedulers.md`](trip-home-schedulers.md)
 
 ## 변경 이력
 

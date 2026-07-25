@@ -187,8 +187,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 |--------------|-----------|----------------------|------------|
 | `ONGOING` | ✅ (정원·기간 OK) | 조회·활동 | ✅ (JOINED에게 메타 PATCH 허용 여부는 Open Q) |
 | `CONFIRMED` | ❌ | 재접속 OK | ❌ |
-| `CANCELED` | ❌ | 재접속 OK | ❌ |
-| `TERMINATED` | ❌ | 조회 등 | ❌ |
+| `EXPIRED` | ❌ | 조회 등 | ❌ |
 
 방장 `JOINED`의 “재접속” = 일정 확인 플로우 재개 (상세 아님).
 
@@ -219,7 +218,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 403 | `TRIP_FORBIDDEN` / `TRIP_ACCESS_DENIED` | 권한·비참여자 |
 | 404 | `TRIP_NOT_FOUND` / `INVITE_CODE_NOT_FOUND` | |
 | 409 | `TRIP_MEMBER_FULL` | 정원 가득 (신규 join) |
-| 409 | `TRIP_*` | CONFIRMED/CANCELED/TERMINATED 신규 join |
+| 409 | `TRIP_*` | CONFIRMED/EXPIRED 신규 join |
 | 409 | `TRIP_NOT_ONGOING` | 비 ONGOING PATCH |
 
 ---
@@ -279,7 +278,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 ### 시나리오 6 — 확정·종료 방
 
-1. `CONFIRMED`/`TERMINATED` 신규 join 409  
+1. `CONFIRMED`/`EXPIRED` 신규 join 409  
 2. 기존 `RESPONDED` 멤버 재접속 OK  
 3. 방장만 `JOINED`인 채 CONFIRMED가 되는 경로가 있는지는 제품상 막아야 함 (confirm 전 확정 금지 등 — Open Q)
 

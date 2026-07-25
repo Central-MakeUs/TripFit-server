@@ -33,7 +33,7 @@
 | 조회 기간 | **`startRange` ~ `endRange`** |
 | 수정 | 본인 전역 regular/personal CRUD |
 
-### C3 — 여행방 달력 (CONFIRMED / TERMINATED)
+### C3 — 여행방 달력 (CONFIRMED / EXPIRED)
 
 | 항목 | 확정 |
 |------|------|
@@ -41,9 +41,11 @@
 | 조회 기간 | **`startRange` ~ `endRange`** |
 | 수정 | **읽기 전용** |
 
-### CANCELED (R1)
+### CANCELED (R1) — **#48 Implemented, 해당 없음**
 
-| 항목 | 확정 |
+`TripStatus.CANCELED`가 `#48`에서 enum 자체 삭제됨에 따라, 아래 R1 결정이 가리키던 상태가 더 이상 존재하지 않는다. `CANCELED`로 진입할 방법이 없으므로 `members/schedule-calendar` 거부 분기 자체도 코드에서 제거됨(당시 결정은 이력으로 보존).
+
+| 항목 | 확정 (당시) |
 |------|------|
 | 달력 | **Out** — `members/schedule-calendar` **거부** (403/409, 기존 D4와 맞춤). snapshot 대상 아님. UI 비노출 |
 
@@ -57,7 +59,7 @@
 - [x] C1 칩: `scope=ongoing` 문서·OpenAPI에 마이페이지 인덱싱 용도 명시 (신설 API 없음)
 - [x] C2: live · 희망 기간 (현행 유지)
 - [ ] C3: snapshot — **#38**
-- [x] CANCELED: schedule-calendar 거부
+- [x] CANCELED: schedule-calendar 거부 — **#48**에서 enum 삭제, 해당 분기도 제거
 - [x] `./gradlew test`
 
 ### Out of Scope
@@ -74,14 +76,14 @@
 |----------|--------|------|------|
 | C1 | GET | `/api/v1/users/schedule/calendar` | ⊆ today~+2y−1 |
 | C1 칩 | GET | `/api/v1/trips?scope=ongoing` | — |
-| C2/C3 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 희망 기간 · CANCELED 거부 |
+| C2/C3 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 희망 기간 |
 
 ## 충돌·잔여 해소
 
 | ID | 확정 |
 |----|------|
 | X1~X5 | 2026-07-21 재확정 (C1=today+2년 · 방=희망 기간) |
-| **R1** | CANCELED 달력 Out · 조회 거부 |
+| **R1** | CANCELED 달력 Out · 조회 거부 — **#48 Implemented**: enum 삭제로 해당 없음 |
 | **R2** | today 이전 → 400 |
 | **R3** | `scope=ongoing` 재사용 |
 
@@ -95,6 +97,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제(R1 해당 없음), `TERMINATED` → `EXPIRED` 리네임 |
 | 2026-07-21 | Draft · 재확정 C1/C2/C3 |
 | 2026-07-21 | **Approved** — R1=A · R2=A · R3=A |
 | 2026-07-21 | **#37 구현** — C1 윈도우 · CANCELED 거부 · OpenAPI · `./gradlew test` |

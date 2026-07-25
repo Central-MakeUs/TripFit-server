@@ -72,7 +72,7 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 
 - 인터셉터 조회와 Service 조회가 **중복 DB 히트** 가능 → 필요 시 요청 스코프 캐시/`@RequestScope`로 trip 재사용 (초기엔 미도입, 단순 우선).
 - 권한 검증이 **두 곳(인터셉터·Service)** 에 존재 → 인터셉터를 "1차 게이트", Service 헬퍼를 "직접 호출 방어"로 **역할 명문화** 필요.
-- soft-delete·`effectiveStatus`(TERMINATED lazy 판정)는 **인터셉터 범위 밖** — 상태 기반 409(TRIP_NOT_ONGOING 등)는 계속 Service가 담당.
+- soft-delete·`effectiveStatus`(EXPIRED lazy 판정)는 **인터셉터 범위 밖** — 상태 기반 409(TRIP_NOT_ONGOING 등)는 계속 Service가 담당.
 - `tripId` 외 리소스 소유권(예: `{userId}` 내보내기 #20)은 별도 어노테이션·정책 필요.
 
 ## 후속 작업

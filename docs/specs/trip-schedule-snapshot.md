@@ -10,11 +10,11 @@
 
 ## 목표
 
-**CONFIRMED ∪ TERMINATED** 여행방 달력은 freeze 시점 effective를 **보존**하고 **읽기 전용**으로 열람한다.
+**CONFIRMED ∪ EXPIRED** 여행방 달력은 freeze 시점 effective를 **보존**하고 **읽기 전용**으로 열람한다.
 
 ## 제품 확정
 
-대상(CONFIRMED∪TERMINATED)·조회 기간(`startRange`~`endRange`)·읽기 전용·CANCELED 제외는 [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) C3/CANCELED 행이 SSOT — 여기서 중복 정의하지 않는다. 본 스펙 고유 내용:
+대상(CONFIRMED∪EXPIRED)·조회 기간(`startRange`~`endRange`)·읽기 전용은 [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) C3가 SSOT — 여기서 중복 정의하지 않는다. 구 `CANCELED` 제외 규칙은 `#48`에서 enum 자체 삭제로 해당 없음. 본 스펙 고유 내용:
 
 | ID | 확정 |
 |----|------|
@@ -26,7 +26,7 @@
 | 상태 | 트리거 | 트랜잭션 |
 |------|--------|----------|
 | **CONFIRMED** | `TripRecommendationService.confirmSchedule` — status=CONFIRMED 직후 `freezeTrip` (#13이 confirmed_* 보강) | 동일 TX |
-| **TERMINATED** | `#27` `TripHomeMaintenanceService.runForDate` — freeze 후 status=TERMINATED | 동일 TX |
+| **EXPIRED** | `#27` `TripHomeMaintenanceService.runForDate` — freeze 후 status=EXPIRED | 동일 TX |
 
 ### 저장 모델 (R-model)
 
@@ -44,8 +44,8 @@
 
 - [x] 엔티티·리포지토리 (R-model A) + ERD
 - [x] CONFIRMED 확정 경로에서 snapshot write (`TripRecommendationService.confirmSchedule` · #13 dates TODO)
-- [x] #27 `TripHomeMaintenanceService`에 TERMINATED snapshot (동일 TX)
-- [x] `GET .../members/schedule-calendar` — CONFIRMED/TERMINATED → snapshot · ONGOING → live · CANCELED 거부
+- [x] #27 `TripHomeMaintenanceService`에 EXPIRED snapshot (동일 TX)
+- [x] `GET .../members/schedule-calendar` — CONFIRMED/EXPIRED → snapshot · ONGOING → live
 - [x] 전역 CRUD는 live만 · snapshot 불변
 - [x] BR-USER-008 · glossary 정합 (기반영)
 - [x] `./gradlew test`
@@ -63,6 +63,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제(CANCELED 제외 규칙 해당 없음), `TERMINATED` → `EXPIRED` 리네임 |
 | 2026-07-21 | Draft · CONFIRMED∪TERMINATED 재확정 |
 | 2026-07-21 | **Approved** — R-freeze·R-gap·R-model=A·X8=A |
 | 2026-07-21 | **구현** — 엔티티·freeze·#27·GET 분기 · confirm 훅 |
