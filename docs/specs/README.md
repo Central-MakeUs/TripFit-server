@@ -53,6 +53,14 @@
 | [`auth-token-rotation.md`](auth-token-rotation.md) | Draft | RTR + Redis | auth-social-login · decision 004 |
 | [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md) | Draft | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
+| [`auth-dev-stub-verifier.md`](auth-dev-stub-verifier.md) | Draft (#52) | `/auth/login` 계약 유지형 dev 스텁 검증기 — `dev-mock-login` 엔드포인트 대체 예정 | dev-mock-login |
+
+## 도구 (Wave 무관)
+
+| 스펙 | 상태 | 범위 | 선행 |
+|------|------|------|------|
+| [`dev-mock-login.md`](dev-mock-login.md) | **Approved** (이슈 미생성 — 긴급) · **deferred→#52** | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 | auth-social-login |
+| [`swagger-openapi-docs.md`](swagger-openapi-docs.md) | Draft (이슈 미생성) | Swagger/OpenAPI 문서 가독성 개선 — `@ApiResponse` 부재·예시 부재·`OpenApiConfig` Info·`@Tag` 표기법 | — |
 
 **구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
@@ -77,6 +85,7 @@
 | **#44** | google-calendar-oauth | Open · **Wave 4 Must** (구 Swagger chore 폐기) |
 | **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
 | **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |
+| **#52** | auth-dev-stub-verifier (`dev-mock-login` 후속, wave 4) | Open |
 
 ## 완료 후
 
