@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
@@ -59,6 +60,9 @@ class ScheduleServiceTest {
 
   @Mock
   private GoogleCalendarService googleCalendarService;
+
+  @Mock
+  private TripMemberRepository tripMemberRepository;
 
   @InjectMocks
   private ScheduleService scheduleService;
@@ -394,6 +398,41 @@ class ScheduleServiceTest {
     LocalDate windowEnd = today.plusYears(2).minusDays(1);
     assertThatThrownBy(
         () -> scheduleService.getCalendar(USER_ID, today, windowEnd.plusDays(1)))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  void getCalendar_whenOngoingTripEndRangeBeyondWindow_extendsWindowEnd() {
+    LocalDate today = LocalDate.now();
+    LocalDate baseWindowEnd = today.plusYears(2).minusDays(1);
+    LocalDate extendedEnd = baseWindowEnd.plusDays(30);
+    when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(extendedEnd);
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            today,
+            extendedEnd))
+        .thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, today, extendedEnd))
+        .thenReturn(Map.of());
+
+    var response = scheduleService.getCalendar(USER_ID, today, extendedEnd);
+
+    assertThat(response.endDate()).isEqualTo(extendedEnd);
+  }
+
+  @Test
+  void getCalendar_whenEndAfterExtendedWindow_throws400() {
+    LocalDate today = LocalDate.now();
+    LocalDate baseWindowEnd = today.plusYears(2).minusDays(1);
+    LocalDate extendedEnd = baseWindowEnd.plusDays(30);
+    when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(extendedEnd);
+
+    assertThatThrownBy(
+        () -> scheduleService.getCalendar(USER_ID, today, extendedEnd.plusDays(1)))
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(CommonErrorCode.INVALID_INPUT);

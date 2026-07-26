@@ -3,6 +3,7 @@ package com.tripfit.tripfit.user.schedule.service;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.domain.Weekday;
@@ -48,17 +49,21 @@ public class ScheduleService {
 
   private final GoogleCalendarService googleCalendarService;
 
+  private final TripMemberRepository tripMemberRepository;
+
   public ScheduleService(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
       UserLookupService userLookupService,
       UserSummaryService userSummaryService,
-      GoogleCalendarService googleCalendarService) {
+      GoogleCalendarService googleCalendarService,
+      TripMemberRepository tripMemberRepository) {
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
     this.userLookupService = userLookupService;
     this.userSummaryService = userSummaryService;
     this.googleCalendarService = googleCalendarService;
+    this.tripMemberRepository = tripMemberRepository;
   }
 
   // 정기 일정 목록 조회 — 생성 시각 오름차순
@@ -231,8 +236,8 @@ public class ScheduleService {
       UUID userId,
       LocalDate startDate,
       LocalDate endDate) {
-    // 1. 조회 구간이 today ~ today+2년−1 안에 있는지 검증
-    validateCalendarDateRange(startDate, endDate);
+    // 1. 조회 구간이 today ~ max(today+2년−1, 참여 중 ONGOING 여행 endRange 최댓값) 안에 있는지 검증
+    validateCalendarDateRange(userId, startDate, endDate);
 
     // 2. regular·personal을 읽어 날짜별 effective로 합침
     List<RegularSchedule> regulars =
@@ -327,14 +332,25 @@ public class ScheduleService {
     }
   }
 
-  // 달력 조회 구간 검증 — [today, today+2년−1] 범위 밖이거나 today 이전이면 400
-  private void validateCalendarDateRange(LocalDate startDate, LocalDate endDate) {
+  // 달력 조회 구간 검증 — [today, 동적 상한] 범위 밖이거나 today 이전이면 400
+  private void validateCalendarDateRange(UUID userId, LocalDate startDate, LocalDate endDate) {
     validateDateRange(startDate, endDate);
     LocalDate today = LocalDate.now();
-    LocalDate windowEnd = today.plusYears(CALENDAR_WINDOW_YEARS).minusDays(1);
+    LocalDate windowEnd =
+        resolveCalendarWindowEnd(
+            today,
+            tripMemberRepository.findMaxOngoingEndRangeByUserId(userId));
     if (startDate.isBefore(today) || endDate.isAfter(windowEnd)) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
+  }
+
+  // 마이페이지 달력 상한 계산 — 기본 today+2년−1과 참여 중 ONGOING 여행 endRange 최댓값 중 더 늦은 날짜
+  public static LocalDate resolveCalendarWindowEnd(LocalDate today, LocalDate maxOngoingEndRange) {
+    LocalDate baseWindowEnd = today.plusYears(CALENDAR_WINDOW_YEARS).minusDays(1);
+    return maxOngoingEndRange != null && maxOngoingEndRange.isAfter(baseWindowEnd)
+        ? maxOngoingEndRange
+        : baseWindowEnd;
   }
 
   private RegularScheduleResponse toRegularResponse(RegularSchedule schedule) {
