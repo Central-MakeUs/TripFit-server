@@ -28,7 +28,7 @@ paths:
 |------|------|
 | 소셜 로그인 · Google Calendar | **환경 A**(네이티브 앱) / **환경 B**(카카오 인앱·모바일 웹) — [`platform.md`](../../docs/product/platform.md). **서버 302 OAuth 금지**. 클라이언트가 토큰/`authorizationCode` → REST |
 | 초대 링크 | PRD·플로우 따름. Universal/App Link는 `[미정]`이면 추측 구현 금지 |
-| **멤버십 JOINED/RESPONDED** | **JOINED=방장 create 직후만**(멤버 아님). 멤버 join=`RESPONDED` 즉시. 공유=방장∧RESPONDED. create에 `inviteCode` 없음 — Swagger Info · `glossary.md` · `trip-room-api` 필독 절 |
+| **멤버십 JOINED/RESPONDED** | **JOINED=방장 create 직후만**(멤버 아님). 멤버 join=`RESPONDED` 즉시. 공유=방장∧RESPONDED. create에 `inviteCode` 없음 — 상세는 `glossary.md` · `trip-room-api` 필독 절 · Trip/Trip Members `@Operation` 설명에만. Swagger 전역 `Info`·`@Tag`는 **요약 한 줄 + 필독 포인터만**, 상태 전이 상세 서술 금지 |
 | 푸시 (FCM/APNs) | wave 3 — **스펙 없으면** 엔티티·발송 API 추가 금지 |
 | 결제·수익화 | `mvp.md` Out — 명시 없으면 구현 금지 |
 

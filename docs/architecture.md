@@ -16,7 +16,7 @@ Spring Boot 4.x 기반 단일 모듈 Gradle 프로젝트.
 com.tripfit.tripfit
 ├── TripfitApplication.java
 ├── common/
-│   ├── api/                        # ApiResponse, ErrorResponse, FieldError
+│   ├── api/                        # SuccessResponse, ErrorResponse, FieldError
 │   ├── config/                     # JPA, Web, OpenAPI
 │   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
 │   └── exception/                  # ErrorCode, CommonErrorCode, TripFitException, GlobalExceptionHandler

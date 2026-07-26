@@ -470,7 +470,7 @@ Authorization: Bearer <accessToken>
 ```
 com.tripfit.tripfit
 ├── common/
-│   ├── api/                        # ApiResponse, ErrorResponse, FieldError
+│   ├── api/                        # SuccessResponse, ErrorResponse, FieldError
 │   ├── config/                     # JpaConfig, WebConfig, OpenApiConfig
 │   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
 │   └── exception/                  # ErrorCode, GlobalExceptionHandler
