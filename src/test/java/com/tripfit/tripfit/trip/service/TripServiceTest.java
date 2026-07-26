@@ -372,6 +372,21 @@ class TripServiceTest {
   }
 
   @Test
+  void joinTrip_requiresProfileName() {
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    org.mockito.Mockito.doThrow(new TripFitException(UserErrorCode.PROFILE_NAME_REQUIRED))
+        .when(userProfileService)
+        .requireProfileNameComplete(member);
+
+    assertThatThrownBy(() -> tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234")))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(UserErrorCode.PROFILE_NAME_REQUIRED);
+
+    verify(tripMemberRepository, org.mockito.Mockito.never()).save(any());
+  }
+
+  @Test
   void joinTrip_setsAllFreeWhenNoSchedules() {
     member.setAllFree(false);
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
