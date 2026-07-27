@@ -116,6 +116,7 @@ erDiagram
         date start_range
         date end_range
         int duration_days "nullable — 일정 미정"
+        int duration_nights "nullable — 일정 미정, duration_days와 쌍"
         int member_count
         string invite_code
         string status
@@ -307,7 +308,8 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | destination | varchar | Y | | 여행지. null = 「아직 못정했어요」 |
 | start_range | date | N | | 희망 기간 시작. **생성 후 수정 불가** |
 | end_range | date | N | | 희망 기간 종료. **생성 후 수정 불가** |
-| duration_days | int | Y | | **m일만 저장**. null = 일정 미정. n박은 API 파생(`days-1`) · 요청 시 `durationNights`+`durationDays` 검증 |
+| duration_days | int | Y | | m일. null = 일정 미정. `duration_nights`와 쌍으로 저장 |
+| duration_nights | int | Y | | n박. null = 일정 미정. 요청 시 `durationNights`+`durationDays` 검증 후 **둘 다 컬럼에 저장**(파생 아님) |
 | member_count | int | N | | **1~10** (BR-TRIP-001) |
 | invite_code | varchar | N | | UNIQUE |
 | status | varchar | N | | `ONGOING`, `CONFIRMED`, `EXPIRED`(기간 만료·종료) — 구 `CANCELED`는 삭제, 구 `TERMINATED`는 `EXPIRED`로 리네임(#48) |
@@ -321,7 +323,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
 
-**제약:** `duration_days`가 있을 때 `duration_days` ≤ `end_range - start_range + 1` (BR-TRIP-008). **당일치기(0박 1일) 허용** — `duration_days=1` (API `durationNights=0`) · [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2) 확정 (2026-07-21).
+**제약:** `duration_days`가 있을 때 `duration_nights+1 ≤ duration_days ≤ min(duration_nights+2, T)` (T=`end_range - start_range + 1`, BR-TRIP-001·BR-TRIP-008). **당일치기(0박) 허용** — `duration_nights=0`일 때 `duration_days`는 1 또는 2 · [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2) 확정 (2026-07-21), 범위 확장 (2026-07-26).
 
 ### `trip_member`
 
@@ -453,3 +455,4 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 6. **2026-07-21:** `trip.duration_days` **nullable**(일정 미정) · 희망 기간 생성 후 불변 · API n박+m일
 6. **2026-07-21:** ERD 개선 반영 — `users` rename · `responded_at` · active UNIQUE(app) · `score`=#13 유지
 7. 알림 이력 테이블 — ERD 범위 외 (wave 3)
+8. **2026-07-26:** `trip.duration_nights` 파생값 → 컬럼 영속화, 박/일 검증 범위 `nights+1~min(nights+2,T)`로 확장 ([`trip-duration-range.md`](../specs/trip-duration-range.md))

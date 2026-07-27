@@ -53,7 +53,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 | **D5** | 홈 목록 | **2뷰** (`scope=ongoing` \| `all`) · `last_activity_at` · `pinned_at` — 아래 §홈 목록 | **2026-07-19** |
 | **D6** | 이름 최대 길이 | **15자** | 2026-07-17 |
 | **D8** | 인원·기간 cap | `memberCount` **1~10** (create/patch) · `joinedMemberCount >= memberCount` → 신규 join 409 · `end_range` 경과(EXPIRED) → 초대·신규 join 불가 | 2026-07-17 |
-| **D9** | 일정·기간·박일 | `duration_days` **nullable**(미정). create/patch: `durationNights`+`durationDays` 쌍 또는 둘 다 null. DB는 **일만** 저장. **희망 기간은 create만·PATCH 불가**. **당일치기(0박 1일) 허용** (`nights=0`, `days=1`) | **2026-07-21** |
+| **D9** | 일정·기간·박일 | `duration_days`·`duration_nights` **nullable**(미정). create/patch: `durationNights`+`durationDays` 쌍 또는 둘 다 null. **`nights+1 ≤ days ≤ min(nights+2, 희망기간일수)`** 검증 후 **둘 다 컬럼에 저장**(파생 아님). **희망 기간은 create만·PATCH 불가**. **당일치기(0박)도 동일 규칙**(`days`=1 또는 2) | **2026-07-21** · 범위 확장 **2026-07-26** |
 
 ### D5 상세 (홈 목록 — 2026-07-19 확정)
 
@@ -103,8 +103,8 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 - [ ] `trip_member.pinned_at` 컬럼 · Pin ON/OFF 시 설정/해제 (D5)
 - [ ] `GET /api/v1/trips/{tripId}` — 상세 **`TripDetailResponse`** (RESPONDED 참여자만 · `membersPreview` 없음)
 - [ ] `PATCH /api/v1/trips/{tripId}` — 방장만 (JOINED 허용) · **`status=ONGOING`만** (D4) · **기간 필드 없음**(D9) · `last_activity_at` 갱신 (최소)
-- [ ] 일정: `durationNights`+`durationDays` 쌍 검증 · null=미정 · DB `duration_days`만 (D9 · BR-TRIP-001)
-- [ ] `durationDays` 있을 때 ≤ 기간 일수 검증 (BR-TRIP-008)
+- [ ] 일정: `durationNights`+`durationDays` 쌍 검증(`nights+1 ≤ days ≤ min(nights+2, T)`) · null=미정 · DB에 **둘 다** 저장 (D9 · BR-TRIP-001)
+- [ ] `durationDays` 있을 때 ≤ 기간 일수(T) 검증 (BR-TRIP-008)
 - [ ] `POST /api/v1/trips/join` — `{ inviteCode }` → MEMBER + **`RESPONDED`** (이미 RESPONDED 시 idempotent — BR-USER-010) · `last_activity_at` 갱신
 - [ ] join 거부: CONFIRMED/EXPIRED **신규** → 409; 인원 가득 → 409 (D4·D8)
 - [ ] `GET /api/v1/trips/{tripId}/members` — status·role·pinned·응답률 + 동명이인 `홍길동(2)` (BR-USER-009)
@@ -202,11 +202,11 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 |------|------|
 | `name` | 최대 **15자** |
 | `startRange` / `endRange` | **필수** (생성 시에만 설정) |
-| `durationNights` / `durationDays` | **둘 다 null** = 일정 미정. **둘 다 값** = 확정 (`nights == days - 1`, `days ≥ 1`, `nights ≥ 0`, `days` ≤ 기간 일수). **0박 1일(당일치기) 허용**. 한쪽만 → 400 |
+| `durationNights` / `durationDays` | **둘 다 null** = 일정 미정. **둘 다 값** = 확정 (`nights ≥ 0`, `nights+1 ≤ days ≤ min(nights+2, 기간 일수)`). **0박(당일치기)도 동일 규칙**(`days`=1 또는 2). 한쪽만 → 400 |
 | `memberCount` | **1~10** 필수 |
 | `destination` | nullable (미정) |
 
-**당일치기(0박 1일):** **허용** (2026-07-21 · [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)). `durationNights=0`, `durationDays=1`. 최소 1박 강제 없음.
+**당일치기(0박):** **허용** (2026-07-21 · [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)). `durationNights=0`일 때 `durationDays`는 1 또는 2 — 일반 규칙(`nights+1~nights+2`)과 동일 적용, 예외 없음 (2026-07-26 확정). 최소 1박 강제 없음.
 
 ### `PATCH /trips/{tripId}` 요청
 
@@ -394,7 +394,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 | BR | 적용 내용 | 구현 위치 (예정) |
 |----|-----------|------------------|
-| BR-TRIP-001 | 필수 필드 · 이름 ≤15자 · 인원 1~10 · 일정/여행지 미정 허용 · n박 m일 → 일만 저장 | create/patch 검증 |
+| BR-TRIP-001 | 필수 필드 · 이름 ≤15자 · 인원 1~10 · 일정/여행지 미정 허용 · n박 m일(`nights+1~nights+2`) 둘 다 저장 | create/patch 검증 |
 | BR-TRIP-008 | duration ≤ range (있을 때만) | create/patch |
 | BR-TRIP-009 | 방장만 PATCH · ONGOING만 · **기간 수정 불가** | service |
 | BR-TRIP-013 | 방장 DELETE soft | TripService |
@@ -455,6 +455,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-26 | **D9 amend** — 박/일 검증 `nights==days-1` → `nights+1~min(nights+2,T)` 범위 확장, `duration_nights` 파생값 → 컬럼 영속화 ([`trip-duration-range.md`](trip-duration-range.md)) |
 | 2026-07-22 | **FE 필독** — 멤버십·공유 오해 표(glossary) · trip-room-api 절 · Swagger Info/Tag |
 | 2026-07-22 | **create 응답** — `inviteCode` 제거(JOINED=입장·공유 전). 상세(RESPONDED)만 노출 · `#19` S-2 |
 | 2026-07-22 | **D7 폐기** — join 전 미리보기 기능 삭제 · 카카오 공유는 `#19` [`kakao-invite-share.md`](kakao-invite-share.md) |
