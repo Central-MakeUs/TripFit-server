@@ -95,7 +95,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 ### Must Have
 
 - [ ] `POST /api/v1/trips` — 방장 생성 (BR-TRIP-001: 이름 **≤15자**, 인원 **1~10**, BR-USER-001 이름 필수)
-- [ ] 생성 시 `trip_member` OWNER + **`JOINED`**, `invite_code` UNIQUE(6자), `status=ONGOING`, `last_activity_at` 초기화 · `needsScheduleConfirm`
+- [ ] 생성 시 `trip_member` OWNER + **`JOINED`**, `invite_code` UNIQUE(6자), `status=ONGOING`, `last_activity_at` 초기화
 - [ ] `POST /api/v1/trips/{tripId}/schedule/confirm` — JOINED→RESPONDED (+ row0 `is_all_free`) · idempotent (#39)
 - [ ] 방 안 API (`@TripMemberOnly`): **RESPONDED** ∧ `canEnterRoom` — 아니면 `SCHEDULE_CONFIRM_REQUIRED` / `SCHEDULE_ENTRY_REQUIRED`
 - [ ] `GET /api/v1/trips` — **D5** `scope=ongoing|all` · 필터·정렬 (§홈 목록) · **`TripHomeCardResponse`** (`myRole`·`membersPreview`)
@@ -232,8 +232,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "data": {
     "tripId": "550e8400-e29b-41d4-a716-446655440000",
     "status": "ONGOING",
-    "myMemberStatus": "JOINED",
-    "needsScheduleConfirm": true
+    "myMemberStatus": "JOINED"
   }
 }
 ```

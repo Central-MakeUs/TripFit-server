@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.trip.service;
 
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.Trip;
@@ -17,10 +16,19 @@ import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberPreviewProjection;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.repository.UserRepository;
+import com.tripfit.tripfit.user.exception.UserErrorCode;
+import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
+import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
+import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
+import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
+import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
+import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
+import com.tripfit.tripfit.user.schedule.service.ScheduleCalendarResolver;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +36,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
-// Trip command/query가 공유하는 매핑·검증·초대코드·권한 가드
+// Trip command/query가 공유하는 매핑·검증·초대코드·권한 가드 (requireResponded는 트래픽 게이트로 config 패키지 공유)
 @Component
-class TripServiceSupport {
+public class TripServiceSupport {
 
   static final int NAME_MAX_LENGTH = 15;
 
@@ -46,15 +54,15 @@ class TripServiceSupport {
 
   private final TripMemberRepository tripMemberRepository;
 
-  private final UserRepository userRepository;
+  private final UserLookupService userLookupService;
 
-  TripServiceSupport(
+  public TripServiceSupport(
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
-      UserRepository userRepository) {
+      UserLookupService userLookupService) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
-    this.userRepository = userRepository;
+    this.userLookupService = userLookupService;
   }
 
   // 홈 카드 DTO — 미리보기는 최대 4명, overflow = 참여 수 − 4
@@ -92,9 +100,8 @@ class TripServiceSupport {
     long joinedMemberCount =
         tripMemberRepository.countByTripIdAndDeletedAtIsNull(tripId);
     int respondedCount =
-        (int) tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            tripId,
-            TripMemberStatus.RESPONDED);
+        (int) tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            tripId);
     int joined = (int) joinedMemberCount;
 
     return new TripDetailResponse(
@@ -158,11 +165,49 @@ class TripServiceSupport {
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
   }
 
-  // 활성 멤버십 로드 — 비멤버·탈퇴는 TRIP_ACCESS_DENIED (방장 전용 FORBIDDEN과 구분)
-  TripMember requireActiveMember(UUID tripId, UUID userId) {
+  // 정기+개별 일정을 로드해 effective 달력으로 합친다 — live 조회·snapshot freeze 공용(Google busy 조회 방식만 호출부가 다름)
+  List<CalendarDayResponse> resolveEffectiveSchedule(
+      RegularScheduleRepository regularScheduleRepository,
+      PersonalScheduleRepository personalScheduleRepository,
+      UUID userId,
+      LocalDate startDate,
+      LocalDate endDate,
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyForUser) {
+    List<RegularSchedule> regulars =
+        regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
+    List<PersonalSchedule> personals =
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            userId,
+            startDate,
+            endDate);
+    return ScheduleCalendarResolver.resolve(
+        regulars,
+        personals,
+        startDate,
+        endDate,
+        googleBusyForUser);
+  }
+
+  // 활성 멤버 전원 — joinedAt 오름차순 (멤버 목록·달력 조회·스냅샷 freeze 공용 정렬 기준)
+  List<TripMember> listActiveMembersSortedByJoinedAt(UUID tripId) {
+    return tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
+        .sorted(Comparator.comparing(TripMember::getJoinedAt))
+        .toList();
+  }
+
+  // 활성 멤버십 로드 — 비멤버·탈퇴는 TRIP_ACCESS_DENIED (방장 전용 FORBIDDEN과 구분). TripAuthorizationInterceptor 공용
+  public TripMember requireActiveMember(UUID tripId, UUID userId) {
     return tripMemberRepository
         .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+  }
+
+  // 이 방 일정 확인 완료 여부 — JOINED(미확인)면 SCHEDULE_CONFIRM_REQUIRED.
+  // TripAuthorizationInterceptor·TripCommandService.joinTrip 공용
+  public void requireResponded(TripMember membership) {
+    if (membership.getStatus() != TripMemberStatus.RESPONDED) {
+      throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
+    }
   }
 
   // 방장만 허용 — 아니면 TRIP_FORBIDDEN
@@ -251,9 +296,8 @@ class TripServiceSupport {
     return destination.trim();
   }
 
+  // User 조회 SSOT는 UserLookupService — 여기서 재구현하지 않고 위임
   User findUser(UUID userId) {
-    return userRepository
-        .findById(userId)
-        .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
+    return userLookupService.requireUser(userId);
   }
 }

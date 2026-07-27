@@ -36,6 +36,7 @@
 | [`user-account-withdrawal.md`](user-account-withdrawal.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · 차단 없이 자동 cascade · User soft delete + PII 스크럽 | trip-member-leave · user-my-page |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
 | [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) | Draft (#50) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 | #13 · #17 |
+| [`trip-member-status-derive.md`](trip-member-status-derive.md) | **Implemented** (#54) | `TripMember.status` 컬럼 제거 → `respondedAt` null 여부로 파생 계산 (내부 리팩터, API 계약 불변) | #12 |
 
 ## wave 3
 
@@ -78,6 +79,7 @@
 | **#21** | 알림 (Draft 예정) | Open · **Wave 3 Must** |
 | **#26** | trip-last-activity-at | Implemented |
 | **#27** | trip-home-schedulers | Implemented |
+| **#54** | trip-member-status-derive | Implemented |
 | **#22** | schedule-participation-onboarding | Closed |
 | **#35** | trip-join-capacity-hold (Draft — wave 4) | Open |
 | **#37** | trip-schedule-calendar-window | Closed |

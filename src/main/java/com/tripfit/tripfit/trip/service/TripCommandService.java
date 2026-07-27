@@ -19,7 +19,6 @@ import com.tripfit.tripfit.trip.repository.RecommendationRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.service.UserProfileService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDateTime;
@@ -113,7 +112,7 @@ class TripCommandService {
 
     // inviteCode는 DB에만 발급 — JOINED(입장 전) 생성 응답에는 안 실림. 공유는 confirm 후 상세에서
     return new CreateTripResponse(
-        trip.getId(), support.effectiveStatus(trip), TripMemberStatus.JOINED, true);
+        trip.getId(), support.effectiveStatus(trip), ownerMember.getStatus());
   }
 
   // 방장 일정 확인을 끝내 JOINED→RESPONDED로 바꾼다 — 이미 RESPONDED면 동일 상세 반환(idempotent)
@@ -124,15 +123,14 @@ class TripCommandService {
     TripMember membership = support.requireActiveMember(tripId, userId);
 
     User user = membership.getUser();
-    if (membership.getStatus() == TripMemberStatus.RESPONDED) {
-      userSummaryService.requireCanEnterRoom(user);
-      return tripQueryService.toDetail(trip, membership);
+    if (membership.getStatus() != TripMemberStatus.RESPONDED) {
+      // 일정이 0건이면 전부 free로 표시한 뒤 RESPONDED로 전환
+      userSummaryService.markAllFreeIfNoSchedules(user);
+      membership.markResponded();
     }
 
-    // 일정이 0건이면 전부 free로 표시한 뒤 입장 조건(일정≥1 또는 전부 free) 검사
-    userSummaryService.markAllFreeIfNoSchedules(user);
+    // 입장 조건(일정≥1 또는 전부 free) 검사 — 이미 RESPONDED였어도 재확인
     userSummaryService.requireCanEnterRoom(user);
-    membership.markResponded();
     return tripQueryService.toDetail(trip, membership);
   }
 
@@ -203,9 +201,7 @@ class TripCommandService {
     if (existing.isPresent()) {
       TripMember membership = existing.get();
       // JOINED면 join으로 상세를 우회하지 못함 — schedule/confirm 필요
-      if (membership.getStatus() != TripMemberStatus.RESPONDED) {
-        throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
-      }
+      support.requireResponded(membership);
       return tripQueryService.toDetail(trip, membership);
     }
 

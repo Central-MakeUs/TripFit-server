@@ -11,7 +11,7 @@
 **방장:**
 
 1. 홈에서 「여행방 신규 생성하기」→ 방 생성 폼(이름·기간·일수·인원·선택 여행지)
-2. `POST /trips` → OWNER **`JOINED`** (`needsScheduleConfirm=true`). DB에 invite_code 발급하나 **응답에 inviteCode 없음**
+2. `POST /trips` → OWNER **`JOINED`**. DB에 invite_code 발급하나 **응답에 inviteCode 없음**
 3. **정기→개별** 일정 확인(수정/Skip) — `canEnterRoom`이어도 강제
 4. `POST /trips/{tripId}/schedule/confirm` → **`RESPONDED`**
 5. 방 상세(`inviteCode`) · **초대 공유** (방장·RESPONDED 이후만)
@@ -54,7 +54,6 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | **일정 데이터** | User **전역** (`regular` + `personal`). 방마다 복사하지 않음 (BR-USER-008) |
 | **`is_all_free`** | “넣을 일정이 없어 전부 가능” 선언 |
 | **`canEnterRoom`** | 정기≥1 **또는** 개별≥1 **또는** `is_all_free` (전역) |
-| **`needsScheduleConfirm`** | (API 파생) `status=JOINED` → 클라가 일정 플로우 강제 |
 
 **`JOINED`/`RESPONDED` 정의는 [`glossary.md`](../glossary.md)가 SSOT** — 방장 전용 create 직후 상태(JOINED) vs 입장·공유 가능 상태(RESPONDED), 헷갈리기 쉬운 점 표 포함. 여기서 중복 정의하지 않는다.
 
