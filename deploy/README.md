@@ -69,6 +69,8 @@ docker compose up -d
 
 ### EC2 A — API + HTTPS (Route 53 `api.tripfit.online` 연결 후)
 
+**최초 1회 수동 부트스트랩 전용** — TLS 발급까지 끝내고 나면 이후 배포는 `main` push → CI/CD가 GitHub Secrets만으로 처리한다 (아래 [환경 변수](#환경-변수) 절). `.env`는 이 최초 설정과 수동 재배포(`ec2-deploy-app.sh` 단독 실행) 때만 쓴다.
+
 ```bash
 cd deploy/app
 cp .env.example .env
@@ -118,43 +120,49 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 
 ## 환경 변수
 
-### EC2 `deploy/app/.env` (인프라·비밀 제외)
+### GitHub Actions Secrets (전체 — push 시 자동 주입, EC2 SSH·`.env` 수정 불필요)
 
-| 변수 | app/.env | 설명 |
-|------|----------|------|
-| `MYSQL_HOST` | ✅ | EC2 B private IP |
-| `GHCR_IMAGE` | ✅ | Spring Boot 이미지 |
-| `CERTBOT_DOMAIN` | ✅ (기본 `api.tripfit.online`) | LE 인증서 도메인 |
-| `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | ✅ | 기본 80 / 443 |
-
-`FRONTEND_IMAGE` **사용하지 않음** — 프론트는 Vercel.
-
-### GitHub Actions Secrets (인증·OAuth — push 시 자동 주입)
-
-**`main` push → CI/CD deploy** 단계에서 아래 Secrets를 EC2 `docker compose`에 전달한다.  
-등록만 하면 **EC2 SSH로 `.env`를 수정할 필요 없이** push마다 앱 컨테이너에 env가 적용된다.
+**`main` push → CI/CD deploy** 단계에서 아래 Secrets를 SSH 세션 env로 받아 EC2에서 `export` 후 `docker compose up -d`를 실행한다.
+**한 번 등록해두면 이후 배포는 GitHub Secrets만 갱신하면 되고, EC2에 SSH로 들어가 `deploy/app/.env`를 만들거나 수정할 필요가 없다.**
 
 | Secret | 필수 | 설명 |
 |--------|------|------|
+| `MYSQL_HOST` | ✅ | EC2 B private IP |
+| `MYSQL_PORT` | | 기본 3306 |
+| `MYSQL_DATABASE` | ✅ | DB 이름 (`tripfit`) |
+| `SPRING_DATASOURCE_USERNAME` | ✅ | DB 계정 |
+| `SPRING_DATASOURCE_PASSWORD` | ✅ | DB 비밀번호 |
+| `SPRING_PROFILES_ACTIVE` | | 기본 `dev` |
+| `APP_PORT` | | Spring 컨테이너 바인딩 포트, 기본 8080 |
+| `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | | 기본 80 / 443 |
+| `CERTBOT_DOMAIN` | | 기본 `api.tripfit.online` |
 | `JWT_SECRET` | ✅ | Access JWT 서명 키 (256bit+ random) |
-| `GOOGLE_CLIENT_ID` | | Google web client ID (`aud` 검증) |
+| `JWT_ACCESS_EXPIRATION` | | 기본 7200초(2h) |
+| `JWT_REFRESH_EXPIRATION_DAYS` | | 기본 30일 |
+| `GOOGLE_CLIENT_ID` | | Google web client ID (`aud` 검증 · Calendar token 교환 client_id) |
+| `GOOGLE_CLIENT_SECRET` | | Google web client secret (Calendar authorization code·refresh token 교환) |
 | `GOOGLE_CLIENT_ID_IOS` | | Google iOS client ID |
 | `GOOGLE_CLIENT_ID_ANDROID` | | Google Android client ID |
+| `GOOGLE_CALENDAR_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
 | `APPLE_CLIENT_ID` | | Apple Services ID (`aud` 검증) |
 
 등록 위치: GitHub repo → **Settings → Secrets and variables → Actions**
 
-기존 deploy Secrets(`SPRING_DATASOURCE_*`, `EC2_*`, `GHCR_PAT` 등)와 함께 사용한다.  
+기존 SSH·이미지 Secrets(`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_DEPLOY_PATH`, `GHCR_PAT`, `GHCR_USERNAME`)와 함께 사용한다.
 `deploy/app/docker-compose.yml`의 `app.environment`가 위 변수를 Spring Boot 컨테이너로 넘긴다.
 
-TTL 기본값(스펙 SSOT): access **7200초(2h)**, refresh **30일** — `JWT_ACCESS_EXPIRATION`, `JWT_REFRESH_EXPIRATION_DAYS`로 override 가능(compose 기본값 동일).
+`MYSQL_HOST`·`MYSQL_DATABASE`·`SPRING_DATASOURCE_*`·`JWT_SECRET`·`GOOGLE_CALENDAR_TOKEN_AES_KEY`(Calendar 연동 시)는 **필수** — 미등록 상태로 push하면 CI/CD 배포 단계가 즉시 실패한다(fail-fast). 나머지는 비어 있으면 `docker-compose.yml`에 박힌 기본값을 그대로 쓴다.
+
+`FRONTEND_IMAGE` **사용하지 않음** — 프론트는 Vercel.
+
+**`deploy/app/.env`는 이제 필수 아님** — CI/CD 자동 배포는 위 Secrets만으로 완결된다. 다만 `scripts/ec2-deploy-app.sh`로 **수동** 배포하거나 로컬에서 직접 `docker compose`를 띄울 때는 여전히 `.env` 또는 `export`로 값을 넘겨야 한다 (`deploy/app/.env.example` 참고). `CERTBOT_EMAIL`은 최초 1회 `init-letsencrypt.sh`/`setup-api-https.sh` 수동 실행 시에만 필요해 CI/CD 화이트리스트에는 포함하지 않았다.
 
 로컬: 루트 `.env` 또는 `deploy/app/.env.example` 참고. 상세 스펙: `docs/specs/auth-social-login.md`
 
 ## CI/CD
 
-`.github/workflows/ci-cd.yml` — `main` push → GHCR push → EC2 A deploy (app + nginx + certbot)  
-deploy 시 **GitHub Secrets의 JWT·OAuth 값이 app 컨테이너에 자동 주입**된다.
+`.github/workflows/ci-cd.yml` — `main` push → GHCR push → EC2 A deploy (app + nginx + certbot)
+deploy 시 **위 GitHub Secrets 전부가 app 컨테이너에 자동 주입**된다 — EC2 쪽 `.env` 유무와 무관하게 동작한다.
 
 ## 검증 스크립트
 

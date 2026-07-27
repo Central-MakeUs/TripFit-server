@@ -71,16 +71,16 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 ## Configuration
 
 - `src/main/resources/application.yml` — 공통 (DataSource driver, Hikari)
-- 프로필별: `application-{local|dev|test|prod}.yml`
+- 프로필별: `application-{local|dev|test}.yml`
 - 민감 정보: 환경 변수 — `.env` (git 제외), EC2에서는 `deploy/*/.env`
 - **Flyway / SQL 마이그레이션 미사용·작성 금지** — 스키마는 JPA 엔티티(최신 하나) + Hibernate `ddl-auto`. **상용 보존 데이터 없음** → DB 리셋 허용. (`.claude/rules/harness-workflow.md`)
+- **`dev` = 유일한 실제 배포 환경** (`api.tripfit.online`, EC2). 별도 `prod` 프로필·환경은 없음 — `application-prod.yml`은 실제로 활성화된 적 없는 죽은 설정이라 삭제했다. Swagger는 `dev`에서도 계속 노출.
 
 | 프로필 | 용도 | ddl-auto |
 |--------|------|----------|
 | local | IDE / 로컬 MySQL | update |
-| dev | Docker·EC2 | update |
+| dev | Docker·EC2 (**실제 배포 환경**) | update |
 | test | `./gradlew test` (H2) | create-drop |
-| prod | 운영 | update |
 
 배포·검증 절차: [`deploy/README.md`](../deploy/README.md) (SSOT). 에이전트 배포 규칙: `.claude/rules/deployment.md`.
 

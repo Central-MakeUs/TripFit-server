@@ -15,6 +15,7 @@ tripfit:
     refresh-expiration-days: 30
   oauth:
     google-client-id: test-google-client-id
+    google-client-secret: test-google-client-secret
     google-client-id-ios: test-google-ios-client-id
     google-client-id-android: test-google-android-client-id
     apple-client-id: test-apple-client-id

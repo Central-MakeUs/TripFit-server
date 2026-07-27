@@ -22,7 +22,7 @@
 - [ ] `local`/`dev` 프로필에서만 활성화되는 `StubTokenVerifier` (`SocialTokenVerifier` 구현체) 추가
 - [ ] 정해진 규칙의 토큰 문자열(예: `dev:{testUserId}`)을 실제 외부 API 호출 없이 파싱해 `OAuthProfile` 반환
 - [ ] 팀원 3인(채연·소은·기연) 식별자를 그대로 승계 — `dev-mock-login.md`와 동일 닉네임 매핑
-- [ ] `prod`에서는 해당 verifier 빈이 생성되지 않음 — real verifier만 등록되어 위조 토큰으로 우회 불가
+- [ ] ⚠️ **재검토 필요(2026-07-27):** `dev`가 유일한 실제 배포 환경(`docs/architecture.md`)이라 별도 `prod` 프로필이 없다. `@Profile({"local","dev"})`만으로는 `StubTokenVerifier`를 배포 환경에서 막지 못한다 — `dev-mock-login.md`와 동일한 노출 문제가 `/auth/login` 본계약으로 옮겨붙는 셈이라, 이 항목은 구현 착수 전 아래 리스크·미결정 표 기준으로 다시 설계해야 한다
 - [ ] 전환 완료 시 `DevAuthController`/`DevAuthService`/`DevLoginRequest`/`SecurityConfig`의 `dev-login` permitAll 삭제
 
 ### Out of Scope (이번 스펙에서 하지 않음)
@@ -47,7 +47,7 @@
 ### 정상
 
 - [ ] `local`/`dev`에서 `POST /auth/login`에 스텁 규칙 토큰을 보내면 실제 외부 API 호출 없이 200 + 토큰 발급
-- [ ] `prod`에서는 동일 요청이 실제 verifier로 라우팅되어 `AUTH_INVALID_TOKEN`
+- [ ] ⚠️ 별도 `prod` 환경이 없으므로 이 시나리오는 재설계 후 확정 (아래 리스크 표)
 
 ### 엣지 · 실패
 
@@ -65,6 +65,7 @@
 |------|------|------|
 | 토큰 문자열 규칙(`dev:{id}` 등) | [미정] | 구현 착수 시 확정 |
 | 기존 `dev-login` 엔드포인트 제거 시점 | [미정] | 이 스펙 구현 완료 직후 같은 PR에서 삭제 권장 |
+| `StubTokenVerifier`를 배포 환경(`dev`)에서 실제로 막을 방법 | [미정] | `prod` 프로필이 없어 `@Profile({"local","dev"})`로는 우회 방지가 안 됨(`dev-mock-login.md` 2026-07-27 변경 이력 참고). env 플래그(`AUTH_STUB_TOKEN_ENABLED` 등)로 별도 on/off 하거나, `#52` 자체를 "배포 서버에는 여전히 두지 않는다"로 재정의하는 방향 검토 필요 — 구현 착수 전 반드시 확정 |
 
 ## 변경 이력
 

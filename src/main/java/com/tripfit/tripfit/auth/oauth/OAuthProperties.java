@@ -11,6 +11,8 @@ public class OAuthProperties {
 
   private String googleClientId = "";
 
+  private String googleClientSecret = "";
+
   private String googleClientIdIos = "";
 
   private String googleClientIdAndroid = "";

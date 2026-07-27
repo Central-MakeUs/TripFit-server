@@ -13,23 +13,23 @@
 
 - 현재 `/api/v1/auth/login`은 실제 소셜 토큰 검증(`SocialTokenVerifierRegistry`)을 거쳐야만 토큰이 발급됨 — 프론트 테스트 시마다 실제 소셜 로그인 필요
 - 프론트 요청: "테스트 계정 받아서 토큰 스웨거에 넣고 테스트하고 싶다"
-- EC2 배포는 현재 `dev` 프로필만 존재(`deploy/README.md` "EC2 A — dev만") — springdoc이 `prod`에서만 비활성화되므로 `local`/`dev`에서는 Swagger UI 접근 가능
+- **EC2 배포는 `dev` 프로필이 유일한 실제 환경**이다 (`docs/architecture.md` Configuration 절). 별도 `prod` 프로필·환경은 존재하지 않으며 `application-prod.yml`도 삭제했다 — Swagger는 `local`/`dev` 어디서나 항상 노출된다(springdoc을 끄는 프로필 자체가 없음)
 
 ## 요구사항
 
 ### Must Have
 
 - [x] 소셜 토큰 없이 테스트 계정으로 access/refresh 토큰을 발급하는 API
-- [x] `local`·`dev` 프로필에서만 빈이 생성되어 **prod에는 엔드포인트 자체가 존재하지 않음** (`@Profile`)
-- [x] 기존 `AuthController`/`AuthService`(prod 경로)는 변경하지 않음
+- [x] `local`·`dev` 프로필에서만 빈이 생성됨 (`@Profile`) — **`dev`가 유일한 실제 배포 환경이므로 이 API는 실제로 배포된 서버에도 항상 떠 있다.** 프론트가 배포 환경에서 이 API를 그대로 사용 중이라 임의로 차단하지 않는다(2026-07-27 확인)
+- [x] 기존 `AuthController`/`AuthService`(실 소셜 로그인 경로)는 변경하지 않음
 - [x] 팀원별로 서로 다른 테스트 계정을 쓸 수 있어야 함 — `testUserId`로 구분, 팀원 3인(채연·소은·기연) 고정 계정 제공
 
 ### Out of Scope (이번 스펙에서 하지 않음)
 
 - 테스트 계정 관리 UI·계정 목록 조회 API
-- prod 환경 노출 (금지 — `@Profile`로 원천 차단, 실제 상용 전환 시 자동으로 사라짐)
+- 별도 prod 환경에서의 비활성화 — **해당 없음.** prod 환경 자체가 없어 `@Profile({"local","dev"})`은 실질적인 노출 차단이 아니다. 실제 제거는 [`auth-dev-stub-verifier.md`](auth-dev-stub-verifier.md)(#52)에서 `/auth/login` 계약으로 흡수하는 방식으로만 이뤄진다
 - 소셜 로그인 흐름 자체 변경
-- shared secret 등 추가 인증 계층 (요청으로 skip — 실제 상용 전환 시 이 API 자체를 삭제할 예정이므로 불필요 판단)
+- shared secret 등 추가 인증 계층 (요청으로 skip — #52에서 이 API 자체를 삭제할 예정이므로 별도 인증 계층 추가는 불필요 판단)
 
 ## API / 인터페이스
 
@@ -70,8 +70,9 @@
 
 ## 보안
 
-- `@Profile({"local", "dev"})`을 컨트롤러·서비스 양쪽에 적용 — prod 프로필에서는 스프링 빈 자체가 생성되지 않아 라우트가 존재하지 않음(404)
+- `@Profile({"local", "dev"})`을 컨트롤러·서비스 양쪽에 적용 — 형식상 `test` 프로필(CI)에서는 빈이 생성되지 않지만, **`dev`가 실제 배포 환경이므로 이 게이팅이 배포된 서버에서 API를 숨기지는 못한다.**
 - `SecurityConfig`에 `POST /api/v1/auth/dev-login` permitAll 추가 (login/refresh/logout과 동일 패턴)
+- **알려진 임시 리스크(2026-07-27):** 배포 환경에서 인증 없이 임의 테스트 계정으로 로그인할 수 있다. 프론트 의존성 때문에 지금 당장 차단하지 않기로 확정 — 실제 제거는 `#52`(wave 4) 완료 시점으로 미룬다. 그 전까지 새로운 완화 조치(shared secret 등)를 추가하려면 프론트와 먼저 조율한다.
 
 ## 검증 시나리오
 
@@ -92,7 +93,7 @@
 ## 완료 기준
 
 - [x] `./gradlew test` 통과
-- [x] Swagger에 `local`/`dev`에서만 노출, `prod`(application-prod.yml) 조건은 기존과 동일(springdoc 비활성화 + 라우트 부재 이중 방어)
+- [x] Swagger는 `local`/`dev` 어디서나 노출 (별도 prod 비활성화 없음 — 위 배경 참고)
 
 ## 변경 이력
 
@@ -102,3 +103,4 @@
 | 2026-07-24 | `testUserId` 추가 — 팀원별(프론트 2명+백엔드 1명) 별도 계정 지원. shared secret은 요청으로 Out of Scope 확정 |
 | 2026-07-24 | 팀원 3인 실명 기준 고정 계정으로 확정 — `chaeyeon`/`soeun`/`giyeon`, 기본값 `chaeyeon` |
 | 2026-07-24 | 팀원 3인 성·이름 프리필 추가(손채연·김소은·방기연) — trip 생성·참여가 이름 미입력으로 막히지 않도록. 참여(join) 쪽 `PROFILE_NAME_REQUIRED` 가드 누락도 같은 턴에 수정(`TripCommandService.joinTrip`) |
+| 2026-07-27 | `application-prod.yml` 삭제에 맞춰 "prod 노출 차단" 서술 정정 — 실제로는 별도 prod 환경이 없어 `dev`가 곧 배포 환경이고, 이 API는 프론트 의존성 때문에 배포 서버에도 그대로 노출됨을 명시. 제거는 `#52`로 위임 |

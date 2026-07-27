@@ -1,9 +1,10 @@
-package com.tripfit.tripfit.auth.service;
+package com.tripfit.tripfit.auth.dev.service;
 
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.jwt.JwtService;
+import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
@@ -73,7 +74,7 @@ public class DevAuthService {
     this.userSummaryService = userSummaryService;
   }
 
-  // 소셜 검증 없이 식별자별 테스트 계정으로 access·refresh를 발급함 — local/dev 프로필에서만 빈이 생성되어 prod에는 라우트가 없음
+  // 소셜 검증 없이 식별자별 테스트 계정으로 access·refresh를 발급함 — dev가 실제 배포 환경이라 배포 서버에서도 동작함(#52에서 제거 예정)
   @Transactional
   public LoginResponse devLogin(String testUserId) {
     // 1. 식별자별로 계정을 분리 — 팀원마다 다른 값을 주면 서로 다른 users row를 갖게 됨
