@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -22,6 +23,8 @@ import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredenti
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +57,9 @@ class GoogleCalendarServiceTest {
 
   @Mock
   private UserSummaryService userSummaryService;
+
+  @Mock
+  private TripMemberRepository tripMemberRepository;
 
   @InjectMocks
   private GoogleCalendarService googleCalendarService;
@@ -135,6 +141,34 @@ class GoogleCalendarServiceTest {
     assertThat(user.isGoogleCalendarConnected()).isFalse();
     verify(credentialRepository).deleteByUser_Id(USER_ID);
     verify(busyDayRepository).deleteByUser_Id(USER_ID);
+  }
+
+  @Test
+  void syncUser_whenOngoingTripEndRangeBeyondWindow_extendsSyncWindowEnd() {
+    user.setGoogleCalendarConnected(true);
+    LocalDate extendedEnd = LocalDate.now(ZoneId.of("Asia/Seoul")).plusYears(2).plusDays(30);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    GoogleCalendarCredential credential =
+        GoogleCalendarCredential.create(
+            user,
+            "enc-refresh",
+            "enc-access",
+            Instant.now().plusSeconds(3600),
+            "a@gmail.com");
+    when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(credential));
+    when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(extendedEnd);
+    when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
+    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any())).thenReturn(List.of());
+    when(
+        busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            eq(USER_ID),
+            any(),
+            any()))
+        .thenReturn(List.of());
+
+    googleCalendarService.syncUser(USER_ID);
+
+    verify(busyDayRepository).deleteByUser_IdAndScheduleDateAfter(USER_ID, extendedEnd);
   }
 
   @Test
