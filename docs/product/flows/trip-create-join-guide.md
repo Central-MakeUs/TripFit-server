@@ -25,7 +25,7 @@
 3. **중간 `SCHEDULE_PENDING` 없음** — "일정 넣고 join = ACTIVE 한 방"
 4. 정원 full → 409 · 이미 ACTIVE → idempotent. 방장(SCHEDULE_PENDING)이 join으로 우회 → `SCHEDULE_CONFIRM_REQUIRED` → `schedule/confirm` 사용
 
-모집 현황: `memberFillRate = joinedMemberCount / memberCount` · `activeMemberCount`는 ACTIVE만. 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
+모집 현황(응답률): `memberFillRate = activeMemberCount / memberCount`(구 공식 `joinedMemberCount / memberCount`에서 전환, `joinedMemberCount`는 API 미노출 — [`trip-member-fill-rate-refactor.md`](../../specs/trip-member-fill-rate-refactor.md)). 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
 
 ---
 
@@ -142,11 +142,12 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 필드 | 의미 |
 |------|------|
 | `memberCount` | 방장이 정한 정원 |
-| `joinedMemberCount` | 멤버 수 (**SCHEDULE_PENDING 방장 포함** — 기본값) |
-| `memberFillRate` | `joinedMemberCount / memberCount` |
 | `activeMemberCount` | **`ACTIVE`만** 집계 (확인 완료 인원) |
+| `memberFillRate`(응답률) | `activeMemberCount / memberCount` |
 
-→ 방장만 SCHEDULE_PENDING인 직후: `joined=1`, `active=0` 가능.
+`joinedMemberCount`(SCHEDULE_PENDING 방장 포함 전체 참여 수)는 **API 미노출** — 필요하면 `membersPreview.size() + membersPreviewOverflow`(또는 멤버 목록 `members` 배열 크기)로 유도.
+
+→ 방장만 SCHEDULE_PENDING인 직후: 참여 인원=1, `active=0` 가능(이 구간엔 `memberFillRate`도 0).
 
 ---
 

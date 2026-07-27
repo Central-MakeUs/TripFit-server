@@ -57,7 +57,7 @@ public class TripMemberController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"memberCount": 6, "joinedMemberCount": 4, "activeMemberCount": 3, "memberFillRate": 0.67, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
+                      {"data": {"memberCount": 6, "activeMemberCount": 3, "memberFillRate": 0.5, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
                       """))),
       @ApiResponse(
           responseCode = "401",
@@ -172,7 +172,7 @@ public class TripMemberController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"memberCount": 6, "joinedMemberCount": 3, "activeMemberCount": 2, "memberFillRate": 0.5, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
+                      {"data": {"memberCount": 6, "activeMemberCount": 2, "memberFillRate": 0.33, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
                       """))),
       @ApiResponse(
           responseCode = "400",

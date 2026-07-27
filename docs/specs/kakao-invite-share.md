@@ -60,7 +60,7 @@
 
 | 변수 | 의미 | API | 필드 |
 |------|------|-----|------|
-| `n` | 미join 인원 | `GET /trips/{id}` | `memberCount - joinedMemberCount` |
+| `n` | 미join 인원 | `GET /trips/{id}` | `memberCount - (membersPreview.size() + membersPreviewOverflow)` |
 | `joinedNames` | 참여 멤버 표시명 | `GET /trips/{id}/members` | `members[].displayName` |
 | `shareUrl` | 초대 링크 | `GET /trips/{id}` | `inviteCode` + D3 URL |
 
@@ -97,7 +97,7 @@ FE 참고용 템플릿 문구는 서버 미저장 · FE가 자유롭게 조립.
 |----|------|
 | D3 | 공유 URL `https://tripfit.online/room/{inviteCode}` · 코드 6자 Crockford |
 | D8 | 인원·기간 cap 시 공유 UI 비노출 + join 409 |
-| **C-1** | `n` = `memberCount - joinedMemberCount` · 이름 = `members[].displayName` |
+| **C-1** | `n` = `memberCount - (참여 인원)` — 상세/홈카드는 `membersPreview.size() + membersPreviewOverflow`, 멤버 목록은 `members` 배열 크기로 유도(`joinedMemberCount` API 미노출, [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md) 참고) · 이름 = `members[].displayName` |
 | **S-1** | 공유 UI = **방장만** |
 | **S-2** | 공유 = **ACTIVE 이후만** · create에 `inviteCode` 미노출 |
 | **S-3** | 공유 데이터 = **기존 상세·members만** (Must 신규 API 없음) |

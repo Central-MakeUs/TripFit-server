@@ -55,16 +55,13 @@ public record TripHomeCardResponse(
 
     @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int activeMemberCount,
 
-    @Schema(description = "현재 참여 멤버 수 (trip_member row 수)") int joinedMemberCount,
-
     @Schema(
         description =
             """
-            모집 충원율 joinedMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
-            activeMemberCount와 무관 — 참여 인원 기준.
-            join·remove·정원 변경 시 갱신 — GET /trips 재호출.
+            모집 충원율(응답률) activeMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
+            join·remove·정원 변경·일정 확인 완료 시 갱신 — GET /trips 재호출.
             """,
-        example = "0.67")
+        example = "0.5")
         double memberFillRate,
 
     @Schema(description = "참여자 미리보기 (방장 우선 · joinedAt DESC · 최대 4명)")
@@ -72,7 +69,7 @@ public record TripHomeCardResponse(
 
     @Schema(
         description =
-            "미리보기 초과 인원 (joinedMemberCount - 4, 최소 0). +N 배지 표시용")
+            "미리보기 초과 인원 (참여 인원 - 4, 최소 0). +N 배지 표시용")
     int membersPreviewOverflow
 ) {}
 // @formatter:on

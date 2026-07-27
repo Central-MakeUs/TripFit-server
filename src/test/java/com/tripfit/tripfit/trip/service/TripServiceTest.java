@@ -252,11 +252,6 @@ class TripServiceTest {
         .thenReturn(Optional.of(joined));
     when(regularScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
-    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(
-        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            TRIP_ID))
-        .thenReturn(1L);
 
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
 
@@ -272,11 +267,6 @@ class TripServiceTest {
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(active));
-    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(
-        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            TRIP_ID))
-        .thenReturn(1L);
 
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
 
@@ -356,10 +346,6 @@ class TripServiceTest {
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.empty());
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(
-        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            TRIP_ID))
-        .thenReturn(0L);
 
     tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
 
@@ -392,10 +378,6 @@ class TripServiceTest {
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.empty());
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(
-        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            TRIP_ID))
-        .thenReturn(0L);
     when(regularScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
 
@@ -413,11 +395,6 @@ class TripServiceTest {
         .thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(existing));
-    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(2L);
-    when(
-        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            TRIP_ID))
-        .thenReturn(1L);
 
     var summary = tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
 
@@ -491,11 +468,6 @@ class TripServiceTest {
     TripMember ownerMember = tripMember(owner, TripMemberRole.OWNER);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(ownerMember));
-    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(
-        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            TRIP_ID))
-        .thenReturn(0L);
 
     tripService.patchTrip(
         TRIP_ID,
@@ -593,11 +565,6 @@ class TripServiceTest {
     TripMember membership = tripMember(owner, TripMemberRole.OWNER);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(membership));
-    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(
-        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            TRIP_ID))
-        .thenReturn(0L);
 
     var summary =
         tripService.updatePin(TRIP_ID, OWNER_ID, new UpdateTripPinRequest(true));
@@ -622,7 +589,7 @@ class TripServiceTest {
             new TripListQuery(TripListScope.ONGOING, Optional.empty(), false));
 
     assertThat(response.trips()).hasSize(1);
-    assertThat(response.trips().get(0).joinedMemberCount()).isEqualTo(1);
+    assertThat(response.trips().get(0).activeMemberCount()).isEqualTo(0);
   }
 
   @Test
@@ -703,7 +670,7 @@ class TripServiceTest {
     var response = tripService.removeMember(TRIP_ID, OWNER_ID, MEMBER_ID);
 
     assertThat(target.getDeletedAt()).isNotNull();
-    assertThat(response.joinedMemberCount()).isEqualTo(1);
+    assertThat(response.activeMemberCount()).isEqualTo(1);
     assertThat(response.members()).extracting(m -> m.userId()).containsExactly(OWNER_ID);
     verify(recommendationRepository, never()).deleteByTripId(any());
   }

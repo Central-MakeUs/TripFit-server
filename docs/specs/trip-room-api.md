@@ -261,8 +261,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "myRole": "OWNER",
   "myMemberStatus": "ACTIVE",
   "activeMemberCount": 2,
-  "joinedMemberCount": 4,
-  "memberFillRate": 0.67,
+  "memberFillRate": 0.33,
   "membersPreview": [
     {
       "userId": "...",
@@ -274,13 +273,15 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 }
 ```
 
-**`membersPreview` 정렬:** 방장(OWNER) 먼저 → 나머지 `joined_at` **내림차순**. 최대 **4**명. 초과 시 `membersPreviewOverflow = joinedMemberCount - 4`.
+**`membersPreview` 정렬:** 방장(OWNER) 먼저 → 나머지 `joined_at` **내림차순**. 최대 **4**명. 초과 시 `membersPreviewOverflow = 총 참여 인원 - 4`(참여 인원 자체는 API 미노출, 내부 count로만 계산).
 
 **조회 구현 (#12):** trip id 목록 기준 **배치 native query** (`ROW_NUMBER` — trip당 4명, OWNER 우선·`joined_at DESC`). N+1 금지.
 
+**`memberFillRate`(응답률) 공식 (2026-07-28 amend, #60):** `activeMemberCount ÷ memberCount` — 구 공식(`joinedMemberCount ÷ memberCount`)에서 전환, `joinedMemberCount` 자체는 API 미노출. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md)
+
 ### TripDetailResponse (상세·join·patch·pin)
 
-`GET/PATCH/join/pin` 응답. **`inviteCode` 포함** · **`membersPreview` 없음** (멤버 UI는 `GET .../members`).
+`GET/PATCH/join/pin` 응답. **`inviteCode` 포함** · **`membersPreview`/`membersPreviewOverflow` 포함**(홈카드와 동일 규칙, 2026-07-28 amend).
 
 ```json
 {
@@ -302,12 +303,19 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "myRole": "OWNER",
   "myMemberStatus": "ACTIVE",
   "activeMemberCount": 2,
-  "joinedMemberCount": 4,
-  "memberFillRate": 0.67
+  "memberFillRate": 0.33,
+  "membersPreview": [
+    {
+      "userId": "...",
+      "profileImageUrl": "https://...",
+      "role": "OWNER"
+    }
+  ],
+  "membersPreviewOverflow": 0
 }
 ```
 
-예시: `memberCount=6` → fillRate ≈ 4/6.
+예시: `memberCount=6` → fillRate ≈ 2/6.
 
 ### `members/schedule-calendar` 응답 (D2)
 
@@ -454,6 +462,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | **Amend (#60)** — `memberFillRate` 공식 `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출, `TripDetailResponse`에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md)) |
 | 2026-07-26 | **D9 amend** — 박/일 검증 `nights==days-1` → `nights+1~min(nights+2,T)` 범위 확장, `duration_nights` 파생값 → 컬럼 영속화 ([`trip-duration-range.md`](trip-duration-range.md)) |
 | 2026-07-22 | **FE 필독** — 멤버십·공유 오해 표(glossary) · trip-room-api 절 · Swagger Info/Tag |
 | 2026-07-22 | **create 응답** — `inviteCode` 제거(SCHEDULE_PENDING=입장·공유 전). 상세(ACTIVE)만 노출 · `#19` S-2 |

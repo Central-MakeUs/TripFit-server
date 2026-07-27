@@ -72,7 +72,6 @@ public class TripServiceSupport {
       int joinedMemberCount,
       int activeMemberCount,
       List<MemberPreviewResponse> previews) {
-    int overflow = Math.max(0, joinedMemberCount - MEMBERS_PREVIEW_LIMIT);
     return new TripHomeCardResponse(
         trip.getId(),
         trip.getName(),
@@ -88,21 +87,19 @@ public class TripServiceSupport {
         membership.getRole(),
         membership.getStatus(),
         activeMemberCount,
-        joinedMemberCount,
-        memberFillRate(joinedMemberCount, trip.getMemberCount()),
+        memberFillRate(activeMemberCount, trip.getMemberCount()),
         previews,
-        overflow);
+        previewOverflow(joinedMemberCount));
   }
 
-  // 여행방 상세 DTO — inviteCode·본인 역할/상태·모집률 포함
+  // 여행방 상세 DTO — inviteCode·본인 역할/상태·모집률·멤버 프리뷰 포함
   TripDetailResponse toDetail(Trip trip, TripMember membership) {
     UUID tripId = trip.getId();
-    long joinedMemberCount =
-        tripMemberRepository.countByTripIdAndDeletedAtIsNull(tripId);
-    int activeMemberCount =
-        (int) tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
-            tripId);
-    int joined = (int) joinedMemberCount;
+    TripMemberCountProjection counts = loadMemberCountsByTripIds(List.of(tripId)).get(tripId);
+    int joinedMemberCount = counts == null ? 0 : (int) counts.getJoinedMemberCount();
+    int activeMemberCount = counts == null ? 0 : (int) counts.getActiveCount();
+    List<MemberPreviewResponse> previews =
+        loadMemberPreviewsByTripIds(List.of(tripId)).getOrDefault(tripId, List.of());
 
     return new TripDetailResponse(
         tripId,
@@ -123,16 +120,22 @@ public class TripServiceSupport {
         membership.getRole(),
         membership.getStatus(),
         activeMemberCount,
-        joined,
-        memberFillRate(joined, trip.getMemberCount()));
+        memberFillRate(activeMemberCount, trip.getMemberCount()),
+        previews,
+        previewOverflow(joinedMemberCount));
   }
 
-  // 모집 현황 비율 — joinedMemberCount ÷ trip.memberCount (0.0~1.0)
-  static double memberFillRate(int joinedMemberCount, Integer memberCount) {
+  // 모집 현황 비율(응답률) — activeMemberCount ÷ trip.memberCount (0.0~1.0)
+  static double memberFillRate(int activeMemberCount, Integer memberCount) {
     if (memberCount == null || memberCount <= 0) {
       return 0.0;
     }
-    return (double) joinedMemberCount / memberCount;
+    return (double) activeMemberCount / memberCount;
+  }
+
+  // 멤버 프리뷰 초과 인원 — 참여 인원 - 4, 최소 0 (+N 배지 표시용, 홈카드·상세 공용)
+  private static int previewOverflow(int joinedMemberCount) {
+    return Math.max(0, joinedMemberCount - MEMBERS_PREVIEW_LIMIT);
   }
 
   // N+1 방지 — tripId 목록 일괄 집계

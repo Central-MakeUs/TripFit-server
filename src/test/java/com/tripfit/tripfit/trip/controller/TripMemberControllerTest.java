@@ -68,7 +68,6 @@ class TripMemberControllerTest {
         .thenReturn(
             new TripMembersResponse(
                 2,
-                2,
                 1,
                 1.0,
                 List.of(
@@ -89,7 +88,6 @@ class TripMemberControllerTest {
             new TripMembersResponse(
                 6,
                 1,
-                1,
                 1.0 / 6,
                 List.of(
                     new TripMemberItemResponse(
@@ -99,7 +97,7 @@ class TripMemberControllerTest {
     mockMvc
         .perform(delete("/api/v1/trips/" + TRIP_ID + "/members/" + OTHER_ID))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.joinedMemberCount").value(1))
+        .andExpect(jsonPath("$.data.activeMemberCount").value(1))
         .andExpect(jsonPath("$.data.members[0].userId").value(USER_ID.toString()));
   }
 

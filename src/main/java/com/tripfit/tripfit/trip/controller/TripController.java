@@ -131,7 +131,7 @@ public class TripController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"trips": [{"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}]}}
+                      {"data": {"trips": [{"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}]}}
                       """))),
       @ApiResponse(
           responseCode = "401",
@@ -179,7 +179,7 @@ public class TripController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
                       """))),
       @ApiResponse(
           responseCode = "401",
@@ -235,7 +235,7 @@ public class TripController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -359,7 +359,7 @@ public class TripController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "MEMBER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "MEMBER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -433,7 +433,7 @@ public class TripController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 1, "joinedMemberCount": 1, "memberFillRate": 0.17}}
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 1, "memberFillRate": 0.17, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
                       """))),
       @ApiResponse(
           responseCode = "401",
@@ -480,7 +480,7 @@ public class TripController {
               schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
                       """))),
       @ApiResponse(
           responseCode = "401",

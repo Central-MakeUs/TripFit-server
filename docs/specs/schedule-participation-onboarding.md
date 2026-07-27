@@ -187,14 +187,15 @@ canEnterRoom(user) =
 
 **정원 경쟁 (MVP 감수):** join INSERT 시 409. hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35).
 
-### D-MEMBER-FILL: 모집 현황 (확정)
+### D-MEMBER-FILL: 모집 현황 (확정 — 2026-07-28 amend)
 
 | 필드 | 의미 |
 |------|------|
 | `memberCount` | 정원 |
-| `joinedMemberCount` | `trip_member` 수 |
-| `memberFillRate` | `joinedMemberCount / memberCount` |
-| `activeMemberCount` | `ACTIVE` 수 (= 전원 ACTIVE면 joined와 동일) |
+| `activeMemberCount` | `ACTIVE` 수 |
+| `memberFillRate`(응답률) | `activeMemberCount / memberCount` (구 공식 `joinedMemberCount / memberCount`에서 전환) |
+
+`joinedMemberCount`(참여 인원, `trip_member` 수)는 API 미노출로 전환 — 필요 시 `membersPreview.size() + membersPreviewOverflow`(또는 멤버 목록 `members` 배열 크기)로 유도. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md)
 
 ### D-SPARSE vs `is_all_free` (확정 — A안)
 
@@ -430,6 +431,7 @@ canEnterRoom(user) =
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | **Amend (#60)** — D-MEMBER-FILL 공식 전환(`memberFillRate = activeMemberCount / memberCount`), `joinedMemberCount` API 미노출. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md) |
 | 2026-07-21 | **#39 amend** — 방장 SCHEDULE_PENDING→confirm · D-JOIN-MEMBER/TRIP-FLOW · 인벤토리 stale 정리 |
 | 2026-07-21 | **Amend** — personal `deletedDates` CLEAR 경로 · trip-room stale 정합 |
 | 2026-07-21 | **Amend** — late-join · 방장 A · 단일 가입 API · `memberFillRate` · 정원 hold #35 |
