@@ -278,7 +278,7 @@ public class UserScheduleController {
 
           호출 시점: 마이페이지 달력·일정 확인 화면.
 
-          전제: 요청 구간은 오늘부터 오늘+2년−1일 안이어야 한다.
+          전제: 요청 구간은 오늘부터 오늘+2년−1일 안이어야 한다. 단, 참여 중인 조율 중(ONGOING) 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다.
 
           결과: 날짜별 effective 슬롯. 개인 일정이 정기보다 우선하고, 정기 복수면 IMPOSSIBLE이 우선. 빈 날은 응답에서 생략.
 
@@ -289,7 +289,7 @@ public class UserScheduleController {
   @ApiResponses({
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT — 조회 구간이 허용 윈도우(오늘~오늘+2년−1) 밖",
+          description = "INVALID_INPUT — 조회 구간이 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -310,7 +310,7 @@ public class UserScheduleController {
       @Parameter(description = "달력 시작일(포함). 오늘~오늘+2년−1 안",
           example = "2026-07-22") @RequestParam @DateTimeFormat(
               iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-      @Parameter(description = "달력 종료일(포함). 오늘~오늘+2년−1 안",
+      @Parameter(description = "달력 종료일(포함). 오늘~오늘+2년−1 안, ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지",
           example = "2026-08-31") @RequestParam @DateTimeFormat(
               iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
     return ResponseEntity.ok(

@@ -115,4 +115,14 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       AND tm.trip.endRange < :today
       """)
   int clearExpiredPins(@Param("today") LocalDate today);
+
+  // 마이페이지 달력(C1) 상한 확장 근거 — 활성 참여 중인 ONGOING 여행 endRange 최댓값(없으면 null)
+  @Query("""
+      SELECT MAX(tm.trip.endRange) FROM TripMember tm
+      WHERE tm.user.id = :userId
+      AND tm.deletedAt IS NULL
+      AND tm.trip.deletedAt IS NULL
+      AND tm.trip.status = com.tripfit.tripfit.trip.domain.TripStatus.ONGOING
+      """)
+  LocalDate findMaxOngoingEndRangeByUserId(@Param("userId") UUID userId);
 }

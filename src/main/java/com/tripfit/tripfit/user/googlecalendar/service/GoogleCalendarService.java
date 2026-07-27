@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.user.googlecalendar.service;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
@@ -43,19 +44,23 @@ public class GoogleCalendarService {
 
   private final UserSummaryService userSummaryService;
 
+  private final TripMemberRepository tripMemberRepository;
+
   public GoogleCalendarService(
       GoogleCalendarOAuthClient googleCalendarOAuthClient,
       GoogleCalendarTokenCrypto tokenCrypto,
       GoogleCalendarCredentialRepository credentialRepository,
       GoogleCalendarBusyDayRepository busyDayRepository,
       UserLookupService userLookupService,
-      UserSummaryService userSummaryService) {
+      UserSummaryService userSummaryService,
+      TripMemberRepository tripMemberRepository) {
     this.googleCalendarOAuthClient = googleCalendarOAuthClient;
     this.tokenCrypto = tokenCrypto;
     this.credentialRepository = credentialRepository;
     this.busyDayRepository = busyDayRepository;
     this.userLookupService = userLookupService;
     this.userSummaryService = userSummaryService;
+    this.tripMemberRepository = tripMemberRepository;
   }
 
   // authorization code로 연동 — credential 저장·flag=true·즉시 1회 sync
@@ -187,7 +192,9 @@ public class GoogleCalendarService {
   private void syncUserInternal(User user, GoogleCalendarCredential credential) {
     LocalDate windowStart = LocalDate.now(SEOUL);
     LocalDate windowEnd =
-        windowStart.plusYears(ScheduleService.CALENDAR_WINDOW_YEARS).minusDays(1);
+        ScheduleService.resolveCalendarWindowEnd(
+            windowStart,
+            tripMemberRepository.findMaxOngoingEndRangeByUserId(user.getId()));
     try {
       String accessToken = resolveAccessToken(credential);
       Instant timeMin = windowStart.atStartOfDay(SEOUL).toInstant();
