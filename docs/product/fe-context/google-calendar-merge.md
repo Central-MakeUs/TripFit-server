@@ -60,7 +60,7 @@ TripFit 프론트엔드 저장소에서 Google 캘린더 연동 관련 화면·�
 
 | Method | Path | 인증 |
 |---|---|---|
-| `GET` | `/api/v1/users/schedule/calendar?startDate=&endDate=` | JWT (본인, 조회 구간: 오늘~오늘+2년-1) |
+| `GET` | `/api/v1/users/schedule/calendar?startDate=&endDate=` | JWT (본인, 조회 구간: 오늘~오늘+2년-1, 단 참여 중인 ONGOING 여행 희망 기간 종료일이 그보다 뒤면 그 날짜까지 허용) |
 | `GET` | `/api/v1/trips/{tripId}/members/schedule-calendar` | JWT + 여행방 멤버 (조회 구간: 여행 시작~종료일) |
 
 응답 예시:
@@ -88,4 +88,4 @@ TripFit 프론트엔드 저장소에서 Google 캘린더 연동 관련 화면·�
 
 - "마지막 동기화 시각"을 화면에 넣고 싶다면, 그 값이 현재 API 응답에 없다는 것을 먼저 인지하라 — 임의 필드명을 만들어 파싱하지 마라.
 - 수동 즉시 동기화 버튼을 만들고 싶다면, 그 API가 아직 없다는 것을 사용자에게 먼저 알리고 구현하지 마라.
-- 연동 상태 판단은 오직 `isGoogleCalendarConnected` 플래그 하나로 하라. 폴링 주기(30분)나 동기화 윈도우(오늘~오늘+2년-1)는 서버 내부 동작이므로 프론트 로직에서 이 값에 의존해 타이밍을 맞추려 하지 마라.
+- 연동 상태 판단은 오직 `isGoogleCalendarConnected` 플래그 하나로 하라. 폴링 주기(30분)나 동기화 윈도우(오늘~오늘+2년-1, ONGOING 여행 종료일에 따라 뒤로 늘어날 수 있음)는 서버 내부 동작이므로 프론트 로직에서 이 값에 의존해 타이밍을 맞추려 하지 마라.

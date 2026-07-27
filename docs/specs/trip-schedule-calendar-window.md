@@ -19,7 +19,7 @@
 | 항목 | 확정 |
 |------|------|
 | 데이터 | **본인 전역** 일정만 |
-| 조회·수정 가능 기간 | **`today` ~ `today.plusYears(2).minusDays(1)`** |
+| 조회·수정 가능 기간 | **`today` ~ `max(today+2년−1, 사용자 ONGOING 여행 endRange 최댓값)`** (R4) |
 | today **이전** (R2) | 요청에 포함 시 **400 `INVALID_INPUT`**. FE가 clamp |
 | 여행 칩 | 참여 ∧ **`ONGOING`** 방 이름 |
 | 칩 데이터 (R3) | **`GET /trips?scope=ongoing` 재사용** (`tripId`, `name`, `startRange`) — 전용 API 없음 |
@@ -51,11 +51,24 @@
 
 > 구 W1(여행 시작~+2년) **폐기**. +2년은 **마이페이지(C1)만**.
 
+### C1 상한 확장 (R4, 신규) — ONGOING 여행이 +2년 밖으로 걸칠 때
+
+기본 상한(`today+2년−1`)보다 뒤에 끝나는 **참여 중 `ONGOING`** 여행방이 있으면, 그 여행의 **`endRange`(희망 기간 종료일)**까지 마이페이지 달력 조회·수정 상한을 늘린다. 여러 건이면 **`endRange` 최댓값**을 쓴다. `CONFIRMED`/`EXPIRED`는 상한 계산에 포함하지 않는다(=C1은 여전히 본인 전역 일정, ONGOING 여부는 상한 계산의 트리거일 뿐).
+
+| 항목 | 확정 |
+|------|------|
+| 트리거 | 본인이 **활성 참여**(`TripMember.deletedAt IS NULL`) 중인 `Trip.status = ONGOING` |
+| 확장 기준 필드 | `endRange` (`confirmedStartDate`/`confirmedEndDate`는 ONGOING 동안 보통 null) |
+| 다중 ONGOING | `endRange` **최댓값** 하나로 전역 상한을 정함 (여행별 개별 허용 아님) |
+| Google Calendar 동기화 윈도우 | **동일 적용** — `GoogleCalendarService.syncUserInternal`의 `windowEnd`도 같은 계산 재사용 |
+| today 이전 (R2) | 영향 없음 — 하한은 그대로 `today` |
+
 ## 요구사항
 
 ### Must Have
 
 - [x] C1: calendar 검증 = 요청 구간 ⊆ `[today, today+2y−1]` · today 이전 포함 시 400 (#17 A1 amend)
+- [ ] C1 상한 확장 (R4): 요청 구간 ⊆ `[today, max(today+2y−1, 사용자 ONGOING endRange 최댓값)]` — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53)
 - [x] C1 칩: `scope=ongoing` 문서·OpenAPI에 마이페이지 인덱싱 용도 명시 (신설 API 없음)
 - [x] C2: live · 희망 기간 (현행 유지)
 - [ ] C3: snapshot — **#38**
@@ -74,7 +87,7 @@
 
 | 컨텍스트 | Method | Path | 기간 |
 |----------|--------|------|------|
-| C1 | GET | `/api/v1/users/schedule/calendar` | ⊆ today~+2y−1 |
+| C1 | GET | `/api/v1/users/schedule/calendar` | ⊆ today~max(+2y−1, ONGOING endRange 최댓값) |
 | C1 칩 | GET | `/api/v1/trips?scope=ongoing` | — |
 | C2/C3 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 희망 기간 |
 
@@ -86,17 +99,20 @@
 | **R1** | CANCELED 달력 Out · 조회 거부 — **#48 Implemented**: enum 삭제로 해당 없음 |
 | **R2** | today 이전 → 400 |
 | **R3** | `scope=ongoing` 재사용 |
+| **R4** | ONGOING 여행 `endRange`가 `today+2년−1` 밖이면 그 최댓값까지 C1 상한 확장 (2026-07-27 Approved) — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53) |
 
 ## 완료 기준
 
 - [x] 제품·잔여 **Approved**
 - [x] 코드·테스트 · #17 A1 amend (#37 범위 · C3 snapshot은 #38)
 - [ ] #38 Implemented와 C3 연동
+- [ ] R4 구현 · `./gradlew test` — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53)
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-27 | **R4 Approved** — C1 상한 `max(today+2y−1, 사용자 ONGOING endRange 최댓값)`로 확장. [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53) |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제(R1 해당 없음), `TERMINATED` → `EXPIRED` 리네임 |
 | 2026-07-21 | Draft · 재확정 C1/C2/C3 |
 | 2026-07-21 | **Approved** — R1=A · R2=A · R3=A |
