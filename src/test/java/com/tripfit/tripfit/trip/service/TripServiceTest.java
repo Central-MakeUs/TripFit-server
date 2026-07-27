@@ -558,12 +558,41 @@ class TripServiceTest {
                 LocalDate.of(2026, 8, 1),
                 LocalDate.of(2026, 8, 10),
                 3,
-                5,
+                6,
                 6,
                 null)))
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  void createTrip_allowsNightsPlusTwoDays() {
+    when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+    when(tripRepository.existsByInviteCode(any())).thenReturn(false);
+    when(tripRepository.save(any(Trip.class)))
+        .thenAnswer(
+            invocation -> {
+              Trip saved = invocation.getArgument(0);
+              saved.setId(TRIP_ID);
+              return saved;
+            });
+
+    tripService.createTrip(
+        OWNER_ID,
+        new CreateTripRequest(
+            "제주",
+            LocalDate.of(2026, 8, 1),
+            LocalDate.of(2026, 8, 10),
+            3,
+            5,
+            6,
+            null));
+
+    ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
+    verify(tripRepository).save(tripCaptor.capture());
+    assertThat(tripCaptor.getValue().getDurationNights()).isEqualTo(3);
+    assertThat(tripCaptor.getValue().getDurationDays()).isEqualTo(5);
   }
 
   @Test
@@ -895,6 +924,7 @@ class TripServiceTest {
             "제주 3박4일",
             LocalDate.of(2026, 8, 1),
             LocalDate.of(2026, 8, 10),
+            3,
             4,
             6,
             "ABC234",
@@ -910,6 +940,7 @@ class TripServiceTest {
             "부산 2박3일",
             LocalDate.of(2026, 9, 1),
             LocalDate.of(2026, 9, 10),
+            2,
             3,
             4,
             "XYZ999",

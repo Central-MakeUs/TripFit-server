@@ -110,6 +110,7 @@ class TripActivityAspectTest {
             "제주",
             LocalDate.of(2026, 8, 1),
             LocalDate.of(2026, 8, 10),
+            3,
             4,
             6,
             "ABC123",

@@ -80,6 +80,7 @@ class TripScheduleSnapshotServiceTest {
             "제주",
             LocalDate.of(2026, 8, 3),
             LocalDate.of(2026, 8, 7),
+            2,
             3,
             4,
             "ABC234",

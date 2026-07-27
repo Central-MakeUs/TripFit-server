@@ -49,6 +49,7 @@ class TripHomeMaintenanceServiceTest {
             "제주",
             LocalDate.of(2026, 6, 1),
             LocalDate.of(2026, 6, 10),
+            2,
             3,
             4,
             "ABC234",
