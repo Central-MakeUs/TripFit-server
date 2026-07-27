@@ -93,6 +93,7 @@ class TripCommandService {
             request.name().trim(),
             request.startRange(),
             request.endRange(),
+            request.durationNights(),
             durationDays,
             request.memberCount(),
             support.generateUniqueInviteCode(),
@@ -157,6 +158,7 @@ class TripCommandService {
         !Objects.equals(trip.getDurationDays(), durationDays);
 
     trip.setName(request.name().trim());
+    trip.setDurationNights(request.durationNights());
     trip.setDurationDays(durationDays);
     trip.setMemberCount(request.memberCount());
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));

@@ -65,11 +65,18 @@ public class Trip extends SoftDeleteEntity {
   private LocalDate endRange;
 
   @Schema(
-      description = "희망 여행 일수 (m일). null=아직 못정했어요. n박은 days-1 파생",
+      description = "희망 여행 일수 (m일). null=아직 못정했어요. durationNights와 쌍으로 저장",
       nullable = true,
       example = "4")
   @Column
   private Integer durationDays;
+
+  @Schema(
+      description = "희망 여행 박수 (n박). null=아직 못정했어요. durationDays와 쌍으로 저장(nights+1 ≤ days ≤ nights+2)",
+      nullable = true,
+      example = "3")
+  @Column
+  private Integer durationNights;
 
   @Schema(description = "참여 인원 (1~10)", example = "6", minimum = "1", maximum = "10")
   @Column(name = "member_count", nullable = false)
@@ -113,6 +120,7 @@ public class Trip extends SoftDeleteEntity {
       String name,
       LocalDate startRange,
       LocalDate endRange,
+      Integer durationNights,
       Integer durationDays,
       Integer memberCount,
       String inviteCode,
@@ -121,6 +129,7 @@ public class Trip extends SoftDeleteEntity {
     this.name = name;
     this.startRange = startRange;
     this.endRange = endRange;
+    this.durationNights = durationNights;
     this.durationDays = durationDays;
     this.memberCount = memberCount;
     this.inviteCode = inviteCode;

@@ -24,14 +24,14 @@ public record CreateTripRequest(
 
     @Schema(
         description =
-            "희망 여행 박수 (n박). durationDays와 둘 다 null=미정, 둘 다 값이면 nights==days-1."
-                + " 0박 1일(당일치기) 허용",
+            "희망 여행 박수 (n박). durationDays와 둘 다 null=미정, 둘 다 값이면 nights+1 ≤ days ≤ nights+2."
+                + " 0박(당일치기)도 동일 규칙 적용(days 1~2)",
         nullable = true,
         example = "3")
     Integer durationNights,
 
     @Schema(
-        description = "희망 여행 일수 (m일). null=미정. 최소 1일(당일치기=1)",
+        description = "희망 여행 일수 (m일). null=미정. durationNights+1 ~ durationNights+2 범위만 허용",
         nullable = true,
         example = "4")
     Integer durationDays,

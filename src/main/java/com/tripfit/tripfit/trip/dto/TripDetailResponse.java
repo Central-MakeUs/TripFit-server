@@ -30,7 +30,7 @@ public record TripDetailResponse(
     @Schema(description = "희망 여행 일수 (m일). null=미정", nullable = true) Integer durationDays,
 
     @Schema(
-        description = "희망 여행 박수 (n박). durationDays-1 파생(DB 저장 없음). null=미정",
+        description = "희망 여행 박수 (n박). durationDays와 쌍으로 저장(nights+1 ≤ days ≤ nights+2). null=미정",
         nullable = true,
         example = "3")
     Integer durationNights,

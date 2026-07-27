@@ -72,7 +72,7 @@ class TripServiceSupport {
         trip.getStartRange(),
         trip.getEndRange(),
         trip.getDurationDays(),
-        durationNights(trip.getDurationDays()),
+        trip.getDurationNights(),
         trip.getMemberCount(),
         effectiveStatus(trip),
         trip.getLastActivityAt(),
@@ -104,7 +104,7 @@ class TripServiceSupport {
         trip.getStartRange(),
         trip.getEndRange(),
         trip.getDurationDays(),
-        durationNights(trip.getDurationDays()),
+        trip.getDurationNights(),
         trip.getMemberCount(),
         effectiveStatus(trip),
         trip.getInviteCode(),
@@ -189,7 +189,7 @@ class TripServiceSupport {
   }
 
   // 1. 이름 길이 2. 기간·인원 3. 박/일 쌍(둘 다 null=미정) 4. days ≤ range (있을 때)
-  // 당일치기(0박1일) 허용 — nights==days-1 · days≥1 · nights≥0
+  // nights+1 ≤ days ≤ nights+2 — 당일치기(0박)도 예외 없이 동일 범위 적용
   void validateTripMeta(
       String name,
       LocalDate startRange,
@@ -217,24 +217,20 @@ class TripServiceSupport {
     }
   }
 
-  // 둘 다 null → null(미정). 둘 다 값 + nights==days-1 + days≥1 + nights≥0 → days.
-  // 당일치기: nights=0, days=1. 한쪽만·관계 불일치·음수 박 → 400
+  // 둘 다 null → null(미정). 둘 다 값 + nights≥0 + nights+1 ≤ days ≤ nights+2 → days.
+  // 한쪽만·범위 밖·음수 박 → 400. 당일치기(nights=0)도 예외 없이 동일 범위(days 1~2)
   static Integer resolveDurationDays(Integer durationNights, Integer durationDays) {
     if (durationNights == null && durationDays == null) {
       return null;
     }
     if (durationNights == null
         || durationDays == null
-        || durationDays < 1
         || durationNights < 0
-        || durationNights != durationDays - 1) {
+        || durationDays < durationNights + 1
+        || durationDays > durationNights + 2) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
     return durationDays;
-  }
-
-  static Integer durationNights(Integer durationDays) {
-    return durationDays == null ? null : durationDays - 1;
   }
 
   // UNIQUE 충돌 재시도 — 한도 초과 시 INTERNAL_ERROR (클라이언트 재시도 유도)
