@@ -136,11 +136,10 @@ erDiagram
         uuid trip_id FK
         uuid user_id FK
         string role
-        string status "JOINED|RESPONDED"
         boolean is_pinned
         datetime pinned_at
         datetime joined_at
-        datetime responded_at "null if JOINED"
+        datetime responded_at "null=JOINED, set=RESPONDED (파생 SSOT, status 컬럼 없음)"
         datetime deleted_at
         datetime created_at
         datetime updated_at
@@ -338,11 +337,10 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | trip_id | char(36) | N | FK → trip.id | |
 | user_id | char(36) | N | FK → users.id | NOT NULL |
 | role | varchar | N | | OWNER, MEMBER |
-| status | varchar | N | | **`JOINED`** = **방장 전용**(create 직후·confirm 전, 입장·공유 불가). **`RESPONDED`** = 방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 JOINED 없음 |
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |
-| responded_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **JOINED면 null**. confirm/join(RESPONDED INSERT) 시 set |
+| responded_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **JOINED면 null**, confirm/join(RESPONDED) 시 set. **`status`(JOINED/RESPONDED) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `JOINED`=방장 전용(create 직후·confirm 전, 입장·공유 불가), `RESPONDED`=방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 JOINED 없음 |
 | deleted_at | timestamptz | Y | | **trip soft delete 시 연쇄 soft** |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
