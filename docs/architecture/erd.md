@@ -14,161 +14,160 @@
 - **대상 DB:** MySQL 8.0 (예약어 `rank` 등 — JPA `@Column` 명시. 구 `user` 테이블 → **`users`**)
 
 ## 2. Mermaid ERD (정기·개별 분리 — SSOT)
-
 ```mermaid
 erDiagram
-    users ||--o{ refresh_token : issues
-    users ||--o{ regular_schedule : owns
-    users ||--o{ personal_schedule : owns
-    users ||--o| google_calendar_credential : has
-    users ||--o{ google_calendar_busy_day : caches
-    users ||--o{ trip_member : participate
-    users ||--o{ trip : owns
-    trip ||--o{ trip_member : has
-    trip ||--o{ recommendation : generates
-    trip ||--o{ trip_member_schedule_snapshot : freezes
-    users ||--o{ trip_member_schedule_snapshot : snapshotted
+users ||--o{ refresh_token : issues
+users ||--o{ regular_schedule : owns
+users ||--o{ personal_schedule : owns
+users ||--|| google_calendar_credential : has
+users ||--o{ google_calendar_busy_day : caches
+users ||--o{ trip_member : participates
+users ||--o{ trip : owns
+trip ||--o{ trip_member : has
+trip ||--o{ recommendation : generates
+trip ||--o{ trip_member_schedule_snapshot : freezes
+users ||--o{ trip_member_schedule_snapshot : snapshotted
 
     users {
-        uuid id PK
-        string social_id
-        string provider
-        string email
-        string first_name
-        string last_name
-        string nickname
-        string profile_image_url
-        boolean is_google_calendar_connected
-        boolean is_all_free "default false"
-        datetime created_at
-        datetime updated_at
-        datetime deleted_at
+        uuid id PK "사용자 UUID"
+        string social_id "소셜 로그인 식별자"
+        string provider "GOOGLE KAKAO APPLE"
+        string email "이메일"
+        string first_name "이름"
+        string last_name "성"
+        string nickname "닉네임"
+        string profile_image_url "프로필 이미지 URL"
+        boolean is_google_calendar_connected "Google Calendar 연동 여부"
+        boolean is_all_free "항상 가능 여부 default=false"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
+        datetime deleted_at "삭제일 Soft Delete"
     }
 
     refresh_token {
-        uuid id PK
-        uuid user_id FK
-        string token UK
-        string family_id
-        datetime revoked_at
-        datetime expires_at
-        datetime created_at
+        uuid id PK "토큰 UUID"
+        uuid user_id FK "사용자"
+        string token "Refresh Token UNIQUE"
+        string family_id "RTR Family UUID"
+        datetime revoked_at "폐기 시각"
+        datetime expires_at "만료 시각"
+        datetime created_at "생성일"
     }
 
     regular_schedule {
-        uuid id PK
-        uuid user_id FK
-        string title
-        string days_of_week
-        time start_time
-        time end_time
-        string morning_status
-        string afternoon_status
-        string evening_status
-        int max_vacation_days "default 2, max 10"
-        string vacation_apply_period "ANY|ONE_WEEK_BEFORE|TWO_WEEKS_BEFORE|ONE_MONTH_BEFORE|null"
-        boolean is_half_vacation_available "default false"
-        boolean is_holiday_rest "default true"
-        datetime created_at
-        datetime updated_at
+        uuid id PK "정기 일정 UUID"
+        uuid user_id FK "사용자"
+        string title "출근 수업 회의 등"
+        string days_of_week "MON,TUE..."
+        time start_time "시작 시간"
+        time end_time "종료 시간"
+        string morning_status "오전 상태"
+        string afternoon_status "오후 상태"
+        string evening_status "저녁 상태"
+        int max_vacation_days "최대 연차 default=2"
+        string vacation_apply_period "연차 신청 시점"
+        boolean is_half_vacation_available "반차 가능 여부"
+        boolean is_holiday_rest "공휴일 휴무 여부"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
     }
 
     personal_schedule {
-        uuid id PK
-        uuid user_id FK
-        date schedule_date
-        string morning_status
-        string afternoon_status
-        string evening_status
-        boolean is_uncertain
-        datetime created_at
-        datetime updated_at
+        uuid id PK "개인 일정 UUID"
+        uuid user_id FK "사용자"
+        date schedule_date "날짜 UNIQUE(user,date)"
+        string morning_status "오전 상태"
+        string afternoon_status "오후 상태"
+        string evening_status "저녁 상태"
+        boolean is_uncertain "날짜 미확정 여부"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
     }
 
     google_calendar_credential {
-        uuid id PK
-        uuid user_id FK UK
-        string google_account_email
-        text refresh_token_ciphertext
-        text access_token_ciphertext
-        datetime access_token_expires_at
-        datetime last_synced_at
-        text last_sync_error
-        datetime created_at
-        datetime updated_at
+        uuid id PK "연동 UUID"
+        uuid user_id FK "사용자 UNIQUE"
+        string google_account_email "Google 계정"
+        text refresh_token_ciphertext "암호화 Refresh Token"
+        text access_token_ciphertext "암호화 Access Token"
+        datetime access_token_expires_at "Access Token 만료"
+        datetime last_synced_at "마지막 동기화"
+        text last_sync_error "동기화 오류"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
     }
 
     google_calendar_busy_day {
-        uuid id PK
-        uuid user_id FK
-        date schedule_date UK
-        boolean morning_busy
-        boolean afternoon_busy
-        boolean evening_busy
-        datetime updated_at
+        uuid id PK "Busy 캐시 UUID"
+        uuid user_id FK "사용자"
+        date schedule_date "날짜"
+        boolean morning_busy "오전 Busy"
+        boolean afternoon_busy "오후 Busy"
+        boolean evening_busy "저녁 Busy"
+        datetime updated_at "동기화 시각"
     }
 
     trip {
-        uuid id PK
-        uuid owner_id FK
-        string name
-        string destination
-        date start_range
-        date end_range
-        int duration_days "nullable — 일정 미정"
-        int duration_nights "nullable — 일정 미정, duration_days와 쌍"
-        int member_count
-        string invite_code
-        string status
-        string last_recommendation_mode
-        string unconfirm_reason "wave 2 — #13, enum"
-        string unconfirm_reason_detail "nullable, OTHER일 때만"
-        date confirmed_start_date
-        date confirmed_end_date
-        datetime last_activity_at
-        datetime created_at
-        datetime updated_at
-        datetime deleted_at
+        uuid id PK "여행방 UUID"
+        uuid owner_id FK "방장"
+        string name "방 이름"
+        string destination "여행지"
+        date start_range "희망 시작일"
+        date end_range "희망 종료일"
+        int duration_days "여행 일수"
+        int duration_nights "여행 박수"
+        int member_count "모집 인원"
+        string invite_code "초대 코드 UNIQUE"
+        string status "ONGOING CONFIRMED EXPIRED"
+        string last_recommendation_mode "최근 추천 모드"
+        string unconfirm_reason "확정 취소 사유"
+        string unconfirm_reason_detail "기타 사유"
+        date confirmed_start_date "확정 시작일"
+        date confirmed_end_date "확정 종료일"
+        datetime last_activity_at "마지막 활동"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
+        datetime deleted_at "삭제일"
     }
 
     trip_member {
-        uuid id PK
-        uuid trip_id FK
-        uuid user_id FK
-        string role
-        boolean is_pinned
-        datetime pinned_at
-        datetime joined_at
-        datetime activated_at "null=SCHEDULE_PENDING, set=ACTIVE (파생 SSOT, status 컬럼 없음)"
-        datetime deleted_at
-        datetime created_at
-        datetime updated_at
+        uuid id PK "멤버 UUID"
+        uuid trip_id FK "여행방"
+        uuid user_id FK "사용자"
+        string role "OWNER MEMBER"
+        boolean is_pinned "홈 고정 여부"
+        datetime pinned_at "고정 시각"
+        datetime joined_at "참여 시각"
+        datetime activated_at "활성화 시각"
+        datetime deleted_at "삭제일"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
     }
 
     trip_member_schedule_snapshot {
-        uuid id PK
-        uuid trip_id FK
-        uuid user_id FK
-        date schedule_date
-        string morning_status
-        string afternoon_status
-        string evening_status
-        boolean is_uncertain
-        datetime frozen_at
-        datetime created_at
-        datetime updated_at
+        uuid id PK "스냅샷 UUID"
+        uuid trip_id FK "여행방"
+        uuid user_id FK "사용자"
+        date schedule_date "날짜"
+        string morning_status "오전 상태"
+        string afternoon_status "오후 상태"
+        string evening_status "저녁 상태"
+        boolean is_uncertain "미확정 여부"
+        datetime frozen_at "스냅샷 생성"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
     }
 
     recommendation {
-        uuid id PK
-        uuid trip_id FK
-        int recommendation_rank
-        date start_date
-        date end_date
-        text reason
-        text risk_note
-        float score
-        datetime created_at
+        uuid id PK "추천 UUID"
+        uuid trip_id FK "여행방"
+        int recommendation_rank "1~3"
+        date start_date "추천 시작일"
+        date end_date "추천 종료일"
+        text reason "추천 이유"
+        text risk_note "주의 사항"
+        float score "추천 점수"
+        datetime created_at "생성일"
     }
 ```
 
