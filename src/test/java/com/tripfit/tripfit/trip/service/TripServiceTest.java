@@ -207,7 +207,6 @@ class TripServiceTest {
     assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.JOINED);
     assertThat(memberCaptor.getValue().getRespondedAt()).isNull();
     assertThat(response.myMemberStatus()).isEqualTo(TripMemberStatus.JOINED);
-    assertThat(response.needsScheduleConfirm()).isTrue();
 
     ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
     verify(tripRepository).save(tripCaptor.capture());

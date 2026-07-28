@@ -19,7 +19,7 @@ TripFit 프론트엔드 저장소에서 방 생성/참여 관련 화면·라우�
 STEP 1. POST /api/v1/trips
   → trip 생성(status=ONGOING) + 방장 멤버 row 즉시 INSERT (role=OWNER, status=JOINED)
   → invite_code는 DB에 발급되지만 이 응답에는 포함되지 않는다고 가정하라 (파싱하려 하지 마라)
-  → 응답의 needsScheduleConfirm=true를 보고 다음 화면(정기 일정)으로 강제 이동시켜라
+  → 응답의 myMemberStatus=JOINED를 보고 다음 화면(정기 일정)으로 강제 이동시켜라
 
 STEP 2. 정기 일정 입력 → 개별 일정 입력
   → User 전역 데이터(regular/personal) CRUD를 호출하라
@@ -69,7 +69,7 @@ STEP 4. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 
 | Method | Path | 인증 | 설명 |
 |---|---|---|---|
-| `POST` | `/api/v1/trips` | JWT | 방 생성. 방장을 `JOINED`로 즉시 등록. `needsScheduleConfirm=true` |
+| `POST` | `/api/v1/trips` | JWT | 방 생성. 방장을 `JOINED`로 즉시 등록 |
 | `POST` | `/api/v1/trips/{tripId}/schedule/confirm` | JWT + 해당 방 멤버 | 방장의 일정 확인 완료. `JOINED` → `RESPONDED` |
 | `POST` | `/api/v1/trips/join` | JWT | body `{ "inviteCode": string }` — 멤버 참여. 즉시 `RESPONDED` |
 | `GET` | `/api/v1/trips/{tripId}` | JWT + 멤버 **RESPONDED** | 방 상세. `inviteCode` 포함 |
@@ -83,8 +83,7 @@ STEP 4. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
   "data": {
     "tripId": "550e8400-e29b-41d4-a716-446655440000",
     "status": "ONGOING",
-    "myMemberStatus": "JOINED",
-    "needsScheduleConfirm": true
+    "myMemberStatus": "JOINED"
   }
 }
 ```

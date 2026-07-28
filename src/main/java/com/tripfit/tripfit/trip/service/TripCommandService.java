@@ -112,7 +112,7 @@ class TripCommandService {
 
     // inviteCode는 DB에만 발급 — JOINED(입장 전) 생성 응답에는 안 실림. 공유는 confirm 후 상세에서
     return new CreateTripResponse(
-        trip.getId(), support.effectiveStatus(trip), ownerMember.getStatus(), true);
+        trip.getId(), support.effectiveStatus(trip), ownerMember.getStatus());
   }
 
   // 방장 일정 확인을 끝내 JOINED→RESPONDED로 바꾼다 — 이미 RESPONDED면 동일 상세 반환(idempotent)
