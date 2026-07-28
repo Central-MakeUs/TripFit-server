@@ -384,7 +384,7 @@
           "Trip"
         ],
         "summary": "내 여행방 목록",
-        "description": "목적: 내가 속한 여행방 카드 목록을 조회한다.\n\n호출 시점: 홈 캐러셀·전체 여행·마이페이지 여행 칩.\n\n결과: TripHomeCard 목록. scope=ongoing은 endRange≥오늘·Pin 정렬, scope=all은 Pin 없이 최근 활동순.\n\n주의: status는 여행방 상태 필터(ONGOING|CONFIRMED|ALL). ownerOnly=true면 방장인 방만.\n\n홈에 SCHEDULE_PENDING(방장 confirm 전) 카드가 보일 수 있다 — 탭 시 상세가 아니라 일정 confirm 플로우로 라우팅.\n\n목록 카드에는 inviteCode가 없다(공유는 입장 후 상세).\n",
+        "description": "목적: 내가 속한 여행방 카드 목록을 조회한다.\n\n호출 시점: 홈 캐러셀·전체 여행·마이페이지 여행 칩.\n\n결과: TripHomeCard 목록. scope=ongoing은 endRange≥오늘·Pin 정렬, scope=all은 Pin 없이 최근 활동순.\n\n주의: status는 여행방 상태 필터(ONGOING|CONFIRMED|ALL). ownerOnly=true면 방장인 방만.\n\n홈에 SCHEDULE_PENDING(방장 activate 전) 카드가 보일 수 있다 — 탭 시 상세가 아니라 일정 activate 플로우로 라우팅.\n\n목록 카드에는 inviteCode가 없다(공유는 입장 후 상세).\n",
         "operationId": "listTrips",
         "parameters": [
           {
@@ -497,7 +497,7 @@
           "Trip"
         ],
         "summary": "여행방 생성",
-        "description": "목적: 새 여행방을 만들고 방장으로 등록한다.\n\n호출 시점: 여행방 만들기 완료 직후.\n\n전제: 성·이름 프로필 완료. 이름은 필수(최대 15자).\n\n결과: 여행방 ID·상태. 방장 멤버 상태는 SCHEDULE_PENDING(방장 전용·confirm 전). inviteCode는 응답에 없음.\n\n주의: 생성만으로는 방 입장·초대 공유가 안 된다. 일정 플로우 후 confirm(ACTIVE)·상세에서 inviteCode를 쓴다.\n\n주요 에러: PROFILE_NAME_REQUIRED — 성·이름 미입력\n",
+        "description": "목적: 새 여행방을 만들고 방장으로 등록한다.\n\n호출 시점: 여행방 만들기 완료 직후.\n\n전제: 성·이름 프로필 완료. 이름은 필수(최대 15자).\n\n결과: 여행방 ID·상태. 방장 멤버 상태는 SCHEDULE_PENDING(방장 전용·activate 전). inviteCode는 응답에 없음.\n\n주의: 생성만으로는 방 입장·초대 공유가 안 된다. 일정 플로우 후 activate(ACTIVE)·상세에서 inviteCode를 쓴다.\n\n주요 에러: PROFILE_NAME_REQUIRED — 성·이름 미입력\n",
         "operationId": "createTrip",
         "parameters": [
           {
@@ -594,14 +594,14 @@
         ]
       }
     },
-    "/api/v1/trips/{tripId}/schedule/confirm": {
+    "/api/v1/trips/{tripId}/activate": {
       "post": {
         "tags": [
           "Trip"
         ],
-        "summary": "여행방 일정 확인 완료",
-        "description": "목적: 방장의 일정 확인을 끝내고 여행방 입장·초대 공유를 가능하게 한다.\n\n호출 시점: 여행방 생성 직후, 일정 확인·입력 플로우를 마친 다음.\n\n전제: 본인이 방장이고 myMemberStatus=SCHEDULE_PENDING(create 직후·confirm 전). 멤버는 이 API를 쓰지 않음(join으로 ACTIVE).\n\n결과: ACTIVE로 바뀌고 TripDetail(inviteCode 포함) 반환. 정기·개별이 모두 없으면 isAllFree true.\n\n주의: 이미 ACTIVE면 idempotent. 이 호출 후에만 상세·공유·방 안 API.\n\n주요 에러: SCHEDULE_ENTRY_REQUIRED — 입장 조건(일정≥1 또는 전부 free) 미충족\n",
-        "operationId": "confirmSchedule",
+        "summary": "여행방 멤버십 활성화",
+        "description": "목적: 방장의 일정 확인을 끝내고 여행방 입장·초대 공유를 가능하게 한다.\n\n호출 시점: 여행방 생성 직후, 일정 확인·입력 플로우를 마친 다음.\n\n전제: 본인이 방장이고 myMemberStatus=SCHEDULE_PENDING(create 직후·activate 전). 멤버는 이 API를 쓰지 않음(join으로 ACTIVE).\n\n결과: ACTIVE로 바뀌고 TripDetail(inviteCode 포함) 반환. 정기·개별이 모두 없으면 isAllFree true.\n\n주의: 이미 ACTIVE면 idempotent. 이 호출 후에만 상세·공유·방 안 API.\n\n주요 에러: TRIP_ACCESS_DENIED — 비참여자\n",
+        "operationId": "activateMembership",
         "parameters": [
           {
             "name": "tripId",
@@ -624,7 +624,7 @@
         ],
         "responses": {
           "200": {
-            "description": "확인 완료 성공",
+            "description": "활성화 성공",
             "content": {
               "*/*": {
                 "schema": {
@@ -679,15 +679,15 @@
             }
           },
           "403": {
-            "description": "SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "SCHEDULE_ENTRY_REQUIRED",
-                  "message": "방 입장을 위해 일정을 등록하거나 전부 free를 확인해야 합니다."
+                  "code": "TRIP_ACCESS_DENIED",
+                  "message": "여행방 참여 권한이 없습니다."
                 }
               }
             }
@@ -706,7 +706,7 @@
           "Trip"
         ],
         "summary": "초대 링크로 참여",
-        "description": "목적: 초대 코드로 여행방에 참여한다.\n\n호출 시점: 초대 링크·코드 입력 후 일정 플로우를 마친 다음.\n\n전제: 성·이름 완료. 입장 조건(일정≥1 또는 전부 free). 방이 ONGOING이고 정원 여유.\n\n결과: 멤버가 ACTIVE로 등록되고 TripDetail 반환(inviteCode 포함). 이미 ACTIVE면 변경 없이 동일 응답(idempotent).\n\n주의: 멤버는 SCHEDULE_PENDING 없이 join 한 번에 ACTIVE. 방장 create 직후(SCHEDULE_PENDING)는 이 API가 아니라 schedule/confirm.\n\n주요 에러: INVITE_CODE_NOT_FOUND · TRIP_MEMBER_FULL · PROFILE_NAME_REQUIRED · SCHEDULE_ENTRY_REQUIRED · TRIP_ALREADY_CONFIRMED · TRIP_EXPIRED · SCHEDULE_CONFIRM_REQUIRED(방장이 join으로 우회 시도)\n",
+        "description": "목적: 초대 코드로 여행방에 참여한다.\n\n호출 시점: 초대 링크·코드 입력 후 일정 플로우를 마친 다음.\n\n전제: 성·이름 완료. 방이 ONGOING이고 정원 여유.\n\n결과: 멤버가 ACTIVE로 등록되고 TripDetail 반환(inviteCode 포함). 정기·개별 일정이 모두 없으면 isAllFree가 true가 된다. 이미 ACTIVE면 변경 없이 동일 응답(idempotent).\n\n주의: 멤버는 SCHEDULE_PENDING 없이 join 한 번에 ACTIVE. 방장 create 직후(SCHEDULE_PENDING)는 이 API가 아니라 activate.\n\n주요 에러: INVITE_CODE_NOT_FOUND · TRIP_MEMBER_FULL · PROFILE_NAME_REQUIRED · TRIP_ALREADY_CONFIRMED · TRIP_EXPIRED · SCHEDULE_ACTIVATION_REQUIRED(방장이 join으로 우회 시도)\n",
         "operationId": "joinTrip",
         "parameters": [
           {
@@ -806,7 +806,7 @@
             }
           },
           "403": {
-            "description": "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족 · SCHEDULE_CONFIRM_REQUIRED — 방장이 join으로 우회 시도",
+            "description": "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ACTIVATION_REQUIRED — 방장이 join으로 우회 시도",
             "content": {
               "*/*": {
                 "schema": {
@@ -1249,93 +1249,12 @@
       }
     },
     "/api/v1/users/schedule/personal": {
-      "get": {
-        "tags": [
-          "User Schedule"
-        ],
-        "summary": "개인 일정 조회",
-        "description": "목적: 날짜 구간별 개인(예외) 일정을 조회한다.\n\n호출 시점: 개인 일정 편집 화면 진입.\n\n전제: startDate·endDate 필수.\n\n결과: 날짜당 오전·오후·저녁 슬롯과 uncertain 플래그.\n",
-        "operationId": "getPersonal",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "startDate",
-            "in": "query",
-            "description": "조회 시작일(포함)",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            },
-            "example": "2026-08-01"
-          },
-          {
-            "name": "endDate",
-            "in": "query",
-            "description": "조회 종료일(포함)",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            },
-            "example": "2026-08-31"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "조회 성공",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessResponsePersonalScheduleResponse"
-                },
-                "example": {
-                  "data": {
-                    "items": [
-                      {
-                        "id": "550e8400-e29b-41d4-a716-446655440000",
-                        "scheduleDate": "2026-08-03",
-                        "morningStatus": "IMPOSSIBLE",
-                        "afternoonStatus": "POSSIBLE",
-                        "eveningStatus": "POSSIBLE",
-                        "uncertain": false
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "AUTH_EXPIRED",
-                  "message": "액세스 토큰이 만료되었습니다."
-                }
-              }
-            }
-          }
-        }
-      },
       "patch": {
         "tags": [
           "User Schedule"
         ],
         "summary": "개인 일정 bulk upsert",
-        "description": "목적: 여러 날짜의 개인 일정을 한 번에 저장·삭제한다.\n\n호출 시점: 개인 일정 편집 저장.\n\n전제: items(upsert)와 deletedDates(삭제) 중 하나 이상 필요. 같은 날짜가 양쪽에 있으면 안 된다.\n\n결과: 반영 후 해당 구간 개인 일정 목록.\n\n주의: 첫 저장 시 hasPreSchedule true. 전부 삭제 후 정기·개인 0건이면 false(GET /auth/me 재조회).\n\n주요 에러: INVALID_INPUT — items·deletedDates 교집합 날짜 또는 둘 다 비어 있음\n",
+        "description": "목적: 여러 날짜의 개인 일정을 한 번에 저장·삭제한다.\n\n호출 시점: 개인 일정 편집 저장.\n\n전제: items 최소 1개 필요. 슬롯 3개(오전/오후/저녁) 모두 POSSIBLE이고 uncertain=false인 항목은 해당 날짜를 삭제한다.\n\n결과: 반영 후 해당 구간 개인 일정 목록.\n\n주의: 첫 저장 시 hasPreSchedule true. 전부 삭제 후 정기·개인 0건이면 false(GET /auth/me 재조회).\n\n주요 에러: INVALID_INPUT — items가 비어 있음\n",
         "operationId": "upsertPersonal",
         "parameters": [
           {
@@ -1384,7 +1303,7 @@
             }
           },
           "400": {
-            "description": "INVALID_INPUT — 요청 값 검증 실패 또는 items·deletedDates 교집합 날짜·둘 다 비어 있음",
+            "description": "INVALID_INPUT — 요청 값 검증 실패 또는 items가 비어 있음",
             "content": {
               "*/*": {
                 "schema": {
@@ -1602,7 +1521,7 @@
           "Trip"
         ],
         "summary": "여행방 상세",
-        "description": "목적: 여행방 상세 정보를 조회한다.\n\n호출 시점: 방 홈·설정 화면 진입.\n\n전제: 멤버이며 ACTIVE(일정 confirm/join 완료)이고 방 입장 조건(일정≥1 또는 전부 free)을 충족.\n\n결과: TripDetailResponse(inviteCode 포함 — 방장 초대 공유용).\n\n주의: SCHEDULE_PENDING(방장 confirm 전)면 SCHEDULE_CONFIRM_REQUIRED. create 응답에는 inviteCode가 없다.\n\n주요 에러: TRIP_ACCESS_DENIED · SCHEDULE_CONFIRM_REQUIRED · SCHEDULE_ENTRY_REQUIRED\n",
+        "description": "목적: 여행방 상세 정보를 조회한다.\n\n호출 시점: 방 홈·설정 화면 진입.\n\n전제: 멤버이며 ACTIVE(일정 activate/join 완료)이고 방 입장 조건(일정≥1 또는 전부 free)을 충족.\n\n결과: TripDetailResponse(inviteCode 포함 — 방장 초대 공유용).\n\n주의: SCHEDULE_PENDING(방장 activate 전)면 SCHEDULE_ACTIVATION_REQUIRED. create 응답에는 inviteCode가 없다.\n\n주요 에러: TRIP_ACCESS_DENIED · SCHEDULE_ACTIVATION_REQUIRED · SCHEDULE_ENTRY_REQUIRED\n",
         "operationId": "getTrip",
         "parameters": [
           {
@@ -1681,7 +1600,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
             "content": {
               "*/*": {
                 "schema": {
@@ -1720,7 +1639,7 @@
           "Trip"
         ],
         "summary": "여행방 삭제",
-        "description": "목적: 여행방을 삭제(soft)한다.\n\n호출 시점: 방장이 방 삭제 확인.\n\n전제: 방장. SCHEDULE_PENDING(confirm 전)여도 삭제 가능 — 단, 삭제는 메타 권한이지 방 입장·공유가 아님.\n\n결과: 204 No Content. 멤버 row도 연쇄 soft delete.\n\n주요 에러: TRIP_FORBIDDEN — 방장 아님\n",
+        "description": "목적: 여행방을 삭제(soft)한다.\n\n호출 시점: 방장이 방 삭제 확인.\n\n전제: 방장. SCHEDULE_PENDING(activate 전)여도 삭제 가능 — 단, 삭제는 메타 권한이지 방 입장·공유가 아님.\n\n결과: 204 No Content. 멤버 row도 연쇄 soft delete.\n\n주요 에러: TRIP_FORBIDDEN — 방장 아님\n",
         "operationId": "deleteTrip",
         "parameters": [
           {
@@ -2053,7 +1972,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
             "content": {
               "*/*": {
                 "schema": {
@@ -2256,14 +2175,14 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "SCHEDULE_CONFIRM_REQUIRED",
+                  "code": "SCHEDULE_ACTIVATION_REQUIRED",
                   "message": "이 여행방 일정 확인을 완료해야 입장할 수 있습니다."
                 }
               }
@@ -2297,7 +2216,7 @@
           "Trip Members"
         ],
         "summary": "멤버 effective 일정 달력",
-        "description": "목적: 희망 기간(startRange~endRange) 동안 멤버 전원의 effective 일정을 조회한다.\n\n호출 시점: 방 안 일정 조율·추천 전 달력.\n\n전제: 멤버이며 방 입장 가능.\n\n결과: 멤버별 날짜 슬롯. 조율 중(ONGOING)은 실시간 일정, 확정·종료 방은 당시 스냅샷(읽기 전용).\n\n주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED\n",
+        "description": "목적: 희망 기간(startRange~endRange) 동안 멤버 전원의 effective 일정을 조회한다.\n\n호출 시점: 방 안 일정 조율·추천 전 달력.\n\n전제: 멤버이며 방 입장 가능.\n\n결과: 멤버별 날짜 슬롯. 조율 중(ONGOING)은 실시간 일정, 확정·종료 방은 당시 스냅샷(읽기 전용).\n\n주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_ACTIVATION_REQUIRED\n",
         "operationId": "getScheduleCalendar",
         "parameters": [
           {
@@ -2369,7 +2288,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료",
             "content": {
               "*/*": {
                 "schema": {
@@ -3091,7 +3010,7 @@
           },
           "isAllFree": {
             "type": "boolean",
-            "description": "전부 free 선언 여부 (user.is_all_free 저장, 기본 false).\n방 입장 조건: hasPreSchedule OR isAllFree.\ntrue: 일정 없이 Skip+0행으로 create/join·confirm 시 설정.\nfalse: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "description": "전부 free 선언 여부 (user.is_all_free 저장, 기본 false).\n방 입장 조건: hasPreSchedule OR isAllFree.\ntrue: 일정 없이 Skip+0행으로 create/join·activate 시 설정.\nfalse: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
             "example": false
           }
         }
@@ -3163,7 +3082,7 @@
       },
       "CreateTripResponse": {
         "type": "object",
-        "description": "여행방 생성 응답. POST /trips.\n방장은 SCHEDULE_PENDING(입장 전) — myMemberStatus=SCHEDULE_PENDING면 클라가 일정 confirm 플로우로 라우팅.\ninviteCode 필드 없음 — confirm→ACTIVE 후 상세에서만 공유용 코드 제공.\n",
+        "description": "여행방 생성 응답. POST /trips.\n방장은 SCHEDULE_PENDING(입장 전) — myMemberStatus=SCHEDULE_PENDING면 클라가 일정 activate 플로우로 라우팅.\ninviteCode 필드 없음 — activate→ACTIVE 후 상세에서만 공유용 코드 제공.\n",
         "properties": {
           "tripId": {
             "type": "string",
@@ -3181,7 +3100,7 @@
           },
           "myMemberStatus": {
             "type": "string",
-            "description": "방장 멤버십. create 직후 항상 SCHEDULE_PENDING(방장 전용) — 일정 confirm 전까지 아직 이 값.\n멤버는 이 응답을 받지 않음. confirm 후 myMemberStatus는 상세에서 ACTIVE.\n",
+            "description": "방장 멤버십. create 직후 항상 SCHEDULE_PENDING(방장 전용) — 일정 activate 전까지 아직 이 값.\n멤버는 이 응답을 받지 않음. activate 후 myMemberStatus는 상세에서 ACTIVE.\n",
             "enum": [
               "SCHEDULE_PENDING",
               "ACTIVE"
@@ -3265,7 +3184,7 @@
       },
       "TripDetailResponse": {
         "type": "object",
-        "description": "여행방 상세. GET/join/confirm/patch/pin 등.\n호출 전제=ACTIVE+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.\nSCHEDULE_PENDING 방장이 호출하면 SCHEDULE_CONFIRM_REQUIRED.\n",
+        "description": "여행방 상세. GET/join/activate/patch/pin 등.\n호출 전제=ACTIVE+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.\nSCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED.\n",
         "properties": {
           "tripId": {
             "type": "string",
@@ -3380,7 +3299,7 @@
           },
           "myMemberStatus": {
             "type": "string",
-            "description": "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장·공유 불가), ACTIVE=방장 confirm 후·멤버 join 시(입장 가능)",
+            "description": "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장·공유 불가), ACTIVE=방장 activate 후·멤버 join 시(입장 가능)",
             "enum": [
               "SCHEDULE_PENDING",
               "ACTIVE"
@@ -3712,30 +3631,17 @@
         "description": "개인 일정 bulk upsert + 삭제 요청. PATCH /users/schedule/personal",
         "properties": {
           "items": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "description": "날짜별 upsert 항목. 비어 있거나 생략 가능(deletedDates만으로 CLEAR)",
+            "type": "array",
+            "description": "날짜별 upsert 항목. 슬롯 3개(morning/afternoon/evening) 모두 POSSIBLE이고 uncertain=false인 항목은 해당 날짜 row를 삭제(CLEAR)한다 — 오버라이드가 없는 기본 상태와 동일하기 때문",
             "items": {
               "$ref": "#/components/schemas/PersonalScheduleItem"
-            }
-          },
-          "deletedDates": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "description": "삭제할 날짜 목록. 해당 (user, date) row 삭제(해당 날 CLEAR). null/빈 배열 가능",
-            "example": [
-              "2026-08-04"
-            ],
-            "items": {
-              "type": "string",
-              "format": "date"
-            }
+            },
+            "minItems": 1
           }
-        }
+        },
+        "required": [
+          "items"
+        ]
       },
       "PersonalScheduleItemResponse": {
         "type": "object",
@@ -3789,7 +3695,7 @@
       },
       "PersonalScheduleResponse": {
         "type": "object",
-        "description": "개인 일정 목록 응답. GET /users/schedule/personal",
+        "description": "개인 일정 목록 응답. PATCH /users/schedule/personal",
         "properties": {
           "items": {
             "type": "array",
@@ -4089,7 +3995,7 @@
       },
       "TripHomeCardResponse": {
         "type": "object",
-        "description": "홈 여행방 카드. GET /trips.\ninviteCode 없음(공유는 입장 후 상세). myMemberStatus=SCHEDULE_PENDING면 탭 시 상세 말고 confirm 플로우.\n",
+        "description": "홈 여행방 카드. GET /trips.\ninviteCode 없음(공유는 입장 후 상세). myMemberStatus=SCHEDULE_PENDING면 탭 시 상세 말고 activate 플로우.\n",
         "properties": {
           "tripId": {
             "type": "string",
@@ -4171,7 +4077,7 @@
           },
           "myMemberStatus": {
             "type": "string",
-            "description": "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 confirm 후·멤버 join 시(입장 가능)",
+            "description": "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 activate 후·멤버 join 시(입장 가능)",
             "enum": [
               "SCHEDULE_PENDING",
               "ACTIVE"
@@ -4263,7 +4169,7 @@
           },
           "memberStatus": {
             "type": "string",
-            "description": "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 confirm 후·멤버 join 시",
+            "description": "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 activate 후·멤버 join 시",
             "enum": [
               "SCHEDULE_PENDING",
               "ACTIVE"
@@ -4366,7 +4272,7 @@
           },
           "memberStatus": {
             "type": "string",
-            "description": "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 confirm 후·멤버 join 시",
+            "description": "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 activate 후·멤버 join 시",
             "enum": [
               "SCHEDULE_PENDING",
               "ACTIVE"
