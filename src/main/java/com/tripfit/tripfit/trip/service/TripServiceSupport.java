@@ -6,6 +6,7 @@ import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.MemberPreviewResponse;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
@@ -16,6 +17,7 @@ import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberPreviewProjection;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -27,9 +29,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
-// Trip command/query가 공유하는 매핑·검증·초대코드·권한 가드
+// Trip command/query가 공유하는 매핑·검증·초대코드·권한 가드 (requireResponded는 트래픽 게이트로 config 패키지 공유)
 @Component
-class TripServiceSupport {
+public class TripServiceSupport {
 
   static final int NAME_MAX_LENGTH = 15;
 
@@ -47,7 +49,7 @@ class TripServiceSupport {
 
   private final UserRepository userRepository;
 
-  TripServiceSupport(
+  public TripServiceSupport(
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
       UserRepository userRepository) {
@@ -161,6 +163,14 @@ class TripServiceSupport {
     return tripMemberRepository
         .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+  }
+
+  // 이 방 일정 확인 완료 여부 — JOINED(미확인)면 SCHEDULE_CONFIRM_REQUIRED.
+  // TripAuthorizationInterceptor·TripCommandService.joinTrip 공용
+  public void requireResponded(TripMember membership) {
+    if (membership.getStatus() != TripMemberStatus.RESPONDED) {
+      throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
+    }
   }
 
   // 방장만 허용 — 아니면 TRIP_FORBIDDEN

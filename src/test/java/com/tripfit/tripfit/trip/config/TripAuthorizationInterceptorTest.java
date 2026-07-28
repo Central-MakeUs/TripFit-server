@@ -15,9 +15,11 @@ import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
+import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
@@ -51,14 +53,20 @@ class TripAuthorizationInterceptorTest {
   private TripMemberRepository tripMemberRepository;
 
   @Mock
+  private UserRepository userRepository;
+
+  @Mock
   private UserSummaryService userSummaryService;
 
   private TripAuthorizationInterceptor interceptor;
 
   @BeforeEach
   void setUp() {
+    TripServiceSupport support =
+        new TripServiceSupport(tripRepository, tripMemberRepository, userRepository);
     interceptor =
-        new TripAuthorizationInterceptor(tripRepository, tripMemberRepository, userSummaryService);
+        new TripAuthorizationInterceptor(
+            tripRepository, tripMemberRepository, support, userSummaryService);
     SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(USER_ID));
   }
 
