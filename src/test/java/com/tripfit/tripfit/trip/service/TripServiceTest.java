@@ -255,9 +255,8 @@ class TripServiceTest {
     when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
+        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            TRIP_ID))
         .thenReturn(1L);
 
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
@@ -276,9 +275,8 @@ class TripServiceTest {
         .thenReturn(Optional.of(responded));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
+        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            TRIP_ID))
         .thenReturn(1L);
 
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
@@ -360,9 +358,8 @@ class TripServiceTest {
         .thenReturn(Optional.empty());
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
+        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            TRIP_ID))
         .thenReturn(0L);
 
     tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
@@ -397,9 +394,8 @@ class TripServiceTest {
         .thenReturn(Optional.empty());
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
+        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            TRIP_ID))
         .thenReturn(0L);
     when(regularScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
@@ -420,9 +416,8 @@ class TripServiceTest {
         .thenReturn(Optional.of(existing));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(2L);
     when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
+        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            TRIP_ID))
         .thenReturn(1L);
 
     var summary = tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
@@ -499,9 +494,8 @@ class TripServiceTest {
         .thenReturn(Optional.of(ownerMember));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
+        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            TRIP_ID))
         .thenReturn(0L);
 
     tripService.patchTrip(
@@ -602,9 +596,8 @@ class TripServiceTest {
         .thenReturn(Optional.of(membership));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            TRIP_ID,
-            TripMemberStatus.RESPONDED))
+        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            TRIP_ID))
         .thenReturn(0L);
 
     var summary =
