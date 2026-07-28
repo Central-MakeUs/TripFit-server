@@ -183,23 +183,6 @@ class UserScheduleControllerTest {
   }
 
   @Test
-  void getPersonal_ok() throws Exception {
-    when(
-        scheduleService.getPersonal(
-            USER_ID,
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 10)))
-        .thenReturn(new PersonalScheduleResponse(List.of()));
-
-    mockMvc
-        .perform(
-            get("/api/v1/users/schedule/personal")
-                .param("startDate", "2026-08-01")
-                .param("endDate", "2026-08-10"))
-        .andExpect(status().isOk());
-  }
-
-  @Test
   void getCalendar_ok() throws Exception {
     when(scheduleService.getCalendar(eq(USER_ID), any(), any()))
         .thenReturn(

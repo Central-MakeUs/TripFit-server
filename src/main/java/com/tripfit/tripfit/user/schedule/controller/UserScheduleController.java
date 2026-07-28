@@ -228,47 +228,6 @@ public class UserScheduleController {
   }
 
   @Operation(
-      summary = "개인 일정 조회",
-      description = """
-          목적: 날짜 구간별 개인(예외) 일정을 조회한다.
-
-          호출 시점: 개인 일정 편집 화면 진입.
-
-          전제: startDate·endDate 필수.
-
-          결과: 날짜당 오전·오후·저녁 슬롯과 uncertain 플래그.
-          """)
-  @ApiResponses({
-      @ApiResponse(
-          responseCode = "200",
-          description = "조회 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
-                      """))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
-  })
-  @GetMapping("/personal")
-  ResponseEntity<SuccessResponse<PersonalScheduleResponse>> getPersonal(
-      @AuthorizedUser UUID userId,
-      @Parameter(description = "조회 시작일(포함)", example = "2026-08-01") @RequestParam @DateTimeFormat(
-          iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-      @Parameter(description = "조회 종료일(포함)", example = "2026-08-31") @RequestParam @DateTimeFormat(
-          iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-    return ResponseEntity.ok(
-        SuccessResponse.of(scheduleService.getPersonal(userId, startDate, endDate)));
-  }
-
-  @Operation(
       summary = "개인 일정 bulk upsert",
       description = """
           목적: 여러 날짜의 개인 일정을 한 번에 저장·삭제한다.

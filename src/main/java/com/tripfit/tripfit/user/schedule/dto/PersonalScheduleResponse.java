@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "개인 일정 목록 응답. GET /users/schedule/personal")
+@Schema(description = "개인 일정 목록 응답. PATCH /users/schedule/personal")
 // @formatter:off — record 컴포넌트 가독성(필드별 빈 줄·어노테이션 분리)
 public record PersonalScheduleResponse(
     @Schema(description = "개인 일정 항목 목록") List<PersonalScheduleItemResponse> items

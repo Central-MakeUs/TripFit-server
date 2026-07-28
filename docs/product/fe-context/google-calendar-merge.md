@@ -82,7 +82,7 @@ TripFit 프론트엔드 저장소에서 Google 캘린더 연동 관련 화면·�
 | Method | Path |
 |---|---|
 | `GET/POST/PATCH/DELETE` | `/api/v1/users/schedule/regular` |
-| `GET/POST/PATCH/DELETE` | `/api/v1/users/schedule/personal` |
+| `PATCH` | `/api/v1/users/schedule/personal` (조회 없음 — upsert 응답만) |
 
 ## 규칙 4 — 동기화 상태를 UI에 노출하려면 먼저 확인하라
 

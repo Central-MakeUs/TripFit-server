@@ -84,11 +84,11 @@ user/schedule/
 |--------|------|------|
 | GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성 |
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
-| GET/PATCH | `/api/v1/users/schedule/personal` | 조회 / **upsert(전부 POSSIBLE·uncertain=false면 삭제)** (#22 Hidden **1단계 해제**) |
+| PATCH | `/api/v1/users/schedule/personal` | **upsert(전부 POSSIBLE·uncertain=false면 삭제)**, 반영 후 구간 목록 반환 |
 | GET | `/api/v1/users/schedule/calendar` | effective 달력 · **today~+2년** (#37) · Hidden **1단계 해제** |
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 effective · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
 
-> 폐기: `/schedule/availability`, per-slot TBD, `note` · ~~BR-USER-006 regular 선행 403~~ (#22 D-BR006-5) · ~~`members/personal-summary`~~
+> 폐기: `/schedule/availability`, per-slot TBD, `note` · ~~BR-USER-006 regular 선행 403~~ (#22 D-BR006-5) · ~~`members/personal-summary`~~ · ~~GET `/schedule/personal`~~ (조회 API 삭제, PATCH 응답으로 대체)
 
 ## 잔여
 
