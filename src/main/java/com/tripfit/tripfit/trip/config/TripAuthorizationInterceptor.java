@@ -4,7 +4,6 @@ import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import com.tripfit.tripfit.user.service.UserSummaryService;
@@ -27,19 +26,15 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
   private final TripRepository tripRepository;
 
-  private final TripMemberRepository tripMemberRepository;
-
   private final TripServiceSupport support;
 
   private final UserSummaryService userSummaryService;
 
   public TripAuthorizationInterceptor(
       TripRepository tripRepository,
-      TripMemberRepository tripMemberRepository,
       TripServiceSupport support,
       UserSummaryService userSummaryService) {
     this.tripRepository = tripRepository;
-    this.tripMemberRepository = tripMemberRepository;
     this.support = support;
     this.userSummaryService = userSummaryService;
   }
@@ -80,10 +75,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
       return true;
     }
 
-    TripMember membership =
-        tripMemberRepository
-            .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
-            .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
+    TripMember membership = support.requireActiveMember(tripId, userId);
 
     // 이 방 일정 확인 미완료(JOINED) — 전역 입장 조건과 별개로 차단
     support.requireResponded(membership);

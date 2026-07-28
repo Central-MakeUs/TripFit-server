@@ -3,19 +3,14 @@ package com.tripfit.tripfit.trip.service;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberScheduleSnapshot;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
-import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
-import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import com.tripfit.tripfit.user.schedule.service.ScheduleCalendarResolver;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -25,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TripScheduleSnapshotService {
 
-  private final TripMemberRepository tripMemberRepository;
-
   private final TripMemberScheduleSnapshotRepository snapshotRepository;
 
   private final RegularScheduleRepository regularScheduleRepository;
@@ -35,17 +28,19 @@ public class TripScheduleSnapshotService {
 
   private final GoogleCalendarService googleCalendarService;
 
+  private final TripServiceSupport support;
+
   public TripScheduleSnapshotService(
-      TripMemberRepository tripMemberRepository,
       TripMemberScheduleSnapshotRepository snapshotRepository,
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
-      GoogleCalendarService googleCalendarService) {
-    this.tripMemberRepository = tripMemberRepository;
+      GoogleCalendarService googleCalendarService,
+      TripServiceSupport support) {
     this.snapshotRepository = snapshotRepository;
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
     this.googleCalendarService = googleCalendarService;
+    this.support = support;
   }
 
   // CONFIRMED|EXPIRED 전환과 같은 TX에서 호출 — 이미 freeze된 방은 no-op(idempotent)
@@ -59,25 +54,16 @@ public class TripScheduleSnapshotService {
     LocalDate endDate = trip.getEndRange();
     LocalDateTime frozenAt = LocalDateTime.now();
 
-    List<TripMember> members =
-        tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
-            .sorted(Comparator.comparing(TripMember::getJoinedAt))
-            .toList();
+    List<TripMember> members = support.listActiveMembersSortedByJoinedAt(tripId);
 
     List<TripMemberScheduleSnapshot> rows = new ArrayList<>();
     for (TripMember member : members) {
       UUID userId = member.getUser().getId();
-      List<RegularSchedule> regulars =
-          regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
-      List<PersonalSchedule> personals =
-          personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-              userId,
-              startDate,
-              endDate);
       List<CalendarDayResponse> days =
-          ScheduleCalendarResolver.resolve(
-              regulars,
-              personals,
+          support.resolveEffectiveSchedule(
+              regularScheduleRepository,
+              personalScheduleRepository,
+              userId,
               startDate,
               endDate,
               googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate));

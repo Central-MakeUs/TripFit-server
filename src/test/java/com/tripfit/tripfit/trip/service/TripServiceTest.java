@@ -105,17 +105,17 @@ class TripServiceTest {
     member.setAllFree(true);
     trip = ongoingTrip();
 
+    UserLookupService userLookupService = new UserLookupService(userRepository);
     UserSummaryService userSummaryService =
         new UserSummaryService(
             regularScheduleRepository,
             personalScheduleRepository,
-            new UserLookupService(userRepository));
+            userLookupService);
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userRepository);
+        new TripServiceSupport(tripRepository, tripMemberRepository, userLookupService);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
     TripMemberQueryService tripMemberQueryService =
         new TripMemberQueryService(
-            tripMemberRepository,
             regularScheduleRepository,
             personalScheduleRepository,
             snapshotRepository,

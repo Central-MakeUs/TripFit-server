@@ -11,20 +11,15 @@ import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.CalendarDay;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse.MemberCalendar;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse.TripMemberItemResponse;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
-import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
-import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import com.tripfit.tripfit.user.schedule.service.ScheduleCalendarResolver;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 // 여행방 멤버 목록·멤버별 일정 달력 조회
 class TripMemberQueryService {
 
-  private final TripMemberRepository tripMemberRepository;
-
   private final RegularScheduleRepository regularScheduleRepository;
 
   private final PersonalScheduleRepository personalScheduleRepository;
@@ -50,13 +43,11 @@ class TripMemberQueryService {
   private final GoogleCalendarService googleCalendarService;
 
   TripMemberQueryService(
-      TripMemberRepository tripMemberRepository,
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
       TripMemberScheduleSnapshotRepository snapshotRepository,
       TripServiceSupport support,
       GoogleCalendarService googleCalendarService) {
-    this.tripMemberRepository = tripMemberRepository;
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
     this.snapshotRepository = snapshotRepository;
@@ -70,10 +61,7 @@ class TripMemberQueryService {
     support.requireActiveMember(tripId, userId);
     Trip trip = support.requireActiveTrip(tripId);
 
-    List<TripMember> members =
-        tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
-            .sorted(Comparator.comparing(TripMember::getJoinedAt))
-            .toList();
+    List<TripMember> members = support.listActiveMembersSortedByJoinedAt(tripId);
 
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
@@ -110,10 +98,7 @@ class TripMemberQueryService {
 
     LocalDate startDate = trip.getStartRange();
     LocalDate endDate = trip.getEndRange();
-    List<TripMember> members =
-        tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
-            .sorted(Comparator.comparing(TripMember::getJoinedAt))
-            .toList();
+    List<TripMember> members = support.listActiveMembersSortedByJoinedAt(tripId);
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
@@ -139,17 +124,11 @@ class TripMemberQueryService {
     List<MemberCalendar> memberCalendars = new ArrayList<>();
     for (TripMember member : members) {
       UUID memberUserId = member.getUser().getId();
-      List<RegularSchedule> regulars =
-          regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(memberUserId);
-      List<PersonalSchedule> personals =
-          personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-              memberUserId,
-              startDate,
-              endDate);
       List<CalendarDayResponse> resolved =
-          ScheduleCalendarResolver.resolve(
-              regulars,
-              personals,
+          support.resolveEffectiveSchedule(
+              regularScheduleRepository,
+              personalScheduleRepository,
+              memberUserId,
               startDate,
               endDate,
               googleBusyByUser.getOrDefault(memberUserId, Map.of()));
@@ -163,13 +142,7 @@ class TripMemberQueryService {
                       d.eveningStatus(),
                       d.uncertain()))
               .toList();
-      memberCalendars.add(
-          new MemberCalendar(
-              memberUserId,
-              displayNames.get(memberUserId),
-              member.getRole(),
-              member.getStatus(),
-              days));
+      memberCalendars.add(toMemberCalendar(member, displayNames, days));
     }
     return memberCalendars;
   }
@@ -203,14 +176,18 @@ class TripMemberQueryService {
                         s.isUncertain());
                   })
               .toList();
-      memberCalendars.add(
-          new MemberCalendar(
-              memberUserId,
-              displayNames.get(memberUserId),
-              member.getRole(),
-              member.getStatus(),
-              days));
+      memberCalendars.add(toMemberCalendar(member, displayNames, days));
     }
     return memberCalendars;
+  }
+
+  // MemberCalendar 조립 — live·snapshot 두 경로 공용
+  private static MemberCalendar toMemberCalendar(
+      TripMember member,
+      Map<UUID, String> displayNames,
+      List<CalendarDay> days) {
+    UUID memberUserId = member.getUser().getId();
+    return new MemberCalendar(
+        memberUserId, displayNames.get(memberUserId), member.getRole(), member.getStatus(), days);
   }
 }

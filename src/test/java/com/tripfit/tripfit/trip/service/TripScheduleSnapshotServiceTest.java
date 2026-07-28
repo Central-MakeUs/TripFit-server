@@ -15,12 +15,14 @@ import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
+import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -41,6 +43,9 @@ class TripScheduleSnapshotServiceTest {
   private static final UUID USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
 
   @Mock
+  private TripRepository tripRepository;
+
+  @Mock
   private TripMemberRepository tripMemberRepository;
 
   @Mock
@@ -55,6 +60,9 @@ class TripScheduleSnapshotServiceTest {
   @Mock
   private GoogleCalendarService googleCalendarService;
 
+  @Mock
+  private UserLookupService userLookupService;
+
   private TripScheduleSnapshotService snapshotService;
 
   private User user;
@@ -63,13 +71,15 @@ class TripScheduleSnapshotServiceTest {
 
   @BeforeEach
   void setUp() {
+    TripServiceSupport support =
+        new TripServiceSupport(tripRepository, tripMemberRepository, userLookupService);
     snapshotService =
         new TripScheduleSnapshotService(
-            tripMemberRepository,
             snapshotRepository,
             regularScheduleRepository,
             personalScheduleRepository,
-            googleCalendarService);
+            googleCalendarService,
+            support);
     user = new User("sub", SocialProvider.GOOGLE, "a@b.c", "nick", null);
     user.setId(USER_ID);
     user.setLastName("홍");
