@@ -6,7 +6,6 @@ import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberRole;
-import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.MemberPreviewResponse;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
@@ -92,9 +91,8 @@ class TripServiceSupport {
     long joinedMemberCount =
         tripMemberRepository.countByTripIdAndDeletedAtIsNull(tripId);
     int respondedCount =
-        (int) tripMemberRepository.countByTripIdAndStatusAndDeletedAtIsNull(
-            tripId,
-            TripMemberStatus.RESPONDED);
+        (int) tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+            tripId);
     int joined = (int) joinedMemberCount;
 
     return new TripDetailResponse(

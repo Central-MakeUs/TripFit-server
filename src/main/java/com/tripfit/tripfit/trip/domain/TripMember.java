@@ -58,17 +58,13 @@ public class TripMember extends SoftDeleteEntity {
   @Column(nullable = false)
   private TripMemberRole role;
 
-  @Schema(description = "일정 응답 진행 상태")
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private TripMemberStatus status;
-
   @Schema(description = "방 참여 시각 (멤버 row 생성)", example = "2026-07-07T12:00:00")
   @Column(nullable = false)
   private LocalDateTime joinedAt;
 
   @Schema(
-      description = "일정 확인·가입 완료 시각. JOINED면 null, RESPONDED면 set (confirm/join)",
+      description = "일정 확인·가입 완료 시각. null이면 JOINED(미확인), 값이 있으면 RESPONDED(확인 완료) — confirm/join 시 set."
+          + " 일정 응답 진행 상태(JOINED|RESPONDED)의 SSOT이며 별도 status 컬럼은 없음",
       nullable = true,
       example = "2026-07-07T12:05:00")
   @Column(name = "responded_at")
@@ -88,12 +84,17 @@ public class TripMember extends SoftDeleteEntity {
     this.trip = trip;
     this.user = user;
     this.role = role;
-    this.status = status;
     this.joinedAt = joinedAt;
     // join 경로: INSERT 즉시 RESPONDED → responded_at = joined_at
     if (status == TripMemberStatus.RESPONDED) {
       this.respondedAt = joinedAt;
     }
+  }
+
+  // 일정 응답 진행 상태 — respondedAt null 여부로 파생 계산(저장 컬럼 없음)
+  @Schema(description = "일정 응답 진행 상태")
+  public TripMemberStatus getStatus() {
+    return respondedAt == null ? TripMemberStatus.JOINED : TripMemberStatus.RESPONDED;
   }
 
   // Pin on/off — on이면 pinnedAt=now, off이면 null
@@ -102,9 +103,8 @@ public class TripMember extends SoftDeleteEntity {
     this.pinnedAt = pinned ? LocalDateTime.now() : null;
   }
 
-  // 일정 확인 완료 — JOINED에서 RESPONDED로 바꾸고 respondedAt 설정
+  // 일정 확인 완료 — respondedAt 세팅만으로 JOINED→RESPONDED 파생 전환
   public void markResponded() {
-    this.status = TripMemberStatus.RESPONDED;
     this.respondedAt = LocalDateTime.now();
   }
 
