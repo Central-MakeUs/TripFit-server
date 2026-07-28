@@ -3017,6 +3017,14 @@
             "description": "소셜 토큰. GOOGLE/APPLE: id_token, KAKAO: access_token",
             "example": "eyJhbG...",
             "minLength": 1
+          },
+          "authorizationCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "APPLE 전용 authorization code. 탈퇴 시 Apple revoke 호출(#64)에 필요한 refresh token 교환용 — GOOGLE/KAKAO는 보내지 않음",
+            "example": "c1234..."
           }
         },
         "required": [
