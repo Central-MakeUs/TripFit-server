@@ -159,6 +159,19 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 
 로컬: 루트 `.env` 또는 `deploy/app/.env.example` 참고. 상세 스펙: `docs/specs/auth-social-login.md`
 
+### 스토어 제출 전 OAuth 콘솔 설정 체크리스트
+
+위 `GOOGLE_CLIENT_ID`류는 env에 client id 문자열만 등록하면 되지만, **각 소셜 로그인 콘솔(Google Cloud Console 등) 쪽 설정은 별도로 채워야** 실제 로그인이 동작한다. 코드·검증 로직(`GoogleTokenVerifier` 등)은 이미 완료된 상태 — 아래는 콘솔에서 값만 등록하면 되는 항목.
+
+| 항목 | 콘솔 | 채울 수 있는 시점 |
+|------|------|-------------------|
+| 승인된 자바스크립트 원본 | Google Cloud Console (`GOOGLE_CLIENT_ID` Web 타입) | 프론트 최종 도메인 확정 후 |
+| 승인된 리다이렉션 URI | Google Cloud Console (`GOOGLE_CLIENT_ID` Web 타입) | 프론트 콜백 라우트 확정 후 (환경 B, `docs/product/platform.md`) |
+| App Store ID (선택 필드) | Google Cloud Console (`GOOGLE_CLIENT_ID_IOS`) | 앱이 App Store에 실제 게시된 후 |
+| Apple/Android 로그인 동일 설정값 | Apple Developer / Google Play Console | 각 콘솔 요구 시점에 맞춰 |
+
+미등록 상태로는 `redirect_uri_mismatch` 등으로 로그인 자체가 실패하므로 **스토어 심사 제출 전 반드시 확인** — 추적: [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62)
+
 ## CI/CD
 
 `.github/workflows/ci-cd.yml` — `main` push → GHCR push → EC2 A deploy (app + nginx + certbot)
