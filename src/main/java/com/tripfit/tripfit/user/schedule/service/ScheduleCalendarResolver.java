@@ -17,13 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// 정기 요일 펼침 + 개별 일정 덮어쓰기 → 날짜별 합산 슬롯. 일정 없는 날짜는 omit(sparse)
+// 정기 요일 펼침 ⊕ 구글 busy(자동 계산 기본값)를, 개별 일정의 슬롯 단위 오버라이드로 덮어써 날짜별 최종 슬롯을 만든다(O1)
+// 슬롯 3개+구글 신호가 전부 없는 날짜는 응답에서 omit(sparse)
 public final class ScheduleCalendarResolver {
 
   private ScheduleCalendarResolver() {}
 
-  // 1. personal 있으면 그날 슬롯 그대로 2. 없으면 regular 합침(IMPOSSIBLE 우선) 3. Google busy OR 병합 4. 전부 null이면 날짜
-  // 생략
   public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
@@ -32,6 +31,7 @@ public final class ScheduleCalendarResolver {
     return resolve(regulars, personals, startDate, endDate, Map.of());
   }
 
+  // 1. 날짜별 정기 매칭 2. 슬롯마다 정기⊕구글로 기본값 계산 3. 개별 오버라이드가 있으면 그 슬롯만 최종 승자 — 개별·정기·구글 전부 없는 날짜만 omit
   public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
@@ -41,19 +41,13 @@ public final class ScheduleCalendarResolver {
     Map<LocalDate, CalendarDayResponse> byDate = new HashMap<>();
     for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
       PersonalSchedule personal = findPersonal(personals, date);
-      CalendarDayResponse manualDay = resolveManualDay(regulars, personal, date);
+      List<RegularSchedule> matched = matchingRegulars(regulars, date.getDayOfWeek());
       GoogleCalendarBusyDay googleBusy =
           googleBusyByDate != null ? googleBusyByDate.get(date) : null;
-      if (manualDay == null && googleBusy == null) {
+      if (personal == null && matched.isEmpty() && googleBusy == null) {
         continue;
       }
-      if (manualDay == null) {
-        byDate.put(date, googleOnlyDay(date, googleBusy));
-      } else if (googleBusy == null) {
-        byDate.put(date, manualDay);
-      } else {
-        byDate.put(date, mergeWithGoogle(manualDay, googleBusy));
-      }
+      byDate.put(date, resolveDay(date, matched, personal, googleBusy));
     }
     return byDate.values().stream()
         .sorted(Comparator.comparing(CalendarDayResponse::date))
@@ -69,65 +63,64 @@ public final class ScheduleCalendarResolver {
     return null;
   }
 
-  private static CalendarDayResponse resolveManualDay(
-      List<RegularSchedule> regulars,
-      PersonalSchedule personal,
-      LocalDate date) {
-    if (personal != null) {
-      SlotStatuses slots = personal.getSlotStatuses();
-      return new CalendarDayResponse(
-          date,
-          slots.getMorningStatus(),
-          slots.getAfternoonStatus(),
-          slots.getEveningStatus(),
-          personal.isUncertain());
-    }
-
-    List<RegularSchedule> matched = matchingRegulars(regulars, date.getDayOfWeek());
-    if (matched.isEmpty()) {
-      return null;
-    }
-    SlotStatuses combined = combineImpossibleWins(matched);
-    if (combined.getMorningStatus() == null
-        && combined.getAfternoonStatus() == null
-        && combined.getEveningStatus() == null) {
-      return null;
-    }
-    return new CalendarDayResponse(
-        date,
-        nullToPossible(combined.getMorningStatus()),
-        nullToPossible(combined.getAfternoonStatus()),
-        nullToPossible(combined.getEveningStatus()),
-        false);
-  }
-
-  private static CalendarDayResponse googleOnlyDay(
+  // 하루치 최종 슬롯 조립 — 슬롯마다 resolveSlot을 적용하고 uncertain은 개별 존재 여부로만 결정
+  private static CalendarDayResponse resolveDay(
       LocalDate date,
+      List<RegularSchedule> matched,
+      PersonalSchedule personal,
       GoogleCalendarBusyDay googleBusy) {
+    SlotStatuses regular = combineImpossibleWins(matched);
+    SlotStatuses override = personal != null ? personal.getSlotStatuses() : SlotStatuses.empty();
     return new CalendarDayResponse(
         date,
-        googleBusy.isMorningBusy() ? ScheduleStatus.IMPOSSIBLE : ScheduleStatus.POSSIBLE,
-        googleBusy.isAfternoonBusy() ? ScheduleStatus.IMPOSSIBLE : ScheduleStatus.POSSIBLE,
-        googleBusy.isEveningBusy() ? ScheduleStatus.IMPOSSIBLE : ScheduleStatus.POSSIBLE,
-        false);
+        resolveSlot(
+            regular.getMorningStatus(),
+            busyOrNull(googleBusy, true, false, false),
+            override.getMorningStatus()),
+        resolveSlot(
+            regular.getAfternoonStatus(),
+            busyOrNull(googleBusy, false, true, false),
+            override.getAfternoonStatus()),
+        resolveSlot(
+            regular.getEveningStatus(),
+            busyOrNull(googleBusy, false, false, true),
+            override.getEveningStatus()),
+        personal != null && personal.isUncertain());
   }
 
-  private static CalendarDayResponse mergeWithGoogle(
-      CalendarDayResponse manual,
-      GoogleCalendarBusyDay googleBusy) {
-    return new CalendarDayResponse(
-        manual.date(),
-        orImpossible(manual.morningStatus(), googleBusy.isMorningBusy()),
-        orImpossible(manual.afternoonStatus(), googleBusy.isAfternoonBusy()),
-        orImpossible(manual.eveningStatus(), googleBusy.isEveningBusy()),
-        manual.uncertain());
+  // 슬롯 하나의 최종값 = 개별 오버라이드(있으면) > 정기⊕구글(자동 계산) > POSSIBLE("미입력≠불가능")
+  private static ScheduleStatus resolveSlot(
+      ScheduleStatus regularSlot,
+      Boolean googleBusy,
+      ScheduleStatus override) {
+    if (override != null) {
+      return override;
+    }
+    ScheduleStatus base = combineWithGoogle(regularSlot, googleBusy);
+    return base != null ? base : ScheduleStatus.POSSIBLE;
   }
 
-  private static ScheduleStatus orImpossible(ScheduleStatus manual, boolean googleBusy) {
-    if (manual == ScheduleStatus.IMPOSSIBLE || googleBusy) {
+  // 정기 슬롯값과 구글 busy를 OR 병합 — 정기 IMPOSSIBLE이거나 구글 busy면 IMPOSSIBLE, 둘 다 신호 없으면 null
+  private static ScheduleStatus combineWithGoogle(ScheduleStatus regularSlot, Boolean googleBusy) {
+    if (regularSlot == ScheduleStatus.IMPOSSIBLE || Boolean.TRUE.equals(googleBusy)) {
       return ScheduleStatus.IMPOSSIBLE;
     }
-    return ScheduleStatus.POSSIBLE;
+    if (regularSlot == ScheduleStatus.POSSIBLE || Boolean.FALSE.equals(googleBusy)) {
+      return ScheduleStatus.POSSIBLE;
+    }
+    return null;
+  }
+
+  private static Boolean busyOrNull(
+      GoogleCalendarBusyDay googleBusy,
+      boolean morning,
+      boolean afternoon,
+      boolean evening) {
+    if (googleBusy == null) {
+      return null;
+    }
+    return morning ? googleBusy.isMorningBusy()
+        : afternoon ? googleBusy.isAfternoonBusy() : googleBusy.isEveningBusy();
   }
 
   // 같은 요일 정기 일정들의 슬롯을 IMPOSSIBLE 우선으로 합침
@@ -193,10 +186,5 @@ public final class ScheduleCalendarResolver {
       }
     }
     return sawPossible ? ScheduleStatus.POSSIBLE : null;
-  }
-
-  // merge 결과가 null인 슬롯 → POSSIBLE (미입력 ≠ IMPOSSIBLE)
-  private static ScheduleStatus nullToPossible(ScheduleStatus status) {
-    return status != null ? status : ScheduleStatus.POSSIBLE;
   }
 }

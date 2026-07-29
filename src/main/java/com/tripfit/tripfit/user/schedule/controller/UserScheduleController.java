@@ -228,15 +228,15 @@ public class UserScheduleController {
   }
 
   @Operation(
-      summary = "개인 일정 bulk upsert",
+      summary = "개인 일정 슬롯 단위 오버라이드 upsert",
       description = """
-          목적: 여러 날짜의 개인 일정을 한 번에 저장·삭제한다.
+          목적: 여러 날짜에 슬롯(오전/오후/저녁) 단위 오버라이드를 등록·해제한다.
 
           호출 시점: 개인 일정 편집 저장.
 
-          전제: items 최소 1개 필요. 슬롯 3개(오전/오후/저녁) 모두 POSSIBLE이고 uncertain=false인 항목은 해당 날짜를 삭제한다.
+          전제: items 최소 1개 필요. 슬롯 값을 null로 보내면 그 슬롯은 손대지 않고 정기+구글 계산값을 그대로 따른다(오버라이드 해제). 슬롯 3개가 전부 null이고 uncertain=false인 항목은 해당 날짜의 오버라이드 자체를 삭제한다.
 
-          결과: 반영 후 해당 구간 개인 일정 목록.
+          결과: 반영된 날짜들의 정기+개별+구글을 합친 최종 확정값(POSSIBLE/IMPOSSIBLE로 확정, null 없음).
 
           주의: 첫 저장 시 hasPreSchedule true. 전부 삭제 후 정기·개인 0건이면 false(GET /auth/me 재조회).
 

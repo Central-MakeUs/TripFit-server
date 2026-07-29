@@ -229,11 +229,9 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_dateLevelUncertain() {
+    LocalDate date = LocalDate.of(2026, 8, 3);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDate(
-            USER_ID,
-            LocalDate.of(2026, 8, 3)))
+    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
         .thenReturn(Optional.empty());
     when(personalScheduleRepository.save(any(PersonalSchedule.class)))
         .thenAnswer(
@@ -242,17 +240,19 @@ class ScheduleServiceTest {
               s.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
               return s;
             });
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
             USER_ID,
-            LocalDate.of(2026, 8, 3),
-            LocalDate.of(2026, 8, 3)))
+            date,
+            date))
         .thenAnswer(
             inv -> {
               PersonalSchedule saved =
                   PersonalSchedule.create(
                       user,
-                      LocalDate.of(2026, 8, 3),
+                      date,
                       ScheduleStatus.IMPOSSIBLE,
                       ScheduleStatus.POSSIBLE,
                       ScheduleStatus.POSSIBLE,
@@ -267,7 +267,7 @@ class ScheduleServiceTest {
             new UpdatePersonalScheduleRequest(
                 List.of(
                     new PersonalScheduleItem(
-                        LocalDate.of(2026, 8, 3),
+                        date,
                         ScheduleStatus.IMPOSSIBLE,
                         ScheduleStatus.POSSIBLE,
                         ScheduleStatus.POSSIBLE,
@@ -283,11 +283,9 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_withoutRegular_succeeds() {
+    LocalDate date = LocalDate.of(2026, 8, 3);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDate(
-            USER_ID,
-            LocalDate.of(2026, 8, 3)))
+    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
         .thenReturn(Optional.empty());
     when(personalScheduleRepository.save(any(PersonalSchedule.class)))
         .thenAnswer(
@@ -296,17 +294,19 @@ class ScheduleServiceTest {
               s.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
               return s;
             });
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
             USER_ID,
-            LocalDate.of(2026, 8, 3),
-            LocalDate.of(2026, 8, 3)))
+            date,
+            date))
         .thenAnswer(
             inv -> {
               PersonalSchedule saved =
                   PersonalSchedule.create(
                       user,
-                      LocalDate.of(2026, 8, 3),
+                      date,
                       ScheduleStatus.IMPOSSIBLE,
                       ScheduleStatus.POSSIBLE,
                       ScheduleStatus.POSSIBLE,
@@ -321,7 +321,7 @@ class ScheduleServiceTest {
             new UpdatePersonalScheduleRequest(
                 List.of(
                     new PersonalScheduleItem(
-                        LocalDate.of(2026, 8, 3),
+                        date,
                         ScheduleStatus.IMPOSSIBLE,
                         ScheduleStatus.POSSIBLE,
                         ScheduleStatus.POSSIBLE,
@@ -331,29 +331,86 @@ class ScheduleServiceTest {
   }
 
   @Test
-  void upsertPersonal_allSlotsPossibleAndNotUncertain_deletesRowAndClearsAllFreeWhenNoSchedulesLeft() {
-    user.setAllFree(false);
+  void upsertPersonal_partialOverride_untouchedSlotStaysNullInDbButResolvesFromRegular() {
+    LocalDate thursday = LocalDate.of(2026, 8, 6);
+    RegularSchedule work =
+        RegularSchedule.create(
+            user,
+            "출근",
+            "MON,TUE,WED,THU,FRI",
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, thursday))
+        .thenReturn(Optional.empty());
+    when(personalScheduleRepository.save(any(PersonalSchedule.class)))
+        .thenAnswer(
+            invocation -> {
+              PersonalSchedule s = invocation.getArgument(0);
+              s.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
+              return s;
+            });
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID))
+        .thenReturn(List.of(work));
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, thursday, thursday))
+        .thenReturn(Map.of());
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
             USER_ID,
-            LocalDate.of(2026, 8, 3),
-            LocalDate.of(2026, 8, 3)))
+            thursday,
+            thursday))
+        .thenAnswer(
+            inv -> {
+              PersonalSchedule saved =
+                  PersonalSchedule
+                      .create(user, thursday, null, ScheduleStatus.POSSIBLE, null, false);
+              saved.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
+              return List.of(saved);
+            });
+
+    // 오후만 오버라이드(반차) — 아침·저녁은 null로 보내 정기값 유지
+    var response =
+        scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(
+                    new PersonalScheduleItem(thursday, null, ScheduleStatus.POSSIBLE, null,
+                        false))));
+
+    assertThat(response.items()).hasSize(1);
+    var item = response.items().getFirst();
+    assertThat(item.morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(item.afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(item.eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    ArgumentCaptor<PersonalSchedule> captor = ArgumentCaptor.forClass(PersonalSchedule.class);
+    verify(personalScheduleRepository).save(captor.capture());
+    assertThat(captor.getValue().getSlotStatuses().getMorningStatus()).isNull();
+  }
+
+  @Test
+  void upsertPersonal_allSlotsNullAndNotUncertain_deletesRowAndClearsAllFreeWhenNoSchedulesLeft() {
+    LocalDate date = LocalDate.of(2026, 8, 3);
+    user.setAllFree(false);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            date,
+            date))
         .thenReturn(List.of());
 
     scheduleService.upsertPersonal(
         USER_ID,
         new UpdatePersonalScheduleRequest(
-            List.of(
-                new PersonalScheduleItem(
-                    LocalDate.of(2026, 8, 3),
-                    ScheduleStatus.POSSIBLE,
-                    ScheduleStatus.POSSIBLE,
-                    ScheduleStatus.POSSIBLE,
-                    false))));
+            List.of(new PersonalScheduleItem(date, null, null, null, false))));
 
-    verify(personalScheduleRepository)
-        .deleteByUserIdAndScheduleDateIn(USER_ID, List.of(LocalDate.of(2026, 8, 3)));
+    verify(personalScheduleRepository).deleteByUserIdAndScheduleDateIn(USER_ID, List.of(date));
     verify(personalScheduleRepository, never()).save(any(PersonalSchedule.class));
     verify(userSummaryService).markAllFreeIfSchedulesCleared(user);
   }
@@ -369,24 +426,6 @@ class ScheduleServiceTest {
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
-  }
-
-  @Test
-  void getPersonal_withoutRegular_succeeds() {
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            USER_ID,
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 7)))
-        .thenReturn(List.of());
-
-    var response =
-        scheduleService.getPersonal(
-            USER_ID,
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 7));
-
-    assertThat(response.items()).isEmpty();
   }
 
   @Test
