@@ -52,6 +52,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class TripServiceTest {
@@ -88,6 +89,9 @@ class TripServiceTest {
 
   @Mock
   private GoogleCalendarService googleCalendarService;
+
+  @Mock
+  private ApplicationEventPublisher applicationEventPublisher;
 
   private TripService tripService;
 
@@ -137,7 +141,8 @@ class TripServiceTest {
             tripQueryService,
             proxiedJoinService,
             tripMemberQueryService,
-            userSummaryService);
+            userSummaryService,
+            applicationEventPublisher);
     AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
     commandProxyFactory.addAspect(tripActivityAspect);
     TripCommandService tripCommandService = commandProxyFactory.getProxy();
@@ -351,6 +356,28 @@ class TripServiceTest {
 
     assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
     verify(tripMemberRepository).save(any());
+    verify(applicationEventPublisher)
+        .publishEvent(
+            new com.tripfit.tripfit.notification.event.TripJoinCompletedEvent(TRIP_ID, MEMBER_ID));
+    verify(applicationEventPublisher, never())
+        .publishEvent(any(com.tripfit.tripfit.notification.event.AllMembersSubmittedEvent.class));
+  }
+
+  @Test
+  void joinTrip_reachesCapacity_alsoPublishesAllMembersSubmitted() {
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+    // join 전 정원 체크에서 5<6 통과 — join 후 판정은 재조회 없이 이 값+1(=6)로 계산됨
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(5L);
+
+    tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
+
+    verify(applicationEventPublisher)
+        .publishEvent(new com.tripfit.tripfit.notification.event.AllMembersSubmittedEvent(TRIP_ID));
   }
 
   @Test
@@ -482,6 +509,25 @@ class TripServiceTest {
     verify(recommendationRepository).deleteByTripId(TRIP_ID);
     assertThat(trip.getDurationDays()).isEqualTo(3);
     assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
+    verify(applicationEventPublisher)
+        .publishEvent(new com.tripfit.tripfit.notification.event.TripInfoChangedEvent(TRIP_ID));
+  }
+
+  @Test
+  void patchTrip_noOp_doesNotPublishTripInfoChanged() {
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    TripMember ownerMember = tripMember(owner, TripMemberRole.OWNER);
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(ownerMember));
+
+    tripService.patchTrip(
+        TRIP_ID,
+        OWNER_ID,
+        new PatchTripRequest(trip.getName(), trip.getDurationNights(), trip.getDurationDays(),
+            trip.getMemberCount(), null));
+
+    verify(applicationEventPublisher, never())
+        .publishEvent(any(com.tripfit.tripfit.notification.event.TripInfoChangedEvent.class));
   }
 
   @Test

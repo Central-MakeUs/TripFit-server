@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.OnboardingNameRequest;
@@ -28,22 +29,40 @@ public class UserProfileService {
   @Transactional
   public UserSummaryResponse registerOnboardingName(UUID userId, OnboardingNameRequest request) {
     User user = userLookupService.requireUser(userId);
-    applyName(user, request.firstName(), request.lastName());
+    user.setFirstName(request.firstName().trim());
+    user.setLastName(request.lastName().trim());
     // hasPreSchedule은 userSummaryService가 일정 테이블 EXISTS로 매번 파생
     return userSummaryService.toSummary(user);
   }
 
-  // 마이페이지 성·이름 수정 — 온보딩 등록과 동일 컬럼 갱신
+  // 마이페이지 프로필 부분 수정 — firstName/lastName/notificationEnabled 중 포함된 필드만 갱신(D8)
   @Transactional
   public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
+    if (request.firstName() == null
+        && request.lastName() == null
+        && request.notificationEnabled() == null) {
+      throw new TripFitException(CommonErrorCode.INVALID_INPUT, "최소 1개 필드가 필요합니다.");
+    }
+
     User user = userLookupService.requireUser(userId);
-    applyName(user, request.firstName(), request.lastName());
+    if (request.firstName() != null) {
+      user.setFirstName(requireNonBlank(request.firstName()));
+    }
+    if (request.lastName() != null) {
+      user.setLastName(requireNonBlank(request.lastName()));
+    }
+    if (request.notificationEnabled() != null) {
+      user.setNotificationEnabled(request.notificationEnabled());
+    }
     return userSummaryService.toSummary(user);
   }
 
-  private void applyName(User user, String firstName, String lastName) {
-    user.setFirstName(firstName.trim());
-    user.setLastName(lastName.trim());
+  private String requireNonBlank(String value) {
+    String trimmed = value.trim();
+    if (trimmed.isEmpty()) {
+      throw new TripFitException(CommonErrorCode.INVALID_INPUT, "이름은 공백일 수 없습니다.");
+    }
+    return trimmed;
   }
 
   // 성·이름 미입력이면 trip 생성·참여 등에서 PROFILE_NAME_REQUIRED

@@ -11,7 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
+import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
+import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
@@ -74,7 +76,8 @@ class UserControllerTest {
                 SocialProvider.GOOGLE,
                 false,
                 false,
-                false));
+                false,
+                true));
 
     mockMvc
         .perform(
@@ -119,7 +122,8 @@ class UserControllerTest {
                 SocialProvider.GOOGLE,
                 false,
                 true,
-                false));
+                false,
+                true));
 
     mockMvc
         .perform(
@@ -136,6 +140,11 @@ class UserControllerTest {
 
   @Test
   void updateProfile_blankLastName_returns400() throws Exception {
+    when(
+        userProfileService
+            .updateProfile(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
+        .thenThrow(new TripFitException(CommonErrorCode.INVALID_INPUT, "이름은 공백일 수 없습니다."));
+
     mockMvc
         .perform(
             patch("/api/v1/users/profile")
@@ -144,6 +153,22 @@ class UserControllerTest {
                     """
                         {"firstName":"길동","lastName":""}
                         """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+  }
+
+  @Test
+  void updateProfile_emptyPatch_returns400() throws Exception {
+    when(
+        userProfileService
+            .updateProfile(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
+        .thenThrow(new TripFitException(CommonErrorCode.INVALID_INPUT, "최소 1개 필드가 필요합니다."));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/users/profile")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
   }

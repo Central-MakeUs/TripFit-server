@@ -30,13 +30,13 @@
 
 ### Must Have (wave 3 — 알림 설정 amend, `#21` D8)
 
-- [ ] `UpdateProfileRequest`에 `notificationEnabled`(Boolean, nullable) 필드 추가
-- [ ] `firstName`/`lastName`/`notificationEnabled` **전부 optional로 전환** — 요청에 없는(= null) 필드는 미변경, 있는 필드만 반영(partial update)
-- [ ] `firstName`/`lastName`이 **필드로 포함됐지만 값이 blank**면 기존과 동일하게 400
-- [ ] 세 필드 **전부 없음**(빈 patch) → 400 (`VALIDATION_ERROR`, 최소 1개 필드 필요)
-- [ ] `User.notificationEnabled` 컬럼 반영 (default `true`) — 엔티티는 [`notification.md`](notification.md) 데이터 모델 참고
-- [ ] 응답 `UserSummaryResponse`에 `notificationEnabled` 포함
-- [ ] 기존 이름 PATCH 테스트(둘 다 필수였던 케이스) → partial update 계약에 맞게 갱신
+- [x] `UpdateProfileRequest`에 `notificationEnabled`(Boolean, nullable) 필드 추가
+- [x] `firstName`/`lastName`/`notificationEnabled` **전부 optional로 전환** — 요청에 없는(= null) 필드는 미변경, 있는 필드만 반영(partial update)
+- [x] `firstName`/`lastName`이 **필드로 포함됐지만 값이 blank**면 기존과 동일하게 400 (`CommonErrorCode.INVALID_INPUT`)
+- [x] 세 필드 **전부 없음**(빈 patch) → 400 (`CommonErrorCode.INVALID_INPUT`, 최소 1개 필드 필요 — 이 저장소 `ErrorCode` SSOT에 `VALIDATION_ERROR`가 없어 기존 `INVALID_INPUT` 재사용)
+- [x] `User.notificationEnabled` 컬럼 반영 (default `true`) — 엔티티는 [`notification.md`](notification.md) 데이터 모델 참고
+- [x] 응답 `UserSummaryResponse`에 `notificationEnabled` 포함
+- [x] 기존 이름 PATCH 테스트(둘 다 필수였던 케이스) → partial update 계약에 맞게 갱신
 
 ### Out of Scope (이번 스펙)
 
@@ -93,13 +93,13 @@
 
 ## 검증 시나리오
 
-- [ ] 이름 입력 완료 사용자 → my-page PATCH(firstName+lastName) → first/last 갱신
-- [ ] 포함된 firstName 또는 lastName이 blank → 400
-- [ ] JWT 없음 → 401
-- [ ] `notificationEnabled`만 포함한 PATCH → first/last는 기존 값 유지, `notificationEnabled`만 갱신
-- [ ] firstName만 포함한 PATCH → lastName·`notificationEnabled` 기존 값 유지
-- [ ] 빈 객체(`{}`) PATCH → 400
-- [ ] `notificationEnabled=false` 이후 BR-NOTI-001~005·009 전부 미발송 확인 (`notification.md` 검증 시나리오와 연동)
+- [x] 이름 입력 완료 사용자 → my-page PATCH(firstName+lastName) → first/last 갱신
+- [x] 포함된 firstName 또는 lastName이 blank → 400
+- [ ] JWT 없음 → 401 (SecurityConfig `anyRequest().authenticated()`로 일괄 적용 — 이 엔드포인트 전용 테스트는 미작성)
+- [x] `notificationEnabled`만 포함한 PATCH → first/last는 기존 값 유지, `notificationEnabled`만 갱신
+- [ ] firstName만 포함한 PATCH → lastName·`notificationEnabled` 기존 값 유지 (전용 테스트 미작성)
+- [x] 빈 객체(`{}`) PATCH → 400
+- [ ] `notificationEnabled=false` 이후 BR-NOTI-001~005·009 전부 미발송 확인 — `dispatch()`의 `notification_enabled` 필터로 코드상 보장되나 my-page 쪽 전용 통합 테스트는 미작성
 
 ## 관련 문서
 
@@ -114,6 +114,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-30 | wave 3 Must Have(D8 amend) 구현 완료 — `notificationEnabled` 필드·partial update 전환·`User.notificationEnabled` 컬럼 |
 | 2026-07-28 | API 경로 리네이밍 — `PATCH /users/my-page` → `PATCH /users/profile`(온보딩 API는 `PATCH /users/onboarding/name`으로 이동, `user-onboarding.md` 변경 이력 참고). "my-page"가 화면 이름을 그대로 딴 비-리소스 경로였던 문제 해소 |
 | 2026-07-23 | `#21` D8 — `notificationEnabled` 필드 추가, **전 필드 optional(partial update)로 전환** (기존 firstName/lastName 필수 계약 변경) |
 | 2026-07-09 | Approved — 마이페이지 이름 PATCH |

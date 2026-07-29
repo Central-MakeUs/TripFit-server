@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
+import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
@@ -55,7 +56,8 @@ class UserProfileServiceTest {
                 user.getProvider(),
                 false,
                 false,
-                false));
+                false,
+                true));
     UserSummaryResponse response =
         userProfileService.registerOnboardingName(
             UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
@@ -85,16 +87,57 @@ class UserProfileServiceTest {
                 user.getProvider(),
                 false,
                 false,
-                false));
+                false,
+                true));
     UserSummaryResponse response =
         userProfileService.updateProfile(
             UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-            new UpdateProfileRequest("철수", "김"));
+            new UpdateProfileRequest("철수", "김", null));
 
     assertThat(user.getFirstName()).isEqualTo("철수");
     assertThat(user.getLastName()).isEqualTo("김");
     assertThat(response.firstName()).isEqualTo("철수");
     assertThat(response.lastName()).isEqualTo("김");
+  }
+
+  @Test
+  void updateProfile_onlyNotificationEnabled_keepsNameUnchanged() {
+    user.setFirstName("길동");
+    user.setLastName("홍");
+    when(userLookupService.requireUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
+        .thenReturn(user);
+    when(userSummaryService.toSummary(user)).thenReturn(null);
+
+    userProfileService.updateProfile(
+        UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+        new UpdateProfileRequest(null, null, false));
+
+    assertThat(user.getFirstName()).isEqualTo("길동");
+    assertThat(user.getLastName()).isEqualTo("홍");
+    assertThat(user.isNotificationEnabled()).isFalse();
+  }
+
+  @Test
+  void updateProfile_blankFirstName_throwsInvalidInput() {
+    UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
+    when(userLookupService.requireUser(userId)).thenReturn(user);
+
+    assertThatThrownBy(
+        () -> userProfileService.updateProfile(userId, new UpdateProfileRequest(" ", null, null)))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  void updateProfile_emptyPatch_throwsInvalidInput() {
+    UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
+
+    assertThatThrownBy(
+        () -> userProfileService.updateProfile(userId, new UpdateProfileRequest(null, null, null)))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
   }
 
   @Test

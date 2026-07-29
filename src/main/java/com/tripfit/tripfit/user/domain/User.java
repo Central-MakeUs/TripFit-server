@@ -87,6 +87,11 @@ public class User extends SoftDeleteEntity {
   @Column(name = "is_all_free", nullable = false)
   private boolean isAllFree;
 
+  @Schema(description = "알림 수신 여부(BR-USER-005). default true — false면 NOTI-001~005·009 전부 미발송",
+      example = "true")
+  @Column(name = "notification_enabled", nullable = false)
+  private boolean notificationEnabled;
+
   public User(
       String socialId,
       SocialProvider provider,
@@ -100,6 +105,7 @@ public class User extends SoftDeleteEntity {
     this.profileImageUrl = profileImageUrl;
     this.isGoogleCalendarConnected = false;
     this.isAllFree = false;
+    this.notificationEnabled = true;
   }
 
   // 성·이름이 모두 입력됐는지 확인함 (온보딩 필수 프로필 완료)

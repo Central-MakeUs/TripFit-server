@@ -60,7 +60,8 @@ class DevAuthServiceTest {
                   u.getProvider(),
                   u.isGoogleCalendarConnected(),
                   false,
-                  u.isAllFree());
+                  u.isAllFree(),
+                  u.isNotificationEnabled());
             });
     lenient().when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
     lenient()

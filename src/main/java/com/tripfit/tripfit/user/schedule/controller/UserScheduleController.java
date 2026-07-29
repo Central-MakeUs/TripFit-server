@@ -269,6 +269,28 @@ public class UserScheduleController {
                   {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
                   """)))
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      content = @Content(
+          examples = {
+              @ExampleObject(
+                  name = "부분 오버라이드 — 아침만 변경",
+                  summary = "아침만 오버라이드. 오후·저녁은 생략(= null) → 정기+구글 계산값을 그대로 따름",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "uncertain": false}]}
+                      """),
+              @ExampleObject(
+                  name = "전체 오버라이드 — 슬롯 3개 모두 지정",
+                  summary = "슬롯 3개를 전부 명시적으로 오버라이드",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}
+                      """),
+              @ExampleObject(
+                  name = "오버라이드 해제(CLEAR)",
+                  summary = "슬롯 3개 전부 생략(= null)하고 uncertain=false → 해당 날짜 오버라이드 자체를 삭제",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-03", "uncertain": false}]}
+                      """)
+          }))
   @PatchMapping("/personal")
   ResponseEntity<SuccessResponse<PersonalScheduleResponse>> upsertPersonal(
       @AuthorizedUser UUID userId,

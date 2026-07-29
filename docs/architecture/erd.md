@@ -27,6 +27,9 @@ trip ||--o{ trip_member : has
 trip ||--o{ recommendation : generates
 trip ||--o{ trip_member_schedule_snapshot : freezes
 users ||--o{ trip_member_schedule_snapshot : snapshotted
+users ||--o{ user_device_token : registers
+users ||--o{ notification_history : receives
+trip ||--o{ notification_history : relates_to
 
     users {
         uuid id PK "사용자 UUID"
@@ -39,6 +42,7 @@ users ||--o{ trip_member_schedule_snapshot : snapshotted
         string profile_image_url "프로필 이미지 URL"
         boolean is_google_calendar_connected "Google Calendar 연동 여부"
         boolean is_all_free "항상 가능 여부 default=false"
+        boolean notification_enabled "알림 수신 여부 default=true BR-USER-005"
         datetime created_at "생성일"
         datetime updated_at "수정일"
         datetime deleted_at "삭제일 Soft Delete"
@@ -168,6 +172,30 @@ users ||--o{ trip_member_schedule_snapshot : snapshotted
         text risk_note "주의 사항"
         float score "추천 점수"
         datetime created_at "생성일"
+    }
+
+    user_device_token {
+        uuid id PK "토큰 UUID"
+        uuid user_id FK "소유 사용자 — 재로그인 시 재할당(D7)"
+        string token "FCM 등록 토큰 UNIQUE"
+        string device_type "ANDROID IOS WEB"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
+    }
+
+    notification_history {
+        uuid id PK "알림 이력 UUID"
+        uuid user_id FK "수신자"
+        uuid trip_id FK "관련 여행방 — 여행방 무관 알림(리마인드)은 null"
+        string type "JOIN_COMPLETED 등 BR-NOTI-*"
+        string title "알림 제목"
+        string body "알림 본문"
+        string landing_type "TRAVEL_ROOM_DETAIL SCHEDULE_MANAGEMENT"
+        boolean is_read "읽음 여부 default=false"
+        datetime read_at "읽은 시각"
+        datetime sent_at "발송 시각"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
     }
 ```
 
@@ -392,6 +420,44 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 **정책:** 모드 변경·trip 기간/일수 변경·trip soft delete → 해당 trip `recommendation` **hard DELETE**. `trip.last_recommendation_mode` 갱신.
 
+### `user_device_token` (`#21` 알림)
+
+유저별 다중 기기 FCM 토큰. 재로그인 시 동일 토큰의 소유자가 재할당될 수 있다(D7).
+
+- **관련 BR:** BR-NOTI-*
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| user_id | char(36) | N | FK → users.id | 재로그인 시 재할당 대상(D7) |
+| token | varchar(512) | N | UNIQUE | FCM 등록 토큰 |
+| device_type | varchar | N | | ANDROID/IOS/WEB |
+| created_at | timestamptz | N | | |
+| updated_at | timestamptz | N | | 재할당 시 갱신 |
+
+### `notification_history` (`#21` 알림)
+
+발송된 FCM 알림 이력 — 알림센터 조회·읽음 상태 포함(D5). 최근 7일만 `GET /notifications`에 노출(D9), DB 이력 자체는 보존.
+
+- **관련 BR:** BR-NOTI-001~005, 009
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| user_id | char(36) | N | FK → users.id | 수신자 |
+| trip_id | char(36) | Y | FK → trip.id | 여행방 무관 알림(정기 리마인드)은 null |
+| type | varchar | N | | JOIN_COMPLETED 등 |
+| title | varchar | N | | |
+| body | varchar(500) | N | | |
+| landing_type | varchar | N | | TRAVEL_ROOM_DETAIL/SCHEDULE_MANAGEMENT |
+| is_read | boolean | N | | default false |
+| read_at | timestamptz | Y | | |
+| sent_at | timestamptz | N | | |
+| created_at | timestamptz | N | | |
+| updated_at | timestamptz | N | | |
+
+**인덱스:** `(user_id, sent_at)` — 알림센터 최근 7일 조회(D9)
+
 ## 4. 관계 요약
 
 | From | To | 관계 | 설명 |
@@ -405,6 +471,9 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/EXPIRED 정기+개별 합친 값 freeze |
 | users | trip_member_schedule_snapshot | 1:N | |
 | trip | recommendation | 1:N | 최대 3 (현재 모드) |
+| users | user_device_token | 1:N | 기기별 FCM 토큰(`#21`) |
+| users | notification_history | 1:N | 수신자(`#21`) |
+| trip | notification_history | 1:N | 여행방 무관 알림(리마인드)은 trip_id null(`#21`) |
 
 ## 5. MVP 범위와의 매핑
 
@@ -414,10 +483,10 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | 정기·개별 일정 | `regular_schedule`, `personal_schedule` |
 | 여행방·초대·여행지 | `trip`, `trip_member` |
 | 추천 4모드·TOP3·확정 | `recommendation`, `trip.last_recommendation_mode`, `trip.confirmed_*` |
+| 알림·알림센터(`#21`) | `user_device_token`, `notification_history`, `users.notification_enabled` |
 
 **Out of Scope (향후)**
 
-- `notification_history` — BR-NOTI-* (wave 3+)
 - `trip_expense`, `reservation` 등
 
 ## 6. 삭제·갱신 정책 (확정)
@@ -451,7 +520,8 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 5. **2026-07-21:** `#39` — `trip_member.status` **SCHEDULE_PENDING|ACTIVE** 부활 (방장 create=`SCHEDULE_PENDING` → confirm=`ACTIVE`)
 6. **2026-07-21:** `trip.duration_days` **nullable**(일정 미정) · 희망 기간 생성 후 불변 · API n박+m일
 6. **2026-07-21:** ERD 개선 반영 — `users` rename · `responded_at` · active UNIQUE(app) · `score`=#13 유지
-7. 알림 이력 테이블 — ERD 범위 외 (wave 3)
+7. ~~알림 이력 테이블 — ERD 범위 외 (wave 3)~~ — 2026-07-30 `#21` 구현으로 아래 11번 참고
 8. **2026-07-26:** `trip.duration_nights` 파생값 → 컬럼 영속화, 박/일 검증 범위 `nights+1~min(nights+2,T)`로 확장 ([`trip-duration-range.md`](../specs/trip-duration-range.md))
 9. **2026-08-01:** `TripMemberStatus` 개명(`JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE`, [`trip-member-status-derive.md`](../specs/trip-member-status-derive.md))에서 빠졌던 후속 정리 — `trip_member.responded_at`→`activated_at`, `markResponded()`→`activate()`, API 필드 `respondedCount`→`activeMemberCount`로 일괄 개명(이름을 상태 enum과 일치시켜 혼동 제거, 네이밍 우선 원칙)
 10. **2026-07-28 (#60):** `memberFillRate` 공식을 `joinedMemberCount ÷ memberCount` → `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출로 전환 · 여행방 상세에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](../specs/trip-member-fill-rate-refactor.md))
+11. **2026-07-30 (#21):** 알림 — `user_device_token`·`notification_history` 신규, `users.notification_enabled`(default true, BR-USER-005) 추가 ([`notification.md`](../specs/notification.md))

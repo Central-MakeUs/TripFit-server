@@ -85,7 +85,8 @@ class AuthServiceTest {
                   u.getProvider(),
                   u.isGoogleCalendarConnected(),
                   false,
-                  u.isAllFree());
+                  u.isAllFree(),
+                  u.isNotificationEnabled());
             });
   }
 

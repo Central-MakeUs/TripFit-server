@@ -60,6 +60,10 @@ public record UserSummaryResponse(
             false: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.
             일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
             """,
-        example = "false") boolean isAllFree
+        example = "false") boolean isAllFree,
+
+    @Schema(
+        description = "알림 수신 여부(BR-USER-005). default true. PATCH /users/profile로 변경",
+        example = "true") boolean notificationEnabled
 ) {
 }

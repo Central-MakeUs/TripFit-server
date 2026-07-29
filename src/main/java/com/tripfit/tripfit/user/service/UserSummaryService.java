@@ -42,7 +42,8 @@ public class UserSummaryService {
         user.getProvider(),
         user.isGoogleCalendarConnected(),
         hasPreSchedule(user.getId()),
-        user.isAllFree());
+        user.isAllFree(),
+        user.isNotificationEnabled());
   }
 
   // 파생: regular OR personal row EXISTS (user 컬럼 아님)

@@ -1,6 +1,9 @@
 package com.tripfit.tripfit.trip.service;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.notification.event.AllMembersSubmittedEvent;
+import com.tripfit.tripfit.notification.event.TripInfoChangedEvent;
+import com.tripfit.tripfit.notification.event.TripJoinCompletedEvent;
 import com.tripfit.tripfit.trip.config.TripActivity;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
@@ -24,6 +27,7 @@ import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +53,8 @@ class TripCommandService {
 
   private final UserSummaryService userSummaryService;
 
+  private final ApplicationEventPublisher applicationEventPublisher;
+
   TripCommandService(
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
@@ -58,7 +64,8 @@ class TripCommandService {
       TripQueryService tripQueryService,
       TripJoinService tripJoinService,
       TripMemberQueryService tripMemberQueryService,
-      UserSummaryService userSummaryService) {
+      UserSummaryService userSummaryService,
+      ApplicationEventPublisher applicationEventPublisher) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
     this.userProfileService = userProfileService;
@@ -68,6 +75,7 @@ class TripCommandService {
     this.tripJoinService = tripJoinService;
     this.tripMemberQueryService = tripMemberQueryService;
     this.userSummaryService = userSummaryService;
+    this.applicationEventPublisher = applicationEventPublisher;
   }
 
   // 여행방 생성 — 방장은 SCHEDULE_PENDING(일정 확인 전). activate 전에는 ACTIVE가 아님
@@ -151,16 +159,27 @@ class TripCommandService {
 
     boolean recommendationInputsChanged =
         !Objects.equals(trip.getDurationDays(), durationDays);
+    String normalizedDestination = TripServiceSupport.normalizeDestination(request.destination());
+    // NOTI-003(D12) — no-op patch는 미발송하므로 실제 값 변경 여부를 저장 전에 비교
+    boolean valuesChanged =
+        !Objects.equals(trip.getName(), request.name().trim())
+            || !Objects.equals(trip.getDurationNights(), request.durationNights())
+            || recommendationInputsChanged
+            || !Objects.equals(trip.getMemberCount(), request.memberCount())
+            || !Objects.equals(trip.getDestination(), normalizedDestination);
 
     trip.setName(request.name().trim());
     trip.setDurationNights(request.durationNights());
     trip.setDurationDays(durationDays);
     trip.setMemberCount(request.memberCount());
-    trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
+    trip.setDestination(normalizedDestination);
 
     if (recommendationInputsChanged) {
       // 추천 입력이 바뀌면 후보를 hard DELETE — 추천 서비스와 통합은 추후
       recommendationRepository.deleteByTripId(tripId);
+    }
+    if (valuesChanged) {
+      applicationEventPublisher.publishEvent(new TripInfoChangedEvent(tripId));
     }
 
     TripMember membership = support.requireActiveMember(tripId, userId);
@@ -203,19 +222,26 @@ class TripCommandService {
     }
 
     TripStatus status = support.effectiveStatus(trip);
+    long joinedMemberCount = 0;
     switch (status) {
       case CONFIRMED -> throw new TripFitException(TripErrorCode.TRIP_ALREADY_CONFIRMED);
       case EXPIRED -> throw new TripFitException(TripErrorCode.TRIP_EXPIRED);
       case ONGOING -> {
-        long joinedMemberCount =
-            tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
+        joinedMemberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
         if (joinedMemberCount >= trip.getMemberCount()) {
           throw new TripFitException(TripErrorCode.TRIP_MEMBER_FULL);
         }
       }
     }
 
-    return tripJoinService.joinAsNewMember(trip, user);
+    TripDetailResponse response = tripJoinService.joinAsNewMember(trip, user);
+
+    applicationEventPublisher.publishEvent(new TripJoinCompletedEvent(trip.getId(), userId));
+    // D11 — 멤버는 join 즉시 ACTIVE라 "정원 도달"이 곧 전원 제출 완료. 방금 저장한 신규 멤버만큼 +1해 재조회 없이 판정
+    if (joinedMemberCount + 1 >= trip.getMemberCount()) {
+      applicationEventPublisher.publishEvent(new AllMembersSubmittedEvent(trip.getId()));
+    }
+    return response;
   }
 
   // 멤버 Pin on/off — 만료 Pin 자동 해제는 일 배치(TripHomeMaintenanceService)

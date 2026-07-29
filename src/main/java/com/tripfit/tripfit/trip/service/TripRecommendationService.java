@@ -1,10 +1,12 @@
 package com.tripfit.tripfit.trip.service;
 
+import com.tripfit.tripfit.notification.event.TripConfirmedEvent;
 import com.tripfit.tripfit.trip.config.TripActivity;
 import com.tripfit.tripfit.trip.domain.RecommendationMode;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +18,15 @@ class TripRecommendationService {
 
   private final TripScheduleSnapshotService tripScheduleSnapshotService;
 
+  private final ApplicationEventPublisher applicationEventPublisher;
+
   TripRecommendationService(
-      TripServiceSupport support, TripScheduleSnapshotService tripScheduleSnapshotService) {
+      TripServiceSupport support,
+      TripScheduleSnapshotService tripScheduleSnapshotService,
+      ApplicationEventPublisher applicationEventPublisher) {
     this.support = support;
     this.tripScheduleSnapshotService = tripScheduleSnapshotService;
+    this.applicationEventPublisher = applicationEventPublisher;
   }
 
   // 방장이 추천 모드로 TOP3 후보를 생성한다 (미구현 stub)
@@ -41,5 +48,6 @@ class TripRecommendationService {
     // 상세: docs/specs/trip-recommendation.md (#13)
     trip.setStatus(TripStatus.CONFIRMED);
     tripScheduleSnapshotService.freezeTrip(trip);
+    applicationEventPublisher.publishEvent(new TripConfirmedEvent(tripId));
   }
 }
