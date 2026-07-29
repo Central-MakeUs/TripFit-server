@@ -33,12 +33,12 @@
       "description": "Google Calendar OAuth 연동·해제"
     },
     {
-      "name": "Trip Members",
-      "description": "여행방 참여자 목록·그룹 달력·내보내기"
+      "name": "User Schedule",
+      "description": "본인 정기·개인 일정과 정기+개별을 합친 달력"
     },
     {
-      "name": "User Schedule",
-      "description": "본인 정기·개인 일정과 달력(effective)"
+      "name": "Trip Members",
+      "description": "여행방 참여자 목록·그룹 달력·내보내기"
     }
   ],
   "paths": {
@@ -2012,8 +2012,8 @@
         "tags": [
           "User Schedule"
         ],
-        "summary": "일정 달력(effective) 조회",
-        "description": "목적: 본인 전역 가능/불가능 달력(effective)을 조회한다.\n\n호출 시점: 마이페이지 달력·일정 확인 화면.\n\n전제: 요청 구간은 오늘부터 오늘+2년−1일 안이어야 한다. 단, 참여 중인 조율 중(ONGOING) 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다.\n\n결과: 날짜별 effective 슬롯. 개인 일정이 정기보다 우선하고, 정기 복수면 IMPOSSIBLE이 우선. 빈 날은 응답에서 생략.\n\n주의: 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출한다.\n\n주요 에러: INVALID_INPUT — 조회 구간이 허용 윈도우 밖\n",
+        "summary": "정기+개별 합친 일정 달력 조회",
+        "description": "목적: 본인 정기 일정과 개별 일정을 합쳐 날짜별 가능/불가능 달력을 조회한다.\n\n호출 시점: 마이페이지 달력·일정 확인 화면.\n\n전제: 요청 구간은 오늘부터 오늘+2년−1일 안이어야 한다. 단, 참여 중인 조율 중(ONGOING) 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다.\n\n결과: 날짜별로 정기+개별을 합친 슬롯. 개인 일정이 정기보다 우선하고, 정기 복수면 IMPOSSIBLE이 우선. 빈 날은 응답에서 생략.\n\n주의: 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출한다.\n\n주요 에러: INVALID_INPUT — 조회 구간이 허용 윈도우 밖\n",
         "operationId": "getCalendar",
         "parameters": [
           {
@@ -2215,8 +2215,8 @@
         "tags": [
           "Trip Members"
         ],
-        "summary": "멤버 effective 일정 달력",
-        "description": "목적: 희망 기간(startRange~endRange) 동안 멤버 전원의 effective 일정을 조회한다.\n\n호출 시점: 방 안 일정 조율·추천 전 달력.\n\n전제: 멤버이며 방 입장 가능.\n\n결과: 멤버별 날짜 슬롯. 조율 중(ONGOING)은 실시간 일정, 확정·종료 방은 당시 스냅샷(읽기 전용).\n\n주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_ACTIVATION_REQUIRED\n",
+        "summary": "멤버 정기+개별 합친 일정 달력",
+        "description": "목적: 희망 기간(startRange~endRange) 동안 멤버 전원의 정기+개별을 합친 일정을 조회한다.\n\n호출 시점: 방 안 일정 조율·추천 전 달력.\n\n전제: 멤버이며 방 입장 가능.\n\n결과: 멤버별 날짜 슬롯. 조율 중(ONGOING)은 실시간 일정, 확정·종료 방은 당시 스냅샷(읽기 전용).\n\n주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_ACTIVATION_REQUIRED\n",
         "operationId": "getScheduleCalendar",
         "parameters": [
           {
@@ -3878,7 +3878,7 @@
       },
       "CalendarDayResponse": {
         "type": "object",
-        "description": "날짜 1일의 effective 슬롯",
+        "description": "날짜 1일의 정기+개별을 합친 슬롯",
         "properties": {
           "date": {
             "type": "string",
@@ -3888,7 +3888,7 @@
           },
           "morningStatus": {
             "type": "string",
-            "description": "오전 [00:00, 13:00) effective",
+            "description": "오전 [00:00, 13:00) 합친 값",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3897,7 +3897,7 @@
           },
           "afternoonStatus": {
             "type": "string",
-            "description": "오후 [13:00, 18:00) effective",
+            "description": "오후 [13:00, 18:00) 합친 값",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3906,7 +3906,7 @@
           },
           "eveningStatus": {
             "type": "string",
-            "description": "저녁 [18:00, 24:00) effective",
+            "description": "저녁 [18:00, 24:00) 합친 값",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3922,7 +3922,7 @@
       },
       "ScheduleCalendarResponse": {
         "type": "object",
-        "description": "기간 내 effective(정기+개인 합친) 일정 달력. GET /users/schedule/calendar",
+        "description": "기간 내 정기+개별 일정을 합친 달력. GET /users/schedule/calendar",
         "properties": {
           "startDate": {
             "type": "string",
@@ -3938,7 +3938,7 @@
           },
           "days": {
             "type": "array",
-            "description": "effective가 있는 날짜만 포함 (sparse)",
+            "description": "합친 값이 있는 날짜만 포함 (sparse)",
             "items": {
               "$ref": "#/components/schemas/CalendarDayResponse"
             }
@@ -4212,7 +4212,7 @@
       },
       "CalendarDay": {
         "type": "object",
-        "description": "날짜 1일의 effective 슬롯 (정기+개인 합산)",
+        "description": "날짜 1일의 정기+개별을 합친 슬롯",
         "properties": {
           "date": {
             "type": "string",
@@ -4221,7 +4221,7 @@
           },
           "morningStatus": {
             "type": "string",
-            "description": "오전 [00:00, 13:00) effective",
+            "description": "오전 [00:00, 13:00) 합친 값",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -4229,7 +4229,7 @@
           },
           "afternoonStatus": {
             "type": "string",
-            "description": "오후 [13:00, 18:00) effective",
+            "description": "오후 [13:00, 18:00) 합친 값",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -4237,7 +4237,7 @@
           },
           "eveningStatus": {
             "type": "string",
-            "description": "저녁 [18:00, 24:00) effective",
+            "description": "저녁 [18:00, 24:00) 합친 값",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -4251,7 +4251,7 @@
       },
       "MemberCalendar": {
         "type": "object",
-        "description": "멤버 1명의 effective 달력",
+        "description": "멤버 1명의 정기+개별 합친 달력",
         "properties": {
           "userId": {
             "type": "string",
@@ -4280,7 +4280,7 @@
           },
           "days": {
             "type": "array",
-            "description": "effective가 있는 날짜만 포함 (sparse)",
+            "description": "합친 값이 있는 날짜만 포함 (sparse)",
             "items": {
               "$ref": "#/components/schemas/CalendarDay"
             }
@@ -4289,7 +4289,7 @@
       },
       "MemberScheduleCalendarResponse": {
         "type": "object",
-        "description": "여행방 멤버 전원 effective 일정 달력. GET /trips/{tripId}/members/schedule/calendar",
+        "description": "여행방 멤버 전원의 정기+개별 일정을 합친 달력. GET /trips/{tripId}/members/schedule/calendar",
         "properties": {
           "startDate": {
             "type": "string",
@@ -4307,7 +4307,7 @@
           },
           "members": {
             "type": "array",
-            "description": "멤버별 effective 달력",
+            "description": "멤버별 정기+개별 합친 달력",
             "items": {
               "$ref": "#/components/schemas/MemberCalendar"
             }
