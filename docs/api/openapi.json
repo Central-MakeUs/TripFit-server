@@ -1253,8 +1253,8 @@
         "tags": [
           "User Schedule"
         ],
-        "summary": "개인 일정 bulk upsert",
-        "description": "목적: 여러 날짜의 개인 일정을 한 번에 저장·삭제한다.\n\n호출 시점: 개인 일정 편집 저장.\n\n전제: items 최소 1개 필요. 슬롯 3개(오전/오후/저녁) 모두 POSSIBLE이고 uncertain=false인 항목은 해당 날짜를 삭제한다.\n\n결과: 반영 후 해당 구간 개인 일정 목록.\n\n주의: 첫 저장 시 hasPreSchedule true. 전부 삭제 후 정기·개인 0건이면 false(GET /auth/me 재조회).\n\n주요 에러: INVALID_INPUT — items가 비어 있음\n",
+        "summary": "개인 일정 슬롯 단위 오버라이드 upsert",
+        "description": "목적: 여러 날짜에 슬롯(오전/오후/저녁) 단위 오버라이드를 등록·해제한다.\n\n호출 시점: 개인 일정 편집 저장.\n\n전제: items 최소 1개 필요. 슬롯 값을 null로 보내면 그 슬롯은 손대지 않고 정기+구글 계산값을 그대로 따른다(오버라이드 해제). 슬롯 3개가 전부 null이고 uncertain=false인 항목은 해당 날짜의 오버라이드 자체를 삭제한다.\n\n결과: 반영된 날짜들의 정기+개별+구글을 합친 최종 확정값(POSSIBLE/IMPOSSIBLE로 확정, null 없음).\n\n주의: 첫 저장 시 hasPreSchedule true. 전부 삭제 후 정기·개인 0건이면 false(GET /auth/me 재조회).\n\n주요 에러: INVALID_INPUT — items가 비어 있음\n",
         "operationId": "upsertPersonal",
         "parameters": [
           {
@@ -3578,7 +3578,7 @@
       },
       "PersonalScheduleItem": {
         "type": "object",
-        "description": "특정 날짜의 슬롯 가능/불가 + 날짜 단위 불확실",
+        "description": "특정 날짜의 슬롯 오버라이드 + 날짜 단위 불확실",
         "properties": {
           "scheduleDate": {
             "type": "string",
@@ -3587,8 +3587,11 @@
             "example": "2026-08-03"
           },
           "morningStatus": {
-            "type": "string",
-            "description": "오전 [00:00, 13:00) 슬롯",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "오전 [00:00, 13:00) 슬롯 오버라이드. null이면 이 슬롯은 손대지 않고 정기+구글 계산값을 그대로 씀",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3596,8 +3599,11 @@
             "example": "IMPOSSIBLE"
           },
           "afternoonStatus": {
-            "type": "string",
-            "description": "오후 [13:00, 18:00) 슬롯",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "오후 [13:00, 18:00) 슬롯 오버라이드. null이면 이 슬롯은 손대지 않고 정기+구글 계산값을 그대로 씀",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3605,8 +3611,11 @@
             "example": "POSSIBLE"
           },
           "eveningStatus": {
-            "type": "string",
-            "description": "저녁 [18:00, 24:00) 슬롯",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "저녁 [18:00, 24:00) 슬롯 오버라이드. null이면 이 슬롯은 손대지 않고 정기+구글 계산값을 그대로 씀",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3620,9 +3629,6 @@
           }
         },
         "required": [
-          "afternoonStatus",
-          "eveningStatus",
-          "morningStatus",
           "scheduleDate"
         ]
       },
@@ -3632,7 +3638,7 @@
         "properties": {
           "items": {
             "type": "array",
-            "description": "날짜별 upsert 항목. 슬롯 3개(morning/afternoon/evening) 모두 POSSIBLE이고 uncertain=false인 항목은 해당 날짜 row를 삭제(CLEAR)한다 — 오버라이드가 없는 기본 상태와 동일하기 때문",
+            "description": "날짜별 upsert 항목. 슬롯 3개(morning/afternoon/evening)가 전부 null이고 uncertain=false인 항목은 해당 날짜 row를 삭제(CLEAR)한다 — 오버라이드가 하나도 없는 상태와 동일하기 때문",
             "items": {
               "$ref": "#/components/schemas/PersonalScheduleItem"
             },
@@ -3645,12 +3651,15 @@
       },
       "PersonalScheduleItemResponse": {
         "type": "object",
-        "description": "날짜별 개인 일정 1건",
+        "description": "날짜 1건의 정기+개별+구글 합친 최종 확정값",
         "properties": {
           "id": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid",
-            "description": "개인 일정 ID",
+            "description": "개별 일정(personal_schedule) row ID. 오버라이드가 없어 정기+구글 계산값만 내려가는 날짜는 null",
             "example": "550e8400-e29b-41d4-a716-446655440000"
           },
           "scheduleDate": {
@@ -3661,7 +3670,7 @@
           },
           "morningStatus": {
             "type": "string",
-            "description": "오전 [00:00, 13:00) 슬롯",
+            "description": "오전 [00:00, 13:00) 최종 확정값 — 개별 오버라이드 > 정기⊕구글",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3670,7 +3679,7 @@
           },
           "afternoonStatus": {
             "type": "string",
-            "description": "오후 [13:00, 18:00) 슬롯",
+            "description": "오후 [13:00, 18:00) 최종 확정값 — 개별 오버라이드 > 정기⊕구글",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3679,7 +3688,7 @@
           },
           "eveningStatus": {
             "type": "string",
-            "description": "저녁 [18:00, 24:00) 슬롯",
+            "description": "저녁 [18:00, 24:00) 최종 확정값 — 개별 오버라이드 > 정기⊕구글",
             "enum": [
               "POSSIBLE",
               "IMPOSSIBLE"
@@ -3688,18 +3697,18 @@
           },
           "uncertain": {
             "type": "boolean",
-            "description": "해당 날짜 전체 불확실 여부",
+            "description": "해당 날짜 전체 불확실 여부. 개별 일정 row가 없으면 false",
             "example": false
           }
         }
       },
       "PersonalScheduleResponse": {
         "type": "object",
-        "description": "개인 일정 목록 응답. PATCH /users/schedule/personal",
+        "description": "반영된 날짜들의 정기+개별+구글 합친 최종 확정값. PATCH /users/schedule/personal",
         "properties": {
           "items": {
             "type": "array",
-            "description": "개인 일정 항목 목록",
+            "description": "반영된 날짜별 최종 확정값 목록 — 아무 신호도 없는 날짜는 생략(sparse)",
             "items": {
               "$ref": "#/components/schemas/PersonalScheduleItemResponse"
             }
