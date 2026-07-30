@@ -1,7 +1,8 @@
 -- ============================================================================
 -- TripFit 프론트 테스트용 데이터 시딩 스크립트
 --
--- 대상 유저: 37a317f6-6f9d-4e6d-a548-8dd14e2c8a54 (배포 DB에 이미 가입돼 있음, 확인 완료)
+-- 대상 유저: 아래 @target_user_id 값을 원하는 유저의 UUID로 바꿔서 실행 (배포 DB에
+--            이미 가입돼 있는 유저여야 함)
 -- 목적: 이 유저가 "방장(OWNER)"인 경우 6개 + "참여자(MEMBER)"인 경우 6개,
 --       여행방 상태(ONGOING/CONFIRMED/EXPIRED)·정원마감·Pin·확정취소이력·
 --       방장 일정확인 대기 등 서로 다른 상태를 최대한 다양하게 커버
@@ -10,20 +11,24 @@
 -- Flyway/마이그레이션이 아니라 QA 테스트용 1회성 데이터 삽입 스크립트임.
 -- 트랜잭션으로 감싸서 중간에 하나라도 실패하면 전부 롤백됨.
 --
--- ⚠️ 참고: 배포 DB에는 이전 세션이 남긴 시드 데이터(id가 '00000000-0000-4000-8000-'로
--- 시작하는 유저 3명 + trip 6개)가 이미 존재함. 이번 스크립트는 그것과 겹치지 않도록
--- 전부 새 UUID(세션 변수 + UUID())로 생성함 — 정리하려면 아래 "정리(rollback)" 절 참고.
+-- ⚠️ 재실행 가능: @run_suffix를 매 실행마다 새로 뽑아 더미 유저의 social_id·email과
+-- trip의 invite_code에 섞어 넣으므로, 같은 유저든 다른 유저든 이 스크립트를 여러 번
+-- 실행해도 UNIQUE 제약(users.provider+social_id, trip.invite_code) 충돌이 나지 않음.
+-- 검증·정리 쿼리도 이번 실행분(@run_suffix)만 대상으로 함 — 과거 실행분과 안 섞임.
 --
 -- 식별 규칙:
 --   - 더미 유저: email이 '%@tripfit.test'로 끝남, nickname에 '(테스트)' 표기
---   - 이번에 만든 trip: invite_code가 'SEED'로 시작 (SEEDO1~SEEDO6=방장쪽, SEEDM1~SEEDM6=참여자쪽)
+--   - 이번에 만든 trip: invite_code가 'SEED'로 시작 (SEEDO1~SEEDO6=방장쪽, SEEDM1~SEEDM6=참여자쪽),
+--     끝에 이번 실행의 @run_suffix가 붙음 (예: SEEDO1-a1b2c3d4)
 -- ============================================================================
 
 SET NAMES utf8mb4;
 
 START TRANSACTION;
 
-SET @target_user_id = '37a317f6-6f9d-4e6d-a548-8dd14e2c8a54';
+SET @target_user_id = 'c4b3c8c7-dcd2-4631-8237-73e107a0a394';
+-- 실행마다 바뀌는 8자리 suffix — 더미 유저 social_id/email, trip invite_code에 붙여 재실행 충돌 방지
+SET @run_suffix = SUBSTRING(REPLACE(UUID(), '-', ''), 1, 8);
 
 -- ----------------------------------------------------------------------------
 -- 0. 더미 유저 9명
@@ -48,15 +53,15 @@ INSERT INTO users
    profile_image_url, is_google_calendar_connected, is_all_free, notification_enabled,
    created_at, updated_at, deleted_at)
 VALUES
-  (@u1, 'tripfit-seed-37a317f6-u1', 'GOOGLE', 'seed.37a317f6.u1@tripfit.test', '민준', '김', '김민준(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u2, 'tripfit-seed-37a317f6-u2', 'GOOGLE', 'seed.37a317f6.u2@tripfit.test', '서연', '이', '이서연(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u3, 'tripfit-seed-37a317f6-u3', 'GOOGLE', 'seed.37a317f6.u3@tripfit.test', '도윤', '박', '박도윤(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u4, 'tripfit-seed-37a317f6-u4', 'GOOGLE', 'seed.37a317f6.u4@tripfit.test', '지우', '최', '최지우(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u5, 'tripfit-seed-37a317f6-u5', 'GOOGLE', 'seed.37a317f6.u5@tripfit.test', '하은', '정', '정하은(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u6, 'tripfit-seed-37a317f6-u6', 'GOOGLE', 'seed.37a317f6.u6@tripfit.test', '시우', '강', '강시우(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u7, 'tripfit-seed-37a317f6-u7', 'GOOGLE', 'seed.37a317f6.u7@tripfit.test', '수아', '조', '조수아(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u8, 'tripfit-seed-37a317f6-u8', 'GOOGLE', 'seed.37a317f6.u8@tripfit.test', '예준', '윤', '윤예준(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
-  (@u9, 'tripfit-seed-37a317f6-u9', 'GOOGLE', 'seed.37a317f6.u9@tripfit.test', '지호', '장', '장지호(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL);
+  (@u1, CONCAT('tripfit-seed-', @run_suffix, '-u1'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u1@tripfit.test'), '민준', '김', '김민준(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u2, CONCAT('tripfit-seed-', @run_suffix, '-u2'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u2@tripfit.test'), '서연', '이', '이서연(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u3, CONCAT('tripfit-seed-', @run_suffix, '-u3'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u3@tripfit.test'), '도윤', '박', '박도윤(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u4, CONCAT('tripfit-seed-', @run_suffix, '-u4'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u4@tripfit.test'), '지우', '최', '최지우(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u5, CONCAT('tripfit-seed-', @run_suffix, '-u5'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u5@tripfit.test'), '하은', '정', '정하은(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u6, CONCAT('tripfit-seed-', @run_suffix, '-u6'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u6@tripfit.test'), '시우', '강', '강시우(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u7, CONCAT('tripfit-seed-', @run_suffix, '-u7'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u7@tripfit.test'), '수아', '조', '조수아(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u8, CONCAT('tripfit-seed-', @run_suffix, '-u8'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u8@tripfit.test'), '예준', '윤', '윤예준(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL),
+  (@u9, CONCAT('tripfit-seed-', @run_suffix, '-u9'), 'GOOGLE', CONCAT('seed.', @run_suffix, '.u9@tripfit.test'), '지호', '장', '장지호(테스트)', NULL, 0, 0, 1, NOW(), NOW(), NULL);
 
 -- ============================================================================
 -- 1. 방장(OWNER) 여행방 6개 — 대상 유저가 owner
@@ -72,7 +77,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o1, @target_user_id, '제주도 힐링 여행', NULL, '2026-09-01', '2026-09-10', NULL, NULL,
-   4, 'SEEDO1', 'ONGOING', NULL, NULL,
+   4, CONCAT('SEEDO1-', @run_suffix), 'ONGOING', NULL, NULL,
    NULL, NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
@@ -89,7 +94,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o2, @target_user_id, '부산 미식 여행', '부산', '2026-09-05', '2026-09-12', 3, 2,
-   4, 'SEEDO2', 'ONGOING', NULL, NULL,
+   4, CONCAT('SEEDO2-', @run_suffix), 'ONGOING', NULL, NULL,
    NULL, NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
@@ -105,7 +110,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o3, @target_user_id, '강릉 바다 여행', '강릉', '2026-08-15', '2026-08-20', 3, 2,
-   3, 'SEEDO3', 'ONGOING', NULL, NULL,
+   3, CONCAT('SEEDO3-', @run_suffix), 'ONGOING', NULL, NULL,
    NULL, NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
@@ -125,7 +130,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o4, @target_user_id, '경주 역사 탐방', '경주', '2026-08-25', '2026-09-02', 4, 3,
-   4, 'SEEDO4', 'ONGOING', NULL, NULL,
+   4, CONCAT('SEEDO4-', @run_suffix), 'ONGOING', NULL, NULL,
    NULL, 'NEW_SCHEDULE_ADDED', NULL, 'BASIC',
    NOW(), NOW(), NOW(), NULL);
 
@@ -143,7 +148,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o5, @target_user_id, '여수 밤바다 여행', '여수', '2026-08-10', '2026-08-16', 3, 2,
-   3, 'SEEDO5', 'CONFIRMED', '2026-08-12', '2026-08-14',
+   3, CONCAT('SEEDO5-', @run_suffix), 'CONFIRMED', '2026-08-12', '2026-08-14',
    NULL, NULL, NULL, 'BASIC',
    NOW(), NOW(), NOW(), NULL);
 
@@ -164,7 +169,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o6, @target_user_id, '전주 미식 여행', '전주', '2026-06-01', '2026-06-07', 3, 2,
-   2, 'SEEDO6', 'EXPIRED', '2026-06-03', '2026-06-05',
+   2, CONCAT('SEEDO6-', @run_suffix), 'EXPIRED', '2026-06-03', '2026-06-05',
    NULL, NULL, NULL, 'ALL_ATTEND',
    '2026-06-07 20:00:00', '2026-05-15 10:00:00', '2026-06-07 20:00:00', NULL);
 
@@ -188,7 +193,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m1, @u3, '서울 벚꽃 나들이', '서울', '2026-09-10', '2026-09-15', 2, 1,
-   5, 'SEEDM1', 'ONGOING', NULL, NULL,
+   5, CONCAT('SEEDM1-', @run_suffix), 'ONGOING', NULL, NULL,
    NULL, NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
@@ -206,7 +211,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m2, @u4, '속초 여행', '속초', '2026-08-20', '2026-08-25', 3, 2,
-   3, 'SEEDM2', 'ONGOING', NULL, NULL,
+   3, CONCAT('SEEDM2-', @run_suffix), 'ONGOING', NULL, NULL,
    NULL, NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
@@ -225,7 +230,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m3, @u5, '통영 여행', '통영', '2026-09-01', '2026-09-08', 4, 3,
-   4, 'SEEDM3', 'ONGOING', NULL, NULL,
+   4, CONCAT('SEEDM3-', @run_suffix), 'ONGOING', NULL, NULL,
    NULL, NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
@@ -243,7 +248,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m4, @u6, '거제 바다 여행', '거제', '2026-08-05', '2026-08-10', 3, 2,
-   2, 'SEEDM4', 'CONFIRMED', '2026-08-06', '2026-08-08',
+   2, CONCAT('SEEDM4-', @run_suffix), 'CONFIRMED', '2026-08-06', '2026-08-08',
    NULL, NULL, NULL, 'CERTAIN',
    NOW(), NOW(), NOW(), NULL);
 
@@ -263,7 +268,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m5, @u7, '춘천 닭갈비 여행', '춘천', '2026-06-10', '2026-06-15', 3, 2,
-   3, 'SEEDM5', 'EXPIRED', NULL, NULL,
+   3, CONCAT('SEEDM5-', @run_suffix), 'EXPIRED', NULL, NULL,
    NULL, NULL, NULL, NULL,
    '2026-06-15 12:00:00', '2026-05-25 11:00:00', '2026-06-15 12:00:00', NULL);
 
@@ -281,7 +286,7 @@ INSERT INTO trip
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m6, @u8, '포항 여행', '포항', '2026-05-01', '2026-05-07', 3, 2,
-   2, 'SEEDM6', 'EXPIRED', '2026-05-03', '2026-05-05',
+   2, CONCAT('SEEDM6-', @run_suffix), 'EXPIRED', '2026-05-03', '2026-05-05',
    NULL, NULL, NULL, 'SAVE_VACATION',
    '2026-05-07 15:00:00', '2026-04-10 09:00:00', '2026-05-07 15:00:00', NULL);
 
@@ -295,7 +300,7 @@ UPDATE trip SET confirmed_attend_count = 2, confirmed_vacation_member_count = 1,
 COMMIT;
 
 -- ============================================================================
--- 검증 — 대상 유저 기준으로 이번에 만든 12개 방과 역할·상태를 한눈에 확인
+-- 검증 — 대상 유저 기준으로 이번 실행(@run_suffix)이 만든 12개 방과 역할·상태를 한눈에 확인
 -- ============================================================================
 SELECT
   t.name, t.destination, t.status, t.invite_code,
@@ -303,15 +308,22 @@ SELECT
   t.unconfirm_reason, t.confirmed_start_date, t.confirmed_end_date,
   t.member_count, (SELECT COUNT(*) FROM trip_member tm2 WHERE tm2.trip_id = t.id AND tm2.deleted_at IS NULL) AS joined_count
 FROM trip t
-JOIN trip_member tm ON tm.trip_id = t.id AND tm.user_id = '37a317f6-6f9d-4e6d-a548-8dd14e2c8a54'
-WHERE t.invite_code LIKE 'SEED%'
+JOIN trip_member tm ON tm.trip_id = t.id AND tm.user_id = @target_user_id
+WHERE t.invite_code LIKE CONCAT('SEED%-', @run_suffix)
 ORDER BY t.invite_code;
 
 -- ============================================================================
 -- 정리(rollback) — 필요할 때만 아래를 별도로 선택해서 실행
--- (이번 스크립트가 만든 것만 정리함. 이전 세션이 남긴 '00000000-0000-4000-8000-%'
---  데이터는 별개이며 이 정리 절로 지워지지 않음 — 그건 지울지 여부를 먼저 확인할 것)
+-- 세션이 끊기면 @run_suffix 값을 잃으므로, 정리하려는 실행분의 SELECT 결과에서
+-- invite_code 뒤의 suffix(예: SEEDO1-a1b2c3d4 → a1b2c3d4)를 확인해 SET @run_suffix로
+-- 다시 지정한 뒤 아래를 실행할 것.
 -- ============================================================================
+-- SET @run_suffix = '이번에-정리할-suffix';
+-- DELETE tm FROM trip_member tm JOIN trip t ON t.id = tm.trip_id WHERE t.invite_code LIKE CONCAT('SEED%-', @run_suffix);
+-- DELETE FROM trip WHERE invite_code LIKE CONCAT('SEED%-', @run_suffix);
+-- DELETE FROM users WHERE email LIKE CONCAT('seed.', @run_suffix, '.%@tripfit.test');
+
+-- 과거 실행분을 전부 한 번에 정리하고 싶을 때(모든 run_suffix 대상 — 신중히 사용):
 -- DELETE tm FROM trip_member tm JOIN trip t ON t.id = tm.trip_id WHERE t.invite_code LIKE 'SEED%';
 -- DELETE FROM trip WHERE invite_code LIKE 'SEED%';
 -- DELETE FROM users WHERE email LIKE '%@tripfit.test';
