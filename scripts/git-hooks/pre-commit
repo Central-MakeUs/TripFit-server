@@ -14,4 +14,8 @@ fi
 
 # git add -u src/는 src/ 전체의 수정 파일을 쓸어담아 partial commit(git commit --only -- <path>)에
 # 관련 없는 파일까지 딸려 들어가게 함 — 원래 스테이징했던 파일만 다시 add
-printf '%s\n' "$staged_src" | git add --pathspec-from-file=-
+# 삭제된 파일은 워킹트리에 없어 최신 git의 pathspec 매칭이 실패함 — spotless 재포맷 대상도 아니므로 제외
+existing_staged_src="$(printf '%s\n' "$staged_src" | while IFS= read -r f; do [ -e "$f" ] && printf '%s\n' "$f"; done)"
+if [ -n "$existing_staged_src" ]; then
+	printf '%s\n' "$existing_staged_src" | git add --pathspec-from-file=-
+fi
