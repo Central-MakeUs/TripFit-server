@@ -1112,6 +1112,62 @@
         ]
       }
     },
+    "/api/v1/auth/apple/notifications": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Apple 계정 변경 알림 수신",
+        "description": "목적: Apple이 push하는 계정 변경 이벤트(연동 해제·계정 삭제 등)를 수신해 TripFit user·refresh_token을 동기화한다.\n\n호출 시점: Apple 서버가 계정 변경 시 직접 호출 — TripFit 클라이언트·로그인 흐름과 무관.\n\n전제: Apple Developer Console에 이 엔드포인트가 Server-to-Server Notification Endpoint로 등록돼 있다.\n\n결과: consent-revoked는 refresh_token만 폐기(계정 유지), account-delete는 user soft delete + refresh_token 폐기. email-enabled/email-disabled는 로그만(user.email 미보유). 존재하지 않는 sub·미인식 type도 200(no-op).\n\n주요 에러: AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD — payload·events JSON 형식 오류·필수 필드 누락 · AUTH_APPLE_NOTIFICATION_ISSUER_INVALID — iss 불일치 · AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID — aud 불일치 · AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID — 서명 불일치·만료\n",
+        "operationId": "appleNotifications",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppleNotificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "수신·처리 완료 — no-op(존재하지 않는 sub·미인식 type)도 포함"
+          },
+          "400": {
+            "description": "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD — payload·events JSON 형식 오류·필수 필드 누락",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD",
+                  "message": "Apple 알림 payload 형식이 올바르지 않습니다."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "AUTH_APPLE_NOTIFICATION_ISSUER_INVALID — iss 불일치 · AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID — aud 불일치 · AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID — 서명 불일치·만료",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID",
+                  "message": "Apple 알림 서명 검증에 실패했습니다."
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
+      }
+    },
     "/api/v1/users/schedule/regular/{id}": {
       "delete": {
         "tags": [
@@ -3563,6 +3619,20 @@
             "description": "에러 코드 (성공 시 null)"
           }
         }
+      },
+      "AppleNotificationRequest": {
+        "type": "object",
+        "description": "Apple Server-to-Server Notification 요청. POST /auth/apple/notifications — Apple 서버가 직접 호출",
+        "properties": {
+          "payload": {
+            "type": "string",
+            "description": "Apple이 서명한 JWT — 서명·audience 검증 후 내부 events 클레임을 파싱해 처리",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "payload"
+        ]
       },
       "UpdateRegularScheduleRequest": {
         "type": "object",
