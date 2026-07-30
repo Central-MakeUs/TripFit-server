@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.auth.service;
+package com.tripfit.tripfit.auth.dev.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -12,6 +12,7 @@ import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.jwt.JwtService;
+import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;

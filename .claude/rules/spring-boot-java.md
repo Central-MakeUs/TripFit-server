@@ -478,7 +478,7 @@ public TripMembersResponse removeMember(...) {
 
 ## Configuration
 
-- 프로필: `application-{local|dev|test|prod}.yml`
+- 프로필: `application-{local|dev|test}.yml` — `dev`가 유일한 실제 배포 환경(별도 `prod` 없음). 상세: `docs/architecture.md` Configuration 절
 - 민감 정보: 환경 변수 — `application*.yml`에 하드코딩 금지
 - `spring.jpa.open-in-view: false` 유지
 
