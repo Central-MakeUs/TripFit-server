@@ -1,21 +1,27 @@
 package com.tripfit.tripfit.trip.service;
 
+import com.tripfit.tripfit.trip.domain.RecommendationMode;
 import com.tripfit.tripfit.trip.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.dto.ConfirmTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
 import com.tripfit.tripfit.trip.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.dto.MemberScheduleCalendarResponse;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
+import com.tripfit.tripfit.trip.dto.RecommendationDetailResponse;
+import com.tripfit.tripfit.trip.dto.RecommendationListResponse;
+import com.tripfit.tripfit.trip.dto.SaveRecommendationFeedbackRequest;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
+import com.tripfit.tripfit.trip.dto.UnconfirmTripRequest;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service
-// trip API facade — Command / Query / MemberQuery에 위임
+// trip API facade — Command / Query / MemberQuery / Recommendation에 위임
 public class TripService {
 
   private final TripCommandService tripCommandService;
@@ -24,13 +30,17 @@ public class TripService {
 
   private final TripMemberQueryService tripMemberQueryService;
 
+  private final TripRecommendationService tripRecommendationService;
+
   public TripService(
       TripCommandService tripCommandService,
       TripQueryService tripQueryService,
-      TripMemberQueryService tripMemberQueryService) {
+      TripMemberQueryService tripMemberQueryService,
+      TripRecommendationService tripRecommendationService) {
     this.tripCommandService = tripCommandService;
     this.tripQueryService = tripQueryService;
     this.tripMemberQueryService = tripMemberQueryService;
+    this.tripRecommendationService = tripRecommendationService;
   }
 
   // facade: 여행방 생성 → TripCommandService
@@ -105,5 +115,42 @@ public class TripService {
     for (UUID tripId : tripQueryService.listActiveTripIdsByRole(userId, TripMemberRole.OWNER)) {
       tripCommandService.deleteTrip(tripId, userId);
     }
+  }
+
+  // facade: 추천 TOP3 재계산 → TripRecommendationService
+  public RecommendationListResponse generateRecommendations(
+      UUID tripId,
+      UUID ownerId,
+      RecommendationMode mode) {
+    return tripRecommendationService.generateRecommendations(tripId, ownerId, mode);
+  }
+
+  // facade: 저장된 추천 TOP3 조회 → TripRecommendationService
+  public RecommendationListResponse listRecommendations(UUID tripId, UUID ownerId) {
+    return tripRecommendationService.listRecommendations(tripId, ownerId);
+  }
+
+  // facade: 추천 근거 상세 → TripRecommendationService
+  public RecommendationDetailResponse getRecommendationDetail(UUID tripId, UUID ownerId, int rank) {
+    return tripRecommendationService.getRecommendationDetail(tripId, ownerId, rank);
+  }
+
+  // facade: 추천 피드백 upsert → TripRecommendationService
+  public void saveRecommendationFeedback(
+      UUID tripId,
+      UUID ownerId,
+      int rank,
+      SaveRecommendationFeedbackRequest request) {
+    tripRecommendationService.saveFeedback(tripId, ownerId, rank, request);
+  }
+
+  // facade: 일정 확정 → TripRecommendationService
+  public TripDetailResponse confirmSchedule(UUID tripId, UUID ownerId, ConfirmTripRequest request) {
+    return tripRecommendationService.confirmSchedule(tripId, ownerId, request);
+  }
+
+  // facade: 확정 취소 → TripRecommendationService
+  public void unconfirm(UUID tripId, UUID ownerId, UnconfirmTripRequest request) {
+    tripRecommendationService.unconfirm(tripId, ownerId, request);
   }
 }

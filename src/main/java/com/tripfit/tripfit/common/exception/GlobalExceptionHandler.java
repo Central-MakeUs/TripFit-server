@@ -6,10 +6,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 // 도메인·검증 예외만 envelope로 변환 — Filter 경로 401은 AuthErrorResponseWriter가 담당
 @RestControllerAdvice
@@ -34,6 +36,23 @@ public class GlobalExceptionHandler {
     List<FieldError> errors = toFieldErrors(exception.getBindingResult());
     return ResponseEntity.badRequest()
         .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), errors));
+  }
+
+  // 요청 body 파싱 실패(JSON 문법 오류·enum 밖 문자열 등) — 공통 INVALID_INPUT envelope로 통일
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  ResponseEntity<ErrorResponse> handleMessageNotReadable(
+      HttpMessageNotReadableException exception) {
+    ErrorCode errorCode = CommonErrorCode.INVALID_INPUT;
+    return ResponseEntity.badRequest()
+        .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
+  }
+
+  // path·query 파라미터 타입 불일치(예: rank에 숫자 아닌 값) — 공통 INVALID_INPUT envelope로 통일
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+    ErrorCode errorCode = CommonErrorCode.INVALID_INPUT;
+    return ResponseEntity.badRequest()
+        .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
   }
 
   private List<FieldError> toFieldErrors(BindingResult bindingResult) {

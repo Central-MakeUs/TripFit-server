@@ -37,7 +37,25 @@ public enum TripErrorCode implements ErrorCode {
   CANNOT_REMOVE_OWNER(HttpStatus.BAD_REQUEST, "CANNOT_REMOVE_OWNER", "방장은 내보낼 수 없습니다."),
 
   @Schema(description = "방장은 나갈 수 없음 — 방 삭제를 사용해야 함")
-  TRIP_OWNER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "TRIP_OWNER_CANNOT_LEAVE", "방장은 여행방을 나갈 수 없습니다. 여행방 삭제를 이용해주세요.");
+  TRIP_OWNER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "TRIP_OWNER_CANNOT_LEAVE", "방장은 여행방을 나갈 수 없습니다. 여행방 삭제를 이용해주세요."),
+
+  @Schema(description = "CONFIRMED가 아닌 방에서 unconfirm 호출")
+  TRIP_NOT_CONFIRMED(HttpStatus.CONFLICT, "TRIP_NOT_CONFIRMED", "확정된 여행방만 확정을 취소할 수 있습니다."),
+
+  @Schema(description = "unconfirm reason 누락 또는 OTHER인데 reasonDetail 없음")
+  INVALID_UNCONFIRM_REASON(HttpStatus.BAD_REQUEST, "INVALID_UNCONFIRM_REASON", "확정 취소 사유를 올바르게 입력해주세요."),
+
+  @Schema(description = "존재하지 않는 추천 rank 조회·확정·피드백")
+  RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "RECOMMENDATION_NOT_FOUND", "추천 후보를 찾을 수 없습니다."),
+
+  @Schema(description = "피드백 status=NOT_HELPFUL인데 reason 없음, 또는 reason=OTHER인데 reasonDetail 없음")
+  INVALID_RECOMMENDATION_FEEDBACK(HttpStatus.BAD_REQUEST, "INVALID_RECOMMENDATION_FEEDBACK", "추천 피드백 사유를 올바르게 입력해주세요."),
+
+  @Schema(description = "confirm 요청에 recommendationRank·직접 날짜(startDate+endDate)가 둘 다 없거나 둘 다 있음")
+  INVALID_CONFIRM_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_CONFIRM_REQUEST", "추천 순위 또는 시작·종료일 중 하나만 입력해주세요."),
+
+  @Schema(description = "confirm 직접 입력 날짜 일수가 durationDays와 불일치")
+  CONFIRM_DURATION_MISMATCH(HttpStatus.BAD_REQUEST, "CONFIRM_DURATION_MISMATCH", "확정 일정의 일수가 희망 여행 일수와 다릅니다.");
 
   private final HttpStatus httpStatus;
 

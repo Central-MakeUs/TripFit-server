@@ -297,6 +297,9 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "inviteCode": "A2B3C4",
   "confirmedStartDate": null,
   "confirmedEndDate": null,
+  "confirmedAttendCount": null,
+  "confirmedVacationMemberCount": null,
+  "confirmedUncertainCount": null,
   "lastRecommendationMode": null,
   "lastActivityAt": "2026-07-19T12:00:00",
   "pinned": false,
@@ -316,6 +319,8 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 ```
 
 예시: `memberCount=6` → fillRate ≈ 2/6.
+
+**`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` (2026-07-30 amend, "일정이 확정됐어요" 화면 반영):** `status=CONFIRMED`일 때만 값이 채워지고(그 외 `null`) **방장·참여자 모두** 볼 수 있다 — 확정 후에는 전원에게 공개되는 요약 통계라 `recommendations`/`recommendations/{rank}`(방장 전용)와 달리 이 필드는 `TripDetailResponse`에 그대로 둔다. 의미: `confirmedAttendCount`=전체·부분 참석 인원 수(연차 사용 여부 무관), `confirmedVacationMemberCount`=연차가 필요한 인원 수, `confirmedUncertainCount`=불확실 일정이 있던 인원 수 — 전부 **확정 시점에 1회 계산해 저장**(그 뒤 개인 일정이 바뀌어도 갱신 안 됨, confirm 당시 스냅샷과 동일 시점). 계산 주체는 `trip-recommendation.md`(#13)의 confirm 플로우 — 상세: 해당 스펙 참고. `unconfirm` 시 셋 다 다시 `null`.
 
 ### `members/schedule-calendar` 응답 (D2)
 
@@ -462,6 +467,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-30 | **Amend** — `TripDetailResponse`에 `confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 추가("일정이 확정됐어요" 화면). `status=CONFIRMED`에서만 값 있음(그 외 null), 방장·참여자 모두 조회 가능. 계산·set/clear 시점은 [`trip-recommendation.md`](trip-recommendation.md)(#13) confirm/unconfirm 플로우 소관 |
 | 2026-07-28 | **Amend** — `POST .../schedule/confirm` → `POST .../activate`로 rename (`TripStatus.CONFIRMED`/`confirmedStartDate` 등 "일정 확정" 개념과의 이름 혼동 해소). `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. join·activate 자체에 문서화돼 있던 `SCHEDULE_ENTRY_REQUIRED`는 두 API 모두 논리적으로 도달 불가능함을 확인해 제거(canEnterRoom을 항상 충족시키는 `markAllFreeIfNoSchedules`가 선행 호출됨) — `@TripMemberOnly` 게이트("방 안 API")에서의 `SCHEDULE_ENTRY_REQUIRED`는 그대로 유지 |
 | 2026-07-28 | **Amend (#60)** — `memberFillRate` 공식 `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출, `TripDetailResponse`에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md)) |
 | 2026-07-26 | **D9 amend** — 박/일 검증 `nights==days-1` → `nights+1~min(nights+2,T)` 범위 확장, `duration_nights` 파생값 → 컬럼 영속화 ([`trip-duration-range.md`](trip-duration-range.md)) |

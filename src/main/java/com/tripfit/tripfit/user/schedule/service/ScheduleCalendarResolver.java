@@ -123,16 +123,16 @@ public final class ScheduleCalendarResolver {
         : afternoon ? googleBusy.isAfternoonBusy() : googleBusy.isEveningBusy();
   }
 
-  // 같은 요일 정기 일정들의 슬롯을 IMPOSSIBLE 우선으로 합침
-  static SlotStatuses combineImpossibleWins(List<RegularSchedule> matched) {
+  // 같은 요일 정기 일정들의 슬롯을 IMPOSSIBLE 우선으로 합침 — 추천 엔진의 정기-only(연차 필요 판정) 재사용을 위해 public
+  public static SlotStatuses combineImpossibleWins(List<RegularSchedule> matched) {
     return new SlotStatuses(
         mergeSlot(matched, true, false, false),
         mergeSlot(matched, false, true, false),
         mergeSlot(matched, false, false, true));
   }
 
-  // daysOfWeek 문자열에 해당 요일이 포함되는지 판별함
-  static boolean matchesDayOfWeek(String daysOfWeek, DayOfWeek dayOfWeek) {
+  // daysOfWeek 문자열에 해당 요일이 포함되는지 판별함 — 추천 엔진 재사용을 위해 public
+  public static boolean matchesDayOfWeek(String daysOfWeek, DayOfWeek dayOfWeek) {
     return parseDaysOfWeek(daysOfWeek).contains(dayOfWeek);
   }
 
