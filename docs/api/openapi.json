@@ -2690,7 +2690,7 @@
           "Trip"
         ],
         "summary": "Pin 토글",
-        "description": "목적: 홈 목록에서 이 방을 고정(Pin)하거나 해제한다.\n\n호출 시점: 카드 Pin 버튼.\n\n전제: 멤버이며 방 입장 가능(ACTIVE + 입장 조건).\n\n결과: 본인 isPinned·pinnedAt이 반영된 TripDetail.\n",
+        "description": "목적: 홈 목록에서 이 방을 고정(Pin)하거나 해제한다.\n\n호출 시점: 카드 Pin 버튼.\n\n전제: 멤버(SCHEDULE_PENDING 방장 포함). 방 입장(ACTIVE + 입장 조건)은 필요 없다.\n\n결과: 본인 isPinned·pinnedAt이 반영된 TripDetail.\n",
         "operationId": "updatePin",
         "parameters": [
           {
@@ -2773,7 +2773,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자",
             "content": {
               "*/*": {
                 "schema": {
@@ -4284,8 +4284,8 @@
           },
           "displayName": {
             "type": "string",
-            "description": "표시 이름 (동명이인 시 접미사)",
-            "example": "홍길동(2)"
+            "description": "미리보기용 이름. 성 없이 이름만(닉네임 폴백 시 닉네임 그대로), 동명이인 시 접미사",
+            "example": "길동(2)"
           },
           "profileImageUrl": {
             "type": [
