@@ -2,7 +2,7 @@
 
 TripFit 프론트엔드 저장소에서 마이페이지 일정(정기·개별) 화면과 달력 조회 로직을 구현·수정할 때 아래 규칙을 따르라. 여기 없는 세부 계약은 추측해서 채우지 말고 사용자에게 확인하라.
 
-Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.md`](google-calendar-merge.md)를 따르라 — 이 문서는 그 이전 단계인 정기(`regular`)·개별(`personal`) 자체의 병합·편집 규칙만 다룬다.
+Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.md`](../user/google-calendar-merge.md)를 따르라 — 이 문서는 그 이전 단계인 정기(`regular`)·개별(`personal`) 자체의 병합·편집 규칙만 다룬다.
 
 모든 API 응답은 `{ "data": {...}, "message": "...", "code": "..." }` envelope로 온다. 아래 예시는 `data` 안쪽만 표기했으니, 실제 파싱 코드에는 한 단계 더 감싸야 한다.
 
@@ -61,7 +61,7 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 |---|---|---|
 | 최상위 | `{ "items": [...] }` | `{ "startDate", "endDate", "days": [...] }` |
 | 날짜 필드명 | `scheduleDate` | `date` |
-| `id` | 있음 — 단, 그 날짜에 오버라이드가 하나도 안 남아 있으면(정기+구글 값만 내려가는 날짜) `null`일 수 있다 | **없음** — 그 값이 정기 유래일 수 있어 단일 row가 없다 |
+| `id` | **항상 있음(non-null)** — `items`에 담기는 날짜는 이번 호출로 upsert된 날짜뿐이라 개별 일정 row가 항상 존재한다(슬롯이 정기값과 우연히 같아도 row 자체는 남는다) | **없음** — 그 값이 정기 유래일 수 있어 단일 row가 없다 |
 | 슬롯 값의 의미 | 항상 **최종 확정값**(POSSIBLE/IMPOSSIBLE로 확정) — 저장된 원본(`null` 포함)이 아니다 | 동일 |
 | 슬롯 필드명 | `morningStatus`/`afternoonStatus`/`eveningStatus`/`uncertain` | 동일 |
 

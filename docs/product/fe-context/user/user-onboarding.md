@@ -61,7 +61,8 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
     "provider": "GOOGLE",
     "isGoogleCalendarConnected": false,
     "hasPreSchedule": false,
-    "isAllFree": false
+    "isAllFree": false,
+    "notificationEnabled": true
   }
 }
 ```
@@ -75,6 +76,7 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
 | `isGoogleCalendarConnected` | 연동 성공 시에만 `true`로 취급하라. Skip·미연동 상태와 구분하려 하지 마라(둘 다 `false`) |
 | `hasPreSchedule` | 정기·개별 일정이 하나라도 있으면 `true` — 이 값은 저장값이 아니라 조회 시 계산된다는 것을 기억하라(캐싱해서 오래 들고 있지 마라) |
 | `isAllFree` | 사용자가 "일정 없음 = 전부 가능"으로 확정한 상태 — 별도 확인 UI 없이 자동으로 설정될 수 있다는 것을 감안해 구현하라 |
+| `notificationEnabled` | 알림 수신 여부(기본 `true`). 온보딩 API는 이 값을 바꾸지 않는다 — 변경은 마이페이지 `PATCH /users/profile`(아래 표에는 없음, 온보딩 이후 재수정 전용 API)에서만 가능하다 |
 
 캘린더 연동·해제, 정기/개별 일정 API를 구현할 때는 `google-calendar-merge.md`를 따르라.
 

@@ -4,7 +4,7 @@
 > MVP: In scope (`docs/product/mvp.md` — "참여자 일정 입력(오전/오후/저녁 단위, 미정 상태 포함)")
 > 관련 BR: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-008
 > supersedes: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **S1**(개별 존재 시 그 날 전체 대체) · R1(병합 규칙 1) — **R2(정기 복수 IMPOSSIBLE 우선)는 그대로 유지**
-> related: [`schedule-unified.md`](schedule-unified.md), [`google-calendar-merge.md`](../product/fe-context/google-calendar-merge.md), [`schedule-personal-override-scenarios.md`](../product/fe-context/schedule-personal-override-scenarios.md)(유저 시나리오, 페르소나 기반 프론트 공유용)
+> related: [`schedule-unified.md`](schedule-unified.md), [`google-calendar-merge.md`](../product/fe-context/user/google-calendar-merge.md), [`schedule-personal-override-scenarios.md`](../product/fe-context/user-schedule/schedule-personal-override-scenarios.md)(유저 시나리오, 페르소나 기반 프론트 공유용)
 
 ## 목표
 
@@ -240,7 +240,7 @@ function resolveDay(date, regulars, personal, googleBusyMap):
 
 페르소나(유저 A) 기반의 "캘린더 조회 → 수정 → 결과" 시나리오와 엣지 케이스는 별도 문서로 분리했다 — 프론트와 공유할 때는 그 문서를 쓴다.
 
-→ [`docs/product/fe-context/schedule-personal-override-scenarios.md`](../product/fe-context/schedule-personal-override-scenarios.md)
+→ [`docs/product/fe-context/schedule-personal-override-scenarios.md`](../product/fe-context/user-schedule/schedule-personal-override-scenarios.md)
 
 이 문서에 나오는 값(정기 패턴 R1/R2, 8월 날짜, 응답 JSON)은 위 O1.4 계약(`병합 알고리즘`, `계약 개정 이력`)에서 파생된 것이다 — 값이 어긋나면 이 스펙이 SSOT이므로 시나리오 문서를 고친다.
 
@@ -318,5 +318,5 @@ function resolveDay(date, regulars, personal, googleBusyMap):
 | 2026-07-29 | **O1.3 amend** — OVERRIDE는 항상 3슬롯 명시 재전송(baseline-diff는 다른 슬롯의 기존 오버라이드를 조용히 삭제하는 사고를 유발해 폐기) + CLEAR는 값 조합으로 판정 + 동일 `scheduleDate` 복수 item(OVERRIDE+UNCERTAIN) 처리 규칙 |
 | 2026-07-30 | S-12~S-21 시나리오 확정(사용자 검수 완료) — O1.3 쓰기 모델을 조회→수정→조회 흐름으로 끝까지 검증 |
 | 2026-07-30 | **O1.4 amend — `action` 필드·`CLEAR` 액션 완전 삭제.** O1.3의 "3슬롯 POSSIBLE+uncertain false → CLEAR" 규칙이 정기 일정이 있는 날짜에서는 "오버라이드 없음"과 다른 값이라는 게 드러남 — 유저가 정기 스케줄을 뒤집어 명시적으로 "하루 종일 가능해요"를 선언해도 이 값 조합과 우연히 일치하면 CLEAR로 오인되어 오버라이드가 삭제되고 정기값으로 되돌아가는 버그 발견("개별은 항상 정기를 이긴다"는 핵심 규칙 위반). 근본 해결로 CLEAR 자체를 제거 — 이제 `personal_schedule` row는 절대 삭제되지 않는다. `action`이 discriminator로서 의미가 없어져(OVERRIDE/UNCERTAIN 두 종류만 남으면 사실상 하나) `PersonalScheduleItem`을 flat record(`scheduleDate` + 선택적 `slots`/`uncertain`)로 통합, 동일 날짜에 슬롯+uncertain을 한 아이템에 같이 담을 수 있어 O1.3의 "복수 item 그룹핑" 메커니즘도 통째로 제거됨. O1.2 당시부터 실사용된 적 없던 슬롯 단위 부분 null-복원(`OverrideItem`의 개별 슬롯 null)도 함께 제거 — `SlotUpdate`의 3필드를 `@NotNull`로 전환. 유저 시나리오 전체를 O1.4 계약에 맞게 재작성·재검수, 옛 S-4(부분 null 복원)·S-5(CLEAR)·S-18/S-19(action 충돌 400)·S-21(idempotent delete)은 제거하고 번호를 S-1~S-17로 정리, 버그 회귀 검증 시나리오(S-13) 추가 |
-| 2026-07-30 | **유저 시나리오 분리** — 스펙 안에 있던 "유저 시나리오(상세)"(S-1~S-17)를 [`docs/product/fe-context/schedule-personal-override-scenarios.md`](../product/fe-context/schedule-personal-override-scenarios.md)로 분리·재작성. 페르소나(유저 A) 기반 서술로 바꾸고 "캘린더 조회(수정 전) → 수정 → 결과·캘린더 표시" 3단계 형식으로 통일, 시나리오 1~18로 확장(uncertain+슬롯 동시 변경 유지 확인, 무변경 저장 시 저장 버튼 비활성, `slots` 부분 필드 누락 400 등 엣지 케이스 추가). 스펙 본문은 이 문서로의 포인터 + 짧은 요약만 남기고, 이 스펙(O1.4 계약)을 계속 SSOT로 유지 |
+| 2026-07-30 | **유저 시나리오 분리** — 스펙 안에 있던 "유저 시나리오(상세)"(S-1~S-17)를 [`docs/product/fe-context/schedule-personal-override-scenarios.md`](../product/fe-context/user-schedule/schedule-personal-override-scenarios.md)로 분리·재작성. 페르소나(유저 A) 기반 서술로 바꾸고 "캘린더 조회(수정 전) → 수정 → 결과·캘린더 표시" 3단계 형식으로 통일, 시나리오 1~18로 확장(uncertain+슬롯 동시 변경 유지 확인, 무변경 저장 시 저장 버튼 비활성, `slots` 부분 필드 누락 400 등 엣지 케이스 추가). 스펙 본문은 이 문서로의 포인터 + 짧은 요약만 남기고, 이 스펙(O1.4 계약)을 계속 SSOT로 유지 |
 | 2026-07-30 | **문서 정합 보완** — "프론트 요청 가이드"(item 1개 기준 가능한 조합 3종 + 거부되는 요청 5종 표) 절 신설. `schedule-unified.md`·`docs/product/fe-context/schedule-calendar-merge.md`를 O1.4 flat 구조·삭제 경로 없음으로 개정하고 "리스크·미결정" 표의 해당 항목을 반영 완료로 갱신. 현재 코드 상태(여전히 구 `isDeleteSignal`/`apply()` 4필드 덮어쓰기, O1.4 미착수)를 재확인·기록 — 시나리오 14 "무변경 시 저장 버튼 비활성" 관련 후속 논의는 `[미정]` [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)로 별도 등록(`schedule-personal-override-scenarios.md` 시나리오 14 참고) |

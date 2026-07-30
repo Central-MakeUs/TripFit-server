@@ -303,7 +303,7 @@ trip CRUD 전이면 **①만** 구현.
 | 아침/오후/저녁 각 행의 버튼("여행 가능해요" ↔ "일정이 있어요") | 각각 `morningStatus`/`afternoonStatus`/`eveningStatus` — "여행 가능해요"=`POSSIBLE`, "일정이 있어요"=`IMPOSSIBLE` |
 | "저장하기" 버튼 | `PATCH /users/schedule/personal`을 그 날짜 1건만 담아 호출(3슬롯+`uncertain` 전부 포함, 위 "구현 순서" 참고) |
 
-프론트 저장소에 그대로 전달할 구현 규칙 버전은 [`docs/product/fe-context/schedule-calendar-merge.md`](../product/fe-context/schedule-calendar-merge.md) 참고.
+프론트 저장소에 그대로 전달할 구현 규칙 버전은 [`docs/product/fe-context/schedule-calendar-merge.md`](../product/fe-context/user-schedule/schedule-calendar-merge.md) 참고.
 
 ---
 
@@ -489,6 +489,6 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-17 | A2 T1 확정 · members calendar → #12 |
 | 2026-07-21 | deferred — #37 조회 윈도우 · #38 TERMINATED snapshot (A1 현행 유지) |
 | 2026-07-21 | **제품 재확정** — A1→마이페이지 today+2년(#37 C1) · 방=희망 기간 · #38 CONFIRMED∪TERMINATED |
-| 2026-07-29 | **용어 변경** — "effective" 표현을 전부 "정기+개별 합친 값/달력"으로 교체(Swagger·docs·내부 메서드명 `resolveEffectiveSchedule`→`resolveMergedSchedule` 동일 적용, DB·API 계약 변경 없음) · "응답 DTO 비교"·"마이페이지 개별 일정 편집 UX"(시나리오·엣지케이스) 절 추가 · FE 전달용 [`schedule-calendar-merge.md`](../product/fe-context/schedule-calendar-merge.md) 작성 |
+| 2026-07-29 | **용어 변경** — "effective" 표현을 전부 "정기+개별 합친 값/달력"으로 교체(Swagger·docs·내부 메서드명 `resolveEffectiveSchedule`→`resolveMergedSchedule` 동일 적용, DB·API 계약 변경 없음) · "응답 DTO 비교"·"마이페이지 개별 일정 편집 UX"(시나리오·엣지케이스) 절 추가 · FE 전달용 [`schedule-calendar-merge.md`](../product/fe-context/user-schedule/schedule-calendar-merge.md) 작성 |
 | 2026-07-29 | **문서 보강** — 여행 칩(`GET /trips?scope=ongoing`)과 본 API `startDate`/`endDate`의 관계 명문화("트립 칩 → 조회 구간 선택" 절, API 계약 변경 없음) · "화면 요소 ↔ API 필드 매핑" 절 추가 |
 | 2026-07-29 | **S1 폐기 → O1로 대체** ([`schedule-slot-override.md`](schedule-slot-override.md), #67, **Approved·구현 완료**) — 개별 일정이 "그 날 전체 대체"에서 "슬롯 단위 오버라이드"로 전환. 본 문서의 S1·R1 서술은 이력 문서로 유지, 확정 사항 표 #1·#2에 폐기 표시 |

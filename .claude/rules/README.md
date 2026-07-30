@@ -21,7 +21,8 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 │   ├── figma-product.md
 │   ├── client-platform.md
 │   ├── deployment.md
-│   └── testing.md
+│   ├── testing.md
+│   └── fe-context.md
 └── skills/                ← 반복 워크플로 스킬
     └── specify/
         ├── SKILL.md
@@ -63,6 +64,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `client-platform.md` | controller, service, config, specs | React 앱·스토어·API·인증 |
 | `deployment.md` | yml, Docker, domain, deploy | 배포 가드레일 — 절차는 `deploy/README.md` |
 | `testing.md` | `**/*Test.java`, `src/test/**` | JUnit 5·프로필·테스트 네이밍 |
+| `fe-context.md` | `docs/product/fe-context/**` | 도메인별 폴더(user/user-schedule/trip)·드리프트 체크리스트·상호 링크 규칙 |
 
 ### 규칙 추가·분리 가이드
 
@@ -121,3 +123,4 @@ docs/specs/        → 기능별 설계 산출물 (specify 스킬 결과)
 - [ ] 후속·Defer·ERD 제안 규칙 변경 → `harness-follow-up.md`만
 - [ ] 반복되는 코드 리뷰 코멘트 → 해당 `rules/*.md`에 한 줄 규칙으로 승격
 - [ ] 위험 명령 패턴 추가 필요 시 `hooks/block-dangerous.sh` + `settings.json` matcher 동시 수정
+- [ ] 공용 응답 DTO에 필드 추가·삭제, 새 `ErrorCode`, 요청 DTO 필수/선택 여부 변경 시 → 해당 도메인 `docs/product/fe-context/{user,user-schedule,trip}/` 문서 동기화 (`fe-context.md` 드리프트 체크리스트)
