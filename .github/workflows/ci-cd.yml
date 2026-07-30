@@ -76,8 +76,17 @@ jobs:
           fi
 
       - name: Check breaking changes and notify Discord
-        # PR 시점에만 알림 — main push는 이미 PR에서 리뷰된 동일 diff라 중복 발송 방지
-        if: steps.base_spec.outputs.exists == 'true' && github.event_name == 'pull_request'
+        # PR 병합(pull_request 이벤트)에서 이미 알림을 보낸 diff를 main push에서 또 보내면 중복이라 스킵한다.
+        # 단, PR 없이 브랜치를 로컬 merge 후 main에 직접 push한 경우(#67 사고 — pull_request 이벤트 자체가
+        # 없었음) 이 조건만으로는 알림이 영원히 안 나간다. GitHub PR "Create a merge commit" 병합은 항상
+        # "Merge pull request #N from ..." 형식 커밋 메시지를 남기므로(CONTRIBUTING.md Merge 정책 —
+        # Squash 금지), 그 패턴이 아닌 push는 PR을 거치지 않은 것으로 간주해 알림을 보낸다.
+        # (rebase merge처럼 팀 합의된 예외 전략을 쓰면 이 휴리스틱이 놓칠 수 있음 — 근본 해결은 main
+        # 브랜치 보호 규칙으로 직접 push 자체를 막는 것)
+        if: |
+          steps.base_spec.outputs.exists == 'true' &&
+          (github.event_name == 'pull_request' ||
+           (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'Merge pull request #')))
         env:
           BASE_SPEC: base-openapi.json
           REVISED_SPEC: build/openapi/openapi.json

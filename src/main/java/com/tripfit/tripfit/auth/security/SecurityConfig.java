@@ -31,8 +31,9 @@ public class SecurityConfig {
   }
 
   @Bean
-  // login/refresh/logout/dev-login·actuator·swagger는 공개. logout은 만료·폐기 토큰도 body로 처리하기 위해 permitAll.
-  // dev-login은 local/dev 프로필에서만 빈 존재
+  // login/refresh/logout/dev-login/apple-notifications·actuator·swagger는 공개. logout은 만료·폐기 토큰도
+  // body로 처리하기 위해 permitAll.
+  // dev-login은 local/dev 프로필에서만 빈 존재. apple/notifications는 Apple 서버가 직접 호출 — signed JWT 자체 검증으로 보호
   CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOrigins(
@@ -65,6 +66,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/dev-login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/apple/notifications").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                 .permitAll()

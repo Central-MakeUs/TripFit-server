@@ -28,7 +28,20 @@ public enum AuthErrorCode implements ErrorCode {
   AUTH_INVALID_REFRESH(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_REFRESH", "유효하지 않은 리프레시 토큰입니다."),
 
   @Schema(description = "인증됐으나 권한 없음")
-  AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_FORBIDDEN", "접근 권한이 없습니다.");
+  AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_FORBIDDEN", "접근 권한이 없습니다."),
+
+  @Schema(
+      description = "Apple S2S notification payload 형식 오류 — outer JWT 파싱 실패·events JSON 파싱 실패·sub 등 필수 필드 누락")
+  AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD(HttpStatus.BAD_REQUEST, "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD", "Apple 알림 payload 형식이 올바르지 않습니다."),
+
+  @Schema(description = "Apple S2S notification outer JWT의 iss가 https://appleid.apple.com이 아님")
+  AUTH_APPLE_NOTIFICATION_ISSUER_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_APPLE_NOTIFICATION_ISSUER_INVALID", "Apple 알림 발급자 검증에 실패했습니다."),
+
+  @Schema(description = "Apple S2S notification outer JWT의 aud가 APPLE_CLIENT_ID와 불일치")
+  AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID", "Apple 알림 대상(audience) 검증에 실패했습니다."),
+
+  @Schema(description = "Apple S2S notification outer JWT 서명 불일치·만료 등 서명 자체 검증 실패")
+  AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID", "Apple 알림 서명 검증에 실패했습니다.");
 
   private final HttpStatus httpStatus;
 

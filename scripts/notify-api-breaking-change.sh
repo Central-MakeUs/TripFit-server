@@ -187,15 +187,28 @@ if [[ "$ADDITIONS_COUNT" -gt 0 ]]; then
   ' "$ADDITIONS_JSON")"
 
   # 필드명만으로는 "왜"가 안 보임(#64 사고) — 같은 필드의 @Schema(description)를 REVISED_SPEC에서
-  # 찾아 그대로 붙인다. requestBody가 $ref면 컴포넌트까지 따라가서 properties[prop].description을 조회.
-  # description이 없으면(작성 규칙 위반) 안내 문구로 대체 — 조용히 생략하지 않음.
+  # 찾아 그대로 붙인다. oasdiff는 중첩 경로를 "items/items/slots"처럼 슬래시로 이어붙이는데, 배열
+  # 프로퍼티 이름이 우연히 "items"이면 실제 프로퍼티명과 배열 순회 마커를 문자열만으론 구분 못 한다
+  # (schema.type이 array인지로 구분). requestBody가 $ref면 컴포넌트까지 따라가며 각 단계
+  # properties[token].description을 조회 — description이 없으면(작성 규칙 위반) 안내 문구로 대체.
   TRANSLATED_ADDITIONS_JSON="$(jq --slurpfile spec "$REVISED_SPEC" '
-    def schema_desc(path; op; prop):
-      ($spec[0].paths[path][(op | ascii_downcase)].requestBody.content["application/json"].schema["$ref"] // "") as $ref
-      | if $ref == "" then null
-        else ($ref | sub("#/components/schemas/"; "")) as $comp
-        | $spec[0].components.schemas[$comp].properties[prop].description // null
-        end;
+    def resolve_ref:
+      if type == "object" and has("$ref") then
+        $spec[0].components.schemas[(.["$ref"] | sub("#/components/schemas/"; ""))]
+      else . end;
+    def schema_desc(path; op; propPath):
+      ($spec[0].paths[path][(op | ascii_downcase)].requestBody.content["application/json"].schema | resolve_ref) as $root
+      | (propPath | split("/")) as $tokens
+      | reduce $tokens[] as $tok
+          ({schema: $root, desc: null};
+            if (.schema.type // "") == "array" then
+              {schema: ((.schema.items // {}) | resolve_ref), desc: .desc}
+            else
+              (.schema.properties[$tok] // {}) as $propSchema
+              | {schema: ($propSchema | resolve_ref), desc: ($propSchema.description // null)}
+            end
+          )
+      | .desc;
     def translate:
       (.text | capture("request property `(?<p>[^`]+)`")) as $c
       | (schema_desc(.path; .operation; $c.p)) as $d
