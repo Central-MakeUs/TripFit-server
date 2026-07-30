@@ -39,12 +39,43 @@ oasdiff changelog "$BASE_SPEC" "$REVISED_SPEC" --format json --level INFO \
 BREAKING_COUNT="$(jq 'length' "$BREAKING_JSON")"
 ADDITIONS_COUNT="$(jq 'length' "$ADDITIONS_JSON")"
 
-if [[ "$BREAKING_COUNT" -eq 0 && "$ADDITIONS_COUNT" -eq 0 ]]; then
-  log "breaking change·필드 추가 없음 — 통과"
+# 커밋 트레일러에서 사유 추출 — 값이 다음 줄로 wrap된 경우(들여쓰기 없는 연속 줄)까지 한 사유로 접어서
+# 합친다. blank 줄이나 다른 트레일러 형식(`Key: value`) 줄을 만나면 그 사유를 종료. 여러 커밋에 있으면
+# 커밋별로 나열(짧은 SHA 접두 — 어느 커밋 사유인지 구분되게).
+# 커밋 1개씩 순회(NUL 구분 다중 레코드 방식은 BSD awk에서 NUL 바이트를 제대로 못 다뤄 회피)
+# oasdiff는 OpenAPI 스키마 diff만 보므로 못 잡는 변경(필드 조건부 필수화·ErrorResponse.code 신규 값 등)이
+# 있다 — #64 authorizationCode 조건부 필수화(2026-07-30)가 실제 사례. 이런 변경은 STOP §5 컨벤션상
+# 원래도 Breaking-Change-Reason 트레일러를 남기게 돼 있으므로, oasdiff 결과와 무관하게 여기서 미리
+# 추출해 독립 트리거로 쓴다.
+TRAILER_REASON="$( { while IFS= read -r sha; do
+  body="$(git log -1 --format=%B "$sha")"
+  awk -v sha="$sha" '
+    /^[Bb]reaking-[Cc]hange-[Rr]eason:/ {
+      capturing = 1
+      sub(/^[Bb]reaking-[Cc]hange-[Rr]eason:[[:space:]]*/, "")
+      buf = $0
+      next
+    }
+    capturing && /^[[:space:]]*$/ { print sha ": " buf; capturing = 0; buf = ""; next }
+    capturing && /^[A-Za-z][A-Za-z-]*:[[:space:]]/ { print sha ": " buf; capturing = 0; buf = ""; next }
+    capturing { buf = buf " " $0; next }
+    END { if (capturing && buf != "") print sha ": " buf }
+  ' <<< "$body"
+done < <(git log "$GIT_RANGE" --format=%h); } | awk '!seen[$0]++' | paste -sd $'\n' - || true)"
+
+# 신규 ErrorCode enum 상수 추가를 기계적으로 탐지 — 트레일러를 깜빡 안 남겨도 걸리도록 하는 2차 방어선.
+# *ErrorCode.java의 "NAME(HttpStatus...." 한 상수 = 한 줄 컨벤션(spring-boot-java.md)에 의존
+NEW_ERROR_CODES="$(git diff "$GIT_RANGE" -- '**/*ErrorCode.java' 2>/dev/null \
+  | grep -E '^\+[[:space:]]*[A-Z][A-Z0-9_]*\(HttpStatus\.' \
+  | sed -E 's/^\+[[:space:]]*([A-Z][A-Z0-9_]*)\(.*/\1/' \
+  | sort -u || true)"
+
+if [[ "$BREAKING_COUNT" -eq 0 && "$ADDITIONS_COUNT" -eq 0 && -z "$TRAILER_REASON" && -z "$NEW_ERROR_CODES" ]]; then
+  log "breaking change·필드 추가·트레일러·신규 ErrorCode 없음 — 통과"
   exit 0
 fi
 
-log "breaking change ${BREAKING_COUNT}건, 요청 필드 추가 ${ADDITIONS_COUNT}건 감지 — Discord 알림 발송"
+log "breaking change ${BREAKING_COUNT}건, 요청 필드 추가 ${ADDITIONS_COUNT}건, 트레일러 $( [[ -n "$TRAILER_REASON" ]] && echo "있음" || echo "없음" ), 신규 ErrorCode $(grep -c . <<< "$NEW_ERROR_CODES" 2>/dev/null || echo 0)건 — Discord 알림 발송"
 
 REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
 SHORT_SHA="${GITHUB_SHA:0:7}"
@@ -114,30 +145,44 @@ gate_callout_field() {
   }]'
 }
 
+# oasdiff가 breaking·필드 추가 어느 쪽도 못 찾았는데(BREAKING_COUNT=0 && ADDITIONS_COUNT=0) 트레일러나
+# 신규 ErrorCode가 있는 경우 — 스키마 diff에 안 잡히는 변경(필드 조건부 필수화·ErrorResponse.code
+# 신규 값 등, #64 사고 참고). 엔드포인트별 상세는 oasdiff가 준 게 없어 만들 수 없으므로, 사람이 남긴
+# 사유·신규 코드 목록만으로 별도 embed를 구성해 "PR을 직접 봐야 한다"는 사실 자체를 알린다.
+if [[ "$BREAKING_COUNT" -eq 0 && "$ADDITIONS_COUNT" -eq 0 ]]; then
+  DISPLAY_REASON="$TRAILER_REASON"
+  if [[ -z "$DISPLAY_REASON" ]]; then
+    DISPLAY_REASON="⚠️ Breaking-Change-Reason 트레일러 없음 — 신규 ErrorCode가 감지됐으니 사유를 확인해 커밋 메시지에 추가해 주세요."
+  fi
+  HIDDEN_ERROR_CODE_FIELDS='[]'
+  if [[ -n "$NEW_ERROR_CODES" ]]; then
+    ERROR_CODE_LIST="$(sed 's/^/• `/; s/$/`/' <<< "$NEW_ERROR_CODES" | paste -sd $'\n' -)"
+    HIDDEN_ERROR_CODE_FIELDS="$(jq -n --arg v "$ERROR_CODE_LIST" '[{ name: "신규 ErrorCode", value: $v, inline: false }]')"
+  fi
+  HIDDEN_EMBED="$(jq -n \
+    --arg url "$TITLE_URL" \
+    --arg reason "$DISPLAY_REASON" \
+    --argjson errorCodes "$HIDDEN_ERROR_CODE_FIELDS" \
+    --arg footer "$FOOTER_TEXT" \
+    '{
+      title: "🚨 API Breaking Change (oasdiff 무변화 — 트레일러/신규 ErrorCode 감지)",
+      url: $url,
+      color: 15158332,
+      fields: ($errorCodes + [
+        { name: "왜 변경했는가", value: $reason, inline: false },
+        { name: "참고", value: "OpenAPI 스키마 diff엔 안 잡히는 변경입니다(필드 조건부 필수화·ErrorResponse.code 신규 값 등). PR을 직접 확인해 영향 범위를 판단해 주세요.", inline: false }
+      ]),
+      footer: { text: $footer }
+    }')"
+  EMBEDS_JSON="$(jq --argjson e "$HIDDEN_EMBED" '. + [$e]' <<< "$EMBEDS_JSON")"
+fi
+
 if [[ "$BREAKING_COUNT" -gt 0 ]]; then
   BREAKING_DOMAINS="$(jq -r "$JQ_DOMAIN_DEF"'
     [.[] | domain(.path)] | unique | join(", ")
   ' "$BREAKING_JSON")"
 
-  # 커밋 트레일러에서 사유 추출 — 값이 다음 줄로 wrap된 경우(들여쓰기 없는 연속 줄)까지 한 사유로 접어서
-  # 합친다. blank 줄이나 다른 트레일러 형식(`Key: value`) 줄을 만나면 그 사유를 종료. 여러 커밋에 있으면
-  # 커밋별로 나열(짧은 SHA 접두 — 어느 커밋 사유인지 구분되게). 하나도 없으면 안내문(하드코딩 값 아님)
-  # 커밋 1개씩 순회(NUL 구분 다중 레코드 방식은 BSD awk에서 NUL 바이트를 제대로 못 다뤄 회피)
-  REASON="$( { while IFS= read -r sha; do
-    body="$(git log -1 --format=%B "$sha")"
-    awk -v sha="$sha" '
-      /^[Bb]reaking-[Cc]hange-[Rr]eason:/ {
-        capturing = 1
-        sub(/^[Bb]reaking-[Cc]hange-[Rr]eason:[[:space:]]*/, "")
-        buf = $0
-        next
-      }
-      capturing && /^[[:space:]]*$/ { print sha ": " buf; capturing = 0; buf = ""; next }
-      capturing && /^[A-Za-z][A-Za-z-]*:[[:space:]]/ { print sha ": " buf; capturing = 0; buf = ""; next }
-      capturing { buf = buf " " $0; next }
-      END { if (capturing && buf != "") print sha ": " buf }
-    ' <<< "$body"
-  done < <(git log "$GIT_RANGE" --format=%h); } | awk '!seen[$0]++' | paste -sd $'\n' - || true)"
+  REASON="$TRAILER_REASON"
   if [[ -z "$REASON" ]]; then
     REASON="⚠️ 사유 미기재 — 커밋 메시지에 \`Breaking-Change-Reason:\` 트레일러를 추가해 주세요."
   fi

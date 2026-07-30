@@ -15,12 +15,36 @@
 
 ```
 push / PR → OpenApiSpecExportTest → oasdiff breaking → 있으면 Discord #frontend 알림만 발송
+                                   → 없어도 트레일러·신규 ErrorCode 있으면 별도 알림 발송(아래 "oasdiff가 못 보는 변경" 참고)
                                                         → job은 항상 통과(CI 실패로 표시 안 함), deploy도 막지 않음
 ```
 
 oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** 노출됩니다. oasdiff breaking check `id`가 80개+라 전부 한글 템플릿으로 매핑·유지보수하는 게 비현실적이고, 일부만 매핑하면 매핑 안 된 `id`만 영어로 남아 한 필드 안에서 한글·영어가 뒤섞이는 문제가 있어(2026-07-29 실제 사고) 아예 원문만 쓰기로 함(2026-07-29 amend). footer에는 이번 변경에 포함된 커밋 short SHA가 `Commit ID: 9e1c878, 6e9df7e`처럼 전부 나열됩니다.
 
 `GIT_RANGE`는 이번 push의 `before..after`(또는 PR의 `base..head`)라 로컬에 여러 커밋을 쌓아두고 한 번에 push하면 서로 무관한 여러 변경의 breaking change·사유가 한 알림에 뭉쳐서 나옵니다 — 가능하면 breaking change가 생긴 커밋은 바로바로 push하세요.
+
+### merge 시 알림이 안 오는 게 정상인 이유 — 중복 방지 로직
+
+`api-contract-check` job의 "Check breaking changes and notify Discord" 스텝은 `pull_request` 이벤트에서만 돌고, main으로의 merge push(커밋 메시지가 `Merge pull request #`로 시작)에서는 **의도적으로 skip**됩니다 — PR이 열릴 때 이미 같은 diff로 알림을 보냈으니 merge 시점에 또 보내면 중복이기 때문입니다. 즉 **알림은 PR을 열거나 업데이트하는 시점에 옵니다, merge 시점이 아닙니다.** PR 없이 로컬에서 직접 main에 push한 경우(#67 사고)는 이 휴리스틱이 걸리지 않아 알림이 나갑니다.
+
+### oasdiff가 못 보는 변경 — 트레일러·신규 ErrorCode 기반 2차 감지 (2026-07-30 amend, `#64` 사고)
+
+`oasdiff`는 **OpenAPI 스키마 diff**만 봅니다. 아래처럼 스키마는 그대로인데 실제로는 프론트가 대응해야 하는 변경은 `oasdiff breaking`도 `필드 추가`도 못 잡아서, 예전엔 알림 자체가 안 나갔습니다:
+
+- **필드의 조건부 필수화** — 필드 자체는 그대로 `optional`(Bean Validation으로 전 provider에 `@NotBlank`를 걸 수 없는 경우 등)이지만, 서비스 레이어 로직이 특정 조건(예: `provider == APPLE`)에서 그 필드를 사실상 필수로 강제하는 경우. 스키마의 `requiredMode`는 안 바뀜.
+- **신규 `ErrorCode` 추가** — `ErrorResponse.code`가 `String` 타입이라 OpenAPI 스키마에 enum 값으로 안 잡힘. 새 4xx 에러 코드가 생겨도 스키마 diff는 무변화.
+- 그 외 스키마에 안 나타나는 모든 런타임 검증·정책 변화 일반.
+
+**실제 사고(2026-07-30):** `#64`(Apple 로그인 시 `authorizationCode` 조건부 필수화 + `AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED` 추가) PR이 merge됐는데 Discord 알림이 전혀 안 나갔다. 원인은 위 두 가지가 정확히 겹친 경우였고, 커밋에 `Breaking-Change-Reason` 트레일러를 달아뒀는데도 그 내용이 Discord로 전달되는 경로 자체가 없었다(트레일러는 breaking embed 안에 텍스트로 끼워 넣는 용도로만 쓰였고, oasdiff가 아무것도 못 찾으면 그 embed 자체가 안 만들어짐).
+
+**수정(같은 날 amend):** `scripts/notify-api-breaking-change.sh`가 이제 `BREAKING_COUNT`/`ADDITIONS_COUNT`와 **무관하게** 아래 두 조건을 독립적으로 확인합니다.
+
+1. `GIT_RANGE`의 커밋 중 하나라도 `Breaking-Change-Reason:` 트레일러가 있으면 — 사람이 이미 "이건 알려야 한다"고 표시한 것이므로 그대로 신뢰
+2. `GIT_RANGE`에서 `**/*ErrorCode.java`에 신규 enum 상수(`NAME(HttpStatus...` 패턴)가 추가됐으면 — 트레일러를 깜빡해도 걸리는 2차 방어선
+
+둘 중 하나라도 있으면 `🚨 API Breaking Change (oasdiff 무변화 — 트레일러/신규 ErrorCode 감지)` embed를 별도로 보냅니다. oasdiff가 준 정보가 없어 엔드포인트별 상세는 못 만들고, 트레일러 사유·신규 코드 목록·"PR을 직접 확인하라"는 안내만 담습니다.
+
+**여전히 못 잡는 것:** 트레일러도 안 달고 새 `ErrorCode`도 안 만드는 순수 비즈니스 로직 변경(예: 검증 규칙 강화, side effect 추가/제거)은 이 2차 감지도 못 잡습니다 — 이런 변경을 만들 때는 **반드시 트레일러를 다는 것**이 유일한 안전장치입니다.
 
 ## Release Gate #65 관련 엔드포인트 콜아웃
 
@@ -30,7 +54,7 @@ oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** �
 
 **프론트가 조금이라도 대응해야 하는 API 계약 변경**(필드 추가·삭제·이름변경·타입변경·필수화, enum 값 추가·삭제, ErrorCode 신규·변경·삭제, 경로·메서드 변경 등 — optional 필드 추가도 포함)에는 본문에 `Breaking-Change-Reason:` 트레일러를 추가하세요. "필드 하나 추가일 뿐"이라는 이유로 생략하지 않습니다 — CI가 `oasdiff breaking`으로 잡아내는 것은 좁은 스키마 파괴적 변경뿐이라, 그보다 넓은 실제 영향 범위는 사람이 직접 기록해야 합니다. 상세 기준: [`harness-workflow.md`](../../.claude/rules/harness-workflow.md) STOP §5.
 
-Discord 알림의 "왜 변경했는가"란에 커밋 short SHA와 함께 그대로 노출됩니다(breaking 임베드 기준 — 아래 "Breaking Change 감지 흐름" 참고).
+Discord 알림의 "왜 변경했는가"란에 커밋 short SHA와 함께 그대로 노출됩니다. oasdiff가 breaking change를 찾았으면 그 embed 안에, oasdiff는 아무것도 못 찾았지만 트레일러나 신규 `ErrorCode`가 있으면 별도 embed로 노출됩니다(위 "oasdiff가 못 보는 변경" 참고) — **트레일러가 실제로 Discord에 도달하는 유일한 두 경로**이니 생략하지 마세요.
 
 ```
 Fix: 마이페이지 응답 필드명 정리
@@ -75,5 +99,5 @@ GITHUB_SHA="$(git rev-parse HEAD)" \
 | `docs/api/openapi.json` | `main` 스냅샷 (자동 갱신, 손편집 금지) |
 | `docs/api/tripfit_app_icon.png` | Discord 알림 봇 아바타 — raw URL로 CI에서 참조 |
 | `src/test/java/.../OpenApiSpecExportTest.java` | 현재 코드 기준 스펙을 `build/openapi/openapi.json`으로 export |
-| `scripts/notify-api-breaking-change.sh` | oasdiff 실행 → breaking·필드 추가면 Discord 알림만 발송 (job은 항상 통과) |
+| `scripts/notify-api-breaking-change.sh` | oasdiff 실행 → breaking·필드 추가·(oasdiff 무변화 시) 트레일러·신규 ErrorCode면 Discord 알림만 발송 (job은 항상 통과) |
 | `.github/workflows/ci-cd.yml` `api-contract-check` job | 위 과정을 CI에 연결 |
