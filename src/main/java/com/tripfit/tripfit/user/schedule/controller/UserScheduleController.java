@@ -230,17 +230,17 @@ public class UserScheduleController {
   @Operation(
       summary = "개인 일정 슬롯 단위 오버라이드 upsert",
       description = """
-          목적: 여러 날짜에 슬롯(오전/오후/저녁) 단위 오버라이드를 등록·해제한다.
+          목적: 여러 날짜에 슬롯(오전/오후/저녁) 오버라이드·불확실 여부를 등록·수정한다.
 
           호출 시점: 개인 일정 편집 저장.
 
-          전제: items 최소 1개 필요. 슬롯 값을 null로 보내면 그 슬롯은 손대지 않고 정기+구글 계산값을 그대로 따른다(오버라이드 해제). 슬롯 3개가 전부 null이고 uncertain=false인 항목은 해당 날짜의 오버라이드 자체를 삭제한다.
+          전제: items 최소 1개, 같은 scheduleDate 중복 불가. 각 항목은 slots·uncertain을 독립적으로 선택한다 — 슬롯을 안 건드리려면 slots 필드 자체를 생략(그 슬롯은 정기+구글 계산값을 그대로 따름), 건드리려면 3개 전부 명시. 이 API로는 오버라이드가 삭제되지 않는다 — 한 번 반영된 날짜는 계속 유지된다.
 
           결과: 반영된 날짜들의 정기+개별+구글을 합친 최종 확정값(POSSIBLE/IMPOSSIBLE로 확정, null 없음).
 
-          주의: 첫 저장 시 hasPreSchedule true. 전부 삭제 후 정기·개인 0건이면 false(GET /auth/me 재조회).
+          주의: 첫 저장 시 hasPreSchedule true(GET /auth/me 재조회).
 
-          주요 에러: INVALID_INPUT — items가 비어 있음
+          주요 에러: INVALID_INPUT — items가 비어 있음·scheduleDate 중복·slots와 uncertain이 둘 다 없음·slots 필드 일부 누락
           """)
   @ApiResponses({
       @ApiResponse(
@@ -254,7 +254,7 @@ public class UserScheduleController {
                       """))),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT — 요청 값 검증 실패 또는 items가 비어 있음",
+          description = "INVALID_INPUT — items 비어 있음·scheduleDate 중복·한 항목에 slots·uncertain 둘 다 없음·slots 필드 일부 누락",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -273,22 +273,22 @@ public class UserScheduleController {
       content = @Content(
           examples = {
               @ExampleObject(
-                  name = "부분 오버라이드 — 아침만 변경",
-                  summary = "아침만 오버라이드. 오후·저녁은 생략(= null) → 정기+구글 계산값을 그대로 따름",
+                  name = "슬롯만 변경",
+                  summary = "slots 3개를 명시. uncertain 필드는 생략 → 기존 값 유지(신규 날짜면 false)",
                   value = """
-                      {"items": [{"scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "uncertain": false}]}
+                      {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
                       """),
               @ExampleObject(
-                  name = "전체 오버라이드 — 슬롯 3개 모두 지정",
-                  summary = "슬롯 3개를 전부 명시적으로 오버라이드",
+                  name = "불확실 여부만 변경",
+                  summary = "slots 필드 자체를 생략 → 슬롯 오버라이드는 그대로 두고 uncertain만 갱신",
                   value = """
-                      {"items": [{"scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}
+                      {"items": [{"scheduleDate": "2026-08-03", "uncertain": true}]}
                       """),
               @ExampleObject(
-                  name = "오버라이드 해제(CLEAR)",
-                  summary = "슬롯 3개 전부 생략(= null)하고 uncertain=false → 해당 날짜 오버라이드 자체를 삭제",
+                  name = "슬롯·불확실 동시 변경",
+                  summary = "한 항목에 slots와 uncertain을 같이 담아 한 번에 반영",
                   value = """
-                      {"items": [{"scheduleDate": "2026-08-03", "uncertain": false}]}
+                      {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}, "uncertain": false}]}
                       """)
           }))
   @PatchMapping("/personal")

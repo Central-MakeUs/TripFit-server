@@ -169,9 +169,11 @@ class UserScheduleControllerTest {
                           "items": [
                             {
                               "scheduleDate": "2026-08-03",
-                              "morningStatus": "IMPOSSIBLE",
-                              "afternoonStatus": "POSSIBLE",
-                              "eveningStatus": "POSSIBLE",
+                              "slots": {
+                                "morningStatus": "IMPOSSIBLE",
+                                "afternoonStatus": "POSSIBLE",
+                                "eveningStatus": "POSSIBLE"
+                              },
                               "uncertain": true
                             }
                           ]

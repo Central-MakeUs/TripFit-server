@@ -20,6 +20,7 @@ import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.CreateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.PersonalScheduleItem;
+import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.SlotUpdate;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
@@ -228,61 +229,7 @@ class ScheduleServiceTest {
   }
 
   @Test
-  void upsertPersonal_dateLevelUncertain() {
-    LocalDate date = LocalDate.of(2026, 8, 3);
-    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
-        .thenReturn(Optional.empty());
-    when(personalScheduleRepository.save(any(PersonalSchedule.class)))
-        .thenAnswer(
-            invocation -> {
-              PersonalSchedule s = invocation.getArgument(0);
-              s.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
-              return s;
-            });
-    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
-    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            USER_ID,
-            date,
-            date))
-        .thenAnswer(
-            inv -> {
-              PersonalSchedule saved =
-                  PersonalSchedule.create(
-                      user,
-                      date,
-                      ScheduleStatus.IMPOSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      true);
-              saved.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
-              return List.of(saved);
-            });
-
-    var response =
-        scheduleService.upsertPersonal(
-            USER_ID,
-            new UpdatePersonalScheduleRequest(
-                List.of(
-                    new PersonalScheduleItem(
-                        date,
-                        ScheduleStatus.IMPOSSIBLE,
-                        ScheduleStatus.POSSIBLE,
-                        ScheduleStatus.POSSIBLE,
-                        true))));
-
-    assertThat(response.items()).hasSize(1);
-    assertThat(response.items().getFirst().uncertain()).isTrue();
-    assertThat(response.items().getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
-    ArgumentCaptor<PersonalSchedule> captor = ArgumentCaptor.forClass(PersonalSchedule.class);
-    verify(personalScheduleRepository).save(captor.capture());
-    assertThat(captor.getValue().isUncertain()).isTrue();
-  }
-
-  @Test
-  void upsertPersonal_withoutRegular_succeeds() {
+  void upsertPersonal_slotsOnly_createsRowWithUncertainFalse() {
     LocalDate date = LocalDate.of(2026, 8, 3);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
@@ -322,16 +269,155 @@ class ScheduleServiceTest {
                 List.of(
                     new PersonalScheduleItem(
                         date,
-                        ScheduleStatus.IMPOSSIBLE,
-                        ScheduleStatus.POSSIBLE,
-                        ScheduleStatus.POSSIBLE,
-                        false))));
+                        new SlotUpdate(
+                            ScheduleStatus.IMPOSSIBLE,
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE),
+                        null))));
 
     assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().uncertain()).isFalse();
+    ArgumentCaptor<PersonalSchedule> captor = ArgumentCaptor.forClass(PersonalSchedule.class);
+    verify(personalScheduleRepository).save(captor.capture());
+    assertThat(captor.getValue().isUncertain()).isFalse();
+    assertThat(captor.getValue().getSlotStatuses().getMorningStatus())
+        .isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    verify(userSummaryService).clearAllFreeOnScheduleAdded(user);
   }
 
   @Test
-  void upsertPersonal_partialOverride_untouchedSlotStaysNullInDbButResolvesFromRegular() {
+  void upsertPersonal_uncertainOnly_existingRow_preservesSlots() {
+    LocalDate date = LocalDate.of(2026, 8, 3);
+    PersonalSchedule existing =
+        PersonalSchedule.create(
+            user,
+            date,
+            ScheduleStatus.IMPOSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            false);
+    existing.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
+        .thenReturn(Optional.of(existing));
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            date,
+            date))
+        .thenReturn(List.of(existing));
+
+    // uncertain만 보내면 slots 필드 자체가 없으므로 기존 오버라이드는 절대 안 건드려야 한다(UI 동작 확인 2·3번)
+    var response =
+        scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(new PersonalScheduleItem(date, null, true))));
+
+    verify(personalScheduleRepository, never()).save(any(PersonalSchedule.class));
+    assertThat(existing.isUncertain()).isTrue();
+    assertThat(existing.getSlotStatuses().getMorningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(existing.getSlotStatuses().getAfternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(response.items().getFirst().uncertain()).isTrue();
+  }
+
+  @Test
+  void upsertPersonal_uncertainToggleOnThenOff_slotsNeverChange() {
+    LocalDate date = LocalDate.of(2026, 8, 3);
+    PersonalSchedule existing =
+        PersonalSchedule.create(
+            user,
+            date,
+            ScheduleStatus.IMPOSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            ScheduleStatus.POSSIBLE,
+            false);
+    existing.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
+        .thenReturn(Optional.of(existing));
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            date,
+            date))
+        .thenReturn(List.of(existing));
+
+    scheduleService.upsertPersonal(
+        USER_ID,
+        new UpdatePersonalScheduleRequest(List.of(new PersonalScheduleItem(date, null, true))));
+    assertThat(existing.isUncertain()).isTrue();
+    assertThat(existing.getSlotStatuses().getMorningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+
+    scheduleService.upsertPersonal(
+        USER_ID,
+        new UpdatePersonalScheduleRequest(List.of(new PersonalScheduleItem(date, null, false))));
+    assertThat(existing.isUncertain()).isFalse();
+    assertThat(existing.getSlotStatuses().getMorningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(existing.getSlotStatuses().getAfternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(existing.getSlotStatuses().getEveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+  }
+
+  @Test
+  void upsertPersonal_slotsAndUncertainTogether_bothApplied() {
+    LocalDate date = LocalDate.of(2026, 8, 3);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
+        .thenReturn(Optional.empty());
+    when(personalScheduleRepository.save(any(PersonalSchedule.class)))
+        .thenAnswer(
+            invocation -> {
+              PersonalSchedule s = invocation.getArgument(0);
+              s.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
+              return s;
+            });
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            date,
+            date))
+        .thenAnswer(
+            inv -> {
+              PersonalSchedule saved =
+                  PersonalSchedule.create(
+                      user,
+                      date,
+                      ScheduleStatus.IMPOSSIBLE,
+                      ScheduleStatus.POSSIBLE,
+                      ScheduleStatus.POSSIBLE,
+                      true);
+              saved.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
+              return List.of(saved);
+            });
+
+    var response =
+        scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(
+                    new PersonalScheduleItem(
+                        date,
+                        new SlotUpdate(
+                            ScheduleStatus.IMPOSSIBLE,
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE),
+                        true))));
+
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().uncertain()).isTrue();
+    assertThat(response.items().getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+  }
+
+  @Test
+  void upsertPersonal_explicitAllPossibleOnWorkday_notDeleted_o13BugRegression() {
+    // 정기(근무일: 아침·오후 불가능)가 있는 날짜에 슬롯 3개를 전부 POSSIBLE로 명시해도
+    // (구 O1.3의 CLEAR 오인 버그와 달리) row가 삭제되지 않고 그대로 저장돼야 한다
     LocalDate thursday = LocalDate.of(2026, 8, 6);
     RegularSchedule work =
         RegularSchedule.create(
@@ -366,53 +452,90 @@ class ScheduleServiceTest {
         .thenAnswer(
             inv -> {
               PersonalSchedule saved =
-                  PersonalSchedule
-                      .create(user, thursday, null, ScheduleStatus.POSSIBLE, null, false);
+                  PersonalSchedule.create(
+                      user,
+                      thursday,
+                      ScheduleStatus.POSSIBLE,
+                      ScheduleStatus.POSSIBLE,
+                      ScheduleStatus.POSSIBLE,
+                      false);
               saved.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
               return List.of(saved);
             });
 
-    // 오후만 오버라이드(반차) — 아침·저녁은 null로 보내 정기값 유지
     var response =
         scheduleService.upsertPersonal(
             USER_ID,
             new UpdatePersonalScheduleRequest(
                 List.of(
-                    new PersonalScheduleItem(thursday, null, ScheduleStatus.POSSIBLE, null,
-                        false))));
+                    new PersonalScheduleItem(
+                        thursday,
+                        new SlotUpdate(
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE),
+                        null))));
 
+    verify(personalScheduleRepository).save(any(PersonalSchedule.class));
     assertThat(response.items()).hasSize(1);
     var item = response.items().getFirst();
-    assertThat(item.morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
-    assertThat(item.afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
-    assertThat(item.eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
-    ArgumentCaptor<PersonalSchedule> captor = ArgumentCaptor.forClass(PersonalSchedule.class);
-    verify(personalScheduleRepository).save(captor.capture());
-    assertThat(captor.getValue().getSlotStatuses().getMorningStatus()).isNull();
+    assertThat(item.id()).isNotNull();
+    assertThat(item.morningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
   }
 
   @Test
-  void upsertPersonal_allSlotsNullAndNotUncertain_deletesRowAndClearsAllFreeWhenNoSchedulesLeft() {
-    LocalDate date = LocalDate.of(2026, 8, 3);
-    user.setAllFree(false);
+  void upsertPersonal_slotsAndUncertainBothMissing_throws400() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
-    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+    LocalDate date = LocalDate.of(2026, 8, 3);
+
+    assertThatThrownBy(
+        () -> scheduleService.upsertPersonal(
             USER_ID,
-            date,
-            date))
-        .thenReturn(List.of());
+            new UpdatePersonalScheduleRequest(List.of(new PersonalScheduleItem(date, null, null)))))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
 
-    scheduleService.upsertPersonal(
-        USER_ID,
-        new UpdatePersonalScheduleRequest(
-            List.of(new PersonalScheduleItem(date, null, null, null, false))));
+  @Test
+  void upsertPersonal_slotsFieldMissing_throws400() {
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    LocalDate date = LocalDate.of(2026, 8, 3);
 
-    verify(personalScheduleRepository).deleteByUserIdAndScheduleDateIn(USER_ID, List.of(date));
-    verify(personalScheduleRepository, never()).save(any(PersonalSchedule.class));
-    verify(userSummaryService).markAllFreeIfSchedulesCleared(user);
+    assertThatThrownBy(
+        () -> scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(
+                    new PersonalScheduleItem(
+                        date,
+                        new SlotUpdate(null, ScheduleStatus.POSSIBLE, ScheduleStatus.POSSIBLE),
+                        null)))))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  void upsertPersonal_duplicateScheduleDate_throws400() {
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    LocalDate date = LocalDate.of(2026, 8, 3);
+
+    assertThatThrownBy(
+        () -> scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(
+                    new PersonalScheduleItem(date, null, true),
+                    new PersonalScheduleItem(
+                        date,
+                        new SlotUpdate(
+                            ScheduleStatus.POSSIBLE, ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE),
+                        null)))))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
   }
 
   @Test

@@ -16,9 +16,8 @@ public record PersonalScheduleResponse(
   @Schema(description = "날짜 1건의 정기+개별+구글 합친 최종 확정값")
   public record PersonalScheduleItemResponse(
       @Schema(
-          description = "개별 일정(personal_schedule) row ID. 오버라이드가 없어 정기+구글 계산값만 내려가는 날짜는 null",
-          example = "550e8400-e29b-41d4-a716-446655440000",
-          nullable = true)
+          description = "개별 일정(personal_schedule) row ID. upsert된 날짜는 항상 row가 존재하므로 non-null",
+          example = "550e8400-e29b-41d4-a716-446655440000")
       UUID id,
 
       @Schema(description = "날짜", example = "2026-08-03")

@@ -76,7 +76,8 @@ jobs:
           fi
 
       - name: Check breaking changes and notify Discord
-        if: steps.base_spec.outputs.exists == 'true'
+        # PR 시점에만 알림 — main push는 이미 PR에서 리뷰된 동일 diff라 중복 발송 방지
+        if: steps.base_spec.outputs.exists == 'true' && github.event_name == 'pull_request'
         env:
           BASE_SPEC: base-openapi.json
           REVISED_SPEC: build/openapi/openapi.json

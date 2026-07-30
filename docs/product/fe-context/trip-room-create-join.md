@@ -74,7 +74,8 @@ STEP 4. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 | `POST` | `/api/v1/trips/join` | JWT | body `{ "inviteCode": string }` — 멤버 참여. 즉시 `ACTIVE` |
 | `GET` | `/api/v1/trips/{tripId}` | JWT + 멤버 **ACTIVE** | 방 상세. `inviteCode` 포함 |
 | `GET` | `/api/v1/trips` | JWT | 홈 목록 카드. `myMemberStatus`로 `SCHEDULE_PENDING`/`ACTIVE` 분기하라. `inviteCode` 없음 |
-| `GET/POST/PATCH/DELETE` | `/api/v1/users/schedule/regular`, `/api/v1/users/schedule/personal` | JWT | STEP 2 일정 입력에 이 CRUD를 써라 (User 전역, 방과 무관) |
+| `GET/POST/PATCH/DELETE` | `/api/v1/users/schedule/regular` | JWT | 정기 일정 CRUD (User 전역, 방과 무관) |
+| `PATCH` | `/api/v1/users/schedule/personal` | JWT | 개별 일정은 **`PATCH`만** 존재 — 전용 GET·DELETE 없음(조회는 `GET /calendar`, 삭제 경로 자체가 없음 — O1.4). STEP 2 일정 입력에 사용 |
 
 `POST /trips` 응답 예시(방장, 입장 전) — `inviteCode` 필드 자체가 없다는 것을 파싱 코드에 반영하라:
 

@@ -286,11 +286,12 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 1. `POST /trips` → `403 PROFILE_NAME_REQUIRED` (현행과 동일)
 
-### 시나리오 8 — `ACTIVE`인데 전역 일정 CLEAR
+### 시나리오 8 — `ACTIVE`인데 전역 일정 삭제로 `canEnterRoom` false
 
-1. 일정을 지워 `canEnterRoom` false
+1. **정기 일정을 전부 삭제**한다 — 개별 일정은 없거나(한 번도 등록 안 함) O1.4 이후 삭제 불가이므로 이 시나리오에 관여하지 않는다. 정기 0행 + 개별 0행 + `is_all_free=false` → `canEnterRoom` false
 2. 방 안 API → `403 SCHEDULE_ENTRY_REQUIRED`
 3. status는 `ACTIVE` 유지 가능 — 전역 게이트와 trip 확인은 별층
+4. **개별 일정을 한 번이라도 등록한 적 있는 유저에게는 이 시나리오가 재현되지 않는다** — 그 row가 삭제되지 않고 남아있어 `canEnterRoom`이 계속 true다(`schedule-slot-override.md` O1.4)
 
 ---
 

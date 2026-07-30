@@ -38,7 +38,7 @@
 | ~~POST~~ | ~~`/api/v1/trips/{tripId}/schedule/submit`~~ | **삭제** — 재사용 금지. 방장 확인은 **`activate`** (#39) |
 | POST | `/api/v1/trips/{tripId}/activate` | **#39** SCHEDULE_PENDING→ACTIVE |
 | PATCH | `/api/v1/users/onboarding` | **삭제** (2026-07-20 #22) |
-| GET | `/api/v1/users/schedule/personal` | **1단계:** #22 PR에서 `@Hidden` 해제 |
+| ~~GET~~ | ~~`/api/v1/users/schedule/personal`~~ | **1단계:** #22 PR에서 `@Hidden` 해제 → **이후 조회 API 자체가 삭제됨**(전용 조회 없음, `PATCH` 응답 또는 `GET /calendar`로 대체 — `schedule-unified.md` 폐기 목록) |
 | PATCH | `/api/v1/users/schedule/personal` | 동일 |
 | GET | `/api/v1/users/schedule/calendar` | 동일 |
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | **2단계 해제 완료** — OpenAPI 공개 |
@@ -114,7 +114,7 @@ canEnterRoom(user) =
 
 | 상황 | 서버 동작 |
 |------|-----------|
-| 정기·개별을 지워 **둘 다 0행** (CLEAR) | `is_all_free = true` **자동** (방 안·마이페이지·전역 일정 어디서든) |
+| 정기를 지우고, 개별도 **한 번도 등록한 적 없어** 둘 다 0행 (CLEAR) | `is_all_free = true` **자동** (방 안·마이페이지·전역 일정 어디서든). **개별은 O1.4 이후 삭제 불가**라 한 번이라도 등록했다면 이 경로 자체가 적용 안 됨(아래 128행 노트 참고) |
 | `is_all_free=true`인데 정기/개별 **추가** | `is_all_free = false` **자동** |
 | Skip인데 **이미 ≥1행** | **변경 없음** (`is_all_free`·row 유지). patch 호출 불필요 |
 | Skip인데 **이미 0행** (미입력) | **`is_all_free = true`** — 방장: `POST /trips` 시 · 참여자: `POST /trips/join` 시 (서버가 설정) |
@@ -123,14 +123,18 @@ canEnterRoom(user) =
 
 → 클라이언트만으로 row≥1인 채 `is_all_free=true`를 켤 수 없음. 서버는 row≥1이면 `is_all_free=true` 요청을 **거부**.
 
+> **⚠️ [미정-후속 논의] (2026-07-30, #67 O1.4 검토 중 발견):** 121행("일정이 있는데 전부 free 선언 → 그런 버튼/API 없음, row를 지워 0행이 되어야만 CLEAR")은 O1.4(`schedule-slot-override.md`)가 개별 일정 row 삭제 경로를 전면 제거하면서 한때 "기능 충돌"로 보였다. 그러나 재검토 결과 **실제 충돌은 아님** — `canEnterRoom`이 `EXISTS(regular) OR EXISTS(personal) OR is_all_free` OR 조건이라, 개별 일정 row가 이미 있는 유저는 조건 2로 이미 입장 가능하므로 애초에 `is_all_free` 전환이 **불필요**하다.
+>
+> 다만 "예전엔 학원 다녔지만 이제 안 다녀서 뭐든 상관없어졌다"처럼, 유저가 기존 데이터를 낱개로 고치는 대신 **한 번에 "이제 전부 상관없어요"를 명시적으로 선언**하고 싶어할 UX 여지는 남아있다(지금은 각 날짜를 개별적으로 "가능"으로 고쳐야 함). **지금 당장 게이트 로직엔 영향 없어 구현 불필요**하지만, 필요성이 실제로 제기되면 별도 스펙(전용 "전부 free 선언" API — row 삭제와 무관하게 별도 플래그만 세팅)으로 검토. 트래커: [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)
+
 **일정 수정 API 형태 (확정):**
 
 | 종류 | 동작 |
 |------|------|
 | **정기** | CRUD — `POST` 생성 · `PATCH /{id}` 단건 수정 · `DELETE /{id}` |
-| **개별** | **bulk upsert + 삭제** — `PATCH /personal` · `items` insert/update · **슬롯 3개 모두 POSSIBLE·uncertain=false인 항목**은 날짜 row 삭제 |
+| **개별** | **bulk upsert(삭제 없음, O1.4)** — `PATCH /personal` · `items` insert/update, `slots`/`uncertain` 각각 선택 갱신. 어떤 값 조합을 보내도 row는 삭제되지 않음(`schedule-slot-override.md`) |
 
-**개인 CLEAR:** `items`에 슬롯 3개(오전/오후/저녁) 모두 `POSSIBLE`·`uncertain=false`인 항목을 보내면 해당 날짜를 삭제. regular도 0이면 `is_all_free=true` (D-JOIN-CLEAR). `items`가 **비어 있으면** 400.
+**개인 CLEAR는 O1.4 이후 없음:** 슬롯 3개를 `POSSIBLE`로, `uncertain`을 `false`로 보내는 것은 이제 "그 날짜를 명시적으로 하루 종일 가능으로 오버라이드"하는 평범한 upsert일 뿐, 삭제 신호가 아니다 — 정기 계산값과 값이 같아 보여도 오버라이드 row는 그대로 남는다. 개별 일정으로 `is_all_free`를 켜는 경로는 없음(126~128행 `[미정]` 노트 참고). `items`가 **비어 있으면** 400.
 
 ### D-JOIN-TRIP-FLOW: 신규 trip · 일정 확인 플로우 (확정 — #39 amend)
 
@@ -431,6 +435,7 @@ canEnterRoom(user) =
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-30 | **O1.4 정합 반영** — `schedule-slot-override.md` O1.4가 개별 일정 삭제 경로를 전면 제거함에 따라 D-JOIN-CLEAR·"일정 수정 API 형태" 절 갱신: 개별 일정으로 `is_all_free`를 켜는 경로는 이제 없음(정기 삭제 + 개별 미등록 조합만 유효), "개인 CLEAR" 삭제 시맨틱 문구 제거. `canEnterRoom`이 OR 조건이라 개별 일정이 있으면 애초에 `is_all_free` 전환이 불필요하다는 점을 121행 아래 `[미정]` 노트로 남김(기존 데이터를 지우지 않고 명시적으로 "전부 free" 선언하는 UX는 추후 검토 대상, [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)) |
 | 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 (상세: [`schedule-unified.md`](schedule-unified.md) 변경 이력) |
 | 2026-07-28 | **Amend** — 방장 멤버십 전환 API `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. activate·join 자신에게는 도달 불가능했던 `SCHEDULE_ENTRY_REQUIRED` 문서·검증 제거(상세: [`trip-room-api.md`](trip-room-api.md) 변경 이력) |
 | 2026-07-28 | 온보딩 이름 API 경로 리네이밍 반영 — `PATCH /users/profile` → `PATCH /users/onboarding/name` (`user-onboarding.md` 변경 이력 참고) |
