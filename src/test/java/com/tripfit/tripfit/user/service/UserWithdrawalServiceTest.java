@@ -6,15 +6,21 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.trip.service.TripService;
+import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
+import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +51,18 @@ class UserWithdrawalServiceTest {
   private GoogleCalendarBusyDayRepository googleCalendarBusyDayRepository;
 
   @Mock
+  private GoogleCalendarOAuthClient googleCalendarOAuthClient;
+
+  @Mock
+  private GoogleCalendarTokenCrypto googleCalendarTokenCrypto;
+
+  @Mock
+  private KakaoUnlinkClient kakaoUnlinkClient;
+
+  @Mock
+  private AppleCredentialService appleCredentialService;
+
+  @Mock
   private RefreshTokenService refreshTokenService;
 
   private UserWithdrawalService userWithdrawalService;
@@ -59,6 +77,10 @@ class UserWithdrawalServiceTest {
             regularScheduleRepository,
             googleCalendarCredentialRepository,
             googleCalendarBusyDayRepository,
+            googleCalendarOAuthClient,
+            googleCalendarTokenCrypto,
+            kakaoUnlinkClient,
+            appleCredentialService,
             refreshTokenService);
   }
 
@@ -106,6 +128,63 @@ class UserWithdrawalServiceTest {
   }
 
   @Test
+  void withdraw_whenGoogleCalendarConnected_revokesRefreshTokenBeforeDeletingCredential() {
+    User user = user();
+    GoogleCalendarCredential credential =
+        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(credential));
+    when(googleCalendarTokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
+  }
+
+  @Test
+  void withdraw_whenGoogleCalendarNotConnected_doesNotRevoke() {
+    User user = user();
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(googleCalendarOAuthClient, never()).revokeRefreshToken(any());
+  }
+
+  @Test
+  void withdraw_whenKakaoProvider_callsKakaoUnlink() {
+    User user = kakaoUser();
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(kakaoUnlinkClient).unlink("kakao-sub");
+  }
+
+  @Test
+  void withdraw_whenNotKakaoProvider_doesNotCallKakaoUnlink() {
+    User user = user();
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(kakaoUnlinkClient, never()).unlink(any());
+  }
+
+  @Test
+  void withdraw_callsAppleCredentialRevokeAndDelete() {
+    User user = user();
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
+  }
+
+  @Test
   void withdraw_whenAlreadyWithdrawn_isIdempotentNoOp() {
     User user = user();
     user.setDeletedAt(LocalDateTime.now().minusDays(1));
@@ -116,6 +195,7 @@ class UserWithdrawalServiceTest {
     verify(tripService, never()).leaveAllActiveTripsAsMember(any());
     verify(tripService, never()).deleteAllOwnedActiveTrips(any());
     verify(personalScheduleRepository, never()).deleteByUserId(any());
+    verify(appleCredentialService, never()).revokeAndDeleteIfPresent(any());
   }
 
   private static User user() {
@@ -130,6 +210,18 @@ class UserWithdrawalServiceTest {
     user.setFirstName("길동");
     user.setLastName("홍");
     user.setGoogleCalendarConnected(true);
+    return user;
+  }
+
+  private static User kakaoUser() {
+    User user =
+        new User(
+            "kakao-sub",
+            SocialProvider.KAKAO,
+            "user@example.com",
+            "닉네임",
+            "https://example.com/profile.png");
+    user.setId(USER_ID);
     return user;
   }
 }

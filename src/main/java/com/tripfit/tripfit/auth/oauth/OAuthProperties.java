@@ -19,6 +19,14 @@ public class OAuthProperties {
 
   private String appleClientId = "";
 
+  private String appleTeamId = "";
+
+  private String appleKeyId = "";
+
+  private String applePrivateKey = "";
+
+  private String kakaoAdminKey = "";
+
   public List<String> getGoogleClientIds() {
     return Arrays.stream(new String[] {googleClientId, googleClientIdIos, googleClientIdAndroid})
         .filter(id -> id != null && !id.isBlank())

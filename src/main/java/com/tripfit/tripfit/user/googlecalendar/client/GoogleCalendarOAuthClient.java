@@ -8,6 +8,8 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -19,6 +21,8 @@ import tools.jackson.databind.JsonNode;
 
 @Component
 public class GoogleCalendarOAuthClient {
+
+  private static final Logger log = LoggerFactory.getLogger(GoogleCalendarOAuthClient.class);
 
   private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
 
@@ -137,8 +141,9 @@ public class GoogleCalendarOAuthClient {
           .uri(REVOKE_URL + "?token=" + refreshToken)
           .retrieve()
           .toBodilessEntity();
-    } catch (Exception ignored) {
-      // best-effort — disconnect는 로컬 정리가 SSOT
+    } catch (Exception exception) {
+      // best-effort — disconnect·탈퇴는 로컬 정리가 SSOT라 예외를 삼키되, 실패 자체는 로그로 남김(토큰 값은 남기지 않음)
+      log.warn("Google Calendar refresh token revoke failed", exception);
     }
   }
 

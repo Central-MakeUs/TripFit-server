@@ -19,5 +19,9 @@ tripfit:
     google-client-id-ios: test-google-ios-client-id
     google-client-id-android: test-google-android-client-id
     apple-client-id: test-apple-client-id
+    apple-team-id: test-apple-team-id
+    apple-key-id: test-apple-key-id
+    apple-private-key: test-apple-private-key
+    kakao-admin-key: test-kakao-admin-key
   google-calendar:
     token-aes-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
