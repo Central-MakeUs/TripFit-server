@@ -1516,7 +1516,7 @@
           "Auth"
         ],
         "summary": "소셜 로그인",
-        "description": "목적: 소셜 토큰으로 로그인하고 access·refresh를 발급한다.\n\n호출 시점: 앱 최초 로그인·재로그인.\n\n전제: Google/Kakao/Apple에서 받은 유효한 토큰.\n\n결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).\n\n주요 에러: AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)\n",
+        "description": "목적: 소셜 토큰으로 로그인하고 access·refresh를 발급한다.\n\n호출 시점: 앱 최초 로그인·재로그인.\n\n전제: Google/Kakao/Apple에서 받은 유효한 토큰. provider가 APPLE이면 Apple 네이티브 Sign in 인증 결과의 authorizationCode도 함께 보내야 한다.\n\n결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).\n\n주의: APPLE 로그인은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 Apple 쪽 연결 해제(revoke)에 쓰이는 refresh token을 매 로그인마다 최신 상태로 갱신하기 위함.\n\n주요 에러: AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED — APPLE인데 authorizationCode 누락 · AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)\n",
         "operationId": "login",
         "requestBody": {
           "content": {
@@ -1560,21 +1560,15 @@
             }
           },
           "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
+            "description": "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED — provider가 APPLE인데 authorizationCode 누락",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "입력값이 올바르지 않습니다.",
-                  "errors": [
-                    {
-                      "field": "token",
-                      "message": "필수 값입니다."
-                    }
-                  ]
+                  "code": "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED",
+                  "message": "Apple 로그인에는 authorizationCode가 필요합니다."
                 }
               }
             }
@@ -4635,7 +4629,7 @@
               "string",
               "null"
             ],
-            "description": "APPLE 전용 authorization code. 탈퇴 시 Apple revoke 호출(#64)에 필요한 refresh token 교환용 — GOOGLE/KAKAO는 보내지 않음",
+            "description": "APPLE 전용 authorization code — provider가 APPLE이면 필수, GOOGLE/KAKAO는 보내지 않음(값이 있어도 무시). Apple 네이티브 Sign in 인증 결과에 포함된 authorizationCode 원문. 탈퇴 시 Apple 쪽 연결을 해제(revoke)하는 데 쓰일 refresh token을 교환하기 위한 값",
             "example": "c1234..."
           }
         },
