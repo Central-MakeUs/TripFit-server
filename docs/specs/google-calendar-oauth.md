@@ -17,7 +17,8 @@
 
 | 키 | 용도 |
 |----|------|
-| `GOOGLE_CLIENT_ID` (기존) | token 교환 client_id·client_secret 겸용 (웹/서버) |
+| `GOOGLE_CLIENT_ID` (기존) | token 교환 client_id (웹/서버) — 로그인 `aud` 검증과 공유 |
+| `GOOGLE_CLIENT_SECRET` | token 교환 client_secret (웹 타입 OAuth 클라이언트 전용 — iOS/Android 클라이언트는 secret 없음) |
 | `GOOGLE_CALENDAR_TOKEN_AES_KEY` | Base64 인코딩 **32바이트** AES-256 키 |
 
 환경 B 복귀 URL은 **프론트 범위** (백엔드 Must 아님).
