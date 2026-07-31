@@ -17,6 +17,10 @@ public class OAuthProperties {
 
   private String googleClientIdAndroid = "";
 
+  private String googleCalendarClientId = "";
+
+  private String googleCalendarClientSecret = "";
+
   private String appleBundleId = "";
 
   private String appleServiceId = "";

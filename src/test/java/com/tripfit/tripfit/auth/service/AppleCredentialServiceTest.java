@@ -9,9 +9,9 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.auth.domain.AppleCredential;
 import com.tripfit.tripfit.auth.oauth.AppleOAuthClient;
 import com.tripfit.tripfit.auth.repository.AppleCredentialRepository;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class AppleCredentialServiceTest {
   private AppleOAuthClient appleOAuthClient;
 
   @Mock
-  private GoogleCalendarTokenCrypto tokenCrypto;
+  private SocialTokenCrypto tokenCrypto;
 
   private AppleCredentialService appleCredentialService;
 

@@ -3,8 +3,8 @@ package com.tripfit.tripfit.auth.service;
 import com.tripfit.tripfit.auth.domain.AppleCredential;
 import com.tripfit.tripfit.auth.oauth.AppleOAuthClient;
 import com.tripfit.tripfit.auth.repository.AppleCredentialRepository;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,12 +21,12 @@ public class AppleCredentialService {
 
   private final AppleOAuthClient appleOAuthClient;
 
-  private final GoogleCalendarTokenCrypto tokenCrypto;
+  private final SocialTokenCrypto tokenCrypto;
 
   public AppleCredentialService(
       AppleCredentialRepository appleCredentialRepository,
       AppleOAuthClient appleOAuthClient,
-      GoogleCalendarTokenCrypto tokenCrypto) {
+      SocialTokenCrypto tokenCrypto) {
     this.appleCredentialRepository = appleCredentialRepository;
     this.appleOAuthClient = appleOAuthClient;
     this.tokenCrypto = tokenCrypto;

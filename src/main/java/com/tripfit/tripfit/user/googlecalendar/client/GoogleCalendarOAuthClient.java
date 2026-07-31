@@ -50,8 +50,8 @@ public class GoogleCalendarOAuthClient {
   public GoogleOAuthTokenResponse exchangeAuthorizationCode(String authorizationCode) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("code", authorizationCode);
-    form.add("client_id", oAuthProperties.getGoogleClientId());
-    form.add("client_secret", oAuthProperties.getGoogleClientSecret());
+    form.add("client_id", oAuthProperties.getGoogleCalendarClientId());
+    form.add("client_secret", oAuthProperties.getGoogleCalendarClientSecret());
     form.add("grant_type", "authorization_code");
     try {
       JsonNode response = postTokenForm(form);
@@ -67,8 +67,8 @@ public class GoogleCalendarOAuthClient {
   public GoogleOAuthTokenResponse refreshAccessToken(String refreshToken) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("refresh_token", refreshToken);
-    form.add("client_id", oAuthProperties.getGoogleClientId());
-    form.add("client_secret", oAuthProperties.getGoogleClientSecret());
+    form.add("client_id", oAuthProperties.getGoogleCalendarClientId());
+    form.add("client_secret", oAuthProperties.getGoogleCalendarClientSecret());
     form.add("grant_type", "refresh_token");
     try {
       JsonNode response = postTokenForm(form);

@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.user.googlecalendar.service;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -34,7 +35,7 @@ public class GoogleCalendarService {
 
   private final GoogleCalendarOAuthClient googleCalendarOAuthClient;
 
-  private final GoogleCalendarTokenCrypto tokenCrypto;
+  private final SocialTokenCrypto tokenCrypto;
 
   private final GoogleCalendarCredentialRepository credentialRepository;
 
@@ -48,7 +49,7 @@ public class GoogleCalendarService {
 
   public GoogleCalendarService(
       GoogleCalendarOAuthClient googleCalendarOAuthClient,
-      GoogleCalendarTokenCrypto tokenCrypto,
+      SocialTokenCrypto tokenCrypto,
       GoogleCalendarCredentialRepository credentialRepository,
       GoogleCalendarBusyDayRepository busyDayRepository,
       UserLookupService userLookupService,

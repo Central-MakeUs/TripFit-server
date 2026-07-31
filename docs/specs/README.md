@@ -54,7 +54,7 @@
 |------|------|------|------|
 | [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md) | **Draft** (#35) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
 | [`google-calendar-oauth.md`](google-calendar-oauth.md) | **Approved** (#44) | Google Calendar OAuth · busy Merge · AES-256 | auth-social-login · user-onboarding |
-| [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md) | Draft (#78, 결정 대기) | 로그인·Calendar OAuth Client ID 분리 — GCP 콘솔 발급 가이드 포함 | google-calendar-oauth · google-login-revoke |
+| [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md) | Draft (#78, 백엔드 배선 완료·콘솔 발급·FE 전환 대기) | 로그인·Calendar OAuth Client ID 분리 — GCP 콘솔 발급 가이드 포함 | google-calendar-oauth · google-login-revoke |
 | [`auth-token-rotation.md`](auth-token-rotation.md) | Draft | RTR + Redis | auth-social-login · decision 004 |
 | [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md) | Approved | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
@@ -98,7 +98,7 @@
 | **#52** | auth-dev-stub-verifier (`dev-mock-login` 후속, wave 4) | Open |
 | **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT · Google 부분은 `google-login-revoke` | Open · **Release Gate**(Wave 아님) |
 | **#77** | google-login-native-sdk-decision (Resolved, 결정 불필요로 정정) | Open — 클로즈 검토 필요 |
-| **#78** | google-calendar-client-id-separation (결정 대기, Wave 4) | Open |
+| **#78** | google-calendar-client-id-separation (백엔드 배선 완료, GCP 콘솔 발급·FE 전환 대기, Wave 4) | Open |
 
 ## 완료 후
 

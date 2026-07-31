@@ -16,8 +16,8 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
@@ -55,7 +55,7 @@ class UserWithdrawalServiceTest {
   private GoogleCalendarOAuthClient googleCalendarOAuthClient;
 
   @Mock
-  private GoogleCalendarTokenCrypto googleCalendarTokenCrypto;
+  private SocialTokenCrypto tokenCrypto;
 
   @Mock
   private KakaoUnlinkClient kakaoUnlinkClient;
@@ -82,7 +82,7 @@ class UserWithdrawalServiceTest {
             googleCalendarCredentialRepository,
             googleCalendarBusyDayRepository,
             googleCalendarOAuthClient,
-            googleCalendarTokenCrypto,
+            tokenCrypto,
             kakaoUnlinkClient,
             appleCredentialService,
             googleLoginCredentialService,
@@ -140,7 +140,7 @@ class UserWithdrawalServiceTest {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
         .thenReturn(Optional.of(credential));
-    when(googleCalendarTokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
+    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
     userWithdrawalService.withdraw(USER_ID);
 
@@ -167,6 +167,42 @@ class UserWithdrawalServiceTest {
     userWithdrawalService.withdraw(USER_ID);
 
     verify(kakaoUnlinkClient).unlink("kakao-sub");
+  }
+
+  // #78 검증 — Kakao 로그인 유저가 Google Calendar만 연동한 상태로 탈퇴해도 Calendar revoke는 provider와 무관하게 항상 실행됨
+  @Test
+  void withdraw_whenKakaoProviderWithGoogleCalendarConnected_revokesCalendarAndUnlinksKakao() {
+    User user = kakaoUser();
+    GoogleCalendarCredential credential =
+        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(credential));
+    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(kakaoUnlinkClient).unlink("kakao-sub");
+    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
+  }
+
+  // #78 검증 — Apple 로그인 유저가 Google Calendar만 연동한 상태로 탈퇴해도 Calendar revoke는 provider와 무관하게 항상 실행됨
+  @Test
+  void withdraw_whenAppleProviderWithGoogleCalendarConnected_revokesCalendarAndAppleCredential() {
+    User user = appleUser();
+    GoogleCalendarCredential credential =
+        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(credential));
+    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
+    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
   }
 
   @Test
@@ -234,6 +270,18 @@ class UserWithdrawalServiceTest {
         new User(
             "kakao-sub",
             SocialProvider.KAKAO,
+            "user@example.com",
+            "닉네임",
+            "https://example.com/profile.png");
+    user.setId(USER_ID);
+    return user;
+  }
+
+  private static User appleUser() {
+    User user =
+        new User(
+            "apple-sub",
+            SocialProvider.APPLE,
             "user@example.com",
             "닉네임",
             "https://example.com/profile.png");

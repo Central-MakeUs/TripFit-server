@@ -37,7 +37,7 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 
 - [x] `AuthErrorCode.AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400) 신규 — GOOGLE 로그인인데 `authorizationCode` 누락·공백이면 소셜 토큰 검증 전 즉시 거부(Apple과 동일 패턴, 처음부터 강제)
 - [x] `LoginRequest.authorizationCode` — 기존 필드(현재 "APPLE 전용") 재사용. `@Schema` description을 "APPLE 또는 GOOGLE 로그인 시 필수, KAKAO는 안 씀"으로 amend. 신규 필드 추가 아님
-- [x] 신규 엔티티 `auth/domain/GoogleLoginCredential` — `AppleCredential`과 동일 최소 구조: `user_id`(FK, UNIQUE) · `refresh_token_ciphertext`(AES-256-GCM, `GoogleCalendarTokenCrypto` 재사용 — 신규 AES 키 없음) · `BaseTimeEntity`. `apple_client_id`류 컬럼은 불필요(아래 "설계 노트" 참고)
+- [x] 신규 엔티티 `auth/domain/GoogleLoginCredential` — `AppleCredential`과 동일 최소 구조: `user_id`(FK, UNIQUE) · `refresh_token_ciphertext`(AES-256-GCM, `SocialTokenCrypto` 재사용 — 신규 AES 키 없음) · `BaseTimeEntity`. `apple_client_id`류 컬럼은 불필요(아래 "설계 노트" 참고)
 - [x] 신규 `auth/oauth/GoogleOAuthClient` — 로그인 전용 authorization code 교환 + revoke. `AppleOAuthClient`와 동일하게 `auth` 도메인 안에 두어 `user/googlecalendar` 패키지에 대한 역방향 의존을 만들지 않음(아래 "설계 노트" 참고). `OAuthProperties.getGoogleClientId()`/`getGoogleClientSecret()`(기존 Calendar용 값 재사용, 신규 env 없음)
   - 교환: `POST https://oauth2.googleapis.com/token` — refresh_token이 응답에 없어도 예외를 던지지 않고 정상 처리(재로그인은 Google이 최초 1회만 refresh_token을 내려주므로 이게 정상 케이스)
   - revoke: `POST https://oauth2.googleapis.com/revoke?token=...` — client_id/secret 불필요(Google revoke 엔드포인트는 토큰만 요구, Apple과 다름)
@@ -65,7 +65,7 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 
 ## 설계 노트 (구현 전 참고)
 
-- **`GoogleCalendarOAuthClient` 재사용 안 함**: Calendar용 클라이언트는 `user/googlecalendar/client/` 패키지 소속이라, `auth` 도메인이 이걸 호출하면 `auth → user.googlecalendar` 역방향 의존이 생김(레이어 원칙 위반). Apple도 자체 `auth/oauth/AppleOAuthClient`를 뒀던 것과 동일하게, 로그인용 Google 교환/revoke는 `auth/oauth/GoogleOAuthClient`로 새로 둔다. `TOKEN_URL`/`REVOKE_URL` 상수·교환 로직이 Calendar 클라이언트와 일부 겹치지만, 도메인 경계를 지키는 쪽을 우선한다. 암호화 유틸(`GoogleCalendarTokenCrypto`)만 기존처럼 재사용(Apple도 동일 패턴).
+- **`GoogleCalendarOAuthClient` 재사용 안 함**: Calendar용 클라이언트는 `user/googlecalendar/client/` 패키지 소속이라, `auth` 도메인이 이걸 호출하면 `auth → user.googlecalendar` 역방향 의존이 생김(레이어 원칙 위반). Apple도 자체 `auth/oauth/AppleOAuthClient`를 뒀던 것과 동일하게, 로그인용 Google 교환/revoke는 `auth/oauth/GoogleOAuthClient`로 새로 둔다. `TOKEN_URL`/`REVOKE_URL` 상수·교환 로직이 Calendar 클라이언트와 일부 겹치지만, 도메인 경계를 지키는 쪽을 우선한다. 암호화 유틸(`SocialTokenCrypto`)만 기존처럼 재사용(Apple도 동일 패턴).
 - **client_id 컬럼이 필요 없는 이유(2026-07-31 FE 확인으로 확정)**: Apple은 Bundle ID/Services ID 두 client_id가 **같은 교환·revoke 호출에 실제로 다르게 쓰여야 해서** 어느 걸 썼는지 저장이 필수였다. Google은 (a) 네이티브 앱(`@react-native-google-signin/google-signin`)이 iOS든 Android든 `serverAuthCode`를 **항상 webClientId로만** 교환하도록 설계돼 있고(라이브러리 자체 계약), (b) 브라우저 경로도 동일한 Web Client ID를 쓰며, (c) revoke 엔드포인트 자체가 client_id를 요구하지 않는다(토큰만 필요). 즉 Apple과 달리 "어느 client_id를 썼는지"가 애초에 갈리지 않아 저장할 이유가 없다 — 추측이 아니라 확인된 사실.
 - **refresh_token 부재를 에러로 취급하지 않음**: 기존 `GoogleCalendarOAuthClient.parseTokenResponse(response, requireRefresh=true)`는 Calendar 연동 실패로 간주해 예외를 던지지만, 로그인 컨텍스트에서는 재로그인마다 refresh_token이 없는 게 정상이다(Google이 최초 1회만 내려줌). `GoogleOAuthClient`의 교환 메서드는 refresh_token 유무와 무관하게 정상 응답으로 처리하고, 값이 있을 때만 credential을 upsert한다.
 
@@ -131,13 +131,13 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 google_login_credential (신규)
 - id                       UUID v4, PK
 - user_id                  UUID, FK → users.id, UNIQUE (user당 1행)
-- refresh_token_ciphertext TEXT, AES-256-GCM (GoogleCalendarTokenCrypto 재사용)
+- refresh_token_ciphertext TEXT, AES-256-GCM (SocialTokenCrypto 재사용)
 - created_at / updated_at  BaseTimeEntity
 ```
 
 - `google_calendar_credential`(기존, Calendar 전용)과는 **별개 테이블** — 목적·라이프사이클이 다름(로그인 credential은 계정 활성 기간 내내 유지, 탈퇴 시에만 삭제 / 캘린더 credential은 연동 해제 시점에도 삭제)
 - hard delete 대상: 탈퇴 시 `revokeAndDeleteIfPresent()`가 항상 삭제(기존 `apple_credential`·`google_calendar_credential`과 동일 패턴)
-- **⚠️ 두 credential이 같은 Google Client ID를 공유함**: 캘린더 전용 Client ID가 별도로 없어(FE 미구현, Wave 4), 로그인·캘린더 둘 다 현재 유일한 Web Client ID로 인증한다. Google의 "연결된 앱" 동의는 scope가 아니라 **client_id 단위**로 묶이므로, 실제로는 두 refresh token이 Google 쪽에서 하나의 통합된 grant일 가능성이 높다 — 아래 리스크 참고
+- **(2026-08-22 해소, 코드 레벨)** 로그인용 `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`과 Calendar 전용 `GOOGLE_CALENDAR_CLIENT_ID`/`GOOGLE_CALENDAR_CLIENT_SECRET`을 `OAuthProperties`·`GoogleCalendarOAuthClient`에서 분리 완료(`google-calendar-client-id-separation.md`). 다만 실제 값은 GCP 콘솔에서 Calendar 전용 Client ID를 아직 발급하지 않아 비어 있고, FE도 아직 로그인과 같은 Client ID로 Calendar 연동을 요청 중 — 아래 리스크 참고
 
 ## 비즈니스 규칙
 
@@ -186,7 +186,7 @@ google_login_credential (신규)
 | iOS/Android 네이티브 Google Sign-In 시 client_id 이원화 | **해소(2026-07-31, FE 확인)** | `@react-native-google-signin/google-signin`의 `serverAuthCode`는 플랫폼 무관하게 항상 webClientId로 교환됨 — Apple과 달리 애초에 발생하지 않는 리스크였음. [`google-login-native-sdk-decision.md`](google-login-native-sdk-decision.md)(#77)도 Resolved로 정정 |
 | `prompt=consent` 미강제로 인해 revoke가 실패(네트워크 등)했던 유저의 재가입 시 refresh_token 재획득 실패 가능성 | 확정(수용) | best-effort 정책과 일관 — Google 쪽에서 동의가 실제로 안 지워졌으면 다음 로그인도 동의 화면 없이 code만 오고 refresh_token은 없을 수 있음 |
 | FE 배포 순서 조율 | `[진행 필요]` | Apple 때와 동일한 리스크 — FE가 hybrid flow 전환 완료 후 백엔드 강제(400) 배포 |
-| **로그인·캘린더가 같은 Client ID 공유** | `[미정]` — [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)로 분리 | (1) 기술적 리스크: Google이 client_id 단위로 동의를 묶는다면 `GoogleCalendarService.disconnect()`(탈퇴 아닌 단순 캘린더 해제)의 revoke가 같은 Google 계정으로 로그인도 한 유저의 로그인 grant까지 지울 수 있음. (2) 개념적 근거: 캘린더 연동은 KAKAO/APPLE/GOOGLE 로그인 유저 **전부**가 쓸 수 있는, 로그인 provider와 무관한 기능이라("인증"과 "외부 연동"은 별개 관심사) 애초에 같은 Client ID를 공유할 이유가 약함. Calendar Wave 4 착수 시 진행 |
+| **로그인·캘린더가 같은 Client ID 공유** | 코드 분리 완료(2026-08-22) — GCP 콘솔 발급·FE 전환 대기 | [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md) — `OAuthProperties`·`GoogleCalendarOAuthClient`는 이미 분리된 env(`GOOGLE_CALENDAR_CLIENT_ID`/`SECRET`)를 쓰지만, GCP 콘솔에 실제 Calendar 전용 Client ID를 아직 발급 안 했고 FE도 로그인과 같은 Client ID로 요청 중이라 실질적 리스크(같은 client_id 동의 묶임)는 Calendar FE 착수 시점까지 유지됨 |
 
 ## 변경 이력
 

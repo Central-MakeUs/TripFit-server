@@ -3,8 +3,8 @@ package com.tripfit.tripfit.auth.service;
 import com.tripfit.tripfit.auth.domain.GoogleLoginCredential;
 import com.tripfit.tripfit.auth.oauth.GoogleOAuthClient;
 import com.tripfit.tripfit.auth.repository.GoogleLoginCredentialRepository;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +22,12 @@ public class GoogleLoginCredentialService {
 
   private final GoogleOAuthClient googleOAuthClient;
 
-  private final GoogleCalendarTokenCrypto tokenCrypto;
+  private final SocialTokenCrypto tokenCrypto;
 
   public GoogleLoginCredentialService(
       GoogleLoginCredentialRepository googleLoginCredentialRepository,
       GoogleOAuthClient googleOAuthClient,
-      GoogleCalendarTokenCrypto tokenCrypto) {
+      SocialTokenCrypto tokenCrypto) {
     this.googleLoginCredentialRepository = googleLoginCredentialRepository;
     this.googleOAuthClient = googleOAuthClient;
     this.tokenCrypto = tokenCrypto;

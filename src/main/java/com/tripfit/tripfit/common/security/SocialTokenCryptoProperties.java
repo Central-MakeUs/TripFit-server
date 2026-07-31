@@ -1,9 +1,9 @@
-package com.tripfit.tripfit.user.googlecalendar.config;
+package com.tripfit.tripfit.common.security;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "tripfit.google-calendar")
-public class GoogleCalendarProperties {
+@ConfigurationProperties(prefix = "tripfit.security")
+public class SocialTokenCryptoProperties {
 
   private String tokenAesKey = "";
 

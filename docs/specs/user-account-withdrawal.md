@@ -71,7 +71,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - [x] `LoginRequest.authorizationCode` 필드는 **이미 존재**(`cb5a23f`, optional·nullable, APPLE 전용) — `AuthService.login(provider, token, authorizationCode)`가 세 번째 파라미터로 받아 실제 소비하도록 변경(`AuthController`도 동일하게 전달). 신규 필드 추가 아님, 기존 필드 배선
 - [x] `AuthService.login()`에서 `provider == APPLE`이면 `AppleCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode, clientId)` 호출 — 내부에서 Apple token 엔드포인트(`https://appleid.apple.com/auth/token`)로 `authorizationCode` → refresh token 교환(`AppleOAuthClient`)
 - [x] `.p8`+`APPLE_TEAM_ID`+`APPLE_KEY_ID`로 서명한 client_secret JWT 생성(`AppleOAuthClient.buildClientSecretJwt()`, ES256, nimbus-jose-jwt, 호출마다 새로 발급·캐싱 없음)
-- [x] 신규 엔티티 `AppleCredential`(`auth/domain/`) — `GoogleCalendarCredential`과 동일 패턴이되 **탈퇴 시 1회 revoke만 필요**해 access token 캐시·동기화 필드는 제외한 최소 구조. refresh token은 `GoogleCalendarTokenCrypto` 재사용해 AES-256-GCM 암호화 저장(신규 AES 키 없음)
+- [x] 신규 엔티티 `AppleCredential`(`auth/domain/`) — `GoogleCalendarCredential`과 동일 패턴이되 **탈퇴 시 1회 revoke만 필요**해 access token 캐시·동기화 필드는 제외한 최소 구조. refresh token은 `SocialTokenCrypto` 재사용해 AES-256-GCM 암호화 저장(신규 AES 키 없음)
 - [x] `UserWithdrawalService.withdraw()`에서 `AppleCredentialService.revokeAndDeleteIfPresent(userId)` 호출 — credential 존재 시 저장된 refresh token으로 `https://appleid.apple.com/auth/revoke` 호출(best-effort) 후 credential row 삭제(존재 여부 무관 항상 delete 시도)
 - [x] 신규 env `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY` — `.env.example`(루트·`deploy/app/`) + `.github/workflows/ci-cd.yml`(secrets 참조·`envs:` 목록·export) + `deploy/app/docker-compose.yml`(environment 매핑) + `application.yml`/`OAuthProperties.java`(바인딩) 전부 배선 완료
 - [x] `AuthService.login()`에서 `provider == APPLE`인데 `authorizationCode`가 없으면 소셜 토큰 검증 전 즉시 `AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`(400)로 거부(B안, 2026-07-31 사용자 결정 — 아래 "세부 정책" 절 참고). 조건부 필수화라 `Breaking-Change-Reason` 트레일러 **필요** — **프론트 배포와 조율 후 배포할 것**, 안 그러면 배포 즉시 Apple 로그인 전체 실패
@@ -90,7 +90,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 - **외부 provider 호출은 반드시 서비스 레벨 try/catch로 best-effort 처리** — Kakao unlink·Apple token 교환/revoke 실패가 탈퇴 트랜잭션 자체를 막으면 안 됨(로컬 데이터 삭제·soft delete는 provider 상태와 무관하게 항상 성공해야 함). `GoogleCalendarOAuthClient.revokeRefreshToken()`의 `catch (Exception ignored)` 패턴을 그대로 따를 것
 - **신규 네이티브 SQL 쿼리 추가 금지** — Apple credential 조회·삭제는 `GoogleCalendarCredentialRepository.deleteByUser_Id()`처럼 derived method/JPQL만 사용. `Collection<UUID>` IN절 네이티브 쿼리를 새로 만들지 않는다
-- **Apple refresh token 평문 저장 금지** — `GoogleCalendarCredential`과 동일한 AES-256-GCM 암호화 패턴(`GoogleCalendarTokenCrypto`) 재사용. `RefreshToken.token`이 현재 평문 저장 중인 것은 별도 열려있는 follow-up이며, `#64`에서 같은 실수를 새로 추가하지 않는다
+- **Apple refresh token 평문 저장 금지** — `GoogleCalendarCredential`과 동일한 AES-256-GCM 암호화 패턴(`SocialTokenCrypto`) 재사용. `RefreshToken.token`이 현재 평문 저장 중인 것은 별도 열려있는 follow-up이며, `#64`에서 같은 실수를 새로 추가하지 않는다
 
 ### Out of Scope (이번 스펙)
 
@@ -151,8 +151,8 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - hard delete 대상 테이블: `personal_schedule`, `regular_schedule`, `google_calendar_credential`, `google_calendar_busy_day`, `refresh_token`, `apple_credential`, `google_login_credential`(모두 `user_id` 단독 소유, 타 사용자 참조 없음)
 - soft delete + 스크럽 대상: `users` (row 유지, PII 컬럼만 null)
 - cascade 대상: 호출자가 MEMBER인 `trip_member` row(soft delete, [`trip-member-leave.md`](trip-member-leave.md) 재사용) · 호출자가 OWNER인 `trip` row(soft delete, `deleteTrip()` 재사용 — 해당 방의 다른 멤버 `trip_member` row도 함께 soft delete됨)
-- **`apple_credential` (신규 테이블, 확정)**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, 평문 저장 금지 — `GoogleCalendarTokenCrypto` 재사용) · `apple_client_id`(varchar, 2026-07-31 추가 — 로그인 시 매칭된 Bundle ID/Services ID 원문, 탈퇴 revoke에 재사용) · `BaseTimeEntity`(생성·수정 시각)만 있는 최소 구조(`google_calendar_credential`의 access token 캐시·동기화 필드는 Apple에 해당 사항 없어 제외). PK는 프로젝트 컨벤션대로 UUID v4(`docs/specs/uuid-primary-key.md`). `docs/architecture/erd.md` 반영 완료
-- **`google_login_credential` (신규 테이블, [`google-login-revoke.md`](google-login-revoke.md))**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, `GoogleCalendarTokenCrypto` 재사용) · `BaseTimeEntity`만 있는 최소 구조. Apple과 달리 client_id 컬럼 없음(Google revoke 엔드포인트가 client_id를 요구하지 않고, 현재 로그인·Calendar가 단일 Client ID를 공유하기 때문 — 상세 근거는 해당 스펙 설계 노트). PK는 UUID v4. `docs/architecture/erd.md` 반영 완료
+- **`apple_credential` (신규 테이블, 확정)**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, 평문 저장 금지 — `SocialTokenCrypto` 재사용) · `apple_client_id`(varchar, 2026-07-31 추가 — 로그인 시 매칭된 Bundle ID/Services ID 원문, 탈퇴 revoke에 재사용) · `BaseTimeEntity`(생성·수정 시각)만 있는 최소 구조(`google_calendar_credential`의 access token 캐시·동기화 필드는 Apple에 해당 사항 없어 제외). PK는 프로젝트 컨벤션대로 UUID v4(`docs/specs/uuid-primary-key.md`). `docs/architecture/erd.md` 반영 완료
+- **`google_login_credential` (신규 테이블, [`google-login-revoke.md`](google-login-revoke.md))**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, `SocialTokenCrypto` 재사용) · `BaseTimeEntity`만 있는 최소 구조. Apple과 달리 client_id 컬럼 없음(Google revoke 엔드포인트가 client_id를 요구하지 않아 저장할 필요 자체가 없음 — 상세 근거는 해당 스펙 설계 노트). PK는 UUID v4. `docs/architecture/erd.md` 반영 완료
 
 ## 비즈니스 규칙
 

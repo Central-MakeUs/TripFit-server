@@ -54,13 +54,15 @@ tripfit:
     google-client-secret: ${GOOGLE_CLIENT_SECRET:}
     google-client-id-ios: ${GOOGLE_CLIENT_ID_IOS:}
     google-client-id-android: ${GOOGLE_CLIENT_ID_ANDROID:}
+    google-calendar-client-id: ${GOOGLE_CALENDAR_CLIENT_ID:}
+    google-calendar-client-secret: ${GOOGLE_CALENDAR_CLIENT_SECRET:}
     apple-bundle-id: ${APPLE_BUNDLE_ID:}
     apple-service-id: ${APPLE_SERVICE_ID:}
     apple-team-id: ${APPLE_TEAM_ID:}
     apple-key-id: ${APPLE_KEY_ID:}
     apple-private-key: ${APPLE_PRIVATE_KEY:}
     kakao-admin-key: ${KAKAO_ADMIN_KEY:}
-  google-calendar:
-    token-aes-key: ${GOOGLE_CALENDAR_TOKEN_AES_KEY:}
+  security:
+    token-aes-key: ${SOCIAL_TOKEN_AES_KEY:}
   fcm:
     credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}

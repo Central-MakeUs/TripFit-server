@@ -3,8 +3,8 @@ package com.tripfit.tripfit.auth.security;
 import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.jwt.JwtProperties;
 import com.tripfit.tripfit.auth.oauth.OAuthProperties;
+import com.tripfit.tripfit.common.security.SocialTokenCryptoProperties;
 import com.tripfit.tripfit.notification.config.FcmProperties;
-import com.tripfit.tripfit.user.googlecalendar.config.GoogleCalendarProperties;
 import java.util.List;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableConfigurationProperties({
     JwtProperties.class,
     OAuthProperties.class,
-    GoogleCalendarProperties.class,
+    SocialTokenCryptoProperties.class,
     FcmProperties.class
 })
 public class AppConfig implements WebMvcConfigurer {
