@@ -1,0 +1,3303 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "TripFit API",
+        "version": "v0.0.1"
+    },
+    "servers": [
+        {
+            "url": "https://api.tripfit.online",
+            "description": "Production API Server"
+        }
+    ],
+    "security": [
+        {
+            "bearer-jwt": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Trip",
+            "description": "\uc5ec\ud589\ubc29 \uc0dd\uc131\u00b7\ubaa9\ub85d\u00b7\uc0c1\uc138\u00b7\ucc38\uc5ec\u00b7\uc77c\uc815 \ud655\uc778\u00b7Pin"
+        },
+        {
+            "name": "User",
+            "description": "\uc628\ubcf4\ub529 \uc774\ub984 \ub4f1\ub85d\u00b7\ub9c8\uc774\ud398\uc774\uc9c0 \ud504\ub85c\ud544 \uc218\uc815\u00b7\ud0c8\ud1f4"
+        },
+        {
+            "name": "Auth",
+            "description": "\uc18c\uc15c \ub85c\uadf8\uc778\u00b7\ud1a0\ud070\u00b7\ud604\uc7ac \uc0ac\uc6a9\uc790"
+        },
+        {
+            "name": "Google Calendar",
+            "description": "Google Calendar OAuth \uc5f0\ub3d9\u00b7\ud574\uc81c"
+        },
+        {
+            "name": "Trip Members",
+            "description": "\uc5ec\ud589\ubc29 \ucc38\uc5ec\uc790 \ubaa9\ub85d\u00b7\uadf8\ub8f9 \ub2ec\ub825\u00b7\ub0b4\ubcf4\ub0b4\uae30"
+        },
+        {
+            "name": "User Schedule",
+            "description": "\ubcf8\uc778 \uc815\uae30\u00b7\uac1c\uc778 \uc77c\uc815\uacfc \ub2ec\ub825(effective)"
+        }
+    ],
+    "paths": {
+        "/api/v1/users/schedule/regular": {
+            "get": {
+                "tags": [
+                    "User Schedule"
+                ],
+                "summary": "\uc815\uae30 \uc77c\uc815 \ubaa9\ub85d",
+                "description": "\ubaa9\uc801: \ubcf8\uc778 \uc815\uae30 \uc77c\uc815 \ubaa9\ub85d\uc744 \uc870\ud68c\ud55c\ub2e4.\n\n\uacb0\uacfc: \uc0dd\uc131 \uc2dc\uac01 \uc624\ub984\ucc28\uc21c. \uc624\uc804\u00b7\uc624\ud6c4\u00b7\uc800\ub141 \uc2ac\ub86f\uc740 start/end\ub85c \uacc4\uc0b0\ub41c \uac12.\n",
+                "operationId": "listRegular",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "items": [
+                                            {
+                                                "id": "550e8400-e29b-41d4-a716-446655440000",
+                                                "title": "\ucd9c\uadfc",
+                                                "daysOfWeek": "MON,TUE,WED,THU,FRI",
+                                                "startTime": "09:00:00",
+                                                "endTime": "18:00:00",
+                                                "morningStatus": "IMPOSSIBLE",
+                                                "afternoonStatus": "IMPOSSIBLE",
+                                                "eveningStatus": "POSSIBLE",
+                                                "maxVacationDays": 2,
+                                                "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                                                "halfVacationAvailable": false,
+                                                "holidayRest": true
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "User Schedule"
+                ],
+                "summary": "\uc815\uae30 \uc77c\uc815 \uc0dd\uc131",
+                "description": "\ubaa9\uc801: \ub9e4\uc8fc \ubc18\ubcf5\ub418\ub294 \uc815\uae30 \uc77c\uc815\uc744 \ucd94\uac00\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc77c\uc815 \uc628\ubcf4\ub529\u00b7\ub9c8\uc774\ud398\uc774\uc9c0\uc5d0\uc11c \uc815\uae30 \uc77c\uc815 \ucd94\uac00.\n\n\uc804\uc81c: startTime/endTime\u00b7\uc694\uc77c(daysOfWeek) \ud544\uc218.\n\n\uacb0\uacfc: \uc800\uc7a5\ub41c \uc815\uae30 \uc77c\uc815. \uc2ac\ub86f\uc740 start/end\ub85c \uacc4\uc0b0\ub41c\ub2e4. daysOfWeek\ub294 Weekday(MON~SUN) \ucf64\ub9c8 CSV.\n\n\uc8fc\uc758: \uccab \uc815\uae30 \uc77c\uc815 \uc0dd\uc131 \uc2dc hasPreSchedule\uc774 true\uac00 \ub41c\ub2e4(GET /auth/me \ub4f1\uc73c\ub85c \uc7ac\uc870\ud68c).\n",
+                "operationId": "createRegular",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateRegularScheduleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "\uc0dd\uc131 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                                        "title": "\ucd9c\uadfc",
+                                        "daysOfWeek": "MON,TUE,WED,THU,FRI",
+                                        "startTime": "09:00:00",
+                                        "endTime": "18:00:00",
+                                        "morningStatus": "IMPOSSIBLE",
+                                        "afternoonStatus": "IMPOSSIBLE",
+                                        "eveningStatus": "POSSIBLE",
+                                        "maxVacationDays": 2,
+                                        "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                                        "halfVacationAvailable": false,
+                                        "holidayRest": true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "daysOfWeek",
+                                            "message": "\ud544\uc218 \uac12\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/google-calendar": {
+            "post": {
+                "tags": [
+                    "Google Calendar"
+                ],
+                "summary": "Google Calendar \uc5f0\ub3d9",
+                "description": "\ubaa9\uc801: Google OAuth authorization code\ub85c Calendar \uc77d\uae30 \uad8c\ud55c\uc744 \uc5f0\ub3d9\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc628\ubcf4\ub529\u00b7\uc124\uc815 \ud654\uba74\uc5d0\uc11c Google Calendar \uc5f0\ub3d9 \ubc84\ud2bc \uc644\ub8cc \uc9c1\ud6c4.\n\n\uc804\uc81c: TripFit \ub85c\uadf8\uc778(JWT) \uc0c1\ud0dc. \uc571\u00b7\uc6f9\uc774 Google OAuth \ub3d9\uc758 \ud6c4 authorization code\ub97c \uc804\ub2ec\ud55c\ub2e4.\n\n\uacb0\uacfc: isGoogleCalendarConnected=true\ub85c \uac31\uc2e0\ub41c UserSummary. \uc5f0\ub3d9 \uc9c1\ud6c4 freeBusy 1\ud68c sync.\n\n\uc8fc\uc694 \uc5d0\ub7ec: GOOGLE_CALENDAR_CONNECT_FAILED \u2014 code \uad50\ud658\u00b7Google API \uc2e4\ud328\n",
+                "operationId": "connect",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConnectGoogleCalendarRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\uc5f0\ub3d9 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                                        "email": "user@example.com",
+                                        "firstName": "\uae38\ub3d9",
+                                        "lastName": "\ud64d",
+                                        "nickname": "\ud64d\uae38\ub3d9",
+                                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                        "provider": "GOOGLE",
+                                        "isGoogleCalendarConnected": true,
+                                        "hasPreSchedule": false,
+                                        "isAllFree": false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "authorizationCode",
+                                            "message": "\ud544\uc218 \uac12\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "502": {
+                        "description": "GOOGLE_CALENDAR_CONNECT_FAILED \u2014 authorization code \uad50\ud658\u00b7Google API \ud638\ucd9c \uc2e4\ud328",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "GOOGLE_CALENDAR_CONNECT_FAILED",
+                                    "message": "Google Calendar \uc5f0\ub3d9\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Google Calendar"
+                ],
+                "summary": "Google Calendar \uc5f0\ub3d9 \ud574\uc81c",
+                "description": "\ubaa9\uc801: Google Calendar \uc5f0\ub3d9\uc744 \uc758\ub3c4\uc801\uc73c\ub85c \ud574\uc81c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc124\uc815\u00b7\uc628\ubcf4\ub529\uc5d0\uc11c \uc5f0\ub3d9 \ud574\uc81c \uc120\ud0dd \uc2dc.\n\n\uc804\uc81c: isGoogleCalendarConnected=true.\n\n\uacb0\uacfc: revoke(best-effort) \ud6c4 credential\u00b7busy_day \uc0ad\uc81c, flag=false UserSummary. \uc815\uae30\u00b7\uac1c\ubcc4 \uc77c\uc815\uc740 \uc720\uc9c0.\n\n\uc8fc\uc694 \uc5d0\ub7ec: GOOGLE_CALENDAR_NOT_CONNECTED \u2014 \ubbf8\uc5f0\ub3d9 \uc0c1\ud0dc\uc5d0\uc11c \ud574\uc81c \uc694\uccad\n",
+                "operationId": "disconnect",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc5f0\ub3d9 \ud574\uc81c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                                        "email": "user@example.com",
+                                        "firstName": "\uae38\ub3d9",
+                                        "lastName": "\ud64d",
+                                        "nickname": "\ud64d\uae38\ub3d9",
+                                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                        "provider": "GOOGLE",
+                                        "isGoogleCalendarConnected": false,
+                                        "hasPreSchedule": false,
+                                        "isAllFree": false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "GOOGLE_CALENDAR_NOT_CONNECTED \u2014 \ubbf8\uc5f0\ub3d9 \uc0c1\ud0dc\uc5d0\uc11c \ud574\uc81c \uc694\uccad",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "GOOGLE_CALENDAR_NOT_CONNECTED",
+                                    "message": "Google Calendar\uac00 \uc5f0\ub3d9\ub418\uc5b4 \uc788\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/trips": {
+            "get": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "\ub0b4 \uc5ec\ud589\ubc29 \ubaa9\ub85d",
+                "description": "\ubaa9\uc801: \ub0b4\uac00 \uc18d\ud55c \uc5ec\ud589\ubc29 \uce74\ub4dc \ubaa9\ub85d\uc744 \uc870\ud68c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ud648 \uce90\ub7ec\uc140\u00b7\uc804\uccb4 \uc5ec\ud589\u00b7\ub9c8\uc774\ud398\uc774\uc9c0 \uc5ec\ud589 \uce69.\n\n\uacb0\uacfc: TripHomeCard \ubaa9\ub85d. scope=ongoing\uc740 endRange\u2265\uc624\ub298\u00b7Pin \uc815\ub82c, scope=all\uc740 Pin \uc5c6\uc774 \ucd5c\uadfc \ud65c\ub3d9\uc21c.\n\n\uc8fc\uc758: status\ub294 \uc5ec\ud589\ubc29 \uc0c1\ud0dc \ud544\ud130(ONGOING|CONFIRMED|ALL). ownerOnly=true\uba74 \ubc29\uc7a5\uc778 \ubc29\ub9cc.\n\n\ud648\uc5d0 SCHEDULE_PENDING(\ubc29\uc7a5 confirm \uc804) \uce74\ub4dc\uac00 \ubcf4\uc77c \uc218 \uc788\ub2e4 \u2014 \ud0ed \uc2dc \uc0c1\uc138\uac00 \uc544\ub2c8\ub77c \uc77c\uc815 confirm \ud50c\ub85c\uc6b0\ub85c \ub77c\uc6b0\ud305.\n\n\ubaa9\ub85d \uce74\ub4dc\uc5d0\ub294 inviteCode\uac00 \uc5c6\ub2e4(\uacf5\uc720\ub294 \uc785\uc7a5 \ud6c4 \uc0c1\uc138).\n",
+                "operationId": "listTrips",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "description": "\ubaa9\ub85d \ubdf0. ongoing=\uc9c4\ud589 \uc911 \uce90\ub7ec\uc140, all=\uc804\uccb4",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "all"
+                        },
+                        "example": "all"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "\uc5ec\ud589\ubc29 \uc0c1\ud0dc \ud544\ud130. ONGOING|CONFIRMED|ALL",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ALL"
+                        },
+                        "example": "ALL"
+                    },
+                    {
+                        "name": "ownerOnly",
+                        "in": "query",
+                        "description": "true\uba74 \ubcf8\uc778\uc774 \ubc29\uc7a5\uc778 \ubc29\ub9cc",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "trips": [
+                                            {
+                                                "tripId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "name": "\uc81c\uc8fc\ub3c4 \uc5ec\ud589",
+                                                "destination": "\uc81c\uc8fc\ub3c4",
+                                                "startRange": "2026-08-01",
+                                                "endRange": "2026-08-31",
+                                                "durationDays": 4,
+                                                "durationNights": 3,
+                                                "memberCount": 6,
+                                                "status": "ONGOING",
+                                                "lastActivityAt": "2026-07-20T10:00:00",
+                                                "pinned": true,
+                                                "myRole": "OWNER",
+                                                "myMemberStatus": "ACTIVE",
+                                                "activeMemberCount": 3,
+                                                "memberFillRate": 0.5,
+                                                "membersPreview": [
+                                                    {
+                                                        "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                                        "role": "OWNER"
+                                                    }
+                                                ],
+                                                "membersPreviewOverflow": 0
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "\uc5ec\ud589\ubc29 \uc0dd\uc131",
+                "description": "\ubaa9\uc801: \uc0c8 \uc5ec\ud589\ubc29\uc744 \ub9cc\ub4e4\uace0 \ubc29\uc7a5\uc73c\ub85c \ub4f1\ub85d\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc5ec\ud589\ubc29 \ub9cc\ub4e4\uae30 \uc644\ub8cc \uc9c1\ud6c4.\n\n\uc804\uc81c: \uc131\u00b7\uc774\ub984 \ud504\ub85c\ud544 \uc644\ub8cc. \uc774\ub984\uc740 \ud544\uc218(\ucd5c\ub300 15\uc790).\n\n\uacb0\uacfc: \uc5ec\ud589\ubc29 ID\u00b7\uc0c1\ud0dc. \ubc29\uc7a5 \uba64\ubc84 \uc0c1\ud0dc\ub294 SCHEDULE_PENDING(\ubc29\uc7a5 \uc804\uc6a9\u00b7confirm \uc804). inviteCode\ub294 \uc751\ub2f5\uc5d0 \uc5c6\uc74c.\n\n\uc8fc\uc758: \uc0dd\uc131\ub9cc\uc73c\ub85c\ub294 \ubc29 \uc785\uc7a5\u00b7\ucd08\ub300 \uacf5\uc720\uac00 \uc548 \ub41c\ub2e4. \uc77c\uc815 \ud50c\ub85c\uc6b0 \ud6c4 confirm(ACTIVE)\u00b7\uc0c1\uc138\uc5d0\uc11c inviteCode\ub97c \uc4f4\ub2e4.\n\n\uc8fc\uc694 \uc5d0\ub7ec: PROFILE_NAME_REQUIRED \u2014 \uc131\u00b7\uc774\ub984 \ubbf8\uc785\ub825\n",
+                "operationId": "createTrip",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateTripRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "\uc0dd\uc131 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "tripId": "550e8400-e29b-41d4-a716-446655440000",
+                                        "status": "ONGOING",
+                                        "myMemberStatus": "SCHEDULE_PENDING"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "name",
+                                            "message": "\uc774\ub984\uc740 \ucd5c\ub300 15\uc790\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "PROFILE_NAME_REQUIRED \u2014 \uc131\u00b7\uc774\ub984 \ubbf8\uc785\ub825",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "PROFILE_NAME_REQUIRED",
+                                    "message": "\uc131\u00b7\uc774\ub984 \uc785\ub825\uc774 \ud544\uc694\ud569\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/trips/{tripId}/schedule/confirm": {
+            "post": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "\uc5ec\ud589\ubc29 \uc77c\uc815 \ud655\uc778 \uc644\ub8cc",
+                "description": "\ubaa9\uc801: \ubc29\uc7a5\uc758 \uc77c\uc815 \ud655\uc778\uc744 \ub05d\ub0b4\uace0 \uc5ec\ud589\ubc29 \uc785\uc7a5\u00b7\ucd08\ub300 \uacf5\uc720\ub97c \uac00\ub2a5\ud558\uac8c \ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc5ec\ud589\ubc29 \uc0dd\uc131 \uc9c1\ud6c4, \uc77c\uc815 \ud655\uc778\u00b7\uc785\ub825 \ud50c\ub85c\uc6b0\ub97c \ub9c8\uce5c \ub2e4\uc74c.\n\n\uc804\uc81c: \ubcf8\uc778\uc774 \ubc29\uc7a5\uc774\uace0 myMemberStatus=SCHEDULE_PENDING(create \uc9c1\ud6c4\u00b7confirm \uc804). \uba64\ubc84\ub294 \uc774 API\ub97c \uc4f0\uc9c0 \uc54a\uc74c(join\uc73c\ub85c ACTIVE).\n\n\uacb0\uacfc: ACTIVE\ub85c \ubc14\ub00c\uace0 TripDetail(inviteCode \ud3ec\ud568) \ubc18\ud658. \uc815\uae30\u00b7\uac1c\ubcc4\uc774 \ubaa8\ub450 \uc5c6\uc73c\uba74 isAllFree true.\n\n\uc8fc\uc758: \uc774\ubbf8 ACTIVE\uba74 idempotent. \uc774 \ud638\ucd9c \ud6c4\uc5d0\ub9cc \uc0c1\uc138\u00b7\uacf5\uc720\u00b7\ubc29 \uc548 API.\n\n\uc8fc\uc694 \uc5d0\ub7ec: SCHEDULE_ENTRY_REQUIRED \u2014 \uc785\uc7a5 \uc870\uac74(\uc77c\uc815\u22651 \ub610\ub294 \uc804\ubd80 free) \ubbf8\ucda9\uc871\n",
+                "operationId": "confirmSchedule",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\ud655\uc778 \uc644\ub8cc \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "tripId": "550e8400-e29b-41d4-a716-446655440000",
+                                        "name": "\uc81c\uc8fc\ub3c4 \uc5ec\ud589",
+                                        "destination": "\uc81c\uc8fc\ub3c4",
+                                        "startRange": "2026-08-01",
+                                        "endRange": "2026-08-31",
+                                        "durationDays": 4,
+                                        "durationNights": 3,
+                                        "memberCount": 6,
+                                        "status": "ONGOING",
+                                        "inviteCode": "AB12CD",
+                                        "confirmedStartDate": null,
+                                        "confirmedEndDate": null,
+                                        "lastRecommendationMode": null,
+                                        "lastActivityAt": "2026-07-20T10:00:00",
+                                        "pinned": false,
+                                        "myRole": "OWNER",
+                                        "myMemberStatus": "ACTIVE",
+                                        "activeMemberCount": 1,
+                                        "memberFillRate": 0.17,
+                                        "membersPreview": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                                "role": "OWNER"
+                                            }
+                                        ],
+                                        "membersPreviewOverflow": 0
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "SCHEDULE_ENTRY_REQUIRED \u2014 \uc785\uc7a5 \uc870\uac74 \ubbf8\ucda9\uc871",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "SCHEDULE_ENTRY_REQUIRED",
+                                    "message": "\ubc29 \uc785\uc7a5\uc744 \uc704\ud574 \uc77c\uc815\uc744 \ub4f1\ub85d\ud558\uac70\ub098 \uc804\ubd80 free\ub97c \ud655\uc778\ud574\uc57c \ud569\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/trips/join": {
+            "post": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "\ucd08\ub300 \ub9c1\ud06c\ub85c \ucc38\uc5ec",
+                "description": "\ubaa9\uc801: \ucd08\ub300 \ucf54\ub4dc\ub85c \uc5ec\ud589\ubc29\uc5d0 \ucc38\uc5ec\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ucd08\ub300 \ub9c1\ud06c\u00b7\ucf54\ub4dc \uc785\ub825 \ud6c4 \uc77c\uc815 \ud50c\ub85c\uc6b0\ub97c \ub9c8\uce5c \ub2e4\uc74c.\n\n\uc804\uc81c: \uc131\u00b7\uc774\ub984 \uc644\ub8cc. \uc785\uc7a5 \uc870\uac74(\uc77c\uc815\u22651 \ub610\ub294 \uc804\ubd80 free). \ubc29\uc774 ONGOING\uc774\uace0 \uc815\uc6d0 \uc5ec\uc720.\n\n\uacb0\uacfc: \uba64\ubc84\uac00 ACTIVE\ub85c \ub4f1\ub85d\ub418\uace0 TripDetail \ubc18\ud658(inviteCode \ud3ec\ud568). \uc774\ubbf8 ACTIVE\uba74 \ubcc0\uacbd \uc5c6\uc774 \ub3d9\uc77c \uc751\ub2f5(idempotent).\n\n\uc8fc\uc758: \uba64\ubc84\ub294 SCHEDULE_PENDING \uc5c6\uc774 join \ud55c \ubc88\uc5d0 ACTIVE. \ubc29\uc7a5 create \uc9c1\ud6c4(SCHEDULE_PENDING)\ub294 \uc774 API\uac00 \uc544\ub2c8\ub77c schedule/confirm.\n\n\uc8fc\uc694 \uc5d0\ub7ec: INVITE_CODE_NOT_FOUND \u00b7 TRIP_MEMBER_FULL \u00b7 PROFILE_NAME_REQUIRED \u00b7 SCHEDULE_ENTRY_REQUIRED \u00b7 TRIP_ALREADY_CONFIRMED \u00b7 TRIP_EXPIRED \u00b7 SCHEDULE_CONFIRM_REQUIRED(\ubc29\uc7a5\uc774 join\uc73c\ub85c \uc6b0\ud68c \uc2dc\ub3c4)\n",
+                "operationId": "joinTrip",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/JoinTripRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\ucc38\uc5ec \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "tripId": "550e8400-e29b-41d4-a716-446655440000",
+                                        "name": "\uc81c\uc8fc\ub3c4 \uc5ec\ud589",
+                                        "destination": "\uc81c\uc8fc\ub3c4",
+                                        "startRange": "2026-08-01",
+                                        "endRange": "2026-08-31",
+                                        "durationDays": 4,
+                                        "durationNights": 3,
+                                        "memberCount": 6,
+                                        "status": "ONGOING",
+                                        "inviteCode": "AB12CD",
+                                        "confirmedStartDate": null,
+                                        "confirmedEndDate": null,
+                                        "lastRecommendationMode": null,
+                                        "lastActivityAt": "2026-07-20T10:00:00",
+                                        "pinned": false,
+                                        "myRole": "MEMBER",
+                                        "myMemberStatus": "ACTIVE",
+                                        "activeMemberCount": 3,
+                                        "memberFillRate": 0.5,
+                                        "membersPreview": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                                "role": "OWNER"
+                                            }
+                                        ],
+                                        "membersPreviewOverflow": 0
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "inviteCode",
+                                            "message": "\ucd08\ub300 \ucf54\ub4dc\ub294 \ud544\uc218\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "PROFILE_NAME_REQUIRED \u2014 \uc131\u00b7\uc774\ub984 \ubbf8\uc785\ub825 \u00b7 SCHEDULE_ENTRY_REQUIRED \u2014 \uc785\uc7a5 \uc870\uac74 \ubbf8\ucda9\uc871 \u00b7 SCHEDULE_CONFIRM_REQUIRED \u2014 \ubc29\uc7a5\uc774 join\uc73c\ub85c \uc6b0\ud68c \uc2dc\ub3c4",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "PROFILE_NAME_REQUIRED",
+                                    "message": "\uc131\u00b7\uc774\ub984 \uc785\ub825\uc774 \ud544\uc694\ud569\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "INVITE_CODE_NOT_FOUND \u2014 \ucd08\ub300 \ucf54\ub4dc \uc5c6\uc74c",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVITE_CODE_NOT_FOUND",
+                                    "message": "\ucd08\ub300 \ucf54\ub4dc\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "TRIP_MEMBER_FULL \u2014 \uc815\uc6d0 \ucd08\uacfc \u00b7 TRIP_ALREADY_CONFIRMED \u2014 \ud655\uc815\ub41c \ubc29 \u00b7 TRIP_EXPIRED \u2014 \uc885\ub8cc\ub41c \ubc29",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_MEMBER_FULL",
+                                    "message": "\ucc38\uc5ec \uc778\uc6d0\uc774 \uac00\ub4dd \ucc3c\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc7ac\ubc1c\uae09",
+                "description": "\ubaa9\uc801: refresh token\uc73c\ub85c access JWT\ub9cc \ub2e4\uc2dc \ubc1c\uae09\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: access \ub9cc\ub8cc \uc9c1\uc804\u00b7401 \uc774\ud6c4 \uc7ac\uc2dc\ub3c4.\n\n\uc804\uc81c: \uc544\uc9c1 \ud3d0\uae30\ub418\uc9c0 \uc54a\uc740 \uc720\ud6a8\ud55c refresh token.\n\n\uacb0\uacfc: \uc0c8 access JWT. refresh row\ub294 \uc720\uc9c0\ub41c\ub2e4.\n\n\uc8fc\uc694 \uc5d0\ub7ec: AUTH_INVALID_REFRESH \u2014 refresh \ubb34\ud6a8\u00b7\ub9cc\ub8cc\n",
+                "operationId": "refresh",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\uc7ac\ubc1c\uae09 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "accessToken": "eyJhbG...",
+                                        "expiresIn": 7200
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "refreshToken",
+                                            "message": "\ud544\uc218 \uac12\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AUTH_INVALID_REFRESH \u2014 refresh \ubb34\ud6a8\u00b7\ub9cc\ub8cc",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_INVALID_REFRESH",
+                                    "message": "\uc720\ud6a8\ud558\uc9c0 \uc54a\uc740 \ub9ac\ud504\ub808\uc2dc \ud1a0\ud070\uc785\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "\ub85c\uadf8\uc544\uc6c3",
+                "description": "\ubaa9\uc801: refresh token\uc744 \ud3d0\uae30\ud574 \uc7ac\ubc1c\uae09\uc744 \ub9c9\ub294\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc0ac\uc6a9\uc790\uac00 \ub85c\uadf8\uc544\uc6c3\uc544\uc6c3\ud560 \ub54c.\n\n\uc804\uc81c: \ubcf8\uc778\uc774 \ubcf4\uc720\ud55c refresh token.\n\n\uacb0\uacfc: 204 No Content. access\ub294 \ub9cc\ub8cc\uae4c\uc9c0 \uc720\ud6a8\ud560 \uc218 \uc788\ub2e4.\n",
+                "operationId": "logout",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LogoutRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "\ub85c\uadf8\uc544\uc6c3 \uc131\uacf5(No Content)"
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "refreshToken",
+                                            "message": "\ud544\uc218 \uac12\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "\uc18c\uc15c \ub85c\uadf8\uc778",
+                "description": "\ubaa9\uc801: \uc18c\uc15c \ud1a0\ud070\uc73c\ub85c \ub85c\uadf8\uc778\ud558\uace0 access\u00b7refresh\ub97c \ubc1c\uae09\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc571 \ucd5c\ucd08 \ub85c\uadf8\uc778\u00b7\uc7ac\ub85c\uadf8\uc778.\n\n\uc804\uc81c: Google/Kakao/Apple\uc5d0\uc11c \ubc1b\uc740 \uc720\ud6a8\ud55c \ud1a0\ud070.\n\n\uacb0\uacfc: access\u00b7refresh \ud1a0\ud070\uacfc \uc0ac\uc6a9\uc790 \uc694\uc57d(hasPreSchedule\u00b7isAllFree \ud3ec\ud568).\n\n\uc8fc\uc694 \uc5d0\ub7ec: AUTH_SOCIAL_TOKEN_EXPIRED \u2014 \uc18c\uc15c \ud1a0\ud070 \ub9cc\ub8cc(\uc7ac\ub85c\uadf8\uc778 \uc720\ub3c4) \u00b7 AUTH_SOCIAL_TOKEN_INVALID \u2014 \uadf8 \uc678 \uc18c\uc15c \ud1a0\ud070 \ubb34\ud6a8 \u00b7 AUTH_SOCIAL_PROVIDER_UNAVAILABLE \u2014 \uc18c\uc15c provider \uc811\uadfc \uc2e4\ud328(\uc7ac\uc2dc\ub3c4 \uc720\ub3c4)\n",
+                "operationId": "login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\ub85c\uadf8\uc778 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "accessToken": "eyJhbG...",
+                                        "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
+                                        "expiresIn": 7200,
+                                        "user": {
+                                            "id": "550e8400-e29b-41d4-a716-446655440000",
+                                            "email": "user@example.com",
+                                            "firstName": "\uae38\ub3d9",
+                                            "lastName": "\ud64d",
+                                            "nickname": "\ud64d\uae38\ub3d9",
+                                            "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                            "provider": "GOOGLE",
+                                            "isGoogleCalendarConnected": false,
+                                            "hasPreSchedule": false,
+                                            "isAllFree": false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "token",
+                                            "message": "\ud544\uc218 \uac12\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AUTH_SOCIAL_TOKEN_EXPIRED \u2014 \uc18c\uc15c \ud1a0\ud070 \ub9cc\ub8cc \u00b7 AUTH_SOCIAL_TOKEN_INVALID \u2014 \uadf8 \uc678 \uc18c\uc15c \ud1a0\ud070 \ubb34\ud6a8",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_SOCIAL_TOKEN_EXPIRED",
+                                    "message": "\uc18c\uc15c \ub85c\uadf8\uc778 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \ub85c\uadf8\uc778\ud574 \uc8fc\uc138\uc694."
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "AUTH_SOCIAL_PROVIDER_UNAVAILABLE \u2014 \uc18c\uc15c provider API \uc811\uadfc \uc2e4\ud328(\ub124\ud2b8\uc6cc\ud06c\u00b7\ud0c0\uc784\uc544\uc6c3)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_SOCIAL_PROVIDER_UNAVAILABLE",
+                                    "message": "\uc18c\uc15c \ub85c\uadf8\uc778 \uc11c\ubc84\uc5d0 \uc77c\uc2dc\uc801\uc73c\ub85c \uc5f0\uacb0\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud574 \uc8fc\uc138\uc694."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/schedule/regular/{id}": {
+            "delete": {
+                "tags": [
+                    "User Schedule"
+                ],
+                "summary": "\uc815\uae30 \uc77c\uc815 \uc0ad\uc81c",
+                "description": "\ubaa9\uc801: \ubcf8\uc778 \uc815\uae30 \uc77c\uc815\uc744 \uc0ad\uc81c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc815\uae30 \uc77c\uc815 \uc0ad\uc81c.\n\n\uc804\uc81c: \ubcf8\uc778 \uc18c\uc720 \uc77c\uc815 ID.\n\n\uacb0\uacfc: 204 No Content.\n\n\uc8fc\uc758: \uc815\uae30\u00b7\uac1c\uc778\uc774 \ubaa8\ub450 0\uac74\uc774 \ub418\uba74 hasPreSchedule\uc774 false\uac00 \ub41c\ub2e4(GET /auth/me \uc7ac\uc870\ud68c).\n\n\uc8fc\uc694 \uc5d0\ub7ec: REGULAR_SCHEDULE_NOT_FOUND \u2014 \uc5c6\uac70\ub098 \ubcf8\uc778 \uc18c\uc720\uac00 \uc544\ub2d8\n",
+                "operationId": "deleteRegular",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "\uc0ad\uc81c \uc131\uacf5(No Content)"
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "REGULAR_SCHEDULE_NOT_FOUND \u2014 \uc5c6\uac70\ub098 \ubcf8\uc778 \uc18c\uc720\uac00 \uc544\ub2d8",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "REGULAR_SCHEDULE_NOT_FOUND",
+                                    "message": "\uc815\uae30 \uc77c\uc815\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "User Schedule"
+                ],
+                "summary": "\uc815\uae30 \uc77c\uc815 \uc804\uccb4 \uc218\uc815",
+                "description": "\ubaa9\uc801: \uae30\uc874 \uc815\uae30 \uc77c\uc815\uc758 \uc81c\ubaa9\u00b7\uc694\uc77c\u00b7\uc2dc\uac01\u00b7\uc5f0\ucc28 \uc124\uc815\uc744 \ud1b5\uc9f8\ub85c \uac31\uc2e0\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc815\uae30 \uc77c\uc815 \ud3b8\uc9d1 \uc800\uc7a5.\n\n\uc804\uc81c: \ubcf8\uc778 \uc18c\uc720 \uc77c\uc815 ID.\n\n\uacb0\uacfc: \uac31\uc2e0\ub41c \uc815\uae30 \uc77c\uc815. start/end \ubcc0\uacbd \uc2dc \uc2ac\ub86f\uc744 \ub2e4\uc2dc \uacc4\uc0b0\ud55c\ub2e4.\n\n\uc8fc\uc694 \uc5d0\ub7ec: REGULAR_SCHEDULE_NOT_FOUND \u2014 \uc5c6\uac70\ub098 \ubcf8\uc778 \uc18c\uc720\uac00 \uc544\ub2d8\n",
+                "operationId": "updateRegular",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRegularScheduleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\uc218\uc815 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                                        "title": "\ucd9c\uadfc",
+                                        "daysOfWeek": "MON,TUE,WED,THU,FRI",
+                                        "startTime": "09:00:00",
+                                        "endTime": "18:00:00",
+                                        "morningStatus": "IMPOSSIBLE",
+                                        "afternoonStatus": "IMPOSSIBLE",
+                                        "eveningStatus": "POSSIBLE",
+                                        "maxVacationDays": 2,
+                                        "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                                        "halfVacationAvailable": false,
+                                        "holidayRest": true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "daysOfWeek",
+                                            "message": "\ud544\uc218 \uac12\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "REGULAR_SCHEDULE_NOT_FOUND \u2014 \uc5c6\uac70\ub098 \ubcf8\uc778 \uc18c\uc720\uac00 \uc544\ub2d8",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "REGULAR_SCHEDULE_NOT_FOUND",
+                                    "message": "\uc815\uae30 \uc77c\uc815\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/schedule/personal": {
+            "get": {
+                "tags": [
+                    "User Schedule"
+                ],
+                "summary": "\uac1c\uc778 \uc77c\uc815 \uc870\ud68c",
+                "description": "\ubaa9\uc801: \ub0a0\uc9dc \uad6c\uac04\ubcc4 \uac1c\uc778(\uc608\uc678) \uc77c\uc815\uc744 \uc870\ud68c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uac1c\uc778 \uc77c\uc815 \ud3b8\uc9d1 \ud654\uba74 \uc9c4\uc785.\n\n\uc804\uc81c: startDate\u00b7endDate \ud544\uc218.\n\n\uacb0\uacfc: \ub0a0\uc9dc\ub2f9 \uc624\uc804\u00b7\uc624\ud6c4\u00b7\uc800\ub141 \uc2ac\ub86f\uacfc uncertain \ud50c\ub798\uadf8.\n",
+                "operationId": "getPersonal",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "description": "\uc870\ud68c \uc2dc\uc791\uc77c(\ud3ec\ud568)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "example": "2026-08-01"
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "description": "\uc870\ud68c \uc885\ub8cc\uc77c(\ud3ec\ud568)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "example": "2026-08-31"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "items": [
+                                            {
+                                                "id": "550e8400-e29b-41d4-a716-446655440000",
+                                                "scheduleDate": "2026-08-03",
+                                                "morningStatus": "IMPOSSIBLE",
+                                                "afternoonStatus": "POSSIBLE",
+                                                "eveningStatus": "POSSIBLE",
+                                                "uncertain": false
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "User Schedule"
+                ],
+                "summary": "\uac1c\uc778 \uc77c\uc815 bulk upsert",
+                "description": "\ubaa9\uc801: \uc5ec\ub7ec \ub0a0\uc9dc\uc758 \uac1c\uc778 \uc77c\uc815\uc744 \ud55c \ubc88\uc5d0 \uc800\uc7a5\u00b7\uc0ad\uc81c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uac1c\uc778 \uc77c\uc815 \ud3b8\uc9d1 \uc800\uc7a5.\n\n\uc804\uc81c: items(upsert)\uc640 deletedDates(\uc0ad\uc81c) \uc911 \ud558\ub098 \uc774\uc0c1 \ud544\uc694. \uac19\uc740 \ub0a0\uc9dc\uac00 \uc591\ucabd\uc5d0 \uc788\uc73c\uba74 \uc548 \ub41c\ub2e4.\n\n\uacb0\uacfc: \ubc18\uc601 \ud6c4 \ud574\ub2f9 \uad6c\uac04 \uac1c\uc778 \uc77c\uc815 \ubaa9\ub85d.\n\n\uc8fc\uc758: \uccab \uc800\uc7a5 \uc2dc hasPreSchedule true. \uc804\ubd80 \uc0ad\uc81c \ud6c4 \uc815\uae30\u00b7\uac1c\uc778 0\uac74\uc774\uba74 false(GET /auth/me \uc7ac\uc870\ud68c).\n\n\uc8fc\uc694 \uc5d0\ub7ec: INVALID_INPUT \u2014 items\u00b7deletedDates \uad50\uc9d1\ud569 \ub0a0\uc9dc \ub610\ub294 \ub458 \ub2e4 \ube44\uc5b4 \uc788\uc74c\n",
+                "operationId": "upsertPersonal",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePersonalScheduleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\uc800\uc7a5 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "items": [
+                                            {
+                                                "id": "550e8400-e29b-41d4-a716-446655440000",
+                                                "scheduleDate": "2026-08-03",
+                                                "morningStatus": "IMPOSSIBLE",
+                                                "afternoonStatus": "POSSIBLE",
+                                                "eveningStatus": "POSSIBLE",
+                                                "uncertain": false
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "INVALID_INPUT \u2014 \uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 \ub610\ub294 items\u00b7deletedDates \uad50\uc9d1\ud569 \ub0a0\uc9dc\u00b7\ub458 \ub2e4 \ube44\uc5b4 \uc788\uc74c",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/profile": {
+            "patch": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "\ub9c8\uc774\ud398\uc774\uc9c0 \ud504\ub85c\ud544(\uc131\u00b7\uc774\ub984) \uc7ac\uc218\uc815",
+                "description": "\ubaa9\uc801: \uc628\ubcf4\ub529\uc5d0\uc11c \uc774\ubbf8 \ub4f1\ub85d\ub41c \uc131\u00b7\uc774\ub984\uc744 \ub9c8\uc774\ud398\uc774\uc9c0\uc5d0\uc11c \ub2e4\uc2dc \uc218\uc815\ud55c\ub2e4. \ucd5c\ucd08 \ub4f1\ub85d\uc740 \uc774 API\uac00 \uc544\ub2c8\ub77c \uc628\ubcf4\ub529 \uc131\u00b7\uc774\ub984 \ub4f1\ub85d(`PATCH /users/onboarding/name`)\uc744 \uc0ac\uc6a9\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ub9c8\uc774\ud398\uc774\uc9c0 \ud504\ub85c\ud544 \uc218\uc815 \ud654\uba74 \u2014 \uc131\u00b7\uc774\ub984 \ub4f1\ub85d\uc744 \uc774\ubbf8 \ub9c8\uce5c \uc0ac\uc6a9\uc790\ub9cc \ud638\ucd9c\ud55c\ub2e4.\n\n\uc804\uc81c: \uc131\u00b7\uc774\ub984 \ubaa8\ub450 \ud544\uc218.\n\n\uacb0\uacfc: UserSummary. hasPreSchedule\uc740 login/me\uc640 \ub3d9\uc77c\ud558\uac8c \uc870\ud68c \uc2dc \ud30c\uc0dd.\n",
+                "operationId": "updateProfile",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProfileRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\uc218\uc815 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                                        "email": "user@example.com",
+                                        "firstName": "\uae38\ub3d9",
+                                        "lastName": "\ud64d",
+                                        "nickname": "\ud64d\uae38\ub3d9",
+                                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                        "provider": "GOOGLE",
+                                        "isGoogleCalendarConnected": false,
+                                        "hasPreSchedule": false,
+                                        "isAllFree": false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "name",
+                                            "message": "\uc774\ub984\uc740 \ud544\uc218\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/onboarding/name": {
+            "patch": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "\uc628\ubcf4\ub529 \uc131\u00b7\uc774\ub984 \ucd5c\ucd08 \ub4f1\ub85d",
+                "description": "\ubaa9\uc801: \uc628\ubcf4\ub529\uc5d0\uc11c \uc131\u00b7\uc774\ub984\uc744 \ucd5c\ucd08\ub85c \ub4f1\ub85d\ud55c\ub2e4. \ub4f1\ub85d \uc774\ud6c4 \uc7ac\uc218\uc815\uc740 \uc774 API\uac00 \uc544\ub2c8\ub77c \ub9c8\uc774\ud398\uc774\uc9c0 \ud504\ub85c\ud544 \uc218\uc815(`PATCH /users/profile`)\uc744 \uc0ac\uc6a9\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc18c\uc15c \ub85c\uadf8\uc778 \uc9c1\ud6c4, \uc131\u00b7\uc774\ub984\uc774 \uc544\uc9c1 \uc5c6\ub294 \uc0ac\uc6a9\uc790\uc5d0\uac8c \ub178\ucd9c\ub418\ub294 \uc628\ubcf4\ub529 \uc785\ub825 \ud654\uba74. \uc774\ubbf8 \ub4f1\ub85d\ub41c \uc0ac\uc6a9\uc790\uc5d0\uac8c\ub294 \ud638\ucd9c\ub418\uc9c0 \uc54a\ub294\ub2e4.\n\n\uc804\uc81c: \uc131\u00b7\uc774\ub984 \ubaa8\ub450 \ud544\uc218.\n\n\uacb0\uacfc: UserSummary. hasPreSchedule\uc740 \uc77c\uc815 row EXISTS \ud30c\uc0dd(\uc800\uc7a5 \ud544\ub4dc \uc544\ub2d8).\n\n\uc8fc\uc758: \uc131\u00b7\uc774\ub984 \ubbf8\uc644\ub8cc\uba74 \uc774\ud6c4 \uc5ec\ud589\ubc29 \uc0dd\uc131\u00b7\ucc38\uc5ec\uac00 PROFILE_NAME_REQUIRED\ub85c \uac70\ubd80\ub41c\ub2e4.\n",
+                "operationId": "registerOnboardingName",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OnboardingNameRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\uc800\uc7a5 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                                        "email": "user@example.com",
+                                        "firstName": "\uae38\ub3d9",
+                                        "lastName": "\ud64d",
+                                        "nickname": "\ud64d\uae38\ub3d9",
+                                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                        "provider": "GOOGLE",
+                                        "isGoogleCalendarConnected": false,
+                                        "hasPreSchedule": false,
+                                        "isAllFree": false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "name",
+                                            "message": "\uc774\ub984\uc740 \ud544\uc218\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/trips/{tripId}": {
+            "get": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "\uc5ec\ud589\ubc29 \uc0c1\uc138",
+                "description": "\ubaa9\uc801: \uc5ec\ud589\ubc29 \uc0c1\uc138 \uc815\ubcf4\ub97c \uc870\ud68c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ubc29 \ud648\u00b7\uc124\uc815 \ud654\uba74 \uc9c4\uc785.\n\n\uc804\uc81c: \uba64\ubc84\uc774\uba70 ACTIVE(\uc77c\uc815 confirm/join \uc644\ub8cc)\uc774\uace0 \ubc29 \uc785\uc7a5 \uc870\uac74(\uc77c\uc815\u22651 \ub610\ub294 \uc804\ubd80 free)\uc744 \ucda9\uc871.\n\n\uacb0\uacfc: TripDetailResponse(inviteCode \ud3ec\ud568 \u2014 \ubc29\uc7a5 \ucd08\ub300 \uacf5\uc720\uc6a9).\n\n\uc8fc\uc758: SCHEDULE_PENDING(\ubc29\uc7a5 confirm \uc804)\uba74 SCHEDULE_CONFIRM_REQUIRED. create \uc751\ub2f5\uc5d0\ub294 inviteCode\uac00 \uc5c6\ub2e4.\n\n\uc8fc\uc694 \uc5d0\ub7ec: TRIP_ACCESS_DENIED \u00b7 SCHEDULE_CONFIRM_REQUIRED \u00b7 SCHEDULE_ENTRY_REQUIRED\n",
+                "operationId": "getTrip",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "tripId": "550e8400-e29b-41d4-a716-446655440000",
+                                        "name": "\uc81c\uc8fc\ub3c4 \uc5ec\ud589",
+                                        "destination": "\uc81c\uc8fc\ub3c4",
+                                        "startRange": "2026-08-01",
+                                        "endRange": "2026-08-31",
+                                        "durationDays": 4,
+                                        "durationNights": 3,
+                                        "memberCount": 6,
+                                        "status": "ONGOING",
+                                        "inviteCode": "AB12CD",
+                                        "confirmedStartDate": null,
+                                        "confirmedEndDate": null,
+                                        "lastRecommendationMode": null,
+                                        "lastActivityAt": "2026-07-20T10:00:00",
+                                        "pinned": false,
+                                        "myRole": "OWNER",
+                                        "myMemberStatus": "ACTIVE",
+                                        "activeMemberCount": 3,
+                                        "memberFillRate": 0.5,
+                                        "membersPreview": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                                "role": "OWNER"
+                                            }
+                                        ],
+                                        "membersPreviewOverflow": 0
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_ACCESS_DENIED \u2014 \ube44\ucc38\uc5ec\uc790 \u00b7 SCHEDULE_CONFIRM_REQUIRED \u2014 \uc774 \ubc29 \uc77c\uc815 \ud655\uc778 \ubbf8\uc644\ub8cc \u00b7 SCHEDULE_ENTRY_REQUIRED \u2014 \uc785\uc7a5 \uc870\uac74 \ubbf8\ucda9\uc871",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_ACCESS_DENIED",
+                                    "message": "\uc5ec\ud589\ubc29 \ucc38\uc5ec \uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TRIP_NOT_FOUND \u2014 \uc5ec\ud589\ubc29 \uc5c6\uc74c\u00b7soft deleted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_FOUND",
+                                    "message": "\uc5ec\ud589\ubc29\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "\uc5ec\ud589\ubc29 \uc0ad\uc81c",
+                "description": "\ubaa9\uc801: \uc5ec\ud589\ubc29\uc744 \uc0ad\uc81c(soft)\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ubc29\uc7a5\uc774 \ubc29 \uc0ad\uc81c \ud655\uc778.\n\n\uc804\uc81c: \ubc29\uc7a5. SCHEDULE_PENDING(confirm \uc804)\uc5ec\ub3c4 \uc0ad\uc81c \uac00\ub2a5 \u2014 \ub2e8, \uc0ad\uc81c\ub294 \uba54\ud0c0 \uad8c\ud55c\uc774\uc9c0 \ubc29 \uc785\uc7a5\u00b7\uacf5\uc720\uac00 \uc544\ub2d8.\n\n\uacb0\uacfc: 204 No Content. \uba64\ubc84 row\ub3c4 \uc5f0\uc1c4 soft delete.\n\n\uc8fc\uc694 \uc5d0\ub7ec: TRIP_FORBIDDEN \u2014 \ubc29\uc7a5 \uc544\ub2d8\n",
+                "operationId": "deleteTrip",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "\uc0ad\uc81c \uc131\uacf5(No Content)"
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_FORBIDDEN \u2014 \ubc29\uc7a5 \uc544\ub2d8",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_FORBIDDEN",
+                                    "message": "\uc5ec\ud589\ubc29 \ubc29\uc7a5\ub9cc \uc218\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TRIP_NOT_FOUND \u2014 \uc5ec\ud589\ubc29 \uc5c6\uc74c\u00b7soft deleted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_FOUND",
+                                    "message": "\uc5ec\ud589\ubc29\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "\uc5ec\ud589\ubc29 \uba54\ud0c0 \uc218\uc815",
+                "description": "\ubaa9\uc801: \ubc29 \uc774\ub984\u00b7\uc778\uc6d0\u00b7\uc5ec\ud589\uc9c0 \ub4f1 \uba54\ud0c0\ub97c \uc218\uc815\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ubc29 \uc124\uc815\uc5d0\uc11c \uc800\uc7a5.\n\n\uc804\uc81c: \ubc29\uc7a5. \uc5ec\ud589\ubc29\uc774 ONGOING(\uc870\uc728 \uc911). \ud76c\ub9dd \uae30\uac04(startRange~endRange)\uc740 \uc218\uc815 \ubd88\uac00.\n\n\uacb0\uacfc: \uac31\uc2e0\ub41c TripDetailResponse.\n\n\uc8fc\uc694 \uc5d0\ub7ec: TRIP_FORBIDDEN \u2014 \ubc29\uc7a5 \uc544\ub2d8 \u00b7 TRIP_NOT_ONGOING \u2014 \uc870\uc728 \uc911\uc774 \uc544\ub2d8\n",
+                "operationId": "patchTrip",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchTripRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "\uc218\uc815 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "tripId": "550e8400-e29b-41d4-a716-446655440000",
+                                        "name": "\uc81c\uc8fc\ub3c4 \uc5ec\ud589",
+                                        "destination": "\uc81c\uc8fc\ub3c4",
+                                        "startRange": "2026-08-01",
+                                        "endRange": "2026-08-31",
+                                        "durationDays": 4,
+                                        "durationNights": 3,
+                                        "memberCount": 6,
+                                        "status": "ONGOING",
+                                        "inviteCode": "AB12CD",
+                                        "confirmedStartDate": null,
+                                        "confirmedEndDate": null,
+                                        "lastRecommendationMode": null,
+                                        "lastActivityAt": "2026-07-20T10:00:00",
+                                        "pinned": false,
+                                        "myRole": "OWNER",
+                                        "myMemberStatus": "ACTIVE",
+                                        "activeMemberCount": 3,
+                                        "memberFillRate": 0.5,
+                                        "membersPreview": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                                "role": "OWNER"
+                                            }
+                                        ],
+                                        "membersPreviewOverflow": 0
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "\uc694\uccad \uac12 \uac80\uc99d \uc2e4\ud328 (INVALID_INPUT)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+                                    "errors": [
+                                        {
+                                            "field": "name",
+                                            "message": "\uc774\ub984\uc740 \ucd5c\ub300 15\uc790\uc785\ub2c8\ub2e4."
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_FORBIDDEN \u2014 \ubc29\uc7a5 \uc544\ub2d8",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_FORBIDDEN",
+                                    "message": "\uc5ec\ud589\ubc29 \ubc29\uc7a5\ub9cc \uc218\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TRIP_NOT_FOUND \u2014 \uc5ec\ud589\ubc29 \uc5c6\uc74c\u00b7soft deleted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_FOUND",
+                                    "message": "\uc5ec\ud589\ubc29\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "TRIP_NOT_ONGOING \u2014 \uc870\uc728 \uc911\uc774 \uc544\ub2cc \uc5ec\ud589\ubc29",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_ONGOING",
+                                    "message": "\uc870\uc728 \uc911\uc778 \uc5ec\ud589\ubc29\ub9cc \uc218\uc815\u00b7\ub0b4\ubcf4\ub0b4\uae30\u00b7\uc77c\uc815 \ud655\uc778\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/trips/{tripId}/pin": {
+            "patch": {
+                "tags": [
+                    "Trip"
+                ],
+                "summary": "Pin \ud1a0\uae00",
+                "description": "\ubaa9\uc801: \ud648 \ubaa9\ub85d\uc5d0\uc11c \uc774 \ubc29\uc744 \uace0\uc815(Pin)\ud558\uac70\ub098 \ud574\uc81c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uce74\ub4dc Pin \ubc84\ud2bc.\n\n\uc804\uc81c: \uba64\ubc84\uc774\uba70 \ubc29 \uc785\uc7a5 \uac00\ub2a5(ACTIVE + \uc785\uc7a5 \uc870\uac74).\n\n\uacb0\uacfc: \ubcf8\uc778 isPinned\u00b7pinnedAt\uc774 \ubc18\uc601\ub41c TripDetail.\n",
+                "operationId": "updatePin",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTripPinRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pin \ubcc0\uacbd \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "tripId": "550e8400-e29b-41d4-a716-446655440000",
+                                        "name": "\uc81c\uc8fc\ub3c4 \uc5ec\ud589",
+                                        "destination": "\uc81c\uc8fc\ub3c4",
+                                        "startRange": "2026-08-01",
+                                        "endRange": "2026-08-31",
+                                        "durationDays": 4,
+                                        "durationNights": 3,
+                                        "memberCount": 6,
+                                        "status": "ONGOING",
+                                        "inviteCode": "AB12CD",
+                                        "confirmedStartDate": null,
+                                        "confirmedEndDate": null,
+                                        "lastRecommendationMode": null,
+                                        "lastActivityAt": "2026-07-20T10:00:00",
+                                        "pinned": true,
+                                        "myRole": "OWNER",
+                                        "myMemberStatus": "ACTIVE",
+                                        "activeMemberCount": 3,
+                                        "memberFillRate": 0.5,
+                                        "membersPreview": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                                "role": "OWNER"
+                                            }
+                                        ],
+                                        "membersPreviewOverflow": 0
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_ACCESS_DENIED \u2014 \ube44\ucc38\uc5ec\uc790 \u00b7 SCHEDULE_CONFIRM_REQUIRED \u2014 \uc774 \ubc29 \uc77c\uc815 \ud655\uc778 \ubbf8\uc644\ub8cc \u00b7 SCHEDULE_ENTRY_REQUIRED \u2014 \uc785\uc7a5 \uc870\uac74 \ubbf8\ucda9\uc871",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_ACCESS_DENIED",
+                                    "message": "\uc5ec\ud589\ubc29 \ucc38\uc5ec \uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TRIP_NOT_FOUND \u2014 \uc5ec\ud589\ubc29 \uc5c6\uc74c\u00b7soft deleted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_FOUND",
+                                    "message": "\uc5ec\ud589\ubc29\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/schedule/calendar": {
+            "get": {
+                "tags": [
+                    "User Schedule"
+                ],
+                "summary": "\uc77c\uc815 \ub2ec\ub825(effective) \uc870\ud68c",
+                "description": "\ubaa9\uc801: \ubcf8\uc778 \uc804\uc5ed \uac00\ub2a5/\ubd88\uac00\ub2a5 \ub2ec\ub825(effective)\uc744 \uc870\ud68c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ub9c8\uc774\ud398\uc774\uc9c0 \ub2ec\ub825\u00b7\uc77c\uc815 \ud655\uc778 \ud654\uba74.\n\n\uc804\uc81c: \uc694\uccad \uad6c\uac04\uc740 \uc624\ub298\ubd80\ud130 \uc624\ub298+2\ub144\u22121\uc77c \uc548\uc774\uc5b4\uc57c \ud55c\ub2e4. \ub2e8, \ucc38\uc5ec \uc911\uc778 \uc870\uc728 \uc911(ONGOING) \uc5ec\ud589\ubc29\uc758 \ud76c\ub9dd \uae30\uac04 \uc885\ub8cc\uc77c\uc774 \uadf8\ubcf4\ub2e4 \ub4a4\ub77c\uba74 \uadf8 \ub0a0\uc9dc\uae4c\uc9c0 \uc0c1\ud55c\uc774 \ub298\uc5b4\ub09c\ub2e4.\n\n\uacb0\uacfc: \ub0a0\uc9dc\ubcc4 effective \uc2ac\ub86f. \uac1c\uc778 \uc77c\uc815\uc774 \uc815\uae30\ubcf4\ub2e4 \uc6b0\uc120\ud558\uace0, \uc815\uae30 \ubcf5\uc218\uba74 IMPOSSIBLE\uc774 \uc6b0\uc120. \ube48 \ub0a0\uc740 \uc751\ub2f5\uc5d0\uc11c \uc0dd\ub7b5.\n\n\uc8fc\uc758: \ub9c8\uc774\ud398\uc774\uc9c0 \uc5ec\ud589 \uce69\uc6a9 \ubc29 \ubaa9\ub85d\uc740 GET /trips?scope=ongoing\uc744 \ub530\ub85c \ud638\ucd9c\ud55c\ub2e4.\n\n\uc8fc\uc694 \uc5d0\ub7ec: INVALID_INPUT \u2014 \uc870\ud68c \uad6c\uac04\uc774 \ud5c8\uc6a9 \uc708\ub3c4\uc6b0 \ubc16\n",
+                "operationId": "getCalendar",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "description": "\ub2ec\ub825 \uc2dc\uc791\uc77c(\ud3ec\ud568). \uc624\ub298~\uc624\ub298+2\ub144\u22121 \uc548",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "example": "2026-07-22"
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "description": "\ub2ec\ub825 \uc885\ub8cc\uc77c(\ud3ec\ud568). \uc624\ub298~\uc624\ub298+2\ub144\u22121 \uc548, ONGOING \uc5ec\ud589 \ud76c\ub9dd \uae30\uac04 \uc885\ub8cc\uc77c\uc774 \ub4a4\uba74 \uadf8 \ub0a0\uc9dc\uae4c\uc9c0",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "example": "2026-08-31"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "startDate": "2026-08-01",
+                                        "endDate": "2026-08-07",
+                                        "days": [
+                                            {
+                                                "date": "2026-08-03",
+                                                "morningStatus": "IMPOSSIBLE",
+                                                "afternoonStatus": "IMPOSSIBLE",
+                                                "eveningStatus": "POSSIBLE",
+                                                "uncertain": false
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "INVALID_INPUT \u2014 \uc870\ud68c \uad6c\uac04\uc774 \ud5c8\uc6a9 \uc708\ub3c4\uc6b0(\uc624\ub298~\uc624\ub298+2\ub144\u22121, \ub2e8 ONGOING \uc5ec\ud589 \ud76c\ub9dd \uae30\uac04 \uc885\ub8cc\uc77c\uc774 \ub4a4\uba74 \uadf8 \ub0a0\uc9dc\uae4c\uc9c0) \ubc16",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "INVALID_INPUT",
+                                    "message": "\uc785\ub825\uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/trips/{tripId}/members": {
+            "get": {
+                "tags": [
+                    "Trip Members"
+                ],
+                "summary": "\ucc38\uc5ec\uc790 \ubaa9\ub85d",
+                "description": "\ubaa9\uc801: \uc5ec\ud589\ubc29 \ucc38\uc5ec\uc790 \ubaa9\ub85d\uc744 \uc870\ud68c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ubc29 \uba64\ubc84 \ud654\uba74.\n\n\uc804\uc81c: \uba64\ubc84\uc774\uba70 \ubc29 \uc785\uc7a5 \uac00\ub2a5(ACTIVE + \uc785\uc7a5 \uc870\uac74). SCHEDULE_PENDING\uba74 403.\n\n\uacb0\uacfc: \uc0c1\ud0dc\u00b7\uc5ed\ud560\u00b7Pin\u00b7\ubaa8\uc9d1\ub960 \ub4f1. \ub3d9\uba85\uc774\uc778\uc740 \ud45c\uc2dc\uba85\uc5d0 `(2)`\ucc98\ub7fc \ubc88\ud638\uac00 \ubd99\ub294\ub2e4.\n",
+                "operationId": "listMembers",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "memberCount": 6,
+                                        "activeMemberCount": 3,
+                                        "memberFillRate": 0.5,
+                                        "members": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "displayName": "\ud64d\uae38\ub3d9",
+                                                "role": "OWNER",
+                                                "memberStatus": "ACTIVE",
+                                                "pinned": true
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_ACCESS_DENIED \u2014 \ube44\ucc38\uc5ec\uc790 \u00b7 SCHEDULE_CONFIRM_REQUIRED \u2014 \uc774 \ubc29 \uc77c\uc815 \ud655\uc778 \ubbf8\uc644\ub8cc(SCHEDULE_PENDING) \u00b7 SCHEDULE_ENTRY_REQUIRED \u2014 \uc785\uc7a5 \uc870\uac74 \ubbf8\ucda9\uc871",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "SCHEDULE_CONFIRM_REQUIRED",
+                                    "message": "\uc774 \uc5ec\ud589\ubc29 \uc77c\uc815 \ud655\uc778\uc744 \uc644\ub8cc\ud574\uc57c \uc785\uc7a5\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TRIP_NOT_FOUND \u2014 \uc5ec\ud589\ubc29 \uc5c6\uc74c\u00b7soft deleted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_FOUND",
+                                    "message": "\uc5ec\ud589\ubc29\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/trips/{tripId}/members/schedule-calendar": {
+            "get": {
+                "tags": [
+                    "Trip Members"
+                ],
+                "summary": "\uba64\ubc84 effective \uc77c\uc815 \ub2ec\ub825",
+                "description": "\ubaa9\uc801: \ud76c\ub9dd \uae30\uac04(startRange~endRange) \ub3d9\uc548 \uba64\ubc84 \uc804\uc6d0\uc758 effective \uc77c\uc815\uc744 \uc870\ud68c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ubc29 \uc548 \uc77c\uc815 \uc870\uc728\u00b7\ucd94\ucc9c \uc804 \ub2ec\ub825.\n\n\uc804\uc81c: \uba64\ubc84\uc774\uba70 \ubc29 \uc785\uc7a5 \uac00\ub2a5.\n\n\uacb0\uacfc: \uba64\ubc84\ubcc4 \ub0a0\uc9dc \uc2ac\ub86f. \uc870\uc728 \uc911(ONGOING)\uc740 \uc2e4\uc2dc\uac04 \uc77c\uc815, \ud655\uc815\u00b7\uc885\ub8cc \ubc29\uc740 \ub2f9\uc2dc \uc2a4\ub0c5\uc0f7(\uc77d\uae30 \uc804\uc6a9).\n\n\uc8fc\uc694 \uc5d0\ub7ec: TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED\n",
+                "operationId": "getScheduleCalendar",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "startDate": "2026-08-01",
+                                        "endDate": "2026-08-31",
+                                        "readOnly": false,
+                                        "members": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "displayName": "\ud64d\uae38\ub3d9",
+                                                "role": "OWNER",
+                                                "memberStatus": "ACTIVE",
+                                                "days": [
+                                                    {
+                                                        "date": "2026-08-03",
+                                                        "morningStatus": "IMPOSSIBLE",
+                                                        "afternoonStatus": "IMPOSSIBLE",
+                                                        "eveningStatus": "POSSIBLE",
+                                                        "uncertain": false
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_ACCESS_DENIED \u2014 \ube44\ucc38\uc5ec\uc790 \u00b7 SCHEDULE_CONFIRM_REQUIRED \u2014 \uc774 \ubc29 \uc77c\uc815 \ud655\uc778 \ubbf8\uc644\ub8cc",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_ACCESS_DENIED",
+                                    "message": "\uc5ec\ud589\ubc29 \ucc38\uc5ec \uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TRIP_NOT_FOUND \u2014 \uc5ec\ud589\ubc29 \uc5c6\uc74c\u00b7soft deleted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_FOUND",
+                                    "message": "\uc5ec\ud589\ubc29\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "\ud604\uc7ac \uc0ac\uc6a9\uc790 \uc870\ud68c",
+                "description": "\ubaa9\uc801: \ub85c\uadf8\uc778 \uc0ac\uc6a9\uc790 \uc694\uc57d\uc744 \uc870\ud68c\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uc571 \uc9c4\uc785\u00b7\ud504\ub85c\ud544/\uc77c\uc815 \ubcc0\uacbd \ud6c4 \ub3d9\uae30\ud654.\n\n\uacb0\uacfc: UserSummary. hasPreSchedule\uc740 \uc77c\uc815 row \uc874\uc7ac \uc5ec\ubd80(\ud30c\uc0dd), isAllFree\ub294 DB \uceec\ub7fc.\n",
+                "operationId": "me",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\uc870\ud68c \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                                        "email": "user@example.com",
+                                        "firstName": "\uae38\ub3d9",
+                                        "lastName": "\ud64d",
+                                        "nickname": "\ud64d\uae38\ub3d9",
+                                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
+                                        "provider": "GOOGLE",
+                                        "isGoogleCalendarConnected": false,
+                                        "hasPreSchedule": false,
+                                        "isAllFree": false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "delete": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "\ud68c\uc6d0 \ud0c8\ud1f4",
+                "description": "\ubaa9\uc801: \ubcf8\uc778 \uacc4\uc815\uc744 \ud0c8\ud1f4\ud55c\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ub9c8\uc774\ud398\uc774\uc9c0 \ud0c8\ud1f4 \ud655\uc778.\n\n\uc804\uc81c: \uc5c6\uc74c \u2014 \uc9c4\ud589 \uc911\uc778 \ubc29\uc774 \uc788\uc5b4\ub3c4 \ucc28\ub2e8\ud558\uc9c0 \uc54a\ub294\ub2e4.\n\n\uacb0\uacfc: \ucc38\uc5ec \uc911\uc778 \ubc29\uc740 \uc790\ub3d9\uc73c\ub85c \ub098\uac00\uae30 \ucc98\ub9ac\ub418\uace0, \uc18c\uc720\ud55c \ubc29\uc740 \uc790\ub3d9\uc73c\ub85c \uc0ad\uc81c\ub41c\ub2e4. \uac1c\uc778 \uc77c\uc815\u00b7\uad6c\uae00 \uce98\ub9b0\ub354 \uc5f0\ub3d9\u00b7\ub9ac\ud504\ub808\uc2dc \ud1a0\ud070\uc740 \uc989\uc2dc \uc81c\uac70\ub418\uace0, \uacc4\uc815\uc740 soft delete\ub418\uba70 \uc774\uba54\uc77c\u00b7\uc774\ub984\u00b7\ub2c9\ub124\uc784\u00b7\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0\uac00 \uc81c\uac70\ub41c\ub2e4. 204\ub97c \ubc18\ud658\ud55c\ub2e4.\n\n\uc8fc\uc758: \uc18c\uc720\ud55c \ubc29\uc774 \uc788\uc73c\uba74 \uadf8 \ubc29\uc740 \ub2e4\ub978 \ucc38\uc5ec\uc790\uc5d0\uac8c\ub3c4 \ub354 \uc774\uc0c1 \ubcf4\uc774\uc9c0 \uc54a\ub294\ub2e4. \uc561\uc138\uc2a4 \ud1a0\ud070\uc740 \uc790\uc5f0 \ub9cc\ub8cc \uc804\uae4c\uc9c0 \uc720\ud6a8\ud560 \uc218 \uc788\ub2e4.\n",
+                "operationId": "withdraw",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "\ud0c8\ud1f4 \uc131\uacf5(No Content)"
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/trips/{tripId}/members/{userId}": {
+            "delete": {
+                "tags": [
+                    "Trip Members"
+                ],
+                "summary": "\ucc38\uc5ec\uc790 \ub0b4\ubcf4\ub0b4\uae30",
+                "description": "\ubaa9\uc801: \ubc29\uc7a5\uc774 \ucc38\uc5ec\uc790(MEMBER)\ub97c \ub0b4\ubcf4\ub0b8\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \uba64\ubc84 \uad00\ub9ac\uc5d0\uc11c \ub0b4\ubcf4\ub0b4\uae30 \ud655\uc778.\n\n\uc804\uc81c: \ubc29\uc7a5. \uc5ec\ud589\ubc29\uc774 ONGOING. \ub300\uc0c1\uc740 \ubc29\uc7a5\uc774 \uc544\ub2cc \uba64\ubc84.\n\n\uacb0\uacfc: \ub300\uc0c1 soft delete \ud6c4 \uac31\uc2e0\ub41c \uba64\ubc84 \ubaa9\ub85d(200).\n\n\uc8fc\uc758: \ucd94\ucc9c \uce90\uc2dc\ub294 \uac74\ub4dc\ub9ac\uc9c0 \uc54a\ub294\ub2e4.\n\n\uc8fc\uc694 \uc5d0\ub7ec: TRIP_FORBIDDEN \u00b7 TRIP_NOT_ONGOING \u00b7 CANNOT_REMOVE_OWNER \u00b7 TRIP_MEMBER_NOT_FOUND\n",
+                "operationId": "removeMember",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "ownerId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\ub0b4\ubcf4\ub0b4\uae30 \uc131\uacf5",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                },
+                                "example": {
+                                    "data": {
+                                        "memberCount": 6,
+                                        "activeMemberCount": 2,
+                                        "memberFillRate": 0.33,
+                                        "members": [
+                                            {
+                                                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                                                "displayName": "\ud64d\uae38\ub3d9",
+                                                "role": "OWNER",
+                                                "memberStatus": "ACTIVE",
+                                                "pinned": true
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "CANNOT_REMOVE_OWNER \u2014 \ubc29\uc7a5\uc740 \ub0b4\ubcf4\ub0bc \uc218 \uc5c6\uc74c",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "CANNOT_REMOVE_OWNER",
+                                    "message": "\ubc29\uc7a5\uc740 \ub0b4\ubcf4\ub0bc \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_FORBIDDEN \u2014 \ubc29\uc7a5 \uc544\ub2d8",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_FORBIDDEN",
+                                    "message": "\uc5ec\ud589\ubc29 \ubc29\uc7a5\ub9cc \uc218\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TRIP_NOT_FOUND \u2014 \uc5ec\ud589\ubc29 \uc5c6\uc74c \u00b7 TRIP_MEMBER_NOT_FOUND \u2014 \ub300\uc0c1 \ucc38\uc5ec\uc790 \uc5c6\uc74c\u00b7\uc774\ubbf8 \ub0b4\ubcf4\ub0c4",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_MEMBER_NOT_FOUND",
+                                    "message": "\uc5ec\ud589\ubc29 \ucc38\uc5ec\uc790\ub97c \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "TRIP_NOT_ONGOING \u2014 \uc870\uc728 \uc911\uc774 \uc544\ub2cc \uc5ec\ud589\ubc29",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_NOT_ONGOING",
+                                    "message": "\uc870\uc728 \uc911\uc778 \uc5ec\ud589\ubc29\ub9cc \uc218\uc815\u00b7\ub0b4\ubcf4\ub0b4\uae30\u00b7\uc77c\uc815 \ud655\uc778\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/trips/{tripId}/members/me": {
+            "delete": {
+                "tags": [
+                    "Trip Members"
+                ],
+                "summary": "\uc5ec\ud589\ubc29 \ub098\uac00\uae30",
+                "description": "\ubaa9\uc801: \ucc38\uc5ec\uc790(MEMBER)\uac00 \uc2a4\uc2a4\ub85c \uc5ec\ud589\ubc29\uc5d0\uc11c \ub098\uac04\ub2e4.\n\n\ud638\ucd9c \uc2dc\uc810: \ub9c8\uc774\ud398\uc774\uc9c0\u00b7\ubc29 \uc548 \uba54\ub274\uc5d0\uc11c \ub098\uac00\uae30 \ud655\uc778.\n\n\uc804\uc81c: \ud638\ucd9c\uc790\uac00 \uc774 \ubc29\uc758 \ud65c\uc131 \uba64\ubc84(MEMBER)\ub2e4. \ubc29\uc7a5\uc740 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\ub2e4.\n\n\uacb0\uacfc: \ubcf8\uc778 \ucc38\uc5ec \uae30\ub85d\uc774 soft delete\ub418\uace0 204\ub97c \ubc18\ud658\ud55c\ub2e4. \ubc29 \uc0c1\ud0dc(ONGOING/CONFIRMED/EXPIRED)\uc640 \ubb34\uad00\ud558\uac8c \ud56d\uc0c1 \ud5c8\uc6a9\ub41c\ub2e4.\n\n\uc8fc\uc758: \uac19\uc740 \ucd08\ub300 \ucf54\ub4dc\ub85c \ub2e4\uc2dc \ucc38\uc5ec\ud560 \uc218 \uc788\ub2e4. \ubc29\uc7a5\uc740 \uc774 API \ub300\uc2e0 \uc5ec\ud589\ubc29 \uc0ad\uc81c\ub97c \uc0ac\uc6a9\ud574\uc57c \ud55c\ub2e4.\n\n\uc8fc\uc694 \uc5d0\ub7ec: TRIP_ACCESS_DENIED \u2014 \ube44\ucc38\uc5ec\uc790 \ub610\ub294 \uc774\ubbf8 \ub098\uac10 \u00b7 TRIP_OWNER_CANNOT_LEAVE \u2014 \ubc29\uc7a5\n",
+                "operationId": "leaveTrip",
+                "parameters": [
+                    {
+                        "name": "tripId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "\ub098\uac00\uae30 \uc131\uacf5(No Content)"
+                    },
+                    "400": {
+                        "description": "TRIP_OWNER_CANNOT_LEAVE \u2014 \ubc29\uc7a5\uc740 \ub098\uac08 \uc218 \uc5c6\uc74c(\ubc29 \uc0ad\uc81c \uc0ac\uc6a9)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_OWNER_CANNOT_LEAVE",
+                                    "message": "\ubc29\uc7a5\uc740 \uc5ec\ud589\ubc29\uc744 \ub098\uac08 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4. \uc5ec\ud589\ubc29 \uc0ad\uc81c\ub97c \uc774\uc6a9\ud574\uc8fc\uc138\uc694."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc5c6\uc74c\u00b7\ubb34\ud6a8(AUTH_INVALID_TOKEN)\u00b7\ub9cc\ub8cc(AUTH_EXPIRED)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "AUTH_EXPIRED",
+                                    "message": "\uc561\uc138\uc2a4 \ud1a0\ud070\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "TRIP_ACCESS_DENIED \u2014 \ube44\ucc38\uc5ec\uc790 \ub610\ub294 \uc774\ubbf8 \ub098\uac10",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "example": {
+                                    "code": "TRIP_ACCESS_DENIED",
+                                    "message": "\uc5ec\ud589\ubc29 \ucc38\uc5ec \uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer-jwt": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CreateRegularScheduleRequest": {
+                "type": "object",
+                "description": "\uc815\uae30 \uc77c\uc815 \uc0dd\uc131 \uc694\uccad. POST /users/schedule/regular. start/end \uc2dc\uac01\uc73c\ub85c \uc2ac\ub86f \uacc4\uc0b0",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "\ud45c\uc2dc\uba85 (\ucd9c\uadfc\u00b7\uc218\uc5c5\u00b7\ud68c\uc758 \ub4f1)",
+                        "example": "\ucd9c\uadfc",
+                        "minLength": 1
+                    },
+                    "daysOfWeek": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\ubc18\ubcf5 \uc694\uc77c. Weekday \ucf64\ub9c8 \uad6c\ubd84(MON~SUN). \uc0dd\ub7b5 \uc2dc null",
+                        "example": "MON,TUE,WED,THU,FRI"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "description": "\uc2dc\uc791 \uc2dc\uac01",
+                        "example": "09:00:00"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "description": "\uc885\ub8cc \uc2dc\uac01",
+                        "example": "18:00:00"
+                    },
+                    "maxVacationDays": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "format": "int32",
+                        "description": "\uc5ec\ud589\ub2f9 \ucd5c\ub300 \uc5f0\ucc28 \uc77c\uc218. \uc0dd\ub7b5 \uc2dc 2, \ud5c8\uc6a9 0~10",
+                        "example": 2,
+                        "maximum": 10,
+                        "minimum": 0
+                    },
+                    "vacationApplyPeriod": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\uc5f0\ucc28 \uc2e0\uccad \uac00\ub2a5 \uc2dc\uc810. \uc0dd\ub7b5 \uc2dc null",
+                        "enum": [
+                            "ANY",
+                            "ONE_WEEK_BEFORE",
+                            "TWO_WEEKS_BEFORE",
+                            "ONE_MONTH_BEFORE"
+                        ],
+                        "example": "ONE_WEEK_BEFORE"
+                    },
+                    "halfVacationAvailable": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "\ubc18\ucc28 \uc0ac\uc6a9 \uac00\ub2a5 \uc5ec\ubd80. \uc0dd\ub7b5 \uc2dc false",
+                        "example": false
+                    },
+                    "holidayRest": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "\uacf5\ud734\uc77c \ud734\ubb34 \uc5ec\ubd80. \uc0dd\ub7b5 \uc2dc true",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "endTime",
+                    "startTime",
+                    "title"
+                ]
+            },
+            "SuccessResponse": {
+                "type": "object",
+                "description": "API \uc131\uacf5 \uc751\ub2f5 envelope",
+                "properties": {
+                    "data": {
+                        "description": "\uc751\ub2f5 \ubcf8\ubb38"
+                    },
+                    "message": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\uc5d0\ub7ec \uba54\uc2dc\uc9c0 (\uc131\uacf5 \uc2dc null)"
+                    },
+                    "code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\uc5d0\ub7ec \ucf54\ub4dc (\uc131\uacf5 \uc2dc null)"
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "description": "API \uc5d0\ub7ec \uc751\ub2f5 envelope",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "\uc5d0\ub7ec \ucf54\ub4dc",
+                        "example": "AUTH_INVALID_TOKEN"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "\uc0ac\uc6a9\uc790\uc6a9 \uc5d0\ub7ec \uba54\uc2dc\uc9c0",
+                        "example": "\uc720\ud6a8\ud558\uc9c0 \uc54a\uc740 \ud1a0\ud070\uc785\ub2c8\ub2e4."
+                    },
+                    "errors": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "\ud544\ub4dc \uac80\uc99d \uc624\ub958 \ubaa9\ub85d (validation \uc2e4\ud328 \uc2dc)",
+                        "items": {
+                            "$ref": "#/components/schemas/FieldError"
+                        }
+                    }
+                }
+            },
+            "FieldError": {
+                "type": "object",
+                "description": "\uc694\uccad \ud544\ub4dc \uac80\uc99d \uc624\ub958",
+                "properties": {
+                    "field": {
+                        "type": "string",
+                        "description": "\uac80\uc99d \uc2e4\ud328 \ud544\ub4dc\uba85",
+                        "example": "token"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "\uac80\uc99d \uc2e4\ud328 \uba54\uc2dc\uc9c0",
+                        "example": "must not be blank"
+                    }
+                }
+            },
+            "ConnectGoogleCalendarRequest": {
+                "type": "object",
+                "description": "Google Calendar OAuth \uc5f0\ub3d9 \uc694\uccad",
+                "properties": {
+                    "authorizationCode": {
+                        "type": "string",
+                        "description": "Google OAuth authorization code (\uc571\u00b7\uc6f9\uc774 Google \ub3d9\uc758 \ud6c4 \uc218\uc2e0)",
+                        "example": "4/0AeanS...",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "authorizationCode"
+                ]
+            },
+            "CreateTripRequest": {
+                "type": "object",
+                "description": "\uc5ec\ud589\ubc29 \uc0dd\uc131 \uc694\uccad. POST /trips",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "\uc5ec\ud589\ubc29 \uc774\ub984 (\ucd5c\ub300 15\uc790)",
+                        "example": "\uc81c\uc8fc 3\ubc154\uc77c",
+                        "maxLength": 15,
+                        "minLength": 1
+                    },
+                    "startRange": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "\ud76c\ub9dd \uc5ec\ud589 \uae30\uac04 \uc2dc\uc791\uc77c",
+                        "example": "2026-08-01"
+                    },
+                    "endRange": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "\ud76c\ub9dd \uc5ec\ud589 \uae30\uac04 \uc885\ub8cc\uc77c",
+                        "example": "2026-08-10"
+                    },
+                    "durationNights": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "format": "int32",
+                        "description": "\ud76c\ub9dd \uc5ec\ud589 \ubc15\uc218 (n\ubc15). durationDays\uc640 \ub458 \ub2e4 null=\ubbf8\uc815, \ub458 \ub2e4 \uac12\uc774\uba74 nights+1 \u2264 days \u2264 nights+2. 0\ubc15(\ub2f9\uc77c\uce58\uae30)\ub3c4 \ub3d9\uc77c \uaddc\uce59 \uc801\uc6a9(days 1~2)",
+                        "example": 3
+                    },
+                    "durationDays": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "format": "int32",
+                        "description": "\ud76c\ub9dd \uc5ec\ud589 \uc77c\uc218 (m\uc77c). null=\ubbf8\uc815. durationNights+1 ~ durationNights+2 \ubc94\uc704\ub9cc \ud5c8\uc6a9",
+                        "example": 4
+                    },
+                    "memberCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "\ubaa8\uc9d1 \uc815\uc6d0 (1~10)",
+                        "example": 6,
+                        "maximum": 10,
+                        "minimum": 1
+                    },
+                    "destination": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\uc5ec\ud589\uc9c0. null=\ubbf8\uc815",
+                        "example": "\uc81c\uc8fc"
+                    }
+                },
+                "required": [
+                    "endRange",
+                    "memberCount",
+                    "name",
+                    "startRange"
+                ]
+            },
+            "JoinTripRequest": {
+                "type": "object",
+                "description": "\ucd08\ub300 \ucf54\ub4dc\ub85c \uc5ec\ud589\ubc29 \ucc38\uc5ec \uc694\uccad. POST /trips/join",
+                "properties": {
+                    "inviteCode": {
+                        "type": "string",
+                        "description": "6\uc790 Crockford Base32 \ucd08\ub300 \ucf54\ub4dc",
+                        "example": "A2B3C4",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "inviteCode"
+                ]
+            },
+            "RefreshRequest": {
+                "type": "object",
+                "description": "\uc561\uc138\uc2a4 \ud1a0\ud070 \uc7ac\ubc1c\uae09 \uc694\uccad. POST /auth/refresh",
+                "properties": {
+                    "refreshToken": {
+                        "type": "string",
+                        "description": "login \ub610\ub294 \uc774\uc804 refresh \uc751\ub2f5\uc5d0\uc11c \ubc1b\uc740 refresh token",
+                        "example": "550e8400-e29b-41d4-a716-446655440000",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "refreshToken"
+                ]
+            },
+            "LogoutRequest": {
+                "type": "object",
+                "description": "\ub85c\uadf8\uc544\uc6c3 \uc694\uccad. POST /auth/logout",
+                "properties": {
+                    "refreshToken": {
+                        "type": "string",
+                        "description": "\uc11c\ubc84\uc5d0\uc11c \ud3d0\uae30\ud560 refresh token",
+                        "example": "550e8400-e29b-41d4-a716-446655440000",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "refreshToken"
+                ]
+            },
+            "LoginRequest": {
+                "type": "object",
+                "description": "\uc18c\uc15c \ub85c\uadf8\uc778 \uc694\uccad. POST /auth/login",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "description": "\uc18c\uc15c \ub85c\uadf8\uc778 \uc81c\uacf5\uc790",
+                        "enum": [
+                            "KAKAO",
+                            "GOOGLE",
+                            "APPLE"
+                        ],
+                        "example": "GOOGLE"
+                    },
+                    "token": {
+                        "type": "string",
+                        "description": "\uc18c\uc15c \ud1a0\ud070. GOOGLE/APPLE: id_token, KAKAO: access_token",
+                        "example": "eyJhbG...",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "provider",
+                    "token"
+                ]
+            },
+            "UpdateRegularScheduleRequest": {
+                "type": "object",
+                "description": "\uc815\uae30 \uc77c\uc815 \uc804\uccb4 \uc218\uc815 \uc694\uccad. PATCH /users/schedule/regular/{id}. start/end \ubcc0\uacbd \uc2dc \uc2ac\ub86f \uc7ac\uacc4\uc0b0",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "\ud45c\uc2dc\uba85 (\ucd9c\uadfc\u00b7\uc218\uc5c5\u00b7\ud68c\uc758 \ub4f1)",
+                        "example": "\ucd9c\uadfc",
+                        "minLength": 1
+                    },
+                    "daysOfWeek": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\ubc18\ubcf5 \uc694\uc77c. Weekday \ucf64\ub9c8 \uad6c\ubd84(MON~SUN). \uc0dd\ub7b5 \uc2dc null",
+                        "example": "MON,TUE,WED,THU,FRI"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "description": "\uc2dc\uc791 \uc2dc\uac01",
+                        "example": "09:00:00"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "description": "\uc885\ub8cc \uc2dc\uac01",
+                        "example": "18:00:00"
+                    },
+                    "maxVacationDays": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "format": "int32",
+                        "description": "\uc5ec\ud589\ub2f9 \ucd5c\ub300 \uc5f0\ucc28 \uc77c\uc218. \uc0dd\ub7b5 \uc2dc 2, \ud5c8\uc6a9 0~10",
+                        "example": 2,
+                        "maximum": 10,
+                        "minimum": 0
+                    },
+                    "vacationApplyPeriod": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\uc5f0\ucc28 \uc2e0\uccad \uac00\ub2a5 \uc2dc\uc810. \uc0dd\ub7b5 \uc2dc null",
+                        "enum": [
+                            "ANY",
+                            "ONE_WEEK_BEFORE",
+                            "TWO_WEEKS_BEFORE",
+                            "ONE_MONTH_BEFORE"
+                        ],
+                        "example": "ONE_WEEK_BEFORE"
+                    },
+                    "halfVacationAvailable": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "\ubc18\ucc28 \uc0ac\uc6a9 \uac00\ub2a5 \uc5ec\ubd80. \uc0dd\ub7b5 \uc2dc false",
+                        "example": false
+                    },
+                    "holidayRest": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
+                        "description": "\uacf5\ud734\uc77c \ud734\ubb34 \uc5ec\ubd80. \uc0dd\ub7b5 \uc2dc true",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "endTime",
+                    "startTime",
+                    "title"
+                ]
+            },
+            "PersonalScheduleItem": {
+                "type": "object",
+                "description": "\ud2b9\uc815 \ub0a0\uc9dc\uc758 \uc2ac\ub86f \uac00\ub2a5/\ubd88\uac00 + \ub0a0\uc9dc \ub2e8\uc704 \ubd88\ud655\uc2e4",
+                "properties": {
+                    "scheduleDate": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "\ub0a0\uc9dc",
+                        "example": "2026-08-03"
+                    },
+                    "morningStatus": {
+                        "type": "string",
+                        "description": "\uc624\uc804 [00:00, 13:00) \uc2ac\ub86f",
+                        "enum": [
+                            "POSSIBLE",
+                            "IMPOSSIBLE"
+                        ],
+                        "example": "IMPOSSIBLE"
+                    },
+                    "afternoonStatus": {
+                        "type": "string",
+                        "description": "\uc624\ud6c4 [13:00, 18:00) \uc2ac\ub86f",
+                        "enum": [
+                            "POSSIBLE",
+                            "IMPOSSIBLE"
+                        ],
+                        "example": "POSSIBLE"
+                    },
+                    "eveningStatus": {
+                        "type": "string",
+                        "description": "\uc800\ub141 [18:00, 24:00) \uc2ac\ub86f",
+                        "enum": [
+                            "POSSIBLE",
+                            "IMPOSSIBLE"
+                        ],
+                        "example": "POSSIBLE"
+                    },
+                    "uncertain": {
+                        "type": "boolean",
+                        "description": "\ud574\ub2f9 \ub0a0\uc9dc \uc804\uccb4 \ubd88\ud655\uc2e4 \uc5ec\ubd80",
+                        "example": false
+                    }
+                },
+                "required": [
+                    "afternoonStatus",
+                    "eveningStatus",
+                    "morningStatus",
+                    "scheduleDate"
+                ]
+            },
+            "UpdatePersonalScheduleRequest": {
+                "type": "object",
+                "description": "\uac1c\uc778 \uc77c\uc815 bulk upsert + \uc0ad\uc81c \uc694\uccad. PATCH /users/schedule/personal",
+                "properties": {
+                    "items": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "\ub0a0\uc9dc\ubcc4 upsert \ud56d\ubaa9. \ube44\uc5b4 \uc788\uac70\ub098 \uc0dd\ub7b5 \uac00\ub2a5(deletedDates\ub9cc\uc73c\ub85c CLEAR)",
+                        "items": {
+                            "$ref": "#/components/schemas/PersonalScheduleItem"
+                        }
+                    },
+                    "deletedDates": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "description": "\uc0ad\uc81c\ud560 \ub0a0\uc9dc \ubaa9\ub85d. \ud574\ub2f9 (user, date) row \uc0ad\uc81c(\ud574\ub2f9 \ub0a0 CLEAR). null/\ube48 \ubc30\uc5f4 \uac00\ub2a5",
+                        "example": [
+                            "2026-08-04"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                }
+            },
+            "UpdateProfileRequest": {
+                "type": "object",
+                "description": "\ub9c8\uc774\ud398\uc774\uc9c0 \ud504\ub85c\ud544(\uc131\u00b7\uc774\ub984) \uc218\uc815 \uc694\uccad. PATCH /users/profile",
+                "properties": {
+                    "firstName": {
+                        "type": "string",
+                        "description": "\uc774\ub984 (\uacf5\ubc31 \ubd88\uac00)",
+                        "example": "\uae38\ub3d9",
+                        "minLength": 1
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "description": "\uc131 (\uacf5\ubc31 \ubd88\uac00)",
+                        "example": "\ud64d",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "firstName",
+                    "lastName"
+                ]
+            },
+            "OnboardingNameRequest": {
+                "type": "object",
+                "description": "\uc628\ubcf4\ub529 \ucd5c\ucd08 \uc131\u00b7\uc774\ub984 \ub4f1\ub85d \uc694\uccad. PATCH /users/onboarding/name",
+                "properties": {
+                    "firstName": {
+                        "type": "string",
+                        "description": "\uc774\ub984 (\uacf5\ubc31 \ubd88\uac00)",
+                        "example": "\uae38\ub3d9",
+                        "minLength": 1
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "description": "\uc131 (\uacf5\ubc31 \ubd88\uac00)",
+                        "example": "\ud64d",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "firstName",
+                    "lastName"
+                ]
+            },
+            "PatchTripRequest": {
+                "type": "object",
+                "description": "\uc5ec\ud589\ubc29 \uba54\ud0c0 \uc218\uc815 \uc694\uccad. PATCH /trips/{tripId} (\ubc29\uc7a5\u00b7ONGOING\ub9cc). \ud76c\ub9dd \uae30\uac04\uc740 \uc218\uc815 \ubd88\uac00",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "\uc5ec\ud589\ubc29 \uc774\ub984 (\ucd5c\ub300 15\uc790)",
+                        "example": "\uc81c\uc8fc 3\ubc154\uc77c",
+                        "maxLength": 15,
+                        "minLength": 1
+                    },
+                    "durationNights": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "format": "int32",
+                        "description": "\ud76c\ub9dd \uc5ec\ud589 \ubc15\uc218 (n\ubc15). durationDays\uc640 \ub458 \ub2e4 null=\ubbf8\uc815, \ub458 \ub2e4 \uac12\uc774\uba74 nights+1 \u2264 days \u2264 nights+2. 0\ubc15(\ub2f9\uc77c\uce58\uae30)\ub3c4 \ub3d9\uc77c \uaddc\uce59 \uc801\uc6a9(days 1~2)",
+                        "example": 3
+                    },
+                    "durationDays": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "format": "int32",
+                        "description": "\ud76c\ub9dd \uc5ec\ud589 \uc77c\uc218 (m\uc77c). null=\ubbf8\uc815. durationNights+1 ~ durationNights+2 \ubc94\uc704\ub9cc \ud5c8\uc6a9",
+                        "example": 4
+                    },
+                    "memberCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "\ubaa8\uc9d1 \uc815\uc6d0 (1~10)",
+                        "example": 6,
+                        "maximum": 10,
+                        "minimum": 1
+                    },
+                    "destination": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\uc5ec\ud589\uc9c0. null=\ubbf8\uc815",
+                        "example": "\uc81c\uc8fc"
+                    }
+                },
+                "required": [
+                    "memberCount",
+                    "name"
+                ]
+            },
+            "UpdateTripPinRequest": {
+                "type": "object",
+                "description": "\uc5ec\ud589\ubc29 Pin \ud1a0\uae00 \uc694\uccad. PATCH /trips/{tripId}/pin",
+                "properties": {
+                    "pinned": {
+                        "type": "boolean",
+                        "description": "Pin \uc5ec\ubd80. true=\ud648 \uc0c1\ub2e8 \uace0\uc815, false=\ud574\uc81c",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "pinned"
+                ]
+            }
+        },
+        "securitySchemes": {
+            "bearer-jwt": {
+                "type": "http",
+                "description": "Authorization: Bearer {accessToken}",
+                "name": "bearer-jwt",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}
