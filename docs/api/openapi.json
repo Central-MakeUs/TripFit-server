@@ -420,6 +420,7 @@
                         "membersPreview": [
                           {
                             "userId": "550e8400-e29b-41d4-a716-446655440000",
+                            "displayName": "길동",
                             "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                             "role": "OWNER"
                           }
@@ -947,6 +948,7 @@
                     "membersPreview": [
                       {
                         "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "displayName": "길동",
                         "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                         "role": "OWNER"
                       }
@@ -1085,10 +1087,11 @@
                     "myRole": "OWNER",
                     "myMemberStatus": "ACTIVE",
                     "activeMemberCount": 1,
-                    "memberFillRate": 0.17,
+                    "memberFillRate": 0.16666666666666666,
                     "membersPreview": [
                       {
                         "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "displayName": "길동",
                         "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                         "role": "OWNER"
                       }
@@ -1188,6 +1191,7 @@
                     "membersPreview": [
                       {
                         "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "displayName": "길동",
                         "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                         "role": "OWNER"
                       }
@@ -2289,6 +2293,7 @@
                     "membersPreview": [
                       {
                         "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "displayName": "길동",
                         "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                         "role": "OWNER"
                       }
@@ -2482,6 +2487,7 @@
                     "membersPreview": [
                       {
                         "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "displayName": "길동",
                         "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                         "role": "OWNER"
                       }
@@ -2748,6 +2754,7 @@
                     "membersPreview": [
                       {
                         "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "displayName": "길동",
                         "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                         "role": "OWNER"
                       }
@@ -3440,7 +3447,7 @@
                   "data": {
                     "memberCount": 6,
                     "activeMemberCount": 2,
-                    "memberFillRate": 0.33,
+                    "memberFillRate": 0.3333333333333333,
                     "members": [
                       {
                         "userId": "550e8400-e29b-41d4-a716-446655440000",
