@@ -40,6 +40,10 @@ public class GoogleOAuthClient {
     form.add("code", authorizationCode);
     form.add("client_id", oAuthProperties.getGoogleClientId());
     form.add("client_secret", oAuthProperties.getGoogleClientSecret());
+    // 네이티브 앱(@react-native-google-signin/google-signin)의 serverAuthCode는 리다이렉트가 없는 코드라
+    // redirect_uri가 없는데도, Google 토큰 엔드포인트는 이 파라미터가 반드시(빈 문자열이라도) 있어야
+    // "Missing parameter: redirect_uri" 400을 내지 않는다(Google 공식 문서 명시 요구사항)
+    form.add("redirect_uri", "");
     form.add("grant_type", "authorization_code");
     JsonNode response =
         restClient

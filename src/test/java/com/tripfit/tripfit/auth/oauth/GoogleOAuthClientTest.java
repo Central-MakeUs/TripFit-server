@@ -3,11 +3,14 @@ package com.tripfit.tripfit.auth.oauth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import java.io.IOException;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,6 +30,34 @@ class GoogleOAuthClientTest {
     properties.setGoogleClientId("web-client-id");
     properties.setGoogleClientSecret("web-client-secret");
     return new GoogleOAuthClient(builder.build(), properties);
+  }
+
+  // Google 토큰 엔드포인트는 redirect_uri 파라미터가 없으면(네이티브 serverAuthCode라 실제 리다이렉트가
+  // 없어도) "Missing parameter: redirect_uri" 400을 반환함(2026-07-31 실계정 테스트로 확인) — 빈 문자열로라도
+  // 항상 실려 있는지 검증
+  @Test
+  void exchangeAuthorizationCodeForRefreshToken_sendsEmptyRedirectUri() {
+    MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
+    GoogleOAuthClient client = newClient(serverHolder);
+    MultiValueMap<String, String> expectedForm = new LinkedMultiValueMap<>();
+    expectedForm.add("code", "auth-code-123");
+    expectedForm.add("client_id", "web-client-id");
+    expectedForm.add("client_secret", "web-client-secret");
+    expectedForm.add("redirect_uri", "");
+    expectedForm.add("grant_type", "authorization_code");
+    serverHolder[0]
+        .expect(requestTo(TOKEN_URL))
+        .andExpect(content().formData(expectedForm))
+        .andRespond(
+            withSuccess(
+                """
+                    {"access_token": "at", "refresh_token": "rt-value", "token_type": "Bearer", "expires_in": 3600}
+                    """,
+                MediaType.APPLICATION_JSON));
+
+    client.exchangeAuthorizationCodeForRefreshToken("auth-code-123");
+
+    serverHolder[0].verify();
   }
 
   @Test
