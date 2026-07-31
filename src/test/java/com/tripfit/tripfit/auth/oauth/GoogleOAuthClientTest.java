@@ -81,7 +81,8 @@ class GoogleOAuthClientTest {
                 .contentType(MediaType.APPLICATION_JSON));
 
     assertThatThrownBy(() -> client.exchangeAuthorizationCodeForRefreshToken("bad-code"))
-        .isInstanceOf(IllegalStateException.class);
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("invalid_grant");
   }
 
   @Test
