@@ -1288,7 +1288,7 @@
           "Notification Device Token"
         ],
         "summary": "디바이스 토큰 등록·갱신",
-        "description": "목적: 본인 기기의 FCM 등록 토큰을 저장해 푸시 알림을 받을 수 있게 한다.\n\n호출 시점: 앱 시작·로그인 직후, FCM 토큰 최초 발급·갱신 시.\n\n전제: 없음 — 이미 등록된 토큰이면 소유자·기기 플랫폼을 갱신한다.\n\n결과: 204를 반환한다. 동일 토큰이 다른 유저 소유였다면 본인 소유로 재할당된다.\n\n주요 에러: NOTIFICATION_TOKEN_REQUIRED — 토큰 값 누락\n",
+        "description": "목적: 본인 기기의 FCM 등록 토큰을 저장해 푸시 알림을 받을 수 있게 한다.\n\n호출 시점: 앱 시작·로그인 직후, FCM 토큰 최초 발급·갱신 시.\n\n전제: 없음 — 이미 등록된 토큰이면 소유자·기기 플랫폼을 갱신한다.\n\n결과: 204를 반환한다. 동일 토큰이 다른 유저 소유였다면 본인 소유로 재할당된다.\n\n주요 에러: NOTIFICATION_TOKEN_REQUIRED — 토큰 값 누락 · INVALID_INPUT — deviceType 누락·범위 밖 값\n",
         "operationId": "register",
         "requestBody": {
           "content": {
@@ -1305,15 +1305,21 @@
             "description": "등록·갱신 성공(No Content)"
           },
           "400": {
-            "description": "NOTIFICATION_TOKEN_REQUIRED — 토큰 값 누락",
+            "description": "INVALID_INPUT — deviceType 누락(필수)·정의되지 않은 값",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "NOTIFICATION_TOKEN_REQUIRED",
-                  "message": "디바이스 토큰 값이 필요합니다."
+                  "code": "INVALID_INPUT",
+                  "message": "입력값이 올바르지 않습니다.",
+                  "errors": [
+                    {
+                      "field": "deviceType",
+                      "message": "필수 값입니다."
+                    }
+                  ]
                 }
               }
             }
@@ -3288,6 +3294,7 @@
                       "body": "홍길동님이 여행방에 참여했어요! 참여 현황을 확인해보세요.",
                       "landingType": "TRAVEL_ROOM_DETAIL",
                       "tripId": "660e8400-e29b-41d4-a716-446655440000",
+                      "roomName": "제주도 3박4일",
                       "isRead": false,
                       "sentAt": "2026-08-01T09:00:00"
                     }
