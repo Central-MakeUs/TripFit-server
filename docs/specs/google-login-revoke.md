@@ -1,12 +1,13 @@
 # Google 로그인 Revoke 확보
 
-> 상태: Implemented (`./gradlew build` 통과 — PR 대기, FE 배포 순서 조율·실계정 수동 검증 별도 진행)
+> 상태: Implemented — 단, `redirect_uri` 계약 정정으로 2026-08-01 amend 진행 중(아래 "정정 2" 참고)
 > MVP: In scope (소셜 로그인은 이미 MVP In scope — 이 스펙은 그 위에 revoke를 보강)
 > 관련 BR: 해당 없음 — [`#64`](https://github.com/Central-MakeUs/TripFit-server/issues/64)(Release Gate) 후속, Wave와 무관
 > 선행: [`auth-social-login.md`](auth-social-login.md), [`user-account-withdrawal.md`](user-account-withdrawal.md)
 > 참고 패턴: Apple 구현(`AppleCredential`/`AppleCredentialService`/`AppleOAuthClient`) — 동일 구조 재사용
 > deferred: 로그인·캘린더 Client ID 분리 → [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)(#78)
 > 정정 (2026-07-31): [`google-login-native-sdk-decision.md`](google-login-native-sdk-decision.md)(#77)는 "결정 필요"가 아니라 FE 확인 결과 **이미 네이티브 SDK로 구현·배포 구조까지 완료**된 것으로 밝혀져 Resolved 처리 — 아래 "클라이언트(FE) 변경 요건" 절에 정확한 두 경로(네이티브/브라우저)를 반영
+> **정정 2 (2026-08-01)**: PR #82(`redirect_uri=""` 고정)는 네이티브 앱 경로에는 맞지만, **브라우저 경로엔 틀렸다.** EC2 prod 로그로 실제 배포된 `tripfit.online` 데스크톱 브라우저 재현 시에도 여전히 `Missing parameter: redirect_uri` 400이 재현됨. FE 확인 결과 브라우저 경로는 **postmessage가 아니라 전체 페이지 리다이렉트**(`response_type=code id_token`)이고, code 교환에는 로그인 리다이렉트에 실제로 쓴 `redirect_uri`(예: `https://tripfit.online/auth/google/callback`)를 **그대로** 보내야 한다 — 빈 문자열은 이 경로에서 "파라미터 없음"과 동일하게 취급됨. 해결책: `LoginRequest`에 `redirectUri`(옵션, GOOGLE 브라우저 전용) 필드를 추가해 클라이언트가 실제 값을 실어 보내게 한다. 네이티브 앱(serverAuthCode) 경로는 영향 없음(계속 빈 문자열).
 
 ## 목표
 
@@ -49,7 +50,8 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 - [x] 신규 Repository `GoogleLoginCredentialRepository`(`findByUser_Id`, `deleteByUser_Id`) — 신규 네이티브 쿼리 없이 derived method만
 - [x] `docs/architecture/erd.md`에 `google_login_credential` 테이블 반영
 - [x] `docs/specs/auth-social-login.md`, `docs/specs/user-account-withdrawal.md` Google 절 amend
-- [ ] 커밋 시 `Breaking-Change-Reason` 트레일러 — `LoginRequest.authorizationCode` 의미 확장(조건부 필수화 대상에 GOOGLE 추가) + 신규 `ErrorCode`
+- [x] 커밋 시 `Breaking-Change-Reason` 트레일러 — `LoginRequest.authorizationCode` 의미 확장(조건부 필수화 대상에 GOOGLE 추가) + 신규 `ErrorCode`
+- [x] **(2026-08-01 추가, 정정 2)** 신규 필드 `LoginRequest.redirectUri`(옵션, GOOGLE 브라우저 전용) — `GoogleOAuthClient.exchangeAuthorizationCodeForRefreshToken(authorizationCode, redirectUri)`가 네이티브(null→`""`)/브라우저(실제 URL 그대로)를 구분해 Google 토큰 엔드포인트에 전달. `AuthService.login()` → `GoogleLoginCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode, redirectUri)`로 관통
 
 ### Nice to Have
 
@@ -75,15 +77,26 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 
 | Method | Path | Auth | 설명 |
 |--------|------|------|------|
-| `POST` | `/api/v1/auth/login` | 없음 | `provider=GOOGLE`일 때 `authorizationCode` 필수로 전환 |
+| `POST` | `/api/v1/auth/login` | 없음 | `provider=GOOGLE`일 때 `authorizationCode` 필수로 전환, 브라우저 경로면 `redirectUri`도 필수 |
 
-### 요청 예시 (GOOGLE)
+### 요청 예시 (GOOGLE, 네이티브 앱)
 
 ```json
 {
   "provider": "GOOGLE",
   "token": "eyJhbG... (id_token)",
   "authorizationCode": "4/0Ab... (Google authorization code)"
+}
+```
+
+### 요청 예시 (GOOGLE, 브라우저 리다이렉트)
+
+```json
+{
+  "provider": "GOOGLE",
+  "token": "eyJhbG... (id_token)",
+  "authorizationCode": "4/0Ab... (Google authorization code)",
+  "redirectUri": "https://tripfit.online/auth/google/callback"
 }
 ```
 
@@ -116,11 +129,13 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
   - `scope`는 그대로(`openid email profile`) — 캘린더 권한을 추가로 요청하는 게 **아님**
   - 응답 fragment에 `id_token`과 `code`가 함께 실려 옴 — 기존처럼 `id_token`은 `token`으로, 새로 받은 `code`는 `authorizationCode`로 로그인 요청에 실어 보내면 됨
   - `prompt=consent`는 추가하지 않음(위 사용자 결정)
+- **(2026-08-01 추가, 정정 2)**: authorize 요청에 실제로 쓴 `redirect_uri`(예: `https://tripfit.online/auth/google/callback`, 로컬 dev는 해당 도메인)를 로그인 요청에 `redirectUri`로 **그대로** 실어 보내야 한다. Google 토큰 교환은 code 발급 시 쓴 redirect_uri와 정확히 같은 값을 요구하며, 다르거나 비어 있으면 `Missing parameter: redirect_uri` 400으로 실패한다(2026-08-01 실제 배포 `tripfit.online` 데스크톱 브라우저 재현으로 확인).
 
 ### 공통
 
 - `prompt=consent`는 두 경로 모두 추가하지 않음(위 사용자 결정 — 정상 재로그인 UX 유지)
 - **배포 순서**: Apple 때와 동일한 리스크 — 백엔드가 먼저 강제(400)를 배포하면 FE가 아직 `authorizationCode`를 안 보내는 순간(두 경로 중 하나라도 미전환) **그 경로의 Google 로그인 전체가 즉시 실패**한다. FE가 두 경로 모두 `authorizationCode`를 보내기 시작한 뒤에 백엔드를 배포해야 함
+- **`redirectUri`는 필수 검증(400)이 아니라 best-effort**: 브라우저 경로에서 `redirectUri`가 없거나 틀리면 Google 토큰 교환만 실패하고 credential 저장이 조용히 스킵된다(로그인 자체는 계속 성공) — `authorizationCode`처럼 배포 순서 때문에 로그인 전체가 막히는 리스크는 없다. 다만 FE가 실제 값을 보내기 전까지는 브라우저 경로의 revoke가 계속 no-op이 된다
 - Kakao(`@react-native-seoul/kakao-login`)는 Admin Key 기반 unlink라 이 필드와 무관, Apple(`expo-apple-authentication`)은 네이티브 Sign In 결과가 이미 `authorizationCode`를 포함해 기존 구현 그대로 — 두 provider 모두 이번 변경의 영향을 받지 않음
 
 ## 데이터 모델
@@ -172,11 +187,11 @@ google_login_credential (신규)
 - [x] `docs/specs/auth-social-login.md`, `docs/specs/user-account-withdrawal.md` amend
 - [x] `docs/architecture/erd.md`에 `google_login_credential` 반영
 - [x] OpenAPI(`LoginRequest`·`AuthErrorCode`·`AuthController` `@ApiResponses`) 반영
-- [ ] 커밋에 `Breaking-Change-Reason` 트레일러
+- [x] 커밋에 `Breaking-Change-Reason` 트레일러 (PR #79 — `authorizationCode` 조건부 필수화 + 신규 `ErrorCode`, 이번 amend 커밋 — `redirectUri` 신규 필드)
 - [ ] `#64` 이슈에 진행 상황 반영
-- [ ] (코드 밖) FE가 두 경로 모두 `authorizationCode`를 보내기 시작한 뒤 배포 — 네이티브 앱은 `offlineAccess: true` 추가, 브라우저는 hybrid flow 전환. 순서 조율 필수
+- [ ] (코드 밖) FE가 두 경로 모두 `authorizationCode`를 보내기 시작한 뒤 배포 — 네이티브 앱은 `offlineAccess: true` 추가, 브라우저는 hybrid flow 전환 + `redirectUri` 실제 값 전송. 순서 조율 필수
 - [ ] (코드 밖) `GOOGLE_WEB_CLIENT_ID`(FE) = `GOOGLE_CLIENT_ID`(백엔드 env) 값 일치 확인
-- [ ] (코드 밖) 실제 Google 테스트 계정으로 네이티브 앱·브라우저 두 경로 각각 수동 검증
+- [ ] (코드 밖) 실제 Google 테스트 계정으로 네이티브 앱·브라우저 두 경로 각각 수동 검증(브라우저 경로는 `redirectUri` 반영 후 `GoogleLoginCredential` row 생성까지 확인)
 
 ## 리스크·미결정
 
@@ -195,3 +210,4 @@ google_login_credential (신규)
 | 2026-07-31 | 초안 (Draft) — `#64` 재발견 gap 대응 |
 | 2026-07-31 | 구현 완료(Implemented) — Apple 패턴 재사용, `./gradlew build` 통과 |
 | 2026-07-31 | **정정** — FE 확인 결과 네이티브 SDK(`@react-native-google-signin/google-signin` 등)가 이미 구현돼 있었음. client_id 이원화 리스크 해소, FE 변경 요건을 네이티브(`offlineAccess`+`serverAuthCode`)/브라우저(hybrid flow) 두 경로로 재작성. `google-login-native-sdk-decision.md`(#77) Resolved 처리 |
+| 2026-08-01 | **정정 2** — PR #82(`redirect_uri=""` 고정)가 실제 배포된 브라우저 경로에서도 `Missing parameter: redirect_uri` 400으로 재현됨(EC2 로그 확인). FE 재확인 결과 브라우저 경로는 postmessage가 아니라 전체 페이지 리다이렉트라 실제 `redirect_uri` URL이 필요 — `LoginRequest.redirectUri`(옵션, GOOGLE 브라우저 전용) 필드 추가, `GoogleOAuthClient`/`GoogleLoginCredentialService`/`AuthService`/`AuthController` 관통 배선. `./gradlew build` 통과 |

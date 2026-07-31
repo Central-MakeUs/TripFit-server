@@ -58,11 +58,11 @@ public class AuthController {
 
           호출 시점: 앱 최초 로그인·재로그인.
 
-          전제: Google/Kakao/Apple에서 받은 유효한 토큰. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은 authorizationCode도 함께 보내야 한다 — 값의 출처는 `LoginRequest.authorizationCode` 필드 설명 참고(GOOGLE은 네이티브 앱 로그인이냐 브라우저 리다이렉트 로그인이냐에 따라 값을 받는 방법이 다르다).
+          전제: Google/Kakao/Apple에서 받은 유효한 토큰. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은 authorizationCode도 함께 보내야 한다 — 값의 출처는 `LoginRequest.authorizationCode` 필드 설명 참고(GOOGLE은 네이티브 앱 로그인이냐 브라우저 리다이렉트 로그인이냐에 따라 값을 받는 방법이 다르다). GOOGLE 브라우저 리다이렉트 로그인이면 `redirectUri`도 함께 보내야 한다(로그인 리다이렉트에 실제로 쓴 URL과 정확히 일치해야 함) — `LoginRequest.redirectUri` 필드 설명 참고.
 
           결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
 
-          주의: APPLE·GOOGLE 로그인은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 해당 provider 쪽 연결 해제(revoke)에 쓰이는 refresh token을 확보하기 위함. GOOGLE은 provider 특성상 재로그인 시 credential이 갱신되지 않을 수 있다(정상 동작).
+          주의: APPLE·GOOGLE 로그인은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 해당 provider 쪽 연결 해제(revoke)에 쓰이는 refresh token을 확보하기 위함. GOOGLE은 provider 특성상 재로그인 시 credential이 갱신되지 않을 수 있다(정상 동작). GOOGLE 브라우저 로그인인데 `redirectUri`가 누락되거나 실제 값과 다르면 Google 토큰 교환 자체가 실패해 credential 저장만 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).
 
           주요 에러: AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED — APPLE인데 authorizationCode 누락 · AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED — GOOGLE인데 authorizationCode 누락 · AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)
           """)
@@ -126,7 +126,11 @@ public class AuthController {
   ResponseEntity<SuccessResponse<LoginResponse>> login(
       @Valid @RequestBody LoginRequest request) {
     LoginResponse response =
-        authService.login(request.provider(), request.token(), request.authorizationCode());
+        authService.login(
+            request.provider(),
+            request.token(),
+            request.authorizationCode(),
+            request.redirectUri());
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 

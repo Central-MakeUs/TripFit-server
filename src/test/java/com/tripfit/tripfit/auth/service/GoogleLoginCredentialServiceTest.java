@@ -50,21 +50,21 @@ class GoogleLoginCredentialServiceTest {
   void saveIfAuthorizationCodePresent_whenCodeBlank_doesNothing() {
     User user = user();
 
-    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "  ");
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "  ", null);
 
-    verify(googleOAuthClient, never()).exchangeAuthorizationCodeForRefreshToken(any());
+    verify(googleOAuthClient, never()).exchangeAuthorizationCodeForRefreshToken(any(), any());
     verify(googleLoginCredentialRepository, never()).save(any());
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenNewUserAndRefreshTokenPresent_createsCredential() {
     User user = user();
-    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code"))
+    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", null))
         .thenReturn("plain-refresh");
     when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
     when(googleLoginCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
 
-    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "auth-code");
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "auth-code", null);
 
     verify(googleLoginCredentialRepository)
         .save(
@@ -72,13 +72,37 @@ class GoogleLoginCredentialServiceTest {
                 credential -> "encrypted-refresh".equals(credential.getRefreshTokenCiphertext())));
   }
 
+  // 브라우저 로그인(redirectUri 있음) — GoogleOAuthClient에 그대로 전달돼야 함
+  @Test
+  void saveIfAuthorizationCodePresent_whenRedirectUriPresent_passesItToClient() {
+    User user = user();
+    when(
+        googleOAuthClient.exchangeAuthorizationCodeForRefreshToken(
+            "auth-code",
+            "https://tripfit.online/auth/google/callback"))
+        .thenReturn("plain-refresh");
+    when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
+    when(googleLoginCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
+
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(
+        user,
+        "auth-code",
+        "https://tripfit.online/auth/google/callback");
+
+    verify(googleOAuthClient)
+        .exchangeAuthorizationCodeForRefreshToken(
+            "auth-code",
+            "https://tripfit.online/auth/google/callback");
+  }
+
   // Google은 재로그인마다 refresh_token을 내려주지 않으므로(최초 동의 시에만), null 응답은 정상 케이스로 skip해야 함
   @Test
   void saveIfAuthorizationCodePresent_whenRefreshTokenAbsent_skipsSaveAndKeepsExisting() {
     User user = user();
-    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code")).thenReturn(null);
+    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", null))
+        .thenReturn(null);
 
-    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "auth-code");
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "auth-code", null);
 
     verify(googleLoginCredentialRepository, never()).findByUser_Id(any());
     verify(googleLoginCredentialRepository, never()).save(any());
@@ -88,12 +112,12 @@ class GoogleLoginCredentialServiceTest {
   void saveIfAuthorizationCodePresent_whenExistingCredential_overwritesRefreshToken() {
     User user = user();
     GoogleLoginCredential existing = GoogleLoginCredential.create(user, "old-ciphertext");
-    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("new-code"))
+    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("new-code", null))
         .thenReturn("new-plain-refresh");
     when(tokenCrypto.encrypt("new-plain-refresh")).thenReturn("new-ciphertext");
     when(googleLoginCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(existing));
 
-    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "new-code");
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "new-code", null);
 
     verify(googleLoginCredentialRepository).save(existing);
     org.assertj.core.api.Assertions.assertThat(existing.getRefreshTokenCiphertext())
@@ -103,11 +127,11 @@ class GoogleLoginCredentialServiceTest {
   @Test
   void saveIfAuthorizationCodePresent_whenExchangeFails_doesNotThrowAndSkipsSave() {
     User user = user();
-    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("bad-code"))
+    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("bad-code", null))
         .thenThrow(new IllegalStateException("Google token endpoint error"));
 
     assertThatCode(
-        () -> googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "bad-code"))
+        () -> googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "bad-code", null))
         .doesNotThrowAnyException();
 
     verify(googleLoginCredentialRepository, never()).save(any());

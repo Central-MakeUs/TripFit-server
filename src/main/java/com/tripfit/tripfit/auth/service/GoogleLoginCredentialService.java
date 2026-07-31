@@ -34,15 +34,20 @@ public class GoogleLoginCredentialService {
   }
 
   // authorizationCode를 refresh token으로 교환해 암호화 저장 — refresh_token이 없는 응답(재로그인 등 정상 케이스)은
-  // 조용히 스킵하고 기존 credential을 그대로 둠. 교환 자체가 실패해도 로그인은 계속 진행(best-effort)
+  // 조용히 스킵하고 기존 credential을 그대로 둠. 교환 자체가 실패해도 로그인은 계속 진행(best-effort). redirectUri는
+  // 네이티브 앱 로그인이면 null(빈 문자열로 처리), 브라우저 로그인이면 실제 리다이렉트에 쓴 URL
   @Transactional
-  public void saveIfAuthorizationCodePresent(User user, String authorizationCode) {
+  public void saveIfAuthorizationCodePresent(
+      User user,
+      String authorizationCode,
+      String redirectUri) {
     if (authorizationCode == null || authorizationCode.isBlank()) {
       return;
     }
     try {
       String refreshToken =
-          googleOAuthClient.exchangeAuthorizationCodeForRefreshToken(authorizationCode);
+          googleOAuthClient
+              .exchangeAuthorizationCodeForRefreshToken(authorizationCode, redirectUri);
       if (refreshToken == null || refreshToken.isBlank()) {
         // Google이 최초 동의 때만 refresh_token을 내려주므로 재로그인에서는 정상적으로 없을 수 있음
         return;

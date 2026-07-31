@@ -60,7 +60,11 @@ public class AuthService {
 
   // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함
   @Transactional
-  public LoginResponse login(SocialProvider provider, String token, String authorizationCode) {
+  public LoginResponse login(
+      SocialProvider provider,
+      String token,
+      String authorizationCode,
+      String redirectUri) {
     // 1. APPLE/GOOGLE인데 authorizationCode가 없으면 즉시 거부 — 탈퇴 시 provider revoke 호출이 항상 no-op이
     // 되는 걸 막기 위한 강제(APPLE은 App Store Guideline 5.1.1(v) 심사 요건, GOOGLE은 #64 재발견 gap 대응)
     if ((provider == SocialProvider.APPLE || provider == SocialProvider.GOOGLE)
@@ -88,7 +92,10 @@ public class AuthService {
           authorizationCode,
           profile.appleMatchedClientId());
     } else if (provider == SocialProvider.GOOGLE) {
-      googleLoginCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode);
+      googleLoginCredentialService.saveIfAuthorizationCodePresent(
+          user,
+          authorizationCode,
+          redirectUri);
     }
 
     // 5. 액세스·리프레시 발급 — user.hasPreSchedule은 toSummary()가 일정 EXISTS로 파생 (user 컬럼 아님)

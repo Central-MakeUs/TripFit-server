@@ -258,6 +258,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 | provider | enum | Y | `GOOGLE` \| `KAKAO` \| `APPLE` |
 | token | string | Y | 앱 SDK에서 획득한 토큰. provider별 의미 아래 참고 |
 | authorizationCode | string | provider가 APPLE·GOOGLE이면 Y, KAKAO는 안 씀 | 각 provider OAuth 플로우에서 받은 authorization code — 탈퇴 시 revoke에 쓸 refresh token 교환용(`AppleCredential`/`GoogleLoginCredential`) |
+| redirectUri | string | GOOGLE 브라우저 리다이렉트 로그인이면 Y, 그 외(GOOGLE 네이티브 앱·KAKAO·APPLE)는 안 씀 | 브라우저 로그인 리다이렉트에 실제로 쓴 redirect_uri 원문 — Google authorization code 교환 시 code 발급 때 쓴 값과 정확히 일치해야 함(2026-08-01, `google-login-revoke.md` 정정 2) |
 
 **provider별 token 의미**
 
@@ -270,6 +271,10 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 **authorizationCode (APPLE·GOOGLE 필수)**
 
 두 provider 모두 로그인마다(최초·재로그인 모두) authorization code를 새로 받아 보내야 한다. 탈퇴 시 provider 쪽 연결 해제(revoke)에 쓸 refresh token을 매번 교환·갱신하기 위함 — 상세: [`user-account-withdrawal.md`](user-account-withdrawal.md), [`google-login-revoke.md`](google-login-revoke.md). GOOGLE은 provider 특성상 재로그인 시 refresh_token이 응답에 없을 수 있어 credential이 갱신되지 않을 수 있다(정상 동작, 최초 동의 때만 발급).
+
+**redirectUri (GOOGLE 브라우저 로그인 필수)**
+
+GOOGLE 로그인이 브라우저 전체 페이지 리다이렉트 경로(네이티브 앱 `serverAuthCode` 아님)면, authorize 요청에 실제로 쓴 `redirect_uri`를 그대로 보내야 한다. Google 토큰 교환은 code 발급 때 쓴 redirect_uri와 정확히 같은 값을 요구하며, 다르거나 비어 있으면 교환 자체가 실패해 credential 저장만 조용히 스킵된다(로그인 자체는 계속 성공, best-effort — `authorizationCode` 누락과 달리 400은 아님). 상세: [`google-login-revoke.md`](google-login-revoke.md) 정정 2.
 
 **Response `200`**
 
