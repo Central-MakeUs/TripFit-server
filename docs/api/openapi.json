@@ -196,7 +196,7 @@
           "Google Calendar"
         ],
         "summary": "Google Calendar 연동",
-        "description": "목적: Google OAuth authorization code로 Calendar 읽기 권한을 연동한다.\n\n호출 시점: 온보딩·설정 화면에서 Google Calendar 연동 버튼 완료 직후.\n\n전제: TripFit 로그인(JWT) 상태. 앱·웹이 Google OAuth 동의 후 authorization code를 전달한다.\n\n결과: isGoogleCalendarConnected=true로 갱신된 UserSummary. 연동 직후 freeBusy 1회 sync.\n\n주요 에러: GOOGLE_CALENDAR_CONNECT_FAILED — code 교환·Google API 실패\n",
+        "description": "목적: Google OAuth authorization code로 Calendar 읽기 권한을 연동한다.\n\n호출 시점: 온보딩·설정 화면에서 Google Calendar 연동 버튼 완료 직후.\n\n전제: TripFit 로그인(JWT) 상태. 앱·웹이 Google OAuth 동의 후 authorization code를 전달한다. 브라우저\n리다이렉트 방식이면 redirectUri도 함께 보내야 한다.\n\n결과: isGoogleCalendarConnected=true로 갱신된 UserSummary. 연동 직후 freeBusy 1회 sync.\n\n주요 에러: GOOGLE_CALENDAR_CONNECT_FAILED — code 교환·Google API 실패\n",
         "operationId": "connect",
         "requestBody": {
           "content": {
@@ -3874,6 +3874,14 @@
             "description": "Google OAuth authorization code (앱·웹이 Google 동의 후 수신)",
             "example": "4/0AeanS...",
             "minLength": 1
+          },
+          "redirectUri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "브라우저 리다이렉트 방식으로 연동할 때만 필요한 redirect_uri 원문 — Google authorization code 교환 시 요청에 실제로 썼던 값과 정확히 일치해야 한다.\n\n네이티브 앱(serverAuthCode) 방식은 보내지 않아도 된다(값이 있어도 무시).\n",
+            "example": "https://tripfit.online/settings/google-calendar/callback"
           }
         },
         "required": [
