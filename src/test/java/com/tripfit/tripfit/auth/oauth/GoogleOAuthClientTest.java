@@ -32,11 +32,10 @@ class GoogleOAuthClientTest {
     return new GoogleOAuthClient(builder.build(), properties);
   }
 
-  // Google 토큰 엔드포인트는 redirect_uri 파라미터가 없으면(네이티브 serverAuthCode라 실제 리다이렉트가
-  // 없어도) "Missing parameter: redirect_uri" 400을 반환함(2026-07-31 실계정 테스트로 확인) — 빈 문자열로라도
-  // 항상 실려 있는지 검증
+  // 네이티브 앱(serverAuthCode) 로그인 — redirectUri가 null이면 빈 문자열로라도 파라미터가 실려야 함
+  // (2026-07-31 실계정 테스트로 확인: 파라미터 자체가 없으면 "Missing parameter: redirect_uri" 400)
   @Test
-  void exchangeAuthorizationCodeForRefreshToken_sendsEmptyRedirectUri() {
+  void exchangeAuthorizationCodeForRefreshToken_whenRedirectUriNull_sendsEmptyRedirectUri() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
     GoogleOAuthClient client = newClient(serverHolder);
     MultiValueMap<String, String> expectedForm = new LinkedMultiValueMap<>();
@@ -55,7 +54,36 @@ class GoogleOAuthClientTest {
                     """,
                 MediaType.APPLICATION_JSON));
 
-    client.exchangeAuthorizationCodeForRefreshToken("auth-code-123");
+    client.exchangeAuthorizationCodeForRefreshToken("auth-code-123", null);
+
+    serverHolder[0].verify();
+  }
+
+  // 브라우저 리다이렉트 로그인 — Google이 code 발급 시 실제로 쓴 redirect_uri와 정확히 같은 값을 그대로 실어 보내야 함
+  // (2026-08-01 FE 확인: postmessage가 아니라 실제 전체 페이지 리다이렉트 URL)
+  @Test
+  void exchangeAuthorizationCodeForRefreshToken_whenRedirectUriPresent_sendsItAsIs() {
+    MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
+    GoogleOAuthClient client = newClient(serverHolder);
+    MultiValueMap<String, String> expectedForm = new LinkedMultiValueMap<>();
+    expectedForm.add("code", "auth-code-123");
+    expectedForm.add("client_id", "web-client-id");
+    expectedForm.add("client_secret", "web-client-secret");
+    expectedForm.add("redirect_uri", "https://tripfit.online/auth/google/callback");
+    expectedForm.add("grant_type", "authorization_code");
+    serverHolder[0]
+        .expect(requestTo(TOKEN_URL))
+        .andExpect(content().formData(expectedForm))
+        .andRespond(
+            withSuccess(
+                """
+                    {"access_token": "at", "refresh_token": "rt-value", "token_type": "Bearer", "expires_in": 3600}
+                    """,
+                MediaType.APPLICATION_JSON));
+
+    client.exchangeAuthorizationCodeForRefreshToken(
+        "auth-code-123",
+        "https://tripfit.online/auth/google/callback");
 
     serverHolder[0].verify();
   }
@@ -73,7 +101,7 @@ class GoogleOAuthClientTest {
                     """,
                 MediaType.APPLICATION_JSON));
 
-    String refreshToken = client.exchangeAuthorizationCodeForRefreshToken("auth-code-123");
+    String refreshToken = client.exchangeAuthorizationCodeForRefreshToken("auth-code-123", null);
 
     assertThat(refreshToken).isEqualTo("rt-value");
     serverHolder[0].verify();
@@ -93,7 +121,7 @@ class GoogleOAuthClientTest {
                     """,
                 MediaType.APPLICATION_JSON));
 
-    String refreshToken = client.exchangeAuthorizationCodeForRefreshToken("auth-code-123");
+    String refreshToken = client.exchangeAuthorizationCodeForRefreshToken("auth-code-123", null);
 
     assertThat(refreshToken).isNull();
   }
@@ -111,7 +139,7 @@ class GoogleOAuthClientTest {
                     """)
                 .contentType(MediaType.APPLICATION_JSON));
 
-    assertThatThrownBy(() -> client.exchangeAuthorizationCodeForRefreshToken("bad-code"))
+    assertThatThrownBy(() -> client.exchangeAuthorizationCodeForRefreshToken("bad-code", null))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("invalid_grant");
   }

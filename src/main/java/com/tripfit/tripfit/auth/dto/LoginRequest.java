@@ -29,6 +29,16 @@ public record LoginRequest(
             """,
         example = "c1234...",
         nullable = true,
-        requiredMode = Schema.RequiredMode.NOT_REQUIRED) String authorizationCode
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED) String authorizationCode,
+
+    @Schema(
+        description = """
+            GOOGLE 브라우저 리다이렉트 로그인 시에만 필요한 redirect_uri 원문(예: https://tripfit.online/auth/google/callback) — Google authorization code 교환 시 요청에 실제로 썼던 값과 정확히 일치해야 한다.
+
+            GOOGLE 네이티브 앱 로그인(serverAuthCode)과 KAKAO·APPLE은 보내지 않아도 된다(값이 있어도 무시).
+            """,
+        example = "https://tripfit.online/auth/google/callback",
+        nullable = true,
+        requiredMode = Schema.RequiredMode.NOT_REQUIRED) String redirectUri
 ) {
 }

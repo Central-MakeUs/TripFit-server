@@ -56,7 +56,7 @@ class AuthControllerTest {
 
   @Test
   void login_returnsTokens() throws Exception {
-    when(authService.login(eq(SocialProvider.GOOGLE), eq("google-id-token"), any()))
+    when(authService.login(eq(SocialProvider.GOOGLE), eq("google-id-token"), any(), any()))
         .thenReturn(new LoginResponse("access-jwt", "refresh-token", 7200L, sampleUserSummary()));
 
     mockMvc
@@ -122,7 +122,7 @@ class AuthControllerTest {
   void login_appleWithoutAuthorizationCode_returns400() throws Exception {
     doThrow(new TripFitException(AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED))
         .when(authService)
-        .login(eq(SocialProvider.APPLE), eq("apple-id-token"), any());
+        .login(eq(SocialProvider.APPLE), eq("apple-id-token"), any(), any());
 
     mockMvc
         .perform(
@@ -140,7 +140,7 @@ class AuthControllerTest {
   void login_invalidToken_returns401() throws Exception {
     doThrow(new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID))
         .when(authService)
-        .login(any(), any(), any());
+        .login(any(), any(), any(), any());
 
     mockMvc
         .perform(

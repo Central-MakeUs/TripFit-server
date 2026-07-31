@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -117,7 +118,7 @@ class AuthServiceTest {
                 LocalDateTime.now().plusDays(30)));
 
     LoginResponse response =
-        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code");
+        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
     assertThat(response.accessToken()).isEqualTo("access-jwt");
     assertThat(response.refreshToken()).isEqualTo("refresh-token");
@@ -150,7 +151,7 @@ class AuthServiceTest {
                 LocalDateTime.now().plusDays(30)));
 
     LoginResponse response =
-        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code");
+        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
     assertThat(existing.getFirstName()).isEqualTo("길동");
     assertThat(existing.getLastName()).isEqualTo("홍");
@@ -183,7 +184,7 @@ class AuthServiceTest {
                 UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(30)));
 
-    LoginResponse response = authService.login(SocialProvider.APPLE, "id-token", "auth-code");
+    LoginResponse response = authService.login(SocialProvider.APPLE, "id-token", "auth-code", null);
 
     assertThat(response.user().nickname()).isNull();
     assertThat(response.user().profileImageUrl()).isNull();
@@ -191,7 +192,7 @@ class AuthServiceTest {
 
   @Test
   void login_whenAppleWithoutAuthorizationCode_throwsAuthorizationCodeRequired() {
-    assertThatThrownBy(() -> authService.login(SocialProvider.APPLE, "id-token", null))
+    assertThatThrownBy(() -> authService.login(SocialProvider.APPLE, "id-token", null, null))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED);
@@ -201,7 +202,7 @@ class AuthServiceTest {
 
   @Test
   void login_whenAppleWithBlankAuthorizationCode_throwsAuthorizationCodeRequired() {
-    assertThatThrownBy(() -> authService.login(SocialProvider.APPLE, "id-token", "  "))
+    assertThatThrownBy(() -> authService.login(SocialProvider.APPLE, "id-token", "  ", null))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED);
@@ -232,7 +233,7 @@ class AuthServiceTest {
                 UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(30)));
 
-    authService.login(SocialProvider.APPLE, "id-token", "auth-code");
+    authService.login(SocialProvider.APPLE, "id-token", "auth-code", null);
 
     verify(appleCredentialService)
         .saveIfAuthorizationCodePresent(
@@ -258,7 +259,7 @@ class AuthServiceTest {
                 UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(30)));
 
-    authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code");
+    authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
     verify(appleCredentialService, org.mockito.Mockito.never())
         .saveIfAuthorizationCodePresent(any(), any(), any());
@@ -284,7 +285,7 @@ class AuthServiceTest {
                 LocalDateTime.now().plusDays(30)));
 
     LoginResponse response =
-        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code");
+        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
     assertThat(withdrawn.getDeletedAt()).isNull();
     assertThat(withdrawn.isAllFree()).isFalse();
@@ -295,7 +296,7 @@ class AuthServiceTest {
 
   @Test
   void login_whenGoogleWithoutAuthorizationCode_throwsAuthorizationCodeRequired() {
-    assertThatThrownBy(() -> authService.login(SocialProvider.GOOGLE, "id-token", null))
+    assertThatThrownBy(() -> authService.login(SocialProvider.GOOGLE, "id-token", null, null))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED);
@@ -305,7 +306,7 @@ class AuthServiceTest {
 
   @Test
   void login_whenGoogleWithBlankAuthorizationCode_throwsAuthorizationCodeRequired() {
-    assertThatThrownBy(() -> authService.login(SocialProvider.GOOGLE, "id-token", "  "))
+    assertThatThrownBy(() -> authService.login(SocialProvider.GOOGLE, "id-token", "  ", null))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED);
@@ -328,10 +329,41 @@ class AuthServiceTest {
                 UUID.randomUUID().toString(),
                 LocalDateTime.now().plusDays(30)));
 
-    authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code");
+    authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
     verify(googleLoginCredentialService)
-        .saveIfAuthorizationCodePresent(any(User.class), eq("google-auth-code"));
+        .saveIfAuthorizationCodePresent(any(User.class), eq("google-auth-code"), isNull());
+  }
+
+  // 브라우저 리다이렉트 로그인 — LoginRequest.redirectUri가 GoogleLoginCredentialService까지 그대로 전달돼야 함
+  @Test
+  void login_whenGoogleWithRedirectUri_passesItToCredentialService() {
+    when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
+    when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
+    when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
+        .thenReturn(Optional.empty());
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(refreshTokenService.create(any()))
+        .thenReturn(
+            new RefreshToken(
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+                "refresh-token",
+                UUID.randomUUID().toString(),
+                LocalDateTime.now().plusDays(30)));
+
+    authService.login(
+        SocialProvider.GOOGLE,
+        "id-token",
+        "google-auth-code",
+        "https://tripfit.online/auth/google/callback");
+
+    verify(googleLoginCredentialService)
+        .saveIfAuthorizationCodePresent(
+            any(User.class),
+            eq("google-auth-code"),
+            eq("https://tripfit.online/auth/google/callback"));
   }
 
   @Test
