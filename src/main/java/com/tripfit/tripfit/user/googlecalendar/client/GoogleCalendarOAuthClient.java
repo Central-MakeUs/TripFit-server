@@ -4,6 +4,7 @@ import com.tripfit.tripfit.auth.oauth.OAuthProperties;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarAuthException;
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
@@ -46,12 +48,15 @@ public class GoogleCalendarOAuthClient {
     this.oAuthProperties = oAuthProperties;
   }
 
-  // authorization code → access·refresh token 교환
+  // authorization code → access·refresh token 교환 — 네이티브 앱 serverAuthCode는 리다이렉트가 없어도 Google
+  // 토큰 엔드포인트가 redirect_uri 파라미터 자체는(빈 문자열이라도) 요구한다("Missing parameter: redirect_uri" 400 —
+  // 로그인용 GoogleOAuthClient에서 실계정 테스트로 확인된 동일 요구사항, #64)
   public GoogleOAuthTokenResponse exchangeAuthorizationCode(String authorizationCode) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("code", authorizationCode);
     form.add("client_id", oAuthProperties.getGoogleCalendarClientId());
     form.add("client_secret", oAuthProperties.getGoogleCalendarClientSecret());
+    form.add("redirect_uri", "");
     form.add("grant_type", "authorization_code");
     try {
       JsonNode response = postTokenForm(form);
@@ -200,8 +205,13 @@ public class GoogleCalendarOAuthClient {
             .onStatus(
                 HttpStatusCode::isError,
                 (request, clientResponse) -> {
+                  String body =
+                      StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
                   throw new GoogleCalendarAuthException(
-                      "token endpoint error: " + clientResponse.getStatusCode());
+                      "token endpoint error: "
+                          + clientResponse.getStatusCode()
+                          + " body="
+                          + body);
                 })
             .body(JsonNode.class);
     if (response == null) {
