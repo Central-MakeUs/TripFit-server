@@ -35,6 +35,7 @@
 | [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
 | [`trip-member-leave.md`](trip-member-leave.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관(ONGOING/CONFIRMED/EXPIRED) | #12 · #20 · #26 |
 | [`user-account-withdrawal.md`](user-account-withdrawal.md) | cascade·soft delete는 **Implemented**(`#47` 브랜치) · `#64` 소셜 provider revoke는 **Draft**(미구현, Release Gate) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · 차단 없이 자동 cascade · User soft delete + PII 스크럽 · Google/Kakao/Apple revoke | trip-member-leave · user-my-page |
+| [`google-login-revoke.md`](google-login-revoke.md) | **Implemented** (`#64` 재오픈 후속, 코드·테스트 완료 · PR 대기) · Release Gate | Google 로그인 시 authorization code 확보·저장 → 탈퇴 시 revoke. `GoogleLoginCredential` 신규, Apple 패턴 재사용 | auth-social-login · user-account-withdrawal |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
 | [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) | Draft (#50) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 | #13 · #17 |
 | [`trip-member-status-derive.md`](trip-member-status-derive.md) | **Implemented** (#54) | `TripMember.status` 컬럼 제거 → `respondedAt` null 여부로 파생 계산 (내부 리팩터, API 계약 불변) | #12 |
@@ -53,6 +54,7 @@
 |------|------|------|------|
 | [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md) | **Draft** (#35) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
 | [`google-calendar-oauth.md`](google-calendar-oauth.md) | **Approved** (#44) | Google Calendar OAuth · busy Merge · AES-256 | auth-social-login · user-onboarding |
+| [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md) | Draft (#78, 결정 대기) | 로그인·Calendar OAuth Client ID 분리 — GCP 콘솔 발급 가이드 포함 | google-calendar-oauth · google-login-revoke |
 | [`auth-token-rotation.md`](auth-token-rotation.md) | Draft | RTR + Redis | auth-social-login · decision 004 |
 | [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md) | Approved | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
@@ -66,6 +68,7 @@
 | [`dev-mock-login.md`](dev-mock-login.md) | **Approved** (이슈 미생성 — 긴급) · **deferred→#52** | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 | auth-social-login |
 | [`swagger-openapi-docs.md`](swagger-openapi-docs.md) | Draft (이슈 미생성) | Swagger/OpenAPI 문서 가독성 개선 — `@ApiResponse` 부재·예시 부재·`OpenApiConfig` Info·`@Tag` 표기법 | — |
 | [`api-contract-diff-ci.md`](api-contract-diff-ci.md) | **Approved** (이슈 미생성) | oasdiff CLI로 breaking change 감지 + Discord `#frontend` push 알림(커밋 트레일러로 사유 전달), 별도 프론트 저장소 동기화 보조 | — |
+| [`google-login-native-sdk-decision.md`](google-login-native-sdk-decision.md) | **Resolved** (#77, 결정 불필요 — 이미 네이티브 SDK로 구현됨, 2026-07-31 정정) | WebView 앱에서 Google 로그인 방식 — FE 확인 결과 네이티브 SDK 이미 구현·배포 완료 | google-login-revoke |
 | [`openapi-response-schema-generics.md`](openapi-response-schema-generics.md) | **Approved** (이슈 미생성) | `SuccessResponse<T>` 응답 스키마가 스펙에 필드 노출 안 되는 문제 — `useReturnTypeSchema = true`로 해결, oasdiff 응답 필드 변경 감지 복구 | api-contract-diff-ci |
 
 **구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
@@ -93,7 +96,9 @@
 | **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
 | **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |
 | **#52** | auth-dev-stub-verifier (`dev-mock-login` 후속, wave 4) | Open |
-| **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT | Open · **Release Gate**(Wave 아님) |
+| **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT · Google 부분은 `google-login-revoke` | Open · **Release Gate**(Wave 아님) |
+| **#77** | google-login-native-sdk-decision (Resolved, 결정 불필요로 정정) | Open — 클로즈 검토 필요 |
+| **#78** | google-calendar-client-id-separation (결정 대기, Wave 4) | Open |
 
 ## 완료 후
 

@@ -188,7 +188,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 
 ## 미정 항목
 
-- 앱 패키징 기술 스택 (RN / Capacitor / 기타) — **환경 A** 브릿지 상세에 영향. 런타임 환경 A/B 자체는 **확정**
+- ~~앱 패키징 기술 스택~~ → **확정(2026-07-31)**: WebView 껍데기 + 소셜 로그인(Google/Kakao/Apple 전부)은 네이티브 SDK(`@react-native-google-signin/google-signin`·`@react-native-seoul/kakao-login`·`expo-apple-authentication`), 환경 분기는 `nativeBridge.ts`(`isReactNativeWebView()`)가 이미 처리 중 — 39번째 줄 "환경 A 네이티브 SDK"가 그대로 맞았음. 상세 경위: [`google-login-native-sdk-decision.md`](../specs/google-login-native-sdk-decision.md)(Resolved)
 - 스토어 계정·심사 일정
 - 환경 B에서 Google 동의 후 복귀 URL(커스텀 스킴 / Universal Link / 웹 콜백) 상세 — 프론트·Calendar 스펙과 합의
 

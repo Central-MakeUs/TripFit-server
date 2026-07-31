@@ -222,6 +222,8 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 | HTTP | code | 상황 |
 |------|------|------|
 | 400 | `AUTH_INVALID_REQUEST` | provider 누락, 지원하지 않는 provider |
+| 400 | `AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED` | provider가 APPLE인데 `authorizationCode` 누락·공백 — 탈퇴 시 Apple revoke 호출에 필요(App Store 심사 요건) |
+| 400 | `AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED` | provider가 GOOGLE인데 `authorizationCode` 누락·공백 — 탈퇴 시 Google 로그인 동의 revoke 호출에 필요 |
 | 401 | `AUTH_INVALID_TOKEN` | 액세스 JWT(서버 발급) 무효 — 소셜 토큰 검증과 무관, `POST /auth/login` 자체는 발생시키지 않음 |
 | 401 | `AUTH_SOCIAL_TOKEN_EXPIRED` | 소셜 provider가 토큰 만료로 응답 — `POST /auth/login` 전용, 재로그인으로 해결 |
 | 401 | `AUTH_SOCIAL_TOKEN_INVALID` | 만료 외 소셜 토큰 무효(서명·audience·형식 오류 등) — `POST /auth/login` 전용, 기본값(catch-all) |
@@ -255,6 +257,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 |------|------|------|------|
 | provider | enum | Y | `GOOGLE` \| `KAKAO` \| `APPLE` |
 | token | string | Y | 앱 SDK에서 획득한 토큰. provider별 의미 아래 참고 |
+| authorizationCode | string | provider가 APPLE·GOOGLE이면 Y, KAKAO는 안 씀 | 각 provider OAuth 플로우에서 받은 authorization code — 탈퇴 시 revoke에 쓸 refresh token 교환용(`AppleCredential`/`GoogleLoginCredential`) |
 
 **provider별 token 의미**
 
@@ -263,6 +266,10 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 | GOOGLE | `id_token` (권장) | Google tokeninfo 또는 JWK 서명 검증. `aud` = 앱 client ID |
 | KAKAO | `access_token` | `GET https://kapi.kakao.com/v2/user/me` 호출 후 `id` 추출 |
 | APPLE | `id_token` | Apple JWK endpoint에서 공개키 fetch → `sub`, `aud` 검증 |
+
+**authorizationCode (APPLE·GOOGLE 필수)**
+
+두 provider 모두 로그인마다(최초·재로그인 모두) authorization code를 새로 받아 보내야 한다. 탈퇴 시 provider 쪽 연결 해제(revoke)에 쓸 refresh token을 매번 교환·갱신하기 위함 — 상세: [`user-account-withdrawal.md`](user-account-withdrawal.md), [`google-login-revoke.md`](google-login-revoke.md). GOOGLE은 provider 특성상 재로그인 시 refresh_token이 응답에 없을 수 있어 credential이 갱신되지 않을 수 있다(정상 동작, 최초 동의 때만 발급).
 
 **Response `200`**
 
