@@ -25,11 +25,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GoogleCalendarService {
+
+  private static final Logger log = LoggerFactory.getLogger(GoogleCalendarService.class);
 
   private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
@@ -66,12 +70,15 @@ public class GoogleCalendarService {
 
   // authorization code로 연동 — credential 저장·flag=true·즉시 1회 sync
   @Transactional
-  public UserSummaryResponse connect(UUID userId, String authorizationCode) {
+  public UserSummaryResponse connect(UUID userId, String authorizationCode, String redirectUri) {
     User user = userLookupService.requireUser(userId);
     GoogleOAuthTokenResponse tokens;
     try {
-      tokens = googleCalendarOAuthClient.exchangeAuthorizationCode(authorizationCode);
+      tokens = googleCalendarOAuthClient.exchangeAuthorizationCode(authorizationCode, redirectUri);
     } catch (GoogleCalendarAuthException exception) {
+      // 원인(HTTP status·Google 에러 body)을 로그로 남겨야 진단 가능 — GlobalExceptionHandler는
+      // TripFitException을 로깅하지 않으므로 여기서 남기지 않으면 실패 원인이 완전히 유실된다
+      log.warn("Google Calendar connect failed — authorization code exchange error", exception);
       throw new TripFitException(GoogleCalendarErrorCode.GOOGLE_CALENDAR_CONNECT_FAILED);
     }
 

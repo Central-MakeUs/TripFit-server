@@ -40,7 +40,8 @@ public class GoogleCalendarController {
 
           호출 시점: 온보딩·설정 화면에서 Google Calendar 연동 버튼 완료 직후.
 
-          전제: TripFit 로그인(JWT) 상태. 앱·웹이 Google OAuth 동의 후 authorization code를 전달한다.
+          전제: TripFit 로그인(JWT) 상태. 앱·웹이 Google OAuth 동의 후 authorization code를 전달한다. 브라우저
+          리다이렉트 방식이면 redirectUri도 함께 보내야 한다.
 
           결과: isGoogleCalendarConnected=true로 갱신된 UserSummary. 연동 직후 freeBusy 1회 sync.
 
@@ -88,7 +89,7 @@ public class GoogleCalendarController {
       @AuthorizedUser UUID userId,
       @Valid @RequestBody ConnectGoogleCalendarRequest request) {
     UserSummaryResponse response =
-        googleCalendarService.connect(userId, request.authorizationCode());
+        googleCalendarService.connect(userId, request.authorizationCode(), request.redirectUri());
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 

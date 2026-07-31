@@ -48,15 +48,18 @@ public class GoogleCalendarOAuthClient {
     this.oAuthProperties = oAuthProperties;
   }
 
-  // authorization code → access·refresh token 교환 — 네이티브 앱 serverAuthCode는 리다이렉트가 없어도 Google
-  // 토큰 엔드포인트가 redirect_uri 파라미터 자체는(빈 문자열이라도) 요구한다("Missing parameter: redirect_uri" 400 —
-  // 로그인용 GoogleOAuthClient에서 실계정 테스트로 확인된 동일 요구사항, #64)
-  public GoogleOAuthTokenResponse exchangeAuthorizationCode(String authorizationCode) {
+  // authorization code → access·refresh token 교환 — Google 토큰 엔드포인트는 code를 발급받을 때 실제로 쓴
+  // redirect_uri와 정확히 같은 값을 요구한다. 네이티브 앱(serverAuthCode)은 리다이렉트가 없어도 빈 문자열을 보내야
+  // 하고, 브라우저 리다이렉트로 받은 code는 authorize 요청에 실제로 쓴 redirect_uri를 그대로 보내야 한다 — 로그인용
+  // GoogleOAuthClient에서 동일 요건이 실계정 테스트로 확인됨
+  public GoogleOAuthTokenResponse exchangeAuthorizationCode(
+      String authorizationCode,
+      String redirectUri) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("code", authorizationCode);
     form.add("client_id", oAuthProperties.getGoogleCalendarClientId());
     form.add("client_secret", oAuthProperties.getGoogleCalendarClientSecret());
-    form.add("redirect_uri", "");
+    form.add("redirect_uri", redirectUri == null ? "" : redirectUri);
     form.add("grant_type", "authorization_code");
     try {
       JsonNode response = postTokenForm(form);
