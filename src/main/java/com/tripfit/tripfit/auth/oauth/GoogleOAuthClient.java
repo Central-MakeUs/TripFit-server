@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.oauth;
 
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
@@ -7,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
@@ -49,8 +51,13 @@ public class GoogleOAuthClient {
             .onStatus(
                 HttpStatusCode::isError,
                 (request, clientResponse) -> {
+                  String body =
+                      StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
                   throw new IllegalStateException(
-                      "Google token endpoint error: " + clientResponse.getStatusCode());
+                      "Google token endpoint error: "
+                          + clientResponse.getStatusCode()
+                          + " body="
+                          + body);
                 })
             .body(JsonNode.class);
     if (response == null) {
