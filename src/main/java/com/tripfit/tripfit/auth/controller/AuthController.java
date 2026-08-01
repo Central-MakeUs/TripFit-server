@@ -49,7 +49,7 @@ public class AuthController {
 
           결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
 
-          주요 에러: AUTH_INVALID_TOKEN — 소셜 로그인 토큰 무효 · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정
+          주요 에러: AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도) · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정
           """,
       security = {})
   @ApiResponses({
@@ -64,12 +64,22 @@ public class AuthController {
                       """))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_INVALID_TOKEN — 소셜 로그인 토큰 무효 · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정",
+          description = "AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료 · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_INVALID_TOKEN", "message": "유효하지 않은 소셜 로그인 토큰입니다."}
-                  """)))
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "AUTH_SOCIAL_TOKEN_EXPIRED", "message": "소셜 로그인 토큰이 만료되었습니다. 다시 로그인해 주세요."}
+                      """))),
+      @ApiResponse(
+          responseCode = "503",
+          description = "AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider API 접근 실패(네트워크·타임아웃)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "AUTH_SOCIAL_PROVIDER_UNAVAILABLE", "message": "소셜 로그인 서버에 일시적으로 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."}
+                      """)))
   })
   @PostMapping("/login")
   ResponseEntity<SuccessResponse<LoginResponse>> login(

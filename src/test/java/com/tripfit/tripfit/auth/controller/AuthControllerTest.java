@@ -109,7 +109,7 @@ class AuthControllerTest {
 
   @Test
   void login_invalidToken_returns401() throws Exception {
-    doThrow(new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN))
+    doThrow(new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID))
         .when(authService)
         .login(any(), any());
 
@@ -122,7 +122,7 @@ class AuthControllerTest {
                         {"provider":"GOOGLE","token":"bad-token"}
                         """))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.code").value("AUTH_INVALID_TOKEN"));
+        .andExpect(jsonPath("$.code").value("AUTH_SOCIAL_TOKEN_INVALID"));
   }
 
   private static UserSummaryResponse sampleUserSummary() {

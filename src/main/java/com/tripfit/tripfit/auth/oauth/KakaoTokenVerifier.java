@@ -4,13 +4,23 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Component
 public class KakaoTokenVerifier implements SocialTokenVerifier {
+
+  private static final Logger log = LoggerFactory.getLogger(KakaoTokenVerifier.class);
 
   private static final String KAKAO_USER_ME_URL = "https://kapi.kakao.com/v2/user/me";
 
@@ -39,13 +49,22 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
               .onStatus(
                   HttpStatusCode::isError,
                   (request, clientResponse) -> {
-                    throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
+                    // 카카오 원본 에러 응답을 남겨 만료/무효/앱 설정 오류를 사후에 구분 가능하게 함
+                    String body = readBodySafely(clientResponse);
+                    log.warn(
+                        "Kakao user/me verification failed: status={}, body={}",
+                        clientResponse.getStatusCode(),
+                        body);
+                    throw new TripFitException(
+                        isExpiredMessage(body)
+                            ? AuthErrorCode.AUTH_SOCIAL_TOKEN_EXPIRED
+                            : AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
                   })
               .body(JsonNode.class);
 
       // 2. 응답 본문에서 필수 식별자와 선택 이메일을 추출함
       if (response == null || !response.has("id")) {
-        throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
+        throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
       }
       String providerUserId = response.get("id").asText();
       String email = null;
@@ -71,9 +90,28 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
     } catch (TripFitException exception) {
       // 비즈니스 검증에서 만든 인증 예외는 그대로 상위로 전달함
       throw exception;
+    } catch (RestClientException exception) {
+      // 카카오 API 자체에 응답을 못 받은 경우(타임아웃·연결 실패) — 토큰 문제가 아니라 provider 장애
+      log.warn("Kakao user/me API unreachable", exception);
+      throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE);
     } catch (Exception exception) {
-      // 카카오 API·JSON 파싱 실패는 클라이언트 토큰 오류로 통일
-      throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
+      // JSON 파싱 등 그 외 실패 원인을 로그로 남기고 무효 토큰으로 통일
+      log.warn("Kakao token verification failed unexpectedly", exception);
+      throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
     }
+  }
+
+  // onStatus 핸들러에서 카카오 에러 응답 본문을 로그용으로 읽음 — 실패해도 검증 흐름은 계속됨
+  private String readBodySafely(ClientHttpResponse clientResponse) {
+    try {
+      return StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
+    } catch (IOException exception) {
+      return "<unreadable>";
+    }
+  }
+
+  // 카카오 에러 메시지에 만료 문구가 포함됐는지 확인함 — 카카오가 만료를 별도 code로 문서화하지 않아 문자열로 판별
+  private boolean isExpiredMessage(String body) {
+    return body != null && body.toLowerCase(Locale.ROOT).contains("expired");
   }
 }

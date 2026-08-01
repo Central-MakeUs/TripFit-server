@@ -214,7 +214,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 
 ```json
 {
-  "code": "AUTH_INVALID_TOKEN",
+  "code": "AUTH_SOCIAL_TOKEN_INVALID",
   "message": "유효하지 않은 소셜 로그인 토큰입니다."
 }
 ```
@@ -222,10 +222,15 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 | HTTP | code | 상황 |
 |------|------|------|
 | 400 | `AUTH_INVALID_REQUEST` | provider 누락, 지원하지 않는 provider |
-| 401 | `AUTH_INVALID_TOKEN` | 소셜 토큰 검증 실패 |
+| 401 | `AUTH_INVALID_TOKEN` | 액세스 JWT(서버 발급) 무효 — 소셜 토큰 검증과 무관, `POST /auth/login` 자체는 발생시키지 않음 |
+| 401 | `AUTH_SOCIAL_TOKEN_EXPIRED` | 소셜 provider가 토큰 만료로 응답 — `POST /auth/login` 전용, 재로그인으로 해결 |
+| 401 | `AUTH_SOCIAL_TOKEN_INVALID` | 만료 외 소셜 토큰 무효(서명·audience·형식 오류 등) — `POST /auth/login` 전용, 기본값(catch-all) |
+| 503 | `AUTH_SOCIAL_PROVIDER_UNAVAILABLE` | 소셜 provider API 접근 실패(네트워크·타임아웃) — `POST /auth/login` 전용, 토큰 문제 아님, 재시도 유도 |
 | 401 | `AUTH_EXPIRED` | access JWT 만료 |
 | 401 | `AUTH_INVALID_REFRESH` | refresh token 없음·만료·폐기 |
 | 403 | `AUTH_FORBIDDEN` | 인증됐으나 권한 없음 (향후 RBAC) |
+
+세분화 배경·판별 로직: [`auth-error-code-granularity.md`](auth-error-code-granularity.md) (#57)
 
 ### `POST /api/v1/auth/login`
 
