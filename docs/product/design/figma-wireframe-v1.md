@@ -85,7 +85,6 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 
 ### 6. wave 4 (문서만 — MVP Out)
 
-- **`trip.unconfirmReason`** — 확정 취소(unconfirm) 사유 수집, wave 2 확정 (#13, `trip-recommendation.md`)
 - 여행방 **삭제** 시 VOC 사유 — 별개 항목, 미구현 wave 4 (Figma 플로우 있음)
 
 ---

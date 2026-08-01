@@ -37,6 +37,7 @@
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
 | [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) | Draft (#50) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 | #13 · #17 |
 | [`trip-member-status-derive.md`](trip-member-status-derive.md) | **Implemented** (#54) | `TripMember.status` 컬럼 제거 → `respondedAt` null 여부로 파생 계산 (내부 리팩터, API 계약 불변) | #12 |
+| [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md) | **Implemented** (#60) | 상세 API 멤버 프리뷰 추가 · `memberFillRate`=activeMemberCount 기준 전환 · `joinedMemberCount` API 미노출(3개 DTO) | #12 |
 
 ## wave 3
 

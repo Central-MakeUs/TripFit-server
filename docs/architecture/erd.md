@@ -349,7 +349,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 동명이인 `(2)` 표시: **DB 컬럼 없음** — BR-USER-009 조회 로직
 
-**카운트:** `joinedMemberCount` = soft-delete 제외 전 멤버(SCHEDULE_PENDING 포함). `activeMemberCount` = `ACTIVE`만.
+**카운트:** 내부적으로는 `joinedMemberCount`(soft-delete 제외 전 멤버, SCHEDULE_PENDING 포함)와 `activeMemberCount`(`ACTIVE`만)를 둘 다 집계하지만, **API로는 `activeMemberCount`만 노출**(`joinedMemberCount`는 응답 필드 아님 — 참여 인원이 필요하면 `membersPreview.size() + membersPreviewOverflow` 또는 멤버 목록 배열 크기로 유도). `memberFillRate`(응답률) = `activeMemberCount ÷ memberCount`. 상세: [`trip-member-fill-rate-refactor.md`](../specs/trip-member-fill-rate-refactor.md)
 
 ### `trip_member_schedule_snapshot` (#38)
 
@@ -455,3 +455,4 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 7. 알림 이력 테이블 — ERD 범위 외 (wave 3)
 8. **2026-07-26:** `trip.duration_nights` 파생값 → 컬럼 영속화, 박/일 검증 범위 `nights+1~min(nights+2,T)`로 확장 ([`trip-duration-range.md`](../specs/trip-duration-range.md))
 9. **2026-08-01:** `TripMemberStatus` 개명(`JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE`, [`trip-member-status-derive.md`](../specs/trip-member-status-derive.md))에서 빠졌던 후속 정리 — `trip_member.responded_at`→`activated_at`, `markResponded()`→`activate()`, API 필드 `respondedCount`→`activeMemberCount`로 일괄 개명(이름을 상태 enum과 일치시켜 혼동 제거, 네이밍 우선 원칙)
+10. **2026-07-28 (#60):** `memberFillRate` 공식을 `joinedMemberCount ÷ memberCount` → `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출로 전환 · 여행방 상세에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](../specs/trip-member-fill-rate-refactor.md))
