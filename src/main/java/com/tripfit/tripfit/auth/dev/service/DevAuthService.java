@@ -2,10 +2,8 @@ package com.tripfit.tripfit.auth.dev.service;
 
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
-import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
@@ -84,7 +82,7 @@ public class DevAuthService {
     User user =
         userRepository
             .findByProviderAndSocialId(DEV_PROVIDER, socialId)
-            .map(this::requireActive)
+            .map(this::reviveIfWithdrawn)
             .orElseGet(() -> userRepository.save(createTestUser(key, socialId)));
 
     String accessToken = jwtService.createAccessToken(user.getId());
@@ -113,10 +111,11 @@ public class DevAuthService {
     return user;
   }
 
-  // 테스트 계정이 탈퇴 상태면 실제 로그인과 동일하게 재발급을 막음
-  private User requireActive(User user) {
+  // 테스트 계정이 탈퇴 상태면 실제 로그인과 동일하게 부활시켜 재로그인 진행
+  private User reviveIfWithdrawn(User user) {
     if (user.getDeletedAt() != null) {
-      throw new TripFitException(AuthErrorCode.AUTH_WITHDRAWN_ACCOUNT);
+      user.setDeletedAt(null);
+      user.setAllFree(false);
     }
     return user;
   }

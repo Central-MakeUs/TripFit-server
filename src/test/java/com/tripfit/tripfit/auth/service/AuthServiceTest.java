@@ -173,22 +173,31 @@ class AuthServiceTest {
   }
 
   @Test
-  void login_whenExistingAccountIsWithdrawn_throwsAuthWithdrawnAccount() {
-    User withdrawn =
-        new User("google-sub", SocialProvider.GOOGLE, null, null, null);
+  void login_whenExistingAccountIsWithdrawn_revivesAccountAndLogsIn() {
+    User withdrawn = new User("google-sub", SocialProvider.GOOGLE, null, null, null);
     withdrawn.setDeletedAt(LocalDateTime.now());
+    withdrawn.setAllFree(true);
     when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
     when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
         .thenReturn(Optional.of(withdrawn));
+    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(refreshTokenService.create(any()))
+        .thenReturn(
+            new RefreshToken(
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+                "refresh-token",
+                UUID.randomUUID().toString(),
+                LocalDateTime.now().plusDays(30)));
 
-    assertThatThrownBy(() -> authService.login(SocialProvider.GOOGLE, "id-token"))
-        .isInstanceOf(TripFitException.class)
-        .extracting(exception -> ((TripFitException) exception).getErrorCode())
-        .isEqualTo(AuthErrorCode.AUTH_WITHDRAWN_ACCOUNT);
+    LoginResponse response = authService.login(SocialProvider.GOOGLE, "id-token");
 
+    assertThat(withdrawn.getDeletedAt()).isNull();
+    assertThat(withdrawn.isAllFree()).isFalse();
+    assertThat(response.accessToken()).isEqualTo("access-jwt");
+    assertThat(response.user().email()).isEqualTo("user@example.com");
     verify(userRepository, org.mockito.Mockito.never()).save(any());
-    verify(jwtService, org.mockito.Mockito.never()).createAccessToken(any());
   }
 
   @Test

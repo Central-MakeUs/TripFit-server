@@ -43,13 +43,13 @@
   - [x] 개인 전용 데이터 **hard delete**: `PersonalSchedule`, `RegularSchedule`, `GoogleCalendarCredential`, `GoogleCalendarBusyDay`, `RefreshToken` (전부 `userId` 기준)
   - [x] `User` row **soft delete**(`deleted_at` set) + 개인정보 스크럽: `email`·`firstName`·`lastName`·`nickname`·`profileImageUrl` → `null`, `isGoogleCalendarConnected` → `false`
   - [x] `socialId`·`provider`·`id`는 그대로 유지 — FK 무결성(다른 사용자의 Trip/TripMember 참조) 및 재로그인 차단 판별에 필요
-- [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 `AUTH_WITHDRAWN_ACCOUNT`(401, 신규 `AuthErrorCode`)로 차단 — soft-deleted 계정으로 조용히 로그인/JWT 발급되는 것을 방지
+- [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 그대로 **부활**시켜 로그인 진행 — `deletedAt=null`, `isAllFree=false`로 초기화 후 `updateFromProfile`로 email·nickname·profileImageUrl을 소셜 프로필값으로 갱신. `firstName`/`lastName`/`isGoogleCalendarConnected`는 탈퇴 시 초기화된 채로 유지되어 재로그인 후 온보딩·재연동이 필요함(신규 가입과 동일한 경험)
+- [x] `DevAuthService`(dev 전용 테스트 로그인)도 동일하게 부활 처리 — 프로덕션 로그인과 동작 일치
 - [x] 성공 시 `204 No Content`
 - [x] `./gradlew test` 통과, OpenAPI 반영
 
 ### Out of Scope (이번 스펙)
 
-- 탈퇴 계정 재가입(부활) 정책 — `[미정]`, 필요 시 별도 스펙에서 결정
 - 액세스 토큰(JWT) 즉시 무효화 — RTR/블랙리스트 인프라 없음(Wave 4 `#4`), 자연 만료까지는 유효할 수 있음. 리프레시 토큰은 hard delete로 즉시 무효화됨
 - 소셜 제공자 측 연결 해제(카카오·구글 unlink API 호출) — Wave 4 `#6`(소셜 계정 연결·해제)과 별개, 본 스펙은 TripFit 내부 계정 데이터만 처리
 - 탈퇴 확인 모달·UX — FE 책임 (다만 방장의 경우 소유한 모든 방이 삭제된다는 경고 문구가 필요할 수 있음 — FE 확인 필요)
@@ -73,16 +73,14 @@
 
 ### 에러
 
-| 상황 | HTTP | code |
-|------|------|------|
-| soft-deleted 계정으로 재로그인 시도 | 401 | `AUTH_WITHDRAWN_ACCOUNT` (신규, 로그인 API에서 발생) |
+해당 없음 — soft-deleted 계정으로 재로그인해도 차단하지 않고 그대로 부활(재가입) 처리한다.
 
-> 이전 초안에 있던 `USER_HAS_OWNED_TRIPS`/`USER_HAS_JOINED_TRIPS`(409 차단 에러)는 **폐기** — 차단 대신 자동 cascade로 정책이 바뀌어 더 이상 발생하지 않음.
+> 이전 초안에 있던 `USER_HAS_OWNED_TRIPS`/`USER_HAS_JOINED_TRIPS`(409 차단 에러)는 **폐기** — 차단 대신 자동 cascade로 정책이 바뀌어 더 이상 발생하지 않음. `AUTH_WITHDRAWN_ACCOUNT`(401)도 같은 이유로 **폐기**(2026-07-27, 재가입 정책 확정) — `AuthErrorCode`·`AuthService`·`DevAuthService`에서 제거.
 
 ## 데이터 모델
 
 - ERD 참조: `docs/architecture/erd.md` — 스키마 컬럼 변경 없음(soft delete 패턴 재사용)
-- `AuthErrorCode`에 `AUTH_WITHDRAWN_ACCOUNT` 추가
+- `AuthErrorCode`에 신규 코드 없음(`AUTH_WITHDRAWN_ACCOUNT`는 재가입 정책 확정으로 폐기)
 - hard delete 대상 테이블: `personal_schedule`, `regular_schedule`, `google_calendar_credential`, `google_calendar_busy_day`, `refresh_token` (모두 `user_id` 단독 소유, 타 사용자 참조 없음)
 - soft delete + 스크럽 대상: `users` (row 유지, PII 컬럼만 null)
 - cascade 대상: 호출자가 MEMBER인 `trip_member` row(soft delete, [`trip-member-leave.md`](trip-member-leave.md) 재사용) · 호출자가 OWNER인 `trip` row(soft delete, `deleteTrip()` 재사용 — 해당 방의 다른 멤버 `trip_member` row도 함께 soft delete됨)
@@ -101,7 +99,7 @@
 - [x] `ONGOING` 방에 MEMBER로 참여 중인 사용자 → 탈퇴 시 해당 방 자동 나가기 처리 후 탈퇴 성공
 - [x] `ONGOING` 방에 OWNER인 사용자 → 탈퇴 시 해당 방 자동 삭제(soft delete) 후 탈퇴 성공. 그 방의 다른 멤버도 더 이상 해당 방을 조회할 수 없음(기존 `deleteTrip()` cascade 재사용 — 별도 신규 검증 없이 회귀 없음 확인)
 - [x] `CONFIRMED`/`EXPIRED` 방에 OWNER·MEMBER로 남아 있어도 동일하게 cascade 처리 후 탈퇴 성공(상태 게이트 없는 `leaveTrip`/`deleteTrip` 재사용)
-- [x] 탈퇴 후 같은 소셜 계정으로 재로그인 시도 → 401 `AUTH_WITHDRAWN_ACCOUNT`
+- [x] 탈퇴 후 같은 소셜 계정으로 재로그인 시도 → 기존 soft-deleted `User` row가 부활(`deletedAt=null`)하며 로그인 성공. `firstName`/`lastName`/구글 캘린더 연동은 초기화된 상태라 재온보딩 필요
 - [ ] 탈퇴한 사용자가 과거 멤버였던(soft-deleted) 다른 방의 `TripMember` 이력은 그대로 남음(FK 위반 없음) — 기존 soft delete 패턴 재사용으로 구조상 보장, 별도 통합 테스트는 생략
 
 ### 엣지 · 실패
@@ -111,7 +109,7 @@
 
 ### 수동 / 통합 (해당 시)
 
-- [ ] 탈퇴 → 로그인 재시도 → 401 흐름 수동 확인
+- [ ] 탈퇴 → 로그인 재시도 → 부활·로그인 성공 흐름 수동 확인
 - [ ] 방장 탈퇴 후 그 방의 다른 멤버 계정으로 로그인해 방 목록 조회 → 해당 방이 보이지 않음을 확인
 
 ## 완료 기준
@@ -126,7 +124,7 @@
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 탈퇴 계정 재가입(부활) 정책 | `[미정]` | 현재는 재로그인 자체를 막음(`AUTH_WITHDRAWN_ACCOUNT`). "재가입 허용" 요구 생기면 별도 스펙 필요 |
+| 탈퇴 계정 재가입(부활) 정책 | **확정(2026-07-27, 사용자 결정)** | 재가입 무조건 가능. 같은 (provider, socialId)로 재로그인하면 soft-deleted `User` row를 그대로 부활(`deletedAt=null`) — 신규 row 생성이 아님(테이블 `UNIQUE(provider, social_id)` 제약과 충돌 방지). `AUTH_WITHDRAWN_ACCOUNT` 차단 제거 |
 | 액세스 토큰 즉시 무효화 | 확정(Out of Scope) | Wave 4 `#4` RTR/Redis 인프라 선행 필요 |
 | 방장 탈퇴 시 소유 방이 다른 멤버에게도 통째로 안 보이게 됨 | 확정(수용된 결과) | `deleteTrip()` soft delete가 방 전체를 대상으로 함(방장만이 아님). 별도 "취소됨" 표시로 이력을 남기는 기능은 두지 않기로 확정(`CANCELED` 삭제 결정과 일관) |
 | `CANCELED` 상태 방 처리 | **#48 Implemented** — 해당 없음 | enum 자체 삭제 완료 |
@@ -135,6 +133,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-27 | 리스크·미결정 "탈퇴 계정 재가입(부활) 정책" 확정(사용자 결정) — **무조건 재가입 가능**. soft-deleted 계정 재로그인 시 차단하던 `AUTH_WITHDRAWN_ACCOUNT`(401)를 폐기하고, 기존 row를 부활시켜 로그인 진행하는 방식으로 구현·문서 amend |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조 동기화 |
 | 2026-07-24 | 구현 완료(`#47` 브랜치) — `UserWithdrawalService`(cascade→hard delete→soft delete/PII 스크럽), `AUTH_WITHDRAWN_ACCOUNT` 로그인 차단, `./gradlew test` 통과 |
 | 2026-07-24 | `src/new_decision.md` 최종 확정 반영 — `CANCELED` 관련 항목을 "결과 대기"에서 "해당 없음(enum 삭제 확정)"으로 정리 |

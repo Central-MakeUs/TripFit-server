@@ -101,16 +101,25 @@ public class AuthService {
     return userSummaryService.toSummary(userLookupService.requireUser(userId));
   }
 
-  // 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함 — 탈퇴(soft-deleted) 계정은 재로그인 차단
+  // 소셜 계정 기준으로 사용자를 조회하고 없으면 새로 생성함 — 탈퇴(soft-deleted) 계정은 부활시켜 재가입을 대체
   private User upsertUser(OAuthProfile profile) {
     Optional<User> existing =
         userRepository.findByProviderAndSocialId(profile.provider(), profile.providerUserId());
-    if (existing.isPresent() && existing.get().getDeletedAt() != null) {
-      throw new TripFitException(AuthErrorCode.AUTH_WITHDRAWN_ACCOUNT);
-    }
     return existing
-        .map(user -> updateFromProfile(user, profile))
+        .map(user -> updateFromProfile(reviveIfWithdrawn(user), profile))
         .orElseGet(() -> userRepository.save(createUserFromProfile(profile)));
+  }
+
+  // 탈퇴 계정 재가입 정책(2026-07-27 확정): soft-deleted 계정이 같은 소셜 계정으로 재로그인하면 기존 row를 그대로 부활시킴 —
+  // (provider, social_id) UNIQUE 제약 때문에 신규 row를 새로 만들 수 없어 기존 row 재사용. firstName/lastName·구글 캘린더
+  // 연동은
+  // 탈퇴 시 초기화된 채로 남아 재온보딩이 필요함(신규 가입과 동일한 경험)
+  private User reviveIfWithdrawn(User user) {
+    if (user.getDeletedAt() != null) {
+      user.setDeletedAt(null);
+      user.setAllFree(false);
+    }
+    return user;
   }
 
   // 소셜 프로필로 신규 사용자 엔티티를 생성함

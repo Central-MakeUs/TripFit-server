@@ -1,7 +1,6 @@
 package com.tripfit.tripfit.auth.dev.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -10,10 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
-import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
@@ -144,20 +141,29 @@ class DevAuthServiceTest {
   }
 
   @Test
-  void devLogin_whenTestUserWithdrawn_throwsAuthWithdrawnAccount() {
+  void devLogin_whenTestUserWithdrawn_revivesAccountAndLogsIn() {
     User withdrawn =
         new User(
             "dev-test-user-soeun", SocialProvider.KAKAO, "dev-test-soeun@tripfit.online", "소은",
             null);
     withdrawn.setDeletedAt(LocalDateTime.now());
+    withdrawn.setAllFree(true);
     when(userRepository.findByProviderAndSocialId(SocialProvider.KAKAO, "dev-test-user-soeun"))
         .thenReturn(Optional.of(withdrawn));
+    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(refreshTokenService.create(any()))
+        .thenReturn(
+            new RefreshToken(
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+                "refresh-token",
+                UUID.randomUUID().toString(),
+                LocalDateTime.now().plusDays(30)));
 
-    assertThatThrownBy(() -> devAuthService.devLogin("soeun"))
-        .isInstanceOf(TripFitException.class)
-        .extracting(exception -> ((TripFitException) exception).getErrorCode())
-        .isEqualTo(AuthErrorCode.AUTH_WITHDRAWN_ACCOUNT);
+    LoginResponse response = devAuthService.devLogin("soeun");
 
-    verify(jwtService, never()).createAccessToken(any());
+    assertThat(withdrawn.getDeletedAt()).isNull();
+    assertThat(withdrawn.isAllFree()).isFalse();
+    assertThat(response.accessToken()).isEqualTo("access-jwt");
+    verify(userRepository, never()).save(any());
   }
 }

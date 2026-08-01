@@ -19,7 +19,6 @@
 ### `[미정]`
 
 - BR-USER-002 UI · 정원 hold [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)
-- 탈퇴 계정 재가입(부활) 정책 — [`user-account-withdrawal.md`](../../specs/user-account-withdrawal.md) 리스크·미결정 참고
 
 ### 확정 (2026-07-21 · #22)
 
@@ -36,6 +35,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-27 | BR-USER-004 관련 `[미정]`(탈퇴 계정 재가입 정책) 해소 — **무조건 재가입 가능**으로 확정(사용자 결정). [`user-account-withdrawal.md`](../../specs/user-account-withdrawal.md) amend |
 | 2026-07-23 | BR-USER-005 `[미정]`(필수 알림) 해소 — `notification_enabled`(default true), 예외 없이 전체 BR-NOTI 이벤트에 적용 (`docs/specs/notification.md` D2·D10), `PATCH /users/my-page` partial update로 설정 (`user-my-page.md` amend) |
 | 2026-07-24 | `src/new_decision.md` 최종 확정 — `TripStatus.CANCELED` enum 자체 삭제 확정(Soft Delete로 통일), "확정 취소"(CONFIRMED→ONGOING, `unconfirm`) 신규 액션 확정(새 Status 불필요) |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임 |

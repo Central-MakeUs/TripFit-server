@@ -49,7 +49,7 @@ public class AuthController {
 
           결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
 
-          주요 에러: AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도) · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정
+          주요 에러: AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)
           """,
       security = {})
   @ApiResponses({
@@ -64,7 +64,7 @@ public class AuthController {
                       """))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료 · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_WITHDRAWN_ACCOUNT — 탈퇴한 계정",
+          description = "AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료 · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(

@@ -87,7 +87,7 @@
 
 ### 엣지 · 실패
 
-- [x] 테스트 계정이 탈퇴(soft-delete) 상태면 기존 `/auth/login`과 동일하게 `AUTH_WITHDRAWN_ACCOUNT`
+- [x] 테스트 계정이 탈퇴(soft-delete) 상태면 기존 `/auth/login`과 동일하게 부활(재가입) 처리 후 로그인 성공 (`user-account-withdrawal.md` 2026-07-27 amend)
 - [x] `testUserId`가 허용 패턴(`^[a-zA-Z0-9_-]{0,20}$`)을 벗어나면 400
 
 ## 완료 기준
