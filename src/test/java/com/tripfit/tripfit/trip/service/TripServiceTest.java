@@ -622,7 +622,7 @@ class TripServiceTest {
             new TripListQuery(TripListScope.ONGOING, Optional.empty(), false));
 
     assertThat(response.trips()).hasSize(1);
-    assertThat(response.trips().get(0).joinedMemberCount()).isEqualTo(1);
+    assertThat(response.trips().get(0).activeMemberCount()).isEqualTo(0);
   }
 
   @Test
@@ -703,7 +703,7 @@ class TripServiceTest {
     var response = tripService.removeMember(TRIP_ID, OWNER_ID, MEMBER_ID);
 
     assertThat(target.getDeletedAt()).isNotNull();
-    assertThat(response.joinedMemberCount()).isEqualTo(1);
+    assertThat(response.activeMemberCount()).isEqualTo(1);
     assertThat(response.members()).extracting(m -> m.userId()).containsExactly(OWNER_ID);
     verify(recommendationRepository, never()).deleteByTripId(any());
   }

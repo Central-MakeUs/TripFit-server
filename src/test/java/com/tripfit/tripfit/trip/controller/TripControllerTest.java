@@ -136,7 +136,7 @@ class TripControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"inviteCode\":\"ABC234\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.joinedMemberCount").value(1))
+        .andExpect(jsonPath("$.data.activeMemberCount").value(0))
         .andExpect(jsonPath("$.data.memberCount").value(6));
   }
 
@@ -176,7 +176,6 @@ class TripControllerTest {
         TripMemberRole.OWNER,
         TripMemberStatus.ACTIVE,
         0,
-        1,
         1.0 / 6.0,
         List.of(),
         0);
@@ -202,7 +201,8 @@ class TripControllerTest {
         TripMemberRole.OWNER,
         TripMemberStatus.ACTIVE,
         0,
-        1,
-        1.0 / 6.0);
+        1.0 / 6.0,
+        List.of(),
+        0);
   }
 }

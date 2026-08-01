@@ -12,6 +12,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.aspectj.lang.JoinPoint;
@@ -98,8 +99,9 @@ class TripActivityAspectTest {
         null,
         null,
         0,
-        1,
-        1.0 / 6.0);
+        1.0 / 6.0,
+        List.of(),
+        0);
   }
 
   private static Trip sampleTrip() {
