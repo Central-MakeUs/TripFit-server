@@ -9,15 +9,13 @@ import java.util.UUID;
 @Schema(description = "여행방 참여자 목록. GET /trips/{tripId}/members")
 public record TripMembersResponse(
     @Schema(description = "방장이 설정한 모집 정원 (1~10)") int memberCount,
-    @Schema(description = "현재 참여 멤버 수 (trip_member row 수)") int joinedMemberCount,
     @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int activeMemberCount,
     @Schema(
         description = """
-            모집 충원율 joinedMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
-            activeMemberCount와 무관 — 참여 인원 기준.
-            join·remove·정원 변경 시 갱신 — GET /trips/{tripId}/members 재호출.
+            모집 충원율(응답률) activeMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
+            join·remove·정원 변경·일정 확인 완료 시 갱신 — GET /trips/{tripId}/members 재호출.
             """,
-        example = "0.67") double memberFillRate,
+        example = "0.5") double memberFillRate,
     @Schema(description = "참여자 목록") List<TripMemberItemResponse> members
 ) {
 

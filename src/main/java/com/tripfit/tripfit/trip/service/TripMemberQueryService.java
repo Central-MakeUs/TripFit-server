@@ -66,13 +66,12 @@ class TripMemberQueryService {
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
-    int joinedMemberCount = members.size();
     int activeMemberCount =
         (int) members.stream()
             .filter(m -> m.getStatus() == TripMemberStatus.ACTIVE)
             .count();
     int memberCount = trip.getMemberCount() == null ? 0 : trip.getMemberCount();
-    double memberFillRate = TripServiceSupport.memberFillRate(joinedMemberCount, memberCount);
+    double memberFillRate = TripServiceSupport.memberFillRate(activeMemberCount, memberCount);
 
     List<TripMemberItemResponse> items = new ArrayList<>();
     for (TripMember member : members) {
@@ -85,8 +84,7 @@ class TripMemberQueryService {
               member.isPinned()));
     }
 
-    return new TripMembersResponse(
-        memberCount, joinedMemberCount, activeMemberCount, memberFillRate, items);
+    return new TripMembersResponse(memberCount, activeMemberCount, memberFillRate, items);
   }
 
   // 희망 기간 멤버 전원 일정 달력 — 조율 중은 실시간, 확정·종료는 스냅샷(읽기 전용)
