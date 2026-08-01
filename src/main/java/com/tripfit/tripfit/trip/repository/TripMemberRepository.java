@@ -33,9 +33,6 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
   long countByTripIdAndDeletedAtIsNull(UUID tripId);
 
-  // activeMemberCount 집계 — status 파생 SSOT(activatedAt not null)와 동일 기준
-  long countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(UUID tripId);
-
   // 진행 중 캐러셀: endRange≥today · Pin 우선 → pinnedAt → lastActivityAt
   @Query("""
       SELECT tm FROM TripMember tm
