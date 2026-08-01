@@ -199,14 +199,14 @@ class TripServiceTest {
 
     assertThat(response.tripId()).isEqualTo(TRIP_ID);
     assertThat(response.status()).isEqualTo(TripStatus.ONGOING);
-    // create는 JOINED — inviteCode는 응답에 없음(방 입장·공유는 confirm 후)
+    // create는 SCHEDULE_PENDING — inviteCode는 응답에 없음(방 입장·공유는 confirm 후)
 
     ArgumentCaptor<TripMember> memberCaptor = ArgumentCaptor.forClass(TripMember.class);
     verify(tripMemberRepository).save(memberCaptor.capture());
     assertThat(memberCaptor.getValue().getRole()).isEqualTo(TripMemberRole.OWNER);
-    assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.JOINED);
+    assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
     assertThat(memberCaptor.getValue().getRespondedAt()).isNull();
-    assertThat(response.myMemberStatus()).isEqualTo(TripMemberStatus.JOINED);
+    assertThat(response.myMemberStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
 
     ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
     verify(tripRepository).save(tripCaptor.capture());
@@ -245,7 +245,7 @@ class TripServiceTest {
   void confirmSchedule_joinedToResponded_andMarksAllFree() {
     owner.setAllFree(false);
     TripMember joined =
-        new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.JOINED,
+        new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
@@ -260,10 +260,10 @@ class TripServiceTest {
 
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
 
-    assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+    assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.ACTIVE);
     assertThat(joined.getRespondedAt()).isNotNull();
     assertThat(owner.isAllFree()).isTrue();
-    assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+    assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
   }
 
   @Test
@@ -280,7 +280,7 @@ class TripServiceTest {
 
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
 
-    assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.RESPONDED);
+    assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
   }
 
   @Test
@@ -813,7 +813,7 @@ class TripServiceTest {
     Trip trip2 = otherTrip(tripId2);
     TripMember membership1 = tripMember(member, TripMemberRole.MEMBER);
     TripMember membership2 =
-        new TripMember(trip2, member, TripMemberRole.MEMBER, TripMemberStatus.RESPONDED,
+        new TripMember(trip2, member, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
             LocalDateTime.now());
 
     when(
@@ -851,7 +851,7 @@ class TripServiceTest {
     Trip trip2 = otherTrip(tripId2);
     TripMember ownerMembership1 = tripMember(owner, TripMemberRole.OWNER);
     TripMember ownerMembership2 =
-        new TripMember(trip2, owner, TripMemberRole.OWNER, TripMemberStatus.RESPONDED,
+        new TripMember(trip2, owner, TripMemberRole.OWNER, TripMemberStatus.ACTIVE,
             LocalDateTime.now());
 
     when(
@@ -943,7 +943,7 @@ class TripServiceTest {
 
   private TripMember tripMember(User user, TripMemberRole role) {
     TripMember tm =
-        new TripMember(trip, user, role, TripMemberStatus.RESPONDED, LocalDateTime.now());
+        new TripMember(trip, user, role, TripMemberStatus.ACTIVE, LocalDateTime.now());
     return tm;
   }
 

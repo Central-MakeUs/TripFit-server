@@ -10,7 +10,7 @@ import java.util.UUID;
 public record TripMembersResponse(
     @Schema(description = "방장이 설정한 모집 정원 (1~10)") int memberCount,
     @Schema(description = "현재 참여 멤버 수 (trip_member row 수)") int joinedMemberCount,
-    @Schema(description = "일정 확인 완료(RESPONDED) 멤버 수") int respondedCount,
+    @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int respondedCount,
     @Schema(
         description = """
             모집 충원율 joinedMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
@@ -27,7 +27,7 @@ public record TripMembersResponse(
       @Schema(description = "표시 이름 (동명이인 시 접미사)", example = "홍길동(2)") String displayName,
       @Schema(description = "방 내 역할 (방장 OWNER / 일반 MEMBER)") TripMemberRole role,
       @Schema(
-          description = "멤버십 상태. JOINED=방장 create 직후만, RESPONDED=방장 confirm 후·멤버 join 시") TripMemberStatus status,
+          description = "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 confirm 후·멤버 join 시") TripMemberStatus memberStatus,
       @Schema(description = "본인이 이 방을 홈 상단에 Pin했는지 (본인 row만 의미)") boolean pinned
   ) {
   }

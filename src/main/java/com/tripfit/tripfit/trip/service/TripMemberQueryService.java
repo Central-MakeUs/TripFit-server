@@ -69,7 +69,7 @@ class TripMemberQueryService {
     int joinedMemberCount = members.size();
     int respondedCount =
         (int) members.stream()
-            .filter(m -> m.getStatus() == TripMemberStatus.RESPONDED)
+            .filter(m -> m.getStatus() == TripMemberStatus.ACTIVE)
             .count();
     int memberCount = trip.getMemberCount() == null ? 0 : trip.getMemberCount();
     double memberFillRate = TripServiceSupport.memberFillRate(joinedMemberCount, memberCount);

@@ -32,7 +32,7 @@ class TripJoinService {
     this.userSummaryService = userSummaryService;
   }
 
-  // 신규 멤버를 RESPONDED로 등록하고 상세를 반환한다 — 일정 0건이면 전부 free 처리
+  // 신규 멤버를 ACTIVE로 등록하고 상세를 반환한다 — 일정 0건이면 전부 free 처리
   @Transactional
   @TripActivity(tripIdFromReturn = true)
   public TripDetailResponse joinAsNewMember(Trip trip, User user) {
@@ -44,7 +44,7 @@ class TripJoinService {
             trip,
             user,
             TripMemberRole.MEMBER,
-            TripMemberStatus.RESPONDED,
+            TripMemberStatus.ACTIVE,
             LocalDateTime.now());
     tripMemberRepository.save(member);
     return tripQueryService.toDetail(trip, member);

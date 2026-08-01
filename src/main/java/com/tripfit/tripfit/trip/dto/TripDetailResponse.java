@@ -12,8 +12,8 @@ import java.util.UUID;
 @Schema(
     description = """
         여행방 상세. GET/join/confirm/patch/pin 등.
-        호출 전제=RESPONDED+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.
-        JOINED 방장이 호출하면 SCHEDULE_CONFIRM_REQUIRED.
+        호출 전제=ACTIVE+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.
+        SCHEDULE_PENDING 방장이 호출하면 SCHEDULE_CONFIRM_REQUIRED.
         """)
 // @formatter:off
 public record TripDetailResponse(
@@ -45,7 +45,7 @@ public record TripDetailResponse(
 
     @Schema(
             description =
-                "초대 코드 (6자). 방 입장(RESPONDED) 후 상세에서만 노출 — 공유용. create(JOINED) 응답에는 없음")
+                "초대 코드 (6자). 방 입장(ACTIVE) 후 상세에서만 노출 — 공유용. create(SCHEDULE_PENDING) 응답에는 없음")
         String inviteCode,
 
     @Schema(description = "확정 시작일. CONFIRMED/EXPIRED에서만 값 있음", nullable = true)
@@ -65,10 +65,10 @@ public record TripDetailResponse(
 
     @Schema(
         description =
-            "본인 멤버십 상태. JOINED=방장 create 직후만(입장·공유 불가), RESPONDED=방장 confirm 후·멤버 join 시(입장 가능)")
+            "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장·공유 불가), ACTIVE=방장 confirm 후·멤버 join 시(입장 가능)")
     TripMemberStatus myMemberStatus,
 
-    @Schema(description = "일정 확인 완료(RESPONDED) 멤버 수") int respondedCount,
+    @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int respondedCount,
 
     @Schema(description = "현재 참여 멤버 수 (trip_member row 수)") int joinedMemberCount,
 

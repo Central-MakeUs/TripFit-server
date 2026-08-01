@@ -18,9 +18,9 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-// @TripMemberOnly: 멤버 + RESPONDED + canEnterRoom (방 입장·상세·공유 데이터)
-// @TripOwnerOnly: 방장만 (JOINED 허용 · RESPONDED/canEnterRoom 면제 — PATCH/DELETE 메타만.
-// 초대 공유는 방 입장 후 → 상세 inviteCode · JOINED create 응답에 inviteCode 없음)
+// @TripMemberOnly: 멤버 + ACTIVE + canEnterRoom (방 입장·상세·공유 데이터)
+// @TripOwnerOnly: 방장만 (SCHEDULE_PENDING 허용 · ACTIVE/canEnterRoom 면제 — PATCH/DELETE 메타만.
+// 초대 공유는 방 입장 후 → 상세 inviteCode · SCHEDULE_PENDING create 응답에 inviteCode 없음)
 @Component
 public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
@@ -39,7 +39,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     this.userSummaryService = userSummaryService;
   }
 
-  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly 권한 검사 — JOINED 방장은 메타 API만 면제
+  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly 권한 검사 — SCHEDULE_PENDING 방장은 메타 API만 면제
   @Override
   public boolean preHandle(
       HttpServletRequest request,
@@ -71,13 +71,13 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
       if (!tripRepository.existsByIdAndOwner_IdAndDeletedAtIsNull(tripId, userId)) {
         throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
       }
-      // JOINED 방장도 PATCH/DELETE(메타)는 허용 — RESPONDED·입장 조건 검사 생략
+      // SCHEDULE_PENDING 방장도 PATCH/DELETE(메타)는 허용 — ACTIVE·입장 조건 검사 생략
       return true;
     }
 
     TripMember membership = support.requireActiveMember(tripId, userId);
 
-    // 이 방 일정 확인 미완료(JOINED) — 전역 입장 조건과 별개로 차단
+    // 이 방 일정 확인 미완료(SCHEDULE_PENDING) — 전역 입장 조건과 별개로 차단
     support.requireResponded(membership);
 
     // 전역 입장 조건: 일정≥1 또는 전부 free

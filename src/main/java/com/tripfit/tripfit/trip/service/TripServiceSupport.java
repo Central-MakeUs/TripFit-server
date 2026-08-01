@@ -202,10 +202,10 @@ public class TripServiceSupport {
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));
   }
 
-  // 이 방 일정 확인 완료 여부 — JOINED(미확인)면 SCHEDULE_CONFIRM_REQUIRED.
+  // 이 방 일정 확인 완료 여부 — SCHEDULE_PENDING(미확인)면 SCHEDULE_CONFIRM_REQUIRED.
   // TripAuthorizationInterceptor·TripCommandService.joinTrip 공용
   public void requireResponded(TripMember membership) {
-    if (membership.getStatus() != TripMemberStatus.RESPONDED) {
+    if (membership.getStatus() != TripMemberStatus.ACTIVE) {
       throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
     }
   }

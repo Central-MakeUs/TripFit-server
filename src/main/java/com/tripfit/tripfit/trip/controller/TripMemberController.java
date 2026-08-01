@@ -45,7 +45,7 @@ public class TripMemberController {
 
           호출 시점: 방 멤버 화면.
 
-          전제: 멤버이며 방 입장 가능(RESPONDED + 입장 조건). JOINED면 403.
+          전제: 멤버이며 방 입장 가능(ACTIVE + 입장 조건). SCHEDULE_PENDING면 403.
 
           결과: 상태·역할·Pin·모집률 등. 동명이인은 표시명에 `(2)`처럼 번호가 붙는다.
           """)
@@ -60,7 +60,7 @@ public class TripMemberController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료(JOINED) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -196,7 +196,7 @@ public class TripMemberController {
     return ResponseEntity.ok(SuccessResponse.of(tripService.removeMember(tripId, ownerId, userId)));
   }
 
-  // 방 입장 조건(RESPONDED·canEnterRoom)과 무관하게 나갈 수 있어야 하므로 @TripMemberOnly 미부착 — 서비스에서 직접 멤버십 검증
+  // 방 입장 조건(ACTIVE·canEnterRoom)과 무관하게 나갈 수 있어야 하므로 @TripMemberOnly 미부착 — 서비스에서 직접 멤버십 검증
   @Operation(
       summary = "여행방 나가기",
       description = """

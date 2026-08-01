@@ -93,7 +93,7 @@ class TripAuthorizationInterceptorTest {
   @Test
   void preHandle_tripMemberOnly_activeMember_passes() throws Exception {
     when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
-    TripMember membership = membership(TripMemberStatus.RESPONDED);
+    TripMember membership = membership(TripMemberStatus.ACTIVE);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
         .thenReturn(Optional.of(membership));
 
@@ -111,7 +111,7 @@ class TripAuthorizationInterceptorTest {
   void preHandle_tripMemberOnly_joined_throwsConfirmRequired() throws Exception {
     when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
-        .thenReturn(Optional.of(membership(TripMemberStatus.JOINED)));
+        .thenReturn(Optional.of(membership(TripMemberStatus.SCHEDULE_PENDING)));
 
     assertThatThrownBy(
         () -> interceptor.preHandle(
@@ -178,7 +178,7 @@ class TripAuthorizationInterceptorTest {
   void preHandle_entryGateFails_throwsScheduleEntryRequired() throws Exception {
     when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
-        .thenReturn(Optional.of(membership(TripMemberStatus.RESPONDED)));
+        .thenReturn(Optional.of(membership(TripMemberStatus.ACTIVE)));
     org.mockito.Mockito.doThrow(
         new TripFitException(UserErrorCode.SCHEDULE_ENTRY_REQUIRED))
         .when(userSummaryService)

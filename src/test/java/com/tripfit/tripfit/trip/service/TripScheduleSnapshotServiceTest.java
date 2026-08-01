@@ -101,7 +101,7 @@ class TripScheduleSnapshotServiceTest {
   @Test
   void freezeTrip_savesSparseEffectiveDays() {
     TripMember member =
-        new TripMember(trip, user, TripMemberRole.OWNER, TripMemberStatus.RESPONDED,
+        new TripMember(trip, user, TripMemberRole.OWNER, TripMemberStatus.ACTIVE,
             LocalDateTime.now());
     when(snapshotRepository.existsByTrip_Id(TRIP_ID)).thenReturn(false);
     when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(List.of(member));

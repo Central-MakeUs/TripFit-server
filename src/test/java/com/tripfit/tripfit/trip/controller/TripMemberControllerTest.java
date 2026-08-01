@@ -73,7 +73,7 @@ class TripMemberControllerTest {
                 1.0,
                 List.of(
                     new TripMemberItemResponse(
-                        OTHER_ID, "김철수", TripMemberRole.MEMBER, TripMemberStatus.RESPONDED,
+                        OTHER_ID, "김철수", TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
                         false))));
 
     mockMvc
@@ -93,7 +93,7 @@ class TripMemberControllerTest {
                 1.0 / 6,
                 List.of(
                     new TripMemberItemResponse(
-                        USER_ID, "홍길동", TripMemberRole.OWNER, TripMemberStatus.RESPONDED,
+                        USER_ID, "홍길동", TripMemberRole.OWNER, TripMemberStatus.ACTIVE,
                         false))));
 
     mockMvc
@@ -123,7 +123,7 @@ class TripMemberControllerTest {
                         OTHER_ID,
                         "김철수",
                         TripMemberRole.MEMBER,
-                        TripMemberStatus.RESPONDED,
+                        TripMemberStatus.ACTIVE,
                         List.of(
                             new CalendarDay(
                                 LocalDate.of(2026, 8, 3),
