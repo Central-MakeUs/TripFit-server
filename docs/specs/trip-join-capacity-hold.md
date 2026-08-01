@@ -13,7 +13,7 @@
 
 ## 배경
 
-#22 확정(참여자): 정기→개별 플로우 후 **가입 API 한 번**으로 멤버 INSERT.  
+#22 확정(참여자): 정기→개별 플로우 후 **가입 API 한 번**으로 멤버 INSERT.
 정원 검사는 INSERT 시점 → 플로우 중 여러 명이 동시에 진행하면 **먼저 완료한 1명만 성공**, 나머지는 `TRIP_MEMBER_FULL`(409).
 
 MVP는 이를 **감수**. 선점/예약은 wave 4.
@@ -36,7 +36,7 @@ MVP는 이를 **감수**. 선점/예약은 wave 4.
 |----|------|
 | Soft hold 테이블 | `(trip_id, user_id, expires_at)` |
 | Redis 카운터 | 빠른 TTL, 인프라 wave 4 |
-| JOINED 조기 INSERT | #22에서 **폐기**한 선점 모델로 회귀 |
+| SCHEDULE_PENDING 조기 INSERT | #22에서 **폐기**한 선점 모델로 회귀 |
 
 ## 완료 기준
 

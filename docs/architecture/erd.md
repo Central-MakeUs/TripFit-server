@@ -139,7 +139,7 @@ erDiagram
         boolean is_pinned
         datetime pinned_at
         datetime joined_at
-        datetime responded_at "null=JOINED, set=RESPONDED (파생 SSOT, status 컬럼 없음)"
+        datetime responded_at "null=SCHEDULE_PENDING, set=ACTIVE (파생 SSOT, status 컬럼 없음)"
         datetime deleted_at
         datetime created_at
         datetime updated_at
@@ -340,7 +340,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |
-| responded_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **JOINED면 null**, confirm/join(RESPONDED) 시 set. **`status`(JOINED/RESPONDED) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `JOINED`=방장 전용(create 직후·confirm 전, 입장·공유 불가), `RESPONDED`=방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 JOINED 없음 |
+| responded_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **SCHEDULE_PENDING면 null**, confirm/join(ACTIVE) 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 전용(create 직후·confirm 전, 입장·공유 불가), `ACTIVE`=방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 SCHEDULE_PENDING 없음 |
 | deleted_at | timestamptz | Y | | **trip soft delete 시 연쇄 soft** |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
@@ -349,7 +349,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 동명이인 `(2)` 표시: **DB 컬럼 없음** — BR-USER-009 조회 로직
 
-**카운트:** `joinedMemberCount` = soft-delete 제외 전 멤버(JOINED 포함). `respondedCount` = `RESPONDED`만.
+**카운트:** `joinedMemberCount` = soft-delete 제외 전 멤버(SCHEDULE_PENDING 포함). `respondedCount` = `ACTIVE`만.
 
 ### `trip_member_schedule_snapshot` (#38)
 
@@ -449,7 +449,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 2. **2026-07-08:** TERMINATED, Pin(`is_pinned`), cancel_reason wave 4, 전역 연동
 3. **2026-07-13:** A안 폐기 → 정기/개별 2테이블, 정기 N행·title·범용 시간 필드
 4. **2026-07-20:** 홈 D5 — `trip.last_activity_at`, `trip_member.pinned_at` ([`trip-room-api.md`](../specs/trip-room-api.md))
-5. **2026-07-21:** `#39` — `trip_member.status` **JOINED|RESPONDED** 부활 (방장 create=`JOINED` → confirm=`RESPONDED`)
+5. **2026-07-21:** `#39` — `trip_member.status` **SCHEDULE_PENDING|ACTIVE** 부활 (방장 create=`SCHEDULE_PENDING` → confirm=`ACTIVE`)
 6. **2026-07-21:** `trip.duration_days` **nullable**(일정 미정) · 희망 기간 생성 후 불변 · API n박+m일
 6. **2026-07-21:** ERD 개선 반영 — `users` rename · `responded_at` · active UNIQUE(app) · `score`=#13 유지
 7. 알림 이력 테이블 — ERD 범위 외 (wave 3)

@@ -1,10 +1,10 @@
 # 추천 4모드 · TOP 3 · 확정·취소
 
-> wave: 2  
-> implements: BR-TRIP-007, BR-TRIP-010 (API·DTO·ERD·상태전이만 — 계산 로직은 `#50`)  
-> deferred: BR-NOTI-004 확정 알림 (wave 3), **추천 계산 로직(후보 윈도우·모드별 스코어링·ALL_ATTEND 필터·동점) → [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) (#50, BR-TRIP-005·011·012)**  
-> 상태: Draft  
-> 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (RESPONDED·sparse·submit)
+> wave: 2
+> implements: BR-TRIP-007, BR-TRIP-010 (API·DTO·ERD·상태전이만 — 계산 로직은 `#50`)
+> deferred: BR-NOTI-004 확정 알림 (wave 3), **추천 계산 로직(후보 윈도우·모드별 스코어링·ALL_ATTEND 필터·동점) → [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) (#50, BR-TRIP-005·011·012)**
+> 상태: Draft
+> 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (ACTIVE·sparse·submit)
 
 ## 목표
 
@@ -73,7 +73,7 @@
 ### Nice to Have
 
 - [ ] `score`, `reason`, `riskNote` 자동 생성 (한국어 템플릿 `[제안]`)
-- [ ] RESPONDED 미만 참여자 있어도 추천 가능 (경고 필드 `[제안]`)
+- [ ] ACTIVE 미만 참여자 있어도 추천 가능 (경고 필드 `[제안]`)
 
 ### Out of Scope
 

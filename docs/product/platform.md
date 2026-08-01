@@ -1,6 +1,6 @@
 # 플랫폼 · 클라이언트 맥락
 
-> **이 저장소는 백엔드 API 서버**입니다. UI·스토어 빌드는 **React 프론트 저장소**(별도)에서 다룹니다.  
+> **이 저장소는 백엔드 API 서버**입니다. UI·스토어 빌드는 **React 프론트 저장소**(별도)에서 다룹니다.
 > AI 코딩 에이전트는 API·인증·도메인 설계 시 아래 맥락을 전제로 동작합니다.
 
 ## 조직 · 제품 목표
@@ -29,7 +29,7 @@
 
 ## 클라이언트 런타임 환경 (확정 — 2026-07-22)
 
-**대전제:** TripFit은 **모바일 앱(환경 A)** 으로도, **카카오톡 인앱 브라우저·모바일 웹(환경 B)** 으로도 열린다.  
+**대전제:** TripFit은 **모바일 앱(환경 A)** 으로도, **카카오톡 인앱 브라우저·모바일 웹(환경 B)** 으로도 열린다.
 **어느 환경이든 소셜 로그인 필수** — 비회원·게스트 없음 ([BR-USER-002](business-rules/user.md), [`mvp.md`](mvp.md)).
 
 유저가 TripFit UI에 들어오는 표면은 다음 **두 환경**이다. 패키징 기술(RN/Capacitor 등)은 별도 `[미정]`이지만, **런타임 축은 확정**.
@@ -144,7 +144,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 - API 요청/응답·`data` shape·`code`는 **`docs/specs/`** + 프론트 2명과 맞출 것
 - 화면·한글 라벨은 `docs/product/design/`, `glossary.md` — 백엔드 enum 이름과 혼동 금지
 - OpenAPI(springdoc)는 **첫 API 공개·envelope 확정 후** 동기화
-- **여행방 멤버십:** `JOINED`≠일반 멤버 일정미완 — **방장 create 직후만**. 멤버 join=`RESPONDED` 즉시. 초대 공유=방장∧RESPONDED. create에 `inviteCode` 없음 — Swagger Info · [`glossary.md`](glossary.md) · [`trip-room-api.md`](../specs/trip-room-api.md) 필독 절
+- **여행방 멤버십:** `SCHEDULE_PENDING`≠일반 멤버 일정미완 — **방장 create 직후만**. 멤버 join=`ACTIVE` 즉시. 초대 공유=방장∧ACTIVE. create에 `inviteCode` 없음 — Swagger Info · [`glossary.md`](glossary.md) · [`trip-room-api.md`](../specs/trip-room-api.md) 필독 절
 
 ### 프론트 합의 제안 — API 응답 (논의용 5줄)
 

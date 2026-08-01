@@ -4,7 +4,7 @@
 
 | 파일 | 설명 |
 |------|------|
-| **`trip-create-join-guide.md`** | **생성·참여 전체 가이드** — 빠른 요약 + JOINED→confirm 상세·정책·시나리오 (#39) |
+| **`trip-create-join-guide.md`** | **생성·참여 전체 가이드** — 빠른 요약 + SCHEDULE_PENDING→confirm 상세·정책·시나리오 (#39) |
 | `schedule-edit.md` | 일정·근무/연차 수정 |
 | `trip-confirm.md` | 방장 — 추천 4모드·확정·취소 |
 

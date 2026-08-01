@@ -1,9 +1,9 @@
 # trip.last_activity_at — 갱신 정책·AOP
 
-> wave: 2 (후속)  
-> implements: (없음 — D5 `last_activity_at` 컬럼은 [#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)에서 선행)  
-> deferred from: [`trip-room-api.md`](trip-room-api.md) D5 · 2026-07-19  
-> 상태: **Approved** (#26 · L1~L4 확정 — 2026-07-19)  
+> wave: 2 (후속)
+> implements: (없음 — D5 `last_activity_at` 컬럼은 [#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)에서 선행)
+> deferred from: [`trip-room-api.md`](trip-room-api.md) D5 · 2026-07-19
+> 상태: **Approved** (#26 · L1~L4 확정 — 2026-07-19)
 > GitHub: **[#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)**
 
 ## 목표
@@ -27,7 +27,7 @@
 | 여행방 생성 | ✓ | `created_at`과 동일 시각으로 초기화 ([#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)) |
 | 신규 참여 (join) | ✓ | Implemented |
 | 여행방 정보 수정 (PATCH) | ✓ | Implemented |
-| 일정 확인 완료 (`POST .../schedule/confirm`) | ✓ | **#39** — `JOINED→RESPONDED` · `@TripActivity` (구 trip `submit` 폐기) |
+| 일정 확인 완료 (`POST .../schedule/confirm`) | ✓ | **#39** — `SCHEDULE_PENDING→ACTIVE` · `@TripActivity` (구 trip `submit` 폐기) |
 | 추천 일정 생성 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 일정 확정 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 참여자 내보내기 | ✓ | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) — MEMBER soft delete |

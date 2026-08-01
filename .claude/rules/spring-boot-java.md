@@ -26,7 +26,7 @@ com.tripfit.tripfit
 └── common/                      # api, config, domain(베이스), exception
 ```
 
-가이드: `docs/decisions/003-architecture-guide.md`, `docs/architecture.md`  
+가이드: `docs/decisions/003-architecture-guide.md`, `docs/architecture.md`
 **풀 DDD 미적용** — JPA 연관관계·객체 그래프 탐색 허용.
 
 **feature 하위 패키지:** 도메인 안 기능이 커지면 `{domain}/{feature}/`에 **동일 레이어 세트**를 둘 수 있다 (예: `user/schedule/`). 최상위 도메인으로 승격하지 않는 한 소유 도메인 안에 둔다. `controller/dto/`처럼 **레이어만 중첩**하는 것은 금지.
@@ -73,7 +73,7 @@ Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap
 | 메커니즘 | 어노테이션 | 역할 |
 |----------|------------|------|
 | Spring AOP | `@TripActivity` | L1 성공 후 `last_activity_at` touch (`TripActivityAspect`) |
-| Interceptor | `@TripMemberOnly` / `@TripOwnerOnly` | 멤버·방장·RESPONDED·`canEnterRoom` (`TripAuthorizationInterceptor`) |
+| Interceptor | `@TripMemberOnly` / `@TripOwnerOnly` | 멤버·방장·ACTIVE·`canEnterRoom` (`TripAuthorizationInterceptor`) |
 | ArgumentResolver | `@AuthorizedUser` | JWT → `UUID userId` |
 
 - L1 touch 대상 public 메서드에 `@TripActivity` — create는 엔티티 초기값. 수동 `touchLastActivity()` 호출 금지.
@@ -131,6 +131,16 @@ public enum VacationApplyPeriod {
 }
 ```
 
+## 네이밍 우선 원칙 (프론트 · 신규 개발자 가독성)
+
+`@Schema`·`@Operation`·`//`로 "왜 이런 이름인지"부터 설명해야 한다면, 설명을 늘리기 전에 **이름 자체를 바꿀 수 있는지 먼저 검토한다.** 좋은 이름은 설명 없이도 오해를 안 만든다 — 문서는 이름이 못 담는 맥락(언제·왜·전제)만 보강하는 역할이다.
+
+- 새 enum 상수·필드명을 짓거나 리뷰할 때: "이 이름만 보고 신규 개발자·프론트가 오해하지 않을까?"를 먼저 묻는다. 오해 소지가 있으면 `@Schema`로 땜질하지 말고 **이름을 먼저 교체**한다.
+- **같은 개념 = 같은 필드명.** 같은 enum을 가리키는데 DTO마다 `status`/`memberStatus`/`myMemberStatus`처럼 이름이 흩어지면 안 된다 — "내 것" vs "타인 것" 구분만 접두사(`my`)로 통일하고 나머지는 동일한 이름을 쓴다.
+- 이름을 바꾸면 **같은 턴에** 전부 최신화한다: enum·DTO·테스트 · `docs/specs/` · `docs/architecture/erd.md` · `docs/product/glossary.md` · `docs/product/fe-context/`. 한 곳이라도 구 이름이 남으면 "구 이름 방치"로 `harness-workflow.md` STOP §4(레거시)와 동일하게 취급한다.
+- `@Schema`/`@Operation` 설명이 **3문단 넘게** 길어지거나 값별로 "의미"를 장황하게 반복해야 한다면, 우선 이름부터 다시 의심할 것 — 설명으로 이름의 결함을 메우지 않는다.
+- 예: `TripMemberStatus`의 구 `JOINED`→`SCHEDULE_PENDING`, 구 `RESPONDED`→`ACTIVE` 개명 — "방에 참여했다"로 오독되던 이름을 "일정 확인 대기중 / 방 활동 가능"으로 이름만으로 뜻이 드러나게 바꾼 사례 (`docs/specs/trip-member-status-derive.md` 변경 이력).
+
 ## OpenAPI 설명 어노테이션 (전부)
 
 springdoc OpenAPI 3. **설명 문자열이 들어가는 어노테이션은 종류와 무관하게 동일 규칙**을 쓴다.
@@ -175,13 +185,13 @@ springdoc OpenAPI 3. **설명 문자열이 들어가는 어노테이션은 종�
 - Javadoc 대신 `@Schema` 우선 (필드 의미). 메서드·API 흐름 주석은 아래 **Comments** 절
 - 계약 값·정책 SSOT: `docs/architecture/erd.md`, 해당 `docs/specs/` — 불일치 시 문서 먼저. **스펙 경로·스펙 ID는 `@Schema` 문자열에 넣지 않음**
 
-### 상태성 enum `@Schema` (JOINED/RESPONDED · TripStatus 등)
+### 상태성 enum `@Schema` (SCHEDULE_PENDING/ACTIVE · TripStatus 등)
 
 상수마다 **의미 / 언제 / 가능·불가**를 빈 줄로 구분한다. 클래스 `@Schema`는 “무엇인지 + 값 한 줄 요약”만.
 
 ```java
 @Schema(description = """
-		여행방 안에서의 멤버 진행 상태 (JOINED | RESPONDED).
+		여행방 안에서의 멤버 진행 상태 (SCHEDULE_PENDING | ACTIVE).
 		""")
 public enum TripMemberStatus {
 	@Schema(description = """
@@ -191,7 +201,7 @@ public enum TripMemberStatus {
 
 			불가: 방 상세·멤버·달력·Pin·초대 공유.
 			""")
-	JOINED,
+	SCHEDULE_PENDING,
 	// ...
 }
 ```
@@ -272,12 +282,12 @@ public record LoginRequest(
 - `docs/specs/...` 경로만 나열
 - Bearer/JWT 문구 (자물쇠와 중복)
 
-**허용:** 도메인 용어의 **의미** (`JOINED` = 멤버이지만 일정 확인 전), HTTP 상태·`ErrorCode` 상수명, idempotent/정렬/쿼리 의미
+**허용:** 도메인 용어의 **의미** (`SCHEDULE_PENDING` = 멤버이지만 일정 확인 전), HTTP 상태·`ErrorCode` 상수명, idempotent/정렬/쿼리 의미
 
 **Before (금지 예 — `POST .../schedule/confirm`)**
 
 ```text
-JOINED → RESPONDED. Skip+0행 시 is_all_free. 이미 RESPONDED면 idempotent. 방 입장 전 필수 (#39)
+SCHEDULE_PENDING → ACTIVE. Skip+0행 시 is_all_free. 이미 ACTIVE면 idempotent. 방 입장 전 필수 (#39)
 ```
 
 **After (필수 양식)**
@@ -290,11 +300,11 @@ JOINED → RESPONDED. Skip+0행 시 is_all_free. 이미 RESPONDED면 idempotent.
 
 				호출 시점: 여행방 생성 직후, 일정 확인·입력 플로우를 마친 다음.
 
-				전제: 본인이 해당 방 멤버이고, 멤버 상태가 JOINED(일정 확인 미완료)이다.
+				전제: 본인이 해당 방 멤버이고, 멤버 상태가 SCHEDULE_PENDING(일정 확인 미완료)이다.
 
-				결과: 멤버 상태가 RESPONDED로 바뀌고 여행방 상세를 반환한다. 정기·개별 일정이 모두 없으면 isAllFree가 true가 된다.
+				결과: 멤버 상태가 ACTIVE로 바뀌고 여행방 상세를 반환한다. 정기·개별 일정이 모두 없으면 isAllFree가 true가 된다.
 
-				주의: 이미 RESPONDED면 상태 변경 없이 동일 응답(idempotent). 방 안 API는 이 호출 이후에만 사용한다.
+				주의: 이미 ACTIVE면 상태 변경 없이 동일 응답(idempotent). 방 안 API는 이 호출 이후에만 사용한다.
 
 				주요 에러: SCHEDULE_ENTRY_REQUIRED — 입장 조건(일정≥1 또는 전부 free) 미충족
 				""")
@@ -365,9 +375,9 @@ ResponseEntity<...> updateProfile(
 
 ## Comments
 
-**독자:** 신규 서버 개발자. `//`는 구현자 메모·이슈 트래커용 약어가 아니라 **메서드가 하는 일**을 평문으로 남긴다.  
-필드 의미는 `@Schema`, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT.  
-`//`는 **(1) 메서드 역할(평문 한 줄)** + **(2) Why·정책·다단계 How** 를 담는다. 메서드명만으로 “무엇을 하는지”가 안 보이면 주석 누락이다.  
+**독자:** 신규 서버 개발자. `//`는 구현자 메모·이슈 트래커용 약어가 아니라 **메서드가 하는 일**을 평문으로 남긴다.
+필드 의미는 `@Schema`, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT.
+`//`는 **(1) 메서드 역할(평문 한 줄)** + **(2) Why·정책·다단계 How** 를 담는다. 메서드명만으로 “무엇을 하는지”가 안 보이면 주석 누락이다.
 **새 Service/Support public 메서드에 역할 `//` 없으면 미완료** — 다음 커밋으로 미루지 않는다.
 
 ### 역할 줄 템플릿
@@ -376,7 +386,7 @@ ResponseEntity<...> updateProfile(
 // {행위} — {핵심 전제·결과 한 조각}
 ```
 
-예: `// 방장 일정 확인을 끝내 JOINED→RESPONDED로 바꾼다 — 이미 RESPONDED면 동일 상세 반환(idempotent)`
+예: `// 방장 일정 확인을 끝내 SCHEDULE_PENDING→ACTIVE로 바꾼다 — 이미 ACTIVE면 동일 상세 반환(idempotent)`
 
 ### 쓰지 않음
 
@@ -390,7 +400,7 @@ ResponseEntity<...> updateProfile(
 | | 역할 `//` (메서드 위) | 본문 Why / `// 1.` | `// TODO` · `// FIXME` |
 |--|----------------------|-------------------|------------------------|
 | **금지** | `#n`·`BR-*`·스펙 ID만으로 설명 | 약어만으로 Why 대체 | 방향 없는 `TODO` |
-| **허용** | 도메인 용어의 **의미** (`JOINED`=일정 확인 전) | 평문 정책·에러코드명 | 말미에 스펙 경로·`#n` — `// TODO: … — docs/specs/….md (#13)` |
+| **허용** | 도메인 용어의 **의미** (`SCHEDULE_PENDING`=일정 확인 전) | 평문 정책·에러코드명 | 말미에 스펙 경로·`#n` — `// TODO: … — docs/specs/….md (#13)` |
 
 ### stub / 미구현
 
@@ -432,13 +442,13 @@ public void generateRecommendations(...) {
 
 ```java
 // #13 stub — 추천 생성 (BR-TRIP-005 hard DELETE·TOP3)
-// 방장 JOINED → RESPONDED. 이미 RESPONDED면 idempotent (#39)
+// 방장 SCHEDULE_PENDING → ACTIVE. 이미 ACTIVE면 idempotent (#39)
 ```
 
 **After (필수 양식)**
 
 ```java
-// 방장 일정 확인을 끝내 JOINED→RESPONDED로 바꾼다 — 이미 RESPONDED면 동일 상세 반환(idempotent)
+// 방장 일정 확인을 끝내 SCHEDULE_PENDING→ACTIVE로 바꾼다 — 이미 ACTIVE면 동일 상세 반환(idempotent)
 @Transactional
 @TripActivity(tripIdParam = "tripId")
 public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) { ... }

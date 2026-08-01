@@ -67,7 +67,7 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 
 방 입장·신규 trip 게이트·`is_all_free` 전이 규칙(BR-USER-006/007/011) 상세는 [`business-rules/user.md`](../business-rules/user.md)가 SSOT — 여기서 중복 정의하지 않는다.
 
-참여 완료 = **`trip_member.status=RESPONDED`** (확인 플로우 Skip/완료). 구 submit **폐기**. 일정 수정 후에도 `RESPONDED` 유지.
+참여 완료 = **`trip_member.status=ACTIVE`** (확인 플로우 Skip/완료). 구 submit **폐기**. 일정 수정 후에도 `ACTIVE` 유지.
 
 ### 3. 추천·확정
 

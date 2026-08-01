@@ -36,9 +36,9 @@
 
 - **현상 A (헤딩-내용 불일치):** `## 인증` 헤딩 아래에 실제 인증 설명과 "API description 읽는 순서(목적→호출시점→전제→결과)" 안내가 섞여 있었음.
 - **현상 B (톤 혼재):** "~습니다"체 격식 문장과 "불가", "안 옴" 같은 축약 메모가 섞여 있었음.
-- **현상 C (정책과 긴장):** "여행방 멤버십 상태(JOINED/RESPONDED)" 블록이 상세한 비즈니스 상태 머신 설명을 통짜로 담고 있었음.
+- **현상 C (정책과 긴장):** "여행방 멤버십 상태(SCHEDULE_PENDING/ACTIVE)" 블록이 상세한 비즈니스 상태 머신 설명을 통짜로 담고 있었음.
 - **결정:** 세계적으로 흔한 OpenAPI 관례(전역 Info는 개요·인증·읽는 법만 짧게, 비즈니스 로직 상세는 엔드포인트별 `@Operation`에)를 따름. 헤딩 분리(`## 인증` / `## API 설명 읽는 법` / `## 필독`), 톤 통일, 멤버십 상태 상세 설명은 "필독 — 관련 API 설명 참고" 한 줄로 축소.
-- **동반 변경:** `.claude/rules/client-platform.md`의 "멤버십 JOINED/RESPONDED" 행 amend — Swagger 전역 `Info`·`@Tag`는 "요약 한 줄 + 필독 포인터만", 상세는 `glossary.md`·`trip-room-api`·관련 `@Operation`에만 두도록 정책 변경.
+- **동반 변경:** `.claude/rules/client-platform.md`의 "멤버십 SCHEDULE_PENDING/ACTIVE" 행 amend — Swagger 전역 `Info`·`@Tag`는 "요약 한 줄 + 필독 포인터만", 상세는 `glossary.md`·`trip-room-api`·관련 `@Operation`에만 두도록 정책 변경.
 
 ## 문제 4 — `@Tag` 설명의 표기법 (해결됨)
 

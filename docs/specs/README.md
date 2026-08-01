@@ -18,7 +18,7 @@
 | [`auth-social-login.md`](auth-social-login.md) | **Approved** / Implemented | Google·Kakao·Apple · JWT access/refresh | — |
 | [`user-onboarding.md`](user-onboarding.md) | **Approved** | 성·이름 · 재진입 D-REENTRY | auth-social-login |
 | [`user-my-page.md`](user-my-page.md) | **Approved** / Implemented | 마이페이지 이름 PATCH | user-onboarding |
-| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Implemented** (#22 · **#39 amend**) | join 게이트 · `JOINED`→confirm · submit 폐기 · hold→#35 | user-onboarding |
+| [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) | **Implemented** (#22 · **#39 amend**) | join 게이트 · `SCHEDULE_PENDING`→confirm · submit 폐기 · hold→#35 | user-onboarding |
 
 ## wave 2
 
@@ -28,7 +28,7 @@
 | [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A · **A1→#37** (today~+2년) | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) · #37 |
 | [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · ONGOING 칩 (구 CANCELED 거부 — #48 enum 삭제로 해당 없음) | #17 · #12 |
 | [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) | **Approved** (#38) · **구현 중** · Wave 2 Must | CONFIRMED/EXPIRED snapshot · R-model A | #27 · #17 · #37 |
-| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 · **#39** JOINED/confirm | 여행방 CRUD·홈 목록·Pin · schedule/confirm | #17 · #22 · #39 |
+| [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 · **#39** SCHEDULE_PENDING/confirm | 여행방 CRUD·홈 목록·Pin · schedule/confirm | #17 · #22 · #39 |
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | EXPIRED DB·Pin batch · 00:05 KST | #12 |
 | [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
@@ -55,6 +55,7 @@
 | [`auth-apple-server-notifications.md`](auth-apple-server-notifications.md) | Draft | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
 | [`auth-dev-stub-verifier.md`](auth-dev-stub-verifier.md) | Draft (#52) | `/auth/login` 계약 유지형 dev 스텁 검증기 — `dev-mock-login` 엔드포인트 대체 예정 | dev-mock-login |
+| [`auth-error-code-granularity.md`](auth-error-code-granularity.md) | Draft (이슈 미생성) | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` · `auth-social-login.md` 에러 표 amend | auth-social-login |
 
 ## 도구 (Wave 무관)
 

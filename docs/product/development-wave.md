@@ -1,7 +1,7 @@
 # TripFit Development Wave — 운영 가이드
 
-> **이 문서가 Wave 운영의 SSOT입니다.**  
-> Wave 정의·판단·GitHub 운영·백로그 절차는 여기를 따릅니다.  
+> **이 문서가 Wave 운영의 SSOT입니다.**
+> Wave 정의·판단·GitHub 운영·백로그 절차는 여기를 따릅니다.
 > 짧은 요약표: [`waves.md`](waves.md) · MVP 범위: [`mvp.md`](mvp.md)
 
 ---
@@ -48,7 +48,7 @@
 3. 개발·merge
 4. 나중에 `wave:2` 라벨·마일스톤 부착
 
-이 순서에서는 Wave가 **계획**이 아니라 **분류 사후 기록**입니다.  
+이 순서에서는 Wave가 **계획**이 아니라 **분류 사후 기록**입니다.
 `#12(여행방)`이 Wave 2인데 `#22(일정 재설계)`가 Wave 1인 채 **동시에 진행**되는 것도, Wave가 “지금 뭘 끝내야 하는가”를 말해 주지 못해서 생긴 혼선입니다.
 
 ### 1.3 Must / Nice / Out 구분 부재
@@ -134,7 +134,7 @@ Wave 3 = MVP **이후** “쓸 만한” UX. Wave 4 = MVP **범위 밖** 기술�
 - [ ] 소셜 login / refresh / logout 동작 (#1)
 - [ ] JWT로 보호 API 호출 가능 (#3)
 - [ ] 프로필·온보딩 PATCH (#10)
-- [ ] **`#22` 스펙 Approved** — submit·sparse·온보딩 skip·RESPONDED SSOT 확정
+- [ ] **`#22` 스펙 Approved** — submit·sparse·온보딩 skip·ACTIVE SSOT 확정
 - [ ] `./gradlew test` · dev 배포에서 위 여정 **E2E 1회** (프론트 또는 curl 시나리오)
 - [ ] Wave 1 Backlog의 **Must** 이슈 전부 Closed
 
@@ -414,7 +414,7 @@ Agent·개발자 **시작 체크:**
 
 1. 현재 **활성 Wave**는? (Must 미완인 가장 낮은 N)
 2. 내 Issue가 그 Wave Backlog **Must**에 있는가?
-3. #22 Approved 전 — submit·RESPONDED·Hidden API 임의 구현 금지
+3. #22 Approved 전 — submit·ACTIVE·Hidden API 임의 구현 금지
 
 ---
 
