@@ -66,6 +66,15 @@ public class TripController {
           """)
   @ApiResponses({
       @ApiResponse(
+          responseCode = "201",
+          description = "생성 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "status": "ONGOING", "myMemberStatus": "SCHEDULE_PENDING"}}
+                      """))),
+      @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
@@ -116,6 +125,15 @@ public class TripController {
           """)
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"trips": [{"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}]}}
+                      """))),
+      @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
@@ -154,6 +172,15 @@ public class TripController {
           주요 에러: TRIP_ACCESS_DENIED · SCHEDULE_CONFIRM_REQUIRED · SCHEDULE_ENTRY_REQUIRED
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      """))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
@@ -201,6 +228,15 @@ public class TripController {
           주요 에러: TRIP_FORBIDDEN — 방장 아님 · TRIP_NOT_ONGOING — 조율 중이 아님
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "수정 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
@@ -266,6 +302,7 @@ public class TripController {
           주요 에러: TRIP_FORBIDDEN — 방장 아님
           """)
   @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "삭제 성공(No Content)"),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
@@ -315,6 +352,15 @@ public class TripController {
           주요 에러: INVITE_CODE_NOT_FOUND · TRIP_MEMBER_FULL · PROFILE_NAME_REQUIRED · SCHEDULE_ENTRY_REQUIRED · TRIP_ALREADY_CONFIRMED · TRIP_EXPIRED · SCHEDULE_CONFIRM_REQUIRED(방장이 join으로 우회 시도)
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "참여 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "MEMBER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
@@ -381,6 +427,15 @@ public class TripController {
           """)
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "확인 완료 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 1, "joinedMemberCount": 1, "memberFillRate": 0.17}}
+                      """))),
+      @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
@@ -418,6 +473,15 @@ public class TripController {
           결과: 본인 isPinned·pinnedAt이 반영된 TripDetail.
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "Pin 변경 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "joinedMemberCount": 4, "memberFillRate": 0.67}}
+                      """))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",

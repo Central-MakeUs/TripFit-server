@@ -54,6 +54,15 @@ public class UserController {
           """)
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "저장 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}
+                      """))),
+      @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
@@ -91,6 +100,15 @@ public class UserController {
           결과: UserSummary. hasPreSchedule은 login/me와 동일하게 조회 시 파생.
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "수정 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
@@ -131,6 +149,7 @@ public class UserController {
           주의: 소유한 방이 있으면 그 방은 다른 참여자에게도 더 이상 보이지 않는다. 액세스 토큰은 자연 만료 전까지 유효할 수 있다.
           """)
   @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "탈퇴 성공(No Content)"),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",

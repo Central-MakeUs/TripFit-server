@@ -51,6 +51,15 @@ public class TripMemberController {
           """)
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"memberCount": 6, "joinedMemberCount": 4, "activeMemberCount": 3, "memberFillRate": 0.67, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
+                      """))),
+      @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
@@ -97,6 +106,15 @@ public class TripMemberController {
           주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"startDate": "2026-08-01", "endDate": "2026-08-31", "readOnly": false, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "days": [{"date": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}]}}
+                      """))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
@@ -147,6 +165,15 @@ public class TripMemberController {
           주요 에러: TRIP_FORBIDDEN · TRIP_NOT_ONGOING · CANNOT_REMOVE_OWNER · TRIP_MEMBER_NOT_FOUND
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "내보내기 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"memberCount": 6, "joinedMemberCount": 3, "activeMemberCount": 2, "memberFillRate": 0.5, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "CANNOT_REMOVE_OWNER — 방장은 내보낼 수 없음",
@@ -213,6 +240,7 @@ public class TripMemberController {
           주요 에러: TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감 · TRIP_OWNER_CANNOT_LEAVE — 방장
           """)
   @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "나가기 성공(No Content)"),
       @ApiResponse(
           responseCode = "400",
           description = "TRIP_OWNER_CANNOT_LEAVE — 방장은 나갈 수 없음(방 삭제 사용)",

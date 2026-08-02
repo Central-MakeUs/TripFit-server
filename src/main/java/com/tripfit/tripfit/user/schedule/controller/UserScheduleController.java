@@ -55,6 +55,15 @@ public class UserScheduleController {
           """)
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}]}}
+                      """))),
+      @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
@@ -83,6 +92,15 @@ public class UserScheduleController {
           주의: 첫 정기 일정 생성 시 hasPreSchedule이 true가 된다(GET /auth/me 등으로 재조회).
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "201",
+          description = "생성 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
@@ -123,6 +141,15 @@ public class UserScheduleController {
           주요 에러: REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "수정 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
@@ -174,6 +201,7 @@ public class UserScheduleController {
           주요 에러: REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님
           """)
   @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "삭제 성공(No Content)"),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
@@ -212,6 +240,15 @@ public class UserScheduleController {
           """)
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
+                      """))),
+      @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
@@ -247,6 +284,15 @@ public class UserScheduleController {
           주요 에러: INVALID_INPUT — items·deletedDates 교집합 날짜 또는 둘 다 비어 있음
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "저장 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "INVALID_INPUT — 요청 값 검증 실패 또는 items·deletedDates 교집합 날짜·둘 다 비어 있음",
@@ -287,6 +333,15 @@ public class UserScheduleController {
           주요 에러: INVALID_INPUT — 조회 구간이 허용 윈도우 밖
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"startDate": "2026-08-01", "endDate": "2026-08-07", "days": [{"date": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "INVALID_INPUT — 조회 구간이 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖",

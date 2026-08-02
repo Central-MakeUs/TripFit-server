@@ -54,6 +54,15 @@ public class AuthController {
       security = {})
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "로그인 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"accessToken": "eyJhbG...", "refreshToken": "550e8400-e29b-41d4-a716-446655440000", "expiresIn": 7200, "user": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}}
+                      """))),
+      @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
@@ -104,6 +113,14 @@ public class AuthController {
       security = {})
   @ApiResponses({
       @ApiResponse(
+          responseCode = "200",
+          description = "재발급 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(value = """
+                  {"data": {"accessToken": "eyJhbG...", "expiresIn": 7200}}
+                  """))),
+      @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
@@ -141,6 +158,7 @@ public class AuthController {
           """,
       security = {})
   @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "로그아웃 성공(No Content)"),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
@@ -168,6 +186,15 @@ public class AuthController {
           결과: UserSummary. hasPreSchedule은 일정 row 존재 여부(파생), isAllFree는 DB 컬럼.
           """)
   @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          content = @Content(
+              schema = @Schema(implementation = SuccessResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}
+                      """))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
