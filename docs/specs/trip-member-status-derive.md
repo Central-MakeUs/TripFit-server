@@ -40,6 +40,8 @@
 - (당시) `TripMemberStatus` enum 자체(값, `@Schema` 설명) 변경.
 
 > **후속 amend (2026-07-27):** 위 두 줄은 **이 스펙 구현 시점** 기준이며, 이후 별도 후속 작업에서 `JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE`로 enum 값 자체를 개명하고 DTO 필드명(`TripMembersResponse.status`→`memberStatus`)을 통일했다 (신규 이름 부여 이유: 의미 전달력 — 아래 변경 이력 참고). 최신 계약은 `TripMemberStatus.java`·`/v3/api-docs`가 SSOT.
+>
+> **후속 amend (2026-08-01):** 위 enum 개명이 놓쳤던 파생 컬럼·API 필드까지 마저 정리 — `responded_at`→`activated_at`, `markResponded()`→`activate()`, `countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull`→`countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull`, API 필드 `respondedCount`→`activeMemberCount`(`TripHomeCardResponse`/`TripMembersResponse`/`TripDetailResponse` 전부). 이 문서 본문·아래 예시의 `respondedAt`/`respondedCount`/`markResponded()` 표기는 **당시 이름**으로 그대로 남긴다 — 최신 이름은 `TripMember.java`·`/v3/api-docs`가 SSOT.
 
 ## API / 인터페이스
 
@@ -104,3 +106,4 @@ trip_member
 | 2026-07-27 | 초안 |
 | 2026-07-27 | 구현 완료 — `TripMember.status` 컬럼 제거, `getStatus()` 파생 메서드·`countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull` 적용. `./gradlew test`·`build` 통과 |
 | 2026-07-27 | **후속 amend** — enum 값 `JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE` 개명(이름만으로 "일정 확인 대기중/방 활동 가능"이 드러나도록). DTO 필드명 `TripMembersResponse.status`→`memberStatus`로 통일(`myMemberStatus`/`memberStatus` 두 갈래로 정리, `MemberCalendar.memberStatus`는 기존 유지). 계기: `TripMemberStatus.java`가 별도 문서 없이도 신규 개발자·프론트가 이름만으로 의미를 알 수 있어야 한다는 피드백(`.claude/rules/spring-boot-java.md` Comments/OpenAPI 절 강화와 동반) |
+| 2026-08-01 | **후속 amend** — 위 enum 개명에서 놓쳤던 파생 컬럼·메서드·API 필드 정리: `responded_at`→`activated_at`, `markResponded()`→`activate()`, `requireResponded()`→`requireActive()`, API 필드 `respondedCount`→`activeMemberCount`. `docs/architecture/erd.md`·`trip-room-api.md`·`schedule-participation-onboarding.md`·`trip-create-join-guide.md` 동기화 |

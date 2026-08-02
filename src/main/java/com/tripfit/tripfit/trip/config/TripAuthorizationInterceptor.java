@@ -78,7 +78,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     TripMember membership = support.requireActiveMember(tripId, userId);
 
     // 이 방 일정 확인 미완료(SCHEDULE_PENDING) — 전역 입장 조건과 별개로 차단
-    support.requireResponded(membership);
+    support.requireActive(membership);
 
     // 전역 입장 조건: 일정≥1 또는 전부 free
     userSummaryService.requireCanEnterRoom(userId);

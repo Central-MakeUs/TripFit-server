@@ -22,7 +22,7 @@ erDiagram
     users ||--o{ personal_schedule : owns
     users ||--o| google_calendar_credential : has
     users ||--o{ google_calendar_busy_day : caches
-    users ||--o{ trip_member : participates
+    users ||--o{ trip_member : participate
     users ||--o{ trip : owns
     trip ||--o{ trip_member : has
     trip ||--o{ recommendation : generates
@@ -139,7 +139,7 @@ erDiagram
         boolean is_pinned
         datetime pinned_at
         datetime joined_at
-        datetime responded_at "null=SCHEDULE_PENDING, set=ACTIVE (파생 SSOT, status 컬럼 없음)"
+        datetime activated_at "null=SCHEDULE_PENDING, set=ACTIVE (파생 SSOT, status 컬럼 없음)"
         datetime deleted_at
         datetime created_at
         datetime updated_at
@@ -340,7 +340,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |
-| responded_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **SCHEDULE_PENDING면 null**, confirm/join(ACTIVE) 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 전용(create 직후·confirm 전, 입장·공유 불가), `ACTIVE`=방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 SCHEDULE_PENDING 없음 |
+| activated_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **SCHEDULE_PENDING면 null**, confirm/join(ACTIVE) 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 전용(create 직후·confirm 전, 입장·공유 불가), `ACTIVE`=방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 SCHEDULE_PENDING 없음 |
 | deleted_at | timestamptz | Y | | **trip soft delete 시 연쇄 soft** |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
@@ -349,7 +349,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 동명이인 `(2)` 표시: **DB 컬럼 없음** — BR-USER-009 조회 로직
 
-**카운트:** `joinedMemberCount` = soft-delete 제외 전 멤버(SCHEDULE_PENDING 포함). `respondedCount` = `ACTIVE`만.
+**카운트:** `joinedMemberCount` = soft-delete 제외 전 멤버(SCHEDULE_PENDING 포함). `activeMemberCount` = `ACTIVE`만.
 
 ### `trip_member_schedule_snapshot` (#38)
 
@@ -454,3 +454,4 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 6. **2026-07-21:** ERD 개선 반영 — `users` rename · `responded_at` · active UNIQUE(app) · `score`=#13 유지
 7. 알림 이력 테이블 — ERD 범위 외 (wave 3)
 8. **2026-07-26:** `trip.duration_nights` 파생값 → 컬럼 영속화, 박/일 검증 범위 `nights+1~min(nights+2,T)`로 확장 ([`trip-duration-range.md`](../specs/trip-duration-range.md))
+9. **2026-08-01:** `TripMemberStatus` 개명(`JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE`, [`trip-member-status-derive.md`](../specs/trip-member-status-derive.md))에서 빠졌던 후속 정리 — `trip_member.responded_at`→`activated_at`, `markResponded()`→`activate()`, API 필드 `respondedCount`→`activeMemberCount`로 일괄 개명(이름을 상태 enum과 일치시켜 혼동 제거, 네이밍 우선 원칙)

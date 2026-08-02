@@ -126,7 +126,7 @@ class TripCommandService {
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
       // 일정이 0건이면 전부 free로 표시한 뒤 ACTIVE로 전환
       userSummaryService.markAllFreeIfNoSchedules(user);
-      membership.markResponded();
+      membership.activate();
     }
 
     // 입장 조건(일정≥1 또는 전부 free) 검사 — 이미 ACTIVE였어도 재확인
@@ -201,7 +201,7 @@ class TripCommandService {
     if (existing.isPresent()) {
       TripMember membership = existing.get();
       // SCHEDULE_PENDING면 join으로 상세를 우회하지 못함 — schedule/confirm 필요
-      support.requireResponded(membership);
+      support.requireActive(membership);
       return tripQueryService.toDetail(trip, membership);
     }
 

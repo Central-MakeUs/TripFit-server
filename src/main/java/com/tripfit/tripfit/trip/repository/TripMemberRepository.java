@@ -33,8 +33,8 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
   long countByTripIdAndDeletedAtIsNull(UUID tripId);
 
-  // respondedCount 집계 — status 파생 SSOT(respondedAt not null)와 동일 기준
-  long countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(UUID tripId);
+  // activeMemberCount 집계 — status 파생 SSOT(activatedAt not null)와 동일 기준
+  long countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(UUID tripId);
 
   // 진행 중 캐러셀: endRange≥today · Pin 우선 → pinnedAt → lastActivityAt
   @Query("""
@@ -97,7 +97,7 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       value = """
           SELECT tm.trip_id AS tripId,
                  COUNT(*) AS joinedMemberCount,
-                 SUM(CASE WHEN tm.responded_at IS NOT NULL THEN 1 ELSE 0 END) AS respondedCount
+                 SUM(CASE WHEN tm.activated_at IS NOT NULL THEN 1 ELSE 0 END) AS activeCount
           FROM trip_member tm
           WHERE tm.trip_id IN (:tripIds) AND tm.deleted_at IS NULL
           GROUP BY tm.trip_id

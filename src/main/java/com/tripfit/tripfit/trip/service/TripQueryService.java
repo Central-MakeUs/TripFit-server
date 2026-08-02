@@ -62,12 +62,12 @@ class TripQueryService {
                   TripMemberCountProjection counts = countsByTripId.get(tripId);
                   int joinedMemberCount =
                       counts == null ? 0 : (int) counts.getJoinedMemberCount();
-                  int respondedCount = counts == null ? 0 : (int) counts.getRespondedCount();
+                  int activeMemberCount = counts == null ? 0 : (int) counts.getActiveCount();
                   return support.toHomeCard(
                       m.getTrip(),
                       m,
                       joinedMemberCount,
-                      respondedCount,
+                      activeMemberCount,
                       previewsByTripId.getOrDefault(tripId, List.of()));
                 })
             .toList();

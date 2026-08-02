@@ -25,7 +25,7 @@
 3. **중간 `SCHEDULE_PENDING` 없음** — "일정 넣고 join = ACTIVE 한 방"
 4. 정원 full → 409 · 이미 ACTIVE → idempotent. 방장(SCHEDULE_PENDING)이 join으로 우회 → `SCHEDULE_CONFIRM_REQUIRED` → `schedule/confirm` 사용
 
-모집 현황: `memberFillRate = joinedMemberCount / memberCount` · `respondedCount`는 ACTIVE만. 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
+모집 현황: `memberFillRate = joinedMemberCount / memberCount` · `activeMemberCount`는 ACTIVE만. 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
 
 ---
 
@@ -144,9 +144,9 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | `memberCount` | 방장이 정한 정원 |
 | `joinedMemberCount` | 멤버 수 (**SCHEDULE_PENDING 방장 포함** — 기본값) |
 | `memberFillRate` | `joinedMemberCount / memberCount` |
-| `respondedCount` | **`ACTIVE`만** 집계 (확인 완료 인원) |
+| `activeMemberCount` | **`ACTIVE`만** 집계 (확인 완료 인원) |
 
-→ 방장만 SCHEDULE_PENDING인 직후: `joined=1`, `responded=0` 가능.
+→ 방장만 SCHEDULE_PENDING인 직후: `joined=1`, `active=0` 가능.
 
 ---
 

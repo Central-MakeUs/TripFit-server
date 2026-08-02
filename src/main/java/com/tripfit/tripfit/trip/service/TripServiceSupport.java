@@ -36,7 +36,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
-// Trip command/query가 공유하는 매핑·검증·초대코드·권한 가드 (requireResponded는 트래픽 게이트로 config 패키지 공유)
+// Trip command/query가 공유하는 매핑·검증·초대코드·권한 가드 (requireActive는 트래픽 게이트로 config 패키지 공유)
 @Component
 public class TripServiceSupport {
 
@@ -70,7 +70,7 @@ public class TripServiceSupport {
       Trip trip,
       TripMember membership,
       int joinedMemberCount,
-      int respondedCount,
+      int activeMemberCount,
       List<MemberPreviewResponse> previews) {
     int overflow = Math.max(0, joinedMemberCount - MEMBERS_PREVIEW_LIMIT);
     return new TripHomeCardResponse(
@@ -87,7 +87,7 @@ public class TripServiceSupport {
         membership.isPinned(),
         membership.getRole(),
         membership.getStatus(),
-        respondedCount,
+        activeMemberCount,
         joinedMemberCount,
         memberFillRate(joinedMemberCount, trip.getMemberCount()),
         previews,
@@ -99,8 +99,8 @@ public class TripServiceSupport {
     UUID tripId = trip.getId();
     long joinedMemberCount =
         tripMemberRepository.countByTripIdAndDeletedAtIsNull(tripId);
-    int respondedCount =
-        (int) tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+    int activeMemberCount =
+        (int) tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             tripId);
     int joined = (int) joinedMemberCount;
 
@@ -122,7 +122,7 @@ public class TripServiceSupport {
         membership.isPinned(),
         membership.getRole(),
         membership.getStatus(),
-        respondedCount,
+        activeMemberCount,
         joined,
         memberFillRate(joined, trip.getMemberCount()));
   }
@@ -204,7 +204,7 @@ public class TripServiceSupport {
 
   // 이 방 일정 확인 완료 여부 — SCHEDULE_PENDING(미확인)면 SCHEDULE_CONFIRM_REQUIRED.
   // TripAuthorizationInterceptor·TripCommandService.joinTrip 공용
-  public void requireResponded(TripMember membership) {
+  public void requireActive(TripMember membership) {
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
       throw new TripFitException(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
     }

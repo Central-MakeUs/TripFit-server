@@ -205,7 +205,7 @@ class TripServiceTest {
     verify(tripMemberRepository).save(memberCaptor.capture());
     assertThat(memberCaptor.getValue().getRole()).isEqualTo(TripMemberRole.OWNER);
     assertThat(memberCaptor.getValue().getStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
-    assertThat(memberCaptor.getValue().getRespondedAt()).isNull();
+    assertThat(memberCaptor.getValue().getActivatedAt()).isNull();
     assertThat(response.myMemberStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
 
     ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
@@ -242,7 +242,7 @@ class TripServiceTest {
   }
 
   @Test
-  void confirmSchedule_joinedToResponded_andMarksAllFree() {
+  void confirmSchedule_pendingToActive_andMarksAllFree() {
     owner.setAllFree(false);
     TripMember joined =
         new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.SCHEDULE_PENDING,
@@ -254,27 +254,27 @@ class TripServiceTest {
     when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             TRIP_ID))
         .thenReturn(1L);
 
     var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
 
     assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.ACTIVE);
-    assertThat(joined.getRespondedAt()).isNotNull();
+    assertThat(joined.getActivatedAt()).isNotNull();
     assertThat(owner.isAllFree()).isTrue();
     assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
   }
 
   @Test
-  void confirmSchedule_alreadyResponded_idempotent() {
-    TripMember responded = tripMember(owner, TripMemberRole.OWNER);
+  void confirmSchedule_alreadyActive_idempotent() {
+    TripMember active = tripMember(owner, TripMemberRole.OWNER);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
-        .thenReturn(Optional.of(responded));
+        .thenReturn(Optional.of(active));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             TRIP_ID))
         .thenReturn(1L);
 
@@ -357,7 +357,7 @@ class TripServiceTest {
         .thenReturn(Optional.empty());
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             TRIP_ID))
         .thenReturn(0L);
 
@@ -393,7 +393,7 @@ class TripServiceTest {
         .thenReturn(Optional.empty());
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             TRIP_ID))
         .thenReturn(0L);
     when(regularScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
@@ -415,7 +415,7 @@ class TripServiceTest {
         .thenReturn(Optional.of(existing));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(2L);
     when(
-        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             TRIP_ID))
         .thenReturn(1L);
 
@@ -493,7 +493,7 @@ class TripServiceTest {
         .thenReturn(Optional.of(ownerMember));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             TRIP_ID))
         .thenReturn(0L);
 
@@ -595,7 +595,7 @@ class TripServiceTest {
         .thenReturn(Optional.of(membership));
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
     when(
-        tripMemberRepository.countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull(
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(
             TRIP_ID))
         .thenReturn(0L);
 
@@ -648,7 +648,7 @@ class TripServiceTest {
     assertThat(response.trips().get(0).myRole()).isEqualTo(TripMemberRole.OWNER);
   }
 
-  private static TripMemberCountProjection countProjection(int joinedMemberCount, int responded) {
+  private static TripMemberCountProjection countProjection(int joinedMemberCount, int active) {
     return new TripMemberCountProjection() {
       @Override
       public UUID getTripId() {
@@ -661,8 +661,8 @@ class TripServiceTest {
       }
 
       @Override
-      public long getRespondedCount() {
-        return responded;
+      public long getActiveCount() {
+        return active;
       }
     };
   }

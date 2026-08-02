@@ -67,7 +67,7 @@ class TripMemberQueryService {
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
     int joinedMemberCount = members.size();
-    int respondedCount =
+    int activeMemberCount =
         (int) members.stream()
             .filter(m -> m.getStatus() == TripMemberStatus.ACTIVE)
             .count();
@@ -86,7 +86,7 @@ class TripMemberQueryService {
     }
 
     return new TripMembersResponse(
-        memberCount, joinedMemberCount, respondedCount, memberFillRate, items);
+        memberCount, joinedMemberCount, activeMemberCount, memberFillRate, items);
   }
 
   // 희망 기간 멤버 전원 일정 달력 — 조율 중은 실시간, 확정·종료는 스냅샷(읽기 전용)

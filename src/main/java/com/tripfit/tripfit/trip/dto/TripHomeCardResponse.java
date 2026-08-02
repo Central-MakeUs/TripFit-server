@@ -53,7 +53,7 @@ public record TripHomeCardResponse(
             "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 confirm 후·멤버 join 시(입장 가능)")
     TripMemberStatus myMemberStatus,
 
-    @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int respondedCount,
+    @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int activeMemberCount,
 
     @Schema(description = "현재 참여 멤버 수 (trip_member row 수)") int joinedMemberCount,
 
@@ -61,7 +61,7 @@ public record TripHomeCardResponse(
         description =
             """
             모집 충원율 joinedMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
-            respondedCount와 무관 — 참여 인원 기준.
+            activeMemberCount와 무관 — 참여 인원 기준.
             join·remove·정원 변경 시 갱신 — GET /trips 재호출.
             """,
         example = "0.67")

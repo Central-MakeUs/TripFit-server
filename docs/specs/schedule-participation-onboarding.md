@@ -194,7 +194,7 @@ canEnterRoom(user) =
 | `memberCount` | 정원 |
 | `joinedMemberCount` | `trip_member` 수 |
 | `memberFillRate` | `joinedMemberCount / memberCount` |
-| `respondedCount` | `ACTIVE` 수 (= 전원 ACTIVE면 joined와 동일) |
+| `activeMemberCount` | `ACTIVE` 수 (= 전원 ACTIVE면 joined와 동일) |
 
 ### D-SPARSE vs `is_all_free` (확정 — A안)
 

@@ -260,7 +260,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "pinned": false,
   "myRole": "OWNER",
   "myMemberStatus": "ACTIVE",
-  "respondedCount": 2,
+  "activeMemberCount": 2,
   "joinedMemberCount": 4,
   "memberFillRate": 0.67,
   "membersPreview": [
@@ -301,7 +301,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "pinned": false,
   "myRole": "OWNER",
   "myMemberStatus": "ACTIVE",
-  "respondedCount": 2,
+  "activeMemberCount": 2,
   "joinedMemberCount": 4,
   "memberFillRate": 0.67
 }

@@ -67,8 +67,8 @@ public class TripMember extends SoftDeleteEntity {
           + " 일정 응답 진행 상태(SCHEDULE_PENDING|ACTIVE)의 SSOT이며 별도 status 컬럼은 없음",
       nullable = true,
       example = "2026-07-07T12:05:00")
-  @Column(name = "responded_at")
-  private LocalDateTime respondedAt;
+  @Column(name = "activated_at")
+  private LocalDateTime activatedAt;
 
   @Schema(description = "홈 화면 고정 여부 (참여자별 · 진행 중 캐러셀)", example = "false")
   @Column(name = "is_pinned", nullable = false)
@@ -85,16 +85,16 @@ public class TripMember extends SoftDeleteEntity {
     this.user = user;
     this.role = role;
     this.joinedAt = joinedAt;
-    // join 경로: INSERT 즉시 ACTIVE → responded_at = joined_at
+    // join 경로: INSERT 즉시 ACTIVE → activated_at = joined_at
     if (status == TripMemberStatus.ACTIVE) {
-      this.respondedAt = joinedAt;
+      this.activatedAt = joinedAt;
     }
   }
 
-  // 일정 응답 진행 상태 — respondedAt null 여부로 파생 계산(저장 컬럼 없음)
+  // 일정 응답 진행 상태 — activatedAt null 여부로 파생 계산(저장 컬럼 없음)
   @Schema(description = "일정 응답 진행 상태")
   public TripMemberStatus getStatus() {
-    return respondedAt == null ? TripMemberStatus.SCHEDULE_PENDING : TripMemberStatus.ACTIVE;
+    return activatedAt == null ? TripMemberStatus.SCHEDULE_PENDING : TripMemberStatus.ACTIVE;
   }
 
   // Pin on/off — on이면 pinnedAt=now, off이면 null
@@ -103,9 +103,9 @@ public class TripMember extends SoftDeleteEntity {
     this.pinnedAt = pinned ? LocalDateTime.now() : null;
   }
 
-  // 일정 확인 완료 — respondedAt 세팅만으로 SCHEDULE_PENDING→ACTIVE 파생 전환
-  public void markResponded() {
-    this.respondedAt = LocalDateTime.now();
+  // 일정 확인 완료 — activatedAt 세팅만으로 SCHEDULE_PENDING→ACTIVE 파생 전환
+  public void activate() {
+    this.activatedAt = LocalDateTime.now();
   }
 
   // end_range 경과 시 Pin 자동 해제
