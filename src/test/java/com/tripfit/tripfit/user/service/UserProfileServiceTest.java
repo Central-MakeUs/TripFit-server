@@ -9,7 +9,7 @@ import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
+import com.tripfit.tripfit.user.dto.OnboardingNameRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
@@ -40,7 +40,7 @@ class UserProfileServiceTest {
   }
 
   @Test
-  void updateProfile_savesFirstAndLastName() {
+  void registerOnboardingName_savesFirstAndLastName() {
     when(userLookupService.requireUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
         .thenReturn(user);
     when(userSummaryService.toSummary(user))
@@ -57,9 +57,9 @@ class UserProfileServiceTest {
                 false,
                 false));
     UserSummaryResponse response =
-        userProfileService.updateProfile(
+        userProfileService.registerOnboardingName(
             UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-            new UpdateProfileRequest("길동", "홍"));
+            new OnboardingNameRequest("길동", "홍"));
 
     assertThat(user.getFirstName()).isEqualTo("길동");
     assertThat(user.getLastName()).isEqualTo("홍");
@@ -68,7 +68,7 @@ class UserProfileServiceTest {
   }
 
   @Test
-  void updateMyPage_savesFirstAndLastName() {
+  void updateProfile_savesFirstAndLastName() {
     user.setFirstName("길동");
     user.setLastName("홍");
     when(userLookupService.requireUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
@@ -87,9 +87,9 @@ class UserProfileServiceTest {
                 false,
                 false));
     UserSummaryResponse response =
-        userProfileService.updateMyPage(
+        userProfileService.updateProfile(
             UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-            new UpdateMyPageRequest("철수", "김"));
+            new UpdateProfileRequest("철수", "김"));
 
     assertThat(user.getFirstName()).isEqualTo("철수");
     assertThat(user.getLastName()).isEqualTo("김");
@@ -114,13 +114,15 @@ class UserProfileServiceTest {
   }
 
   @Test
-  void updateProfile_whenUserMissing_throwsForbidden() {
+  void registerOnboardingName_whenUserMissing_throwsForbidden() {
     UUID missingId = UUID.fromString("550e8400-e29b-41d4-a716-446655440099");
     when(userLookupService.requireUser(missingId))
         .thenThrow(new TripFitException(AuthErrorCode.AUTH_FORBIDDEN));
 
     assertThatThrownBy(
-        () -> userProfileService.updateProfile(missingId, new UpdateProfileRequest("길동", "홍")))
+        () -> userProfileService.registerOnboardingName(
+            missingId,
+            new OnboardingNameRequest("길동", "홍")))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_FORBIDDEN);

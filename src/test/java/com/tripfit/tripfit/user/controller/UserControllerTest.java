@@ -57,10 +57,12 @@ class UserControllerTest {
   }
 
   @Test
-  void patchProfile_returnsUpdatedUser() throws Exception {
+  void registerOnboardingName_returnsUpdatedUser() throws Exception {
     when(
         userProfileService
-            .updateProfile(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
+            .registerOnboardingName(
+                eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")),
+                any()))
         .thenReturn(
             new UserSummaryResponse(
                 UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
@@ -76,7 +78,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/profile")
+            patch("/api/v1/users/onboarding/name")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -88,10 +90,10 @@ class UserControllerTest {
   }
 
   @Test
-  void patchProfile_blankFirstName_returns400() throws Exception {
+  void registerOnboardingName_blankFirstName_returns400() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/profile")
+            patch("/api/v1/users/onboarding/name")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -102,10 +104,10 @@ class UserControllerTest {
   }
 
   @Test
-  void patchMyPage_returnsUpdatedUser() throws Exception {
+  void updateProfile_returnsUpdatedUser() throws Exception {
     when(
         userProfileService
-            .updateMyPage(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
+            .updateProfile(eq(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")), any()))
         .thenReturn(
             new UserSummaryResponse(
                 UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
@@ -121,7 +123,7 @@ class UserControllerTest {
 
     mockMvc
         .perform(
-            patch("/api/v1/users/my-page")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -133,10 +135,10 @@ class UserControllerTest {
   }
 
   @Test
-  void patchMyPage_blankLastName_returns400() throws Exception {
+  void updateProfile_blankLastName_returns400() throws Exception {
     mockMvc
         .perform(
-            patch("/api/v1/users/my-page")
+            patch("/api/v1/users/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
