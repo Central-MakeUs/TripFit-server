@@ -74,7 +74,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 | Provider | **Kakao / Google / Apple 동일** — 필수 이름·게이트 동일 |
 | 클라이언트 | Routing Guard (`replace` / stack reset), 건너뛰기·뒤로가기 없음, `BackHandler` 차단 |
 | 서버 | `requireProfileNameComplete()` — trip 생성·join 등 핵심 API **403** `PROFILE_NAME_REQUIRED` |
-| 서버 예외 | login, refresh, `GET /auth/me`, `PATCH /users/profile` — **차단 금지** |
+| 서버 예외 | login, refresh, `GET /auth/me`, `PATCH /users/onboarding/name` — **차단 금지** |
 | 클라이언트 | 전역 403 → `/onboarding/name` |
 
 ### 확정 UX — 재진입 (Amend 2026-07-20, D-REENTRY-2)
@@ -110,7 +110,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 | 포함 | 제외 (별도 스펙·이후) |
 |------|----------------------|
 | login 응답 필드 확장 | Google Calendar OAuth 연동 API 본체 |
-| `PATCH /users/profile` (first/last) | `user_condition` CRUD 전체 |
+| `PATCH /users/onboarding/name` (first/last) | `user_condition` CRUD 전체 |
 | `PATCH /users/onboarding` (boolean 갱신) | 네이버 캘린더 |
 
 ## 고려한 대안
@@ -132,6 +132,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | API 경로 리네이밍 — `PATCH /users/profile`(온보딩) → `PATCH /users/onboarding/name`. 마이페이지 수정 API가 `/users/profile`을 대신 사용(`user-my-page.md`) — 상세: [`user-onboarding.md`](../specs/user-onboarding.md) 변경 이력 |
 | 2026-07-20 | **Amend D-REENTRY-2** — 재진입 SSOT = 이름 완료 → 메인; `isOptionalOnboardingCompleted` 역할 축소. **D-NAME-1** — Kakao=Google=Apple 이름 게이트·클라/서버 guard |
 | 2026-07-08 | 초안 — boolean 3개 + 이름, 네이버 제외, JWT login 직후 |
 | 2026-07-17 | BR-USER-006 게이트·personal/calendar → **#22 `[미정]`** · OpenAPI Hidden |
@@ -145,7 +146,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 
 | ID | 요약 |
 |----|------|
-| **D-NAME-1** | 소셜 login JWT 후 이름 필수 (Kakao=Google=Apple). 핵심 API 403 `PROFILE_NAME_REQUIRED`. login/refresh/me/profile PATCH 차단 금지. 클라 Routing Guard + 전역 403 → `/onboarding/name` |
+| **D-NAME-1** | 소셜 login JWT 후 이름 필수 (Kakao=Google=Apple). 핵심 API 403 `PROFILE_NAME_REQUIRED`. login/refresh/me/온보딩 이름 PATCH 차단 금지. 클라 Routing Guard + 전역 403 → `/onboarding/name` |
 | **D-REENTRY-2** | **이전:** `isOptionalOnboardingCompleted=false` → 재진입 시 선택 온보딩 재노출. **변경:** 이름 완료 → 재진입 시 **메인 직행**. 선택 온보딩 = 첫 세션 soft prompt만 |
 
 trip join 게이트(D-JOIN-ENTRY · CLEAR · TRIP-FLOW)는 본 decisions가 아닌 [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md) SSOT.

@@ -382,7 +382,7 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 
 ### DTO record 가독성
 
-- API DTO record 컴포넌트(필드)는 **필드마다 빈 줄로 구분**, `@Schema` / validation / 타입을 **각각 별도 줄** (`UpdateMyPageRequest` 스타일)
+- API DTO record 컴포넌트(필드)는 **필드마다 빈 줄로 구분**, `@Schema` / validation / 타입을 **각각 별도 줄** (`UpdateProfileRequest` 스타일)
 - Eclipse Spotless는 record 컴포넌트를 **method parameter**와 동일 규칙으로 포맷한다 → 컨트롤러 한 줄 파라미터 설정과 충돌
 - 따라서 다필드 DTO record는 `// @formatter:off` … `// @formatter:on`으로 가독성 레이아웃을 고정한다
 

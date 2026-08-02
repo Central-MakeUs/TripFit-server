@@ -8,7 +8,7 @@
 > deferred: BR-NOTI-008(카카오 공유) → `#19`(Approved)
 > GitHub: **#21**
 > 선행: `#12`(여행방 CRUD, Implemented) · `#13`(추천·확정·취소, **Draft** — BR-NOTI-004는 `confirmSchedule` 기존 구현에 훅 가능, **BR-NOTI-009는 `#13`의 취소 API 구현 후에만 실제 발송 가능**) · 참여 완료 정의(`#22`/`#39`, 확정됨)
-> amend 대상(다른 스펙): [`user-my-page.md`](user-my-page.md) — `PATCH /users/my-page`에 `notificationEnabled` 추가 + partial update 전환 (D8, 별도 승인·changelog 완료)
+> amend 대상(다른 스펙): [`user-my-page.md`](user-my-page.md) — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환 (D8, 별도 승인·changelog 완료)
 
 ## 목표
 
@@ -31,7 +31,7 @@
 | **D5** | 알림 이력 테이블 범위 | **알림센터 조회 API까지 포함** |
 | **D6** | NOTI-005 발송 방식 — 토픽 vs DB조회 배치 | **DB 조회(`notification_enabled=true`) + 배치(500개) 멀티캐스트.** 토픽 방식은 클라이언트가 구독을 관리해야 해 서버가 게이트를 강제할 수 없어 기각 |
 | **D7** | 동일 기기 재로그인 시 FCM 토큰 재등록 처리 | **`user_id` 재할당.** 토큰이 이미 있으면 소유자를 새 유저로 갱신 — 이전 계정에 오발송 방지 |
-| **D8** | 알림 설정 API 위치 | **기존 `PATCH /users/my-page`에 `notificationEnabled` 필드 추가.** `/users/me/...` 새 경로 대신 기존 컨벤션 재사용 — 단, 한 필드만 보내는 호출을 지원해야 하므로 **`user-my-page.md`의 firstName/lastName도 optional로 전환**(partial update). 상세: [`user-my-page.md`](user-my-page.md) 변경 이력 |
+| **D8** | 알림 설정 API 위치 | **기존 `PATCH /users/profile`(마이페이지)에 `notificationEnabled` 필드 추가.** `/users/me/...` 새 경로 대신 기존 컨벤션 재사용 — 단, 한 필드만 보내는 호출을 지원해야 하므로 **`user-my-page.md`의 firstName/lastName도 optional로 전환**(partial update). 상세: [`user-my-page.md`](user-my-page.md) 변경 이력 |
 | **D9** | 알림센터 목록 범위 | **최근 7일 윈도우** — 와이어프레임이 "오늘/어제/최근 7일" 3그룹으로 구성돼 있어, API도 `sent_at >= now-7d`만 반환(페이지네이션 불필요). DB 이력 자체는 그대로 보존 |
 | **D10** | NOTI-001/002(수신자=방장)에도 게이트 적용 여부 | **적용.** 예외 없이 전체 이벤트가 `notification_enabled`를 따름 |
 | **D11** | NOTI-002 "마지막 참여자" 판정 기준 | **여행방 정원(BR-TRIP-001, 1~10) 도달 순간.** 멤버는 join 즉시 ACTIVE라 "제출 대기" 상태가 따로 없어, 정원 도달만이 유의미한 판정 시점 |
@@ -50,7 +50,7 @@
 - [ ] `DELETE /api/v1/notifications/device-tokens` — 로그아웃 시 토큰 해제(JWT)
 - [ ] `GET /api/v1/notifications` — 알림센터 목록(JWT, 최근 7일, 최신순) (D5·D9)
 - [ ] `PATCH /api/v1/notifications/{id}/read` — 읽음 처리 (D5)
-- [ ] **`user-my-page.md` amend 반영** — `PATCH /users/my-page`에 `notificationEnabled` 추가 + partial update 전환은 **이 스펙이 아니라 `user-my-page.md`의 Must Have**로 구현 (D8, 중복 정의 금지)
+- [ ] **`user-my-page.md` amend 반영** — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환은 **이 스펙이 아니라 `user-my-page.md`의 Must Have**로 구현 (D8, 중복 정의 금지)
 - [ ] 이벤트 발행 + `@Async` `@TransactionalEventListener(phase = AFTER_COMMIT)` 리스너로 트랜잭션 커밋 후 발송
 - [ ] BR-NOTI-001 — `TripCommandService.joinTrip` 커밋 후 방장(`notification_enabled=true`)에게 발송
 - [ ] BR-NOTI-002 — 같은 join 흐름에서 **정원 도달**(D11) 판정 후 방장(게이트 적용)에게 발송
@@ -76,7 +76,7 @@
 | GET | `/api/v1/notifications` | JWT | 본인 알림 이력, 최근 7일, 최신순 |
 | PATCH | `/api/v1/notifications/{id}/read` | JWT | 알림 읽음 처리 |
 
-> 알림 on/off는 별도 엔드포인트 없음 — [`user-my-page.md`](user-my-page.md)의 `PATCH /users/my-page` 참고 (D8).
+> 알림 on/off는 별도 엔드포인트 없음 — [`user-my-page.md`](user-my-page.md)의 `PATCH /users/profile` 참고 (D8).
 
 ### 에러
 
@@ -129,7 +129,7 @@ notification_history
 | BR-NOTI-004 | 방장이 일정 확정 시 참여자(방장 제외, 게이트 적용)에게 발송 | `TripRecommendationService.confirmSchedule` → `TripConfirmedEvent` |
 | BR-NOTI-009 | 방장이 확정 취소 시 참여자(방장 제외, 게이트 적용)에게 발송 | `#13` 취소 API(미구현) → `TripConfirmCanceledEvent` |
 | BR-NOTI-005 | 매월 1·15일 09:00(KST) 게이트 통과 전체 사용자에게 발송 | `ScheduleReminderBatch`(`@Scheduled`) → DB 조회 + 배치 멀티캐스트 |
-| BR-USER-005 | 마이페이지 알림 on/off, 전 이벤트에 예외 없이 적용 | `User.notificationEnabled` · `user-my-page.md`(`UserMyPageService`) |
+| BR-USER-005 | 마이페이지 알림 on/off, 전 이벤트에 예외 없이 적용 | `User.notificationEnabled` · `user-my-page.md`(`UserProfileService`) |
 
 ## 패키지 구조 (적용 컨벤션 — `spring-boot-java.md` 그대로 적용)
 
@@ -198,6 +198,7 @@ com.tripfit.tripfit.notification
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | `user-my-page.md`의 API 경로 리네이밍(`PATCH /users/my-page` → `PATCH /users/profile`) 반영 — 알림 on/off는 여전히 별도 엔드포인트 없이 이 경로에 편입 |
 | 2026-07-23 | D6~D12 추가 확정 (사용자 감수 확인 요청 후) — NOTI-005 배치 발송, 토큰 재할당, 알림 설정 API를 `user-my-page.md`로 이관, 알림센터 7일 윈도우, 001/002 게이트 적용, 정원 기준 판정, no-op 스킵 |
 | 2026-07-23 | D1~D5 확정 (사용자 승인) — BR-NOTI-005 wave 3 편입, BR-USER-005 구현 포함, 방장 제외, FCM 단일, 알림센터 API 포함 |
 | 2026-07-23 | 초안 — 기획자 알림 명세 표 + 사용자 제공 FCM 아키텍처 요구사항 기반 |

@@ -65,7 +65,7 @@
 - 신규 테이블 없음. 기존 `users` 테이블에 `provider=KAKAO`, `socialId=dev-test-user-{testUserId}`인 row를 식별자별로 **최초 호출 시** upsert (예: `dev-test-user-chaeyeon`, `dev-test-user-soeun`, `dev-test-user-giyeon`) — 배포만으로는 row가 생기지 않고, 실제로 해당 `testUserId`로 API를 한 번 호출해야 생성됨
 - `email`=`dev-test-{testUserId}@tripfit.online`
 - `nickname`: `chaeyeon`→채연, `soeun`→소은, `giyeon`→기연 고정 매핑. 그 외 값은 `테스트유저-{testUserId}` fallback
-- `firstName`/`lastName`: `chaeyeon`→손/채연, `soeun`→김/소은, `giyeon`→방/기연으로 **계정 생성 시 프리필** — 이름 미입력 시 trip 생성·참여가 `PROFILE_NAME_REQUIRED`(403)로 막히는 걸 피하기 위함(`user-onboarding.md` BR). 그 외 임의 `testUserId`는 이름 없음(프론트가 필요 시 PATCH profile)
+- `firstName`/`lastName`: `chaeyeon`→손/채연, `soeun`→김/소은, `giyeon`→방/기연으로 **계정 생성 시 프리필** — 이름 미입력 시 trip 생성·참여가 `PROFILE_NAME_REQUIRED`(403)로 막히는 걸 피하기 위함(`user-onboarding.md` BR). 그 외 임의 `testUserId`는 이름 없음(프론트가 필요 시 PATCH onboarding/name)
 - `testUserId`는 `^[a-zA-Z0-9_-]{0,20}$`만 허용 (한글 불가 — 영문 로마자 표기 사용, 임의 문자열로 지저분한 row 생성 방지)
 
 ## 보안

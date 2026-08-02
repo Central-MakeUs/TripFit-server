@@ -186,8 +186,8 @@ erDiagram
 | social_id | varchar | N | | |
 | provider | varchar | N | | KAKAO, GOOGLE, APPLE |
 | email | varchar | Y | | UNIQUE 아님 |
-| first_name | varchar | Y | | PATCH profile 필수 |
-| last_name | varchar | Y | | PATCH profile 필수 |
+| first_name | varchar | Y | | PATCH onboarding/name 필수 |
+| last_name | varchar | Y | | PATCH onboarding/name 필수 |
 | nickname | varchar | Y | | 소셜 prefill, fallback 없음 |
 | profile_image_url | varchar | Y | | wave 1 CDN / wave 4 S3 B안 |
 | is_google_calendar_connected | boolean | N | | default false |

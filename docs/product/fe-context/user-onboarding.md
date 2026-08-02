@@ -15,9 +15,9 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
 
 ## 규칙 2 — 이름 미완료 게이트는 프론트에서 직접 구현하라. 서버가 대신 막아주지 않는다
 
-- `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `PATCH /users/profile` 이 4개 API는 이름이 없어도 항상 정상 응답한다고 가정하라. 이 API들 호출을 이름 미완료를 이유로 막는 코드를 넣지 마라 — 막으면 사용자가 이름을 입력할 방법 자체가 없어진다.
+- `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `PATCH /users/onboarding/name` 이 4개 API는 이름이 없어도 항상 정상 응답한다고 가정하라. 이 API들 호출을 이름 미완료를 이유로 막는 코드를 넣지 마라 — 막으면 사용자가 이름을 입력할 방법 자체가 없어진다.
 - 로그인/`me` 응답에서 `firstName` 또는 `lastName`이 `null`이면, **라우팅 가드로 이름 입력 화면을 강제 노출하라.** 라우팅 스택을 replace/reset해서 뒤로가기로도 홈에 진입할 수 없게 만들고, Skip 버튼을 두지 마라.
-- 이름 저장(`PATCH /users/profile`)이 성공한 뒤에만 다음 화면(2단계 또는 홈)으로 진행하도록 구현하라.
+- 이름 저장(`PATCH /users/onboarding/name`)이 성공한 뒤에만 다음 화면(2단계 또는 홈)으로 진행하도록 구현하라.
 - `403 PROFILE_NAME_REQUIRED` 에러 핸들러를 여행방 생성(`POST /trips`)·참여(`POST /trips/join`) 호출부에 방어적으로 넣어라 — 이건 라우팅 가드를 실수로 빠뜨렸을 때를 대비한 백스톱이지, 이 에러가 정상적으로 자주 발생한다고 가정하고 UX를 설계하지 마라. **이름 게이트의 1차 구현 책임은 프론트다.**
 
 ## 규칙 3 — 2단계(캘린더·사전 일정)는 이탈해도 다시 강제로 보여주지 마라
@@ -45,7 +45,7 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
 | `POST` | `/api/v1/auth/login` | 불필요 | 소셜 로그인(회원가입 겸용, upsert). 이름 없어도 JWT 발급 |
 | `POST` | `/api/v1/auth/refresh` | 불필요(refresh token) | 토큰 재발급. 이름 게이트 없음 |
 | `GET` | `/api/v1/auth/me` | JWT | 내 정보 재조회. 이름 게이트 없음 |
-| `PATCH` | `/api/v1/users/profile` | JWT | body `{ firstName, lastName }` — 이름 저장 |
+| `PATCH` | `/api/v1/users/onboarding/name` | JWT | body `{ firstName, lastName }` — 이름 저장 |
 
 `login`·`GET /auth/me` 응답(공통 사용자 요약) 예시 — 이 형태로 파싱 타입을 만들어라:
 
@@ -82,7 +82,7 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
 
 | HTTP | code | 상황 | 처리 |
 | --- | --- | --- | --- |
-| 400 | `INVALID_INPUT` | `PATCH /users/profile` 호출 시 이름이 빈 문자열 등 검증 실패 | 폼 검증 에러로 표시 — 응답의 `errors[].field`/`errors[].message`로 필드별 매핑하라 |
+| 400 | `INVALID_INPUT` | `PATCH /users/onboarding/name` 호출 시 이름이 빈 문자열 등 검증 실패 | 폼 검증 에러로 표시 — 응답의 `errors[].field`/`errors[].message`로 필드별 매핑하라 |
 | 403 | `PROFILE_NAME_REQUIRED` | 이름 미완료 상태로 여행방 생성/참여 시도 | 이름 입력 화면으로 강제 이동(방어용 — 규칙 2 참고) |
 | 401 | `AUTH_EXPIRED` 등 | 토큰 없음·만료 | 재로그인 플로우로 보내라 |
 

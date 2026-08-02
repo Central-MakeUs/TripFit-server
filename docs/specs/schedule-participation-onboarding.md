@@ -65,7 +65,7 @@
 | Provider | **Kakao = Google = Apple** — 이름 필수·게이트 동일 ([`007`](../decisions/007-user-profile-onboarding.md) 정렬) |
 | 클라이언트 | Routing Guard (`replace` / stack reset), 뒤로가기·건너뛰기 **없음**, `BackHandler` 차단 |
 | 서버 게이트 | `requireProfileNameComplete()` — 핵심 API(trip 생성·join 등)에서 **403** `PROFILE_NAME_REQUIRED` |
-| 서버 **차단 금지** | login, refresh, `GET /auth/me`, `PATCH /users/profile` |
+| 서버 **차단 금지** | login, refresh, `GET /auth/me`, `PATCH /users/onboarding/name` |
 | 클라이언트 403 | 전역 403 핸들러 → `/onboarding/name` 강제 이동 |
 
 ### D-REENTRY-2: 이름만 완료 시 재진입 → 메인 (007 amend)
@@ -431,6 +431,7 @@ canEnterRoom(user) =
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | 온보딩 이름 API 경로 리네이밍 반영 — `PATCH /users/profile` → `PATCH /users/onboarding/name` (`user-onboarding.md` 변경 이력 참고) |
 | 2026-07-28 | **Amend (#60)** — D-MEMBER-FILL 공식 전환(`memberFillRate = activeMemberCount / memberCount`), `joinedMemberCount` API 미노출. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md) |
 | 2026-07-21 | **#39 amend** — 방장 SCHEDULE_PENDING→confirm · D-JOIN-MEMBER/TRIP-FLOW · 인벤토리 stale 정리 |
 | 2026-07-21 | **Amend** — personal `deletedDates` CLEAR 경로 · trip-room stale 정합 |

@@ -14,7 +14,7 @@
 
 ## 배경
 
-- 온보딩 최초 입력: `PATCH /api/v1/users/profile` ([`user-onboarding.md`](user-onboarding.md))
+- 온보딩 최초 입력: `PATCH /api/v1/users/onboarding/name` ([`user-onboarding.md`](user-onboarding.md))
 - 마이페이지 재수정: 별도 엔드포인트로 UI 의도를 분리 (동일 컬럼·검증 재사용)
 - Figma: [`figma-wireframe-v1.md`](../product/design/figma-wireframe-v1.md) — 마이페이지(설정·탈퇴·캘린더 연동)
 - **2026-07-23:** [`notification.md`](notification.md)(`#21`) D8 — 알림 on/off를 별도 `/users/me/...` 엔드포인트로 새로 만들지 않고, 이 스펙의 `PATCH /users/my-page`에 `notificationEnabled` 필드로 편입 (이 프로젝트가 과거 `/users/me/*` 경로를 `/users/*`로 통일한 이력과 일치). 필드 하나만 보내는 경우를 지원해야 하므로 **전 필드를 optional(partial update)로 전환**
@@ -23,14 +23,14 @@
 
 ### Must Have (wave 1 — 이름 PATCH)
 
-- [x] `PATCH /api/v1/users/my-page` — `{ firstName, lastName }` (JWT 필수)
+- [x] `PATCH /api/v1/users/profile` — `{ firstName, lastName }` (JWT 필수)
 - [x] `first_name`/`last_name` 갱신 (trim 적용)
 - [x] 응답: 갱신된 `user` 요약 DTO (`UserSummaryResponse`)
 - [x] `./gradlew test` 통과
 
 ### Must Have (wave 3 — 알림 설정 amend, `#21` D8)
 
-- [ ] `UpdateMyPageRequest`에 `notificationEnabled`(Boolean, nullable) 필드 추가
+- [ ] `UpdateProfileRequest`에 `notificationEnabled`(Boolean, nullable) 필드 추가
 - [ ] `firstName`/`lastName`/`notificationEnabled` **전부 optional로 전환** — 요청에 없는(= null) 필드는 미변경, 있는 필드만 반영(partial update)
 - [ ] `firstName`/`lastName`이 **필드로 포함됐지만 값이 blank**면 기존과 동일하게 400
 - [ ] 세 필드 **전부 없음**(빈 patch) → 400 (`VALIDATION_ERROR`, 최소 1개 필드 필요)
@@ -47,7 +47,7 @@
 
 ## API
 
-### `PATCH /api/v1/users/my-page`
+### `PATCH /api/v1/users/profile`
 
 | 항목 | 값 |
 |------|-----|
@@ -86,8 +86,8 @@
 
 | API | 시점 | 필드 |
 |-----|------|------|
-| `PATCH /users/profile` | 온보딩 **최초** 이름 입력 | firstName, lastName |
-| `PATCH /users/my-page` | 마이페이지 **이름 수정** | firstName, lastName |
+| `PATCH /users/onboarding/name` | 온보딩 **최초** 이름 입력 | firstName, lastName |
+| `PATCH /users/profile` | 마이페이지 **이름 수정** | firstName, lastName |
 
 저장 컬럼·검증·응답 DTO는 동일. 재로그인 시 소셜 `nickname`으로 덮어쓰지 않음 ([`007`](../decisions/007-user-profile-onboarding.md)).
 
@@ -114,6 +114,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | API 경로 리네이밍 — `PATCH /users/my-page` → `PATCH /users/profile`(온보딩 API는 `PATCH /users/onboarding/name`으로 이동, `user-onboarding.md` 변경 이력 참고). "my-page"가 화면 이름을 그대로 딴 비-리소스 경로였던 문제 해소 |
 | 2026-07-23 | `#21` D8 — `notificationEnabled` 필드 추가, **전 필드 optional(partial update)로 전환** (기존 firstName/lastName 필수 계약 변경) |
 | 2026-07-09 | Approved — 마이페이지 이름 PATCH |
 | 2026-07-13 | 경로 `/users/me/*` → `/users/*` |

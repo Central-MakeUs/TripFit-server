@@ -367,8 +367,8 @@ Authorization: Bearer <accessToken>
 | provider | `GOOGLE` \| `KAKAO` \| `APPLE` |
 | social_id | provider 고유 사용자 ID (`sub` 또는 Kakao `id`) |
 | email | nullable — Apple relay 등 |
-| first_name | nullable — 유저 입력 **이름** (필수, PATCH profile) |
-| last_name | nullable — 유저 입력 **성** (필수, PATCH profile) |
+| first_name | nullable — 유저 입력 **이름** (필수, PATCH onboarding/name) |
+| last_name | nullable — 유저 입력 **성** (필수, PATCH onboarding/name) |
 | nickname | nullable — 소셜 provider 표시명 (prefill). **fallback 없음** — [`007`](../decisions/007-user-profile-onboarding.md) |
 | profile_image_url | nullable — **wave 1(A안):** Google/Kakao provider CDN URL. Apple null. **wave 4(B안):** TripFit S3 — [`006`](../decisions/006-profile-image-url-storage.md) |
 | is_google_calendar_connected | boolean, default false — OAuth 연동 시만 true |
