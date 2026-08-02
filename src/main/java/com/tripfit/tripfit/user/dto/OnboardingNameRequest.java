@@ -3,9 +3,9 @@ package com.tripfit.tripfit.user.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "마이페이지 이름 수정 요청. PATCH /users/my-page")
+@Schema(description = "온보딩 최초 성·이름 등록 요청. PATCH /users/onboarding/name")
 // @formatter:off — record 컴포넌트 가독성(필드별 빈 줄·어노테이션 분리)
-public record UpdateMyPageRequest(
+public record OnboardingNameRequest(
     @Schema(
         description = "이름 (공백 불가)",
         example = "길동",

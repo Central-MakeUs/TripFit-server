@@ -2,7 +2,7 @@ package com.tripfit.tripfit.user.service;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
+import com.tripfit.tripfit.user.dto.OnboardingNameRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
@@ -24,20 +24,26 @@ public class UserProfileService {
     this.userSummaryService = userSummaryService;
   }
 
-  // 온보딩 프로필(성·이름) 저장
+  // 온보딩 최초 성·이름 등록
   @Transactional
-  public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
+  public UserSummaryResponse registerOnboardingName(UUID userId, OnboardingNameRequest request) {
     User user = userLookupService.requireUser(userId);
-    user.setFirstName(request.firstName().trim());
-    user.setLastName(request.lastName().trim());
+    applyName(user, request.firstName(), request.lastName());
     // hasPreSchedule은 userSummaryService가 일정 테이블 EXISTS로 매번 파생
     return userSummaryService.toSummary(user);
   }
 
-  // 마이페이지 성·이름 수정 — updateProfile과 동일 저장
+  // 마이페이지 성·이름 수정 — 온보딩 등록과 동일 컬럼 갱신
   @Transactional
-  public UserSummaryResponse updateMyPage(UUID userId, UpdateMyPageRequest request) {
-    return updateProfile(userId, new UpdateProfileRequest(request.firstName(), request.lastName()));
+  public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
+    User user = userLookupService.requireUser(userId);
+    applyName(user, request.firstName(), request.lastName());
+    return userSummaryService.toSummary(user);
+  }
+
+  private void applyName(User user, String firstName, String lastName) {
+    user.setFirstName(firstName.trim());
+    user.setLastName(lastName.trim());
   }
 
   // 성·이름 미입력이면 trip 생성·참여 등에서 PROFILE_NAME_REQUIRED

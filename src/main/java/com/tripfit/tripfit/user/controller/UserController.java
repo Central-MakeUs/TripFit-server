@@ -3,7 +3,7 @@ package com.tripfit.tripfit.user.controller;
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.SuccessResponse;
-import com.tripfit.tripfit.user.dto.UpdateMyPageRequest;
+import com.tripfit.tripfit.user.dto.OnboardingNameRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "User", description = "프로필·마이페이지·탈퇴")
+@Tag(name = "User", description = "온보딩 이름 등록·마이페이지 프로필 수정·탈퇴")
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
@@ -40,11 +40,11 @@ public class UserController {
   }
 
   @Operation(
-      summary = "프로필(성·이름) 저장",
+      summary = "온보딩 성·이름 최초 등록",
       description = """
-          목적: 온보딩에서 성·이름을 저장한다.
+          목적: 온보딩에서 성·이름을 최초로 등록한다. 등록 이후 재수정은 이 API가 아니라 마이페이지 프로필 수정(`PATCH /users/profile`)을 사용한다.
 
-          호출 시점: 소셜 로그인 직후 프로필 입력 화면.
+          호출 시점: 소셜 로그인 직후, 성·이름이 아직 없는 사용자에게 노출되는 온보딩 입력 화면. 이미 등록된 사용자에게는 호출되지 않는다.
 
           전제: 성·이름 모두 필수.
 
@@ -80,20 +80,20 @@ public class UserController {
                   {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
                   """)))
   })
-  @PatchMapping("/profile")
-  ResponseEntity<SuccessResponse<UserSummaryResponse>> updateProfile(
+  @PatchMapping("/onboarding/name")
+  ResponseEntity<SuccessResponse<UserSummaryResponse>> registerOnboardingName(
       @AuthorizedUser UUID userId,
-      @Valid @RequestBody UpdateProfileRequest request) {
-    UserSummaryResponse response = userProfileService.updateProfile(userId, request);
+      @Valid @RequestBody OnboardingNameRequest request) {
+    UserSummaryResponse response = userProfileService.registerOnboardingName(userId, request);
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
   @Operation(
-      summary = "마이페이지 이름 수정",
+      summary = "마이페이지 프로필(성·이름) 재수정",
       description = """
-          목적: 마이페이지에서 성·이름만 수정한다.
+          목적: 온보딩에서 이미 등록된 성·이름을 마이페이지에서 다시 수정한다. 최초 등록은 이 API가 아니라 온보딩 성·이름 등록(`PATCH /users/onboarding/name`)을 사용한다.
 
-          호출 시점: 프로필 수정 화면.
+          호출 시점: 마이페이지 프로필 수정 화면 — 성·이름 등록을 이미 마친 사용자만 호출한다.
 
           전제: 성·이름 모두 필수.
 
@@ -127,11 +127,11 @@ public class UserController {
                   {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
                   """)))
   })
-  @PatchMapping("/my-page")
-  ResponseEntity<SuccessResponse<UserSummaryResponse>> updateMyPage(
+  @PatchMapping("/profile")
+  ResponseEntity<SuccessResponse<UserSummaryResponse>> updateProfile(
       @AuthorizedUser UUID userId,
-      @Valid @RequestBody UpdateMyPageRequest request) {
-    UserSummaryResponse response = userProfileService.updateMyPage(userId, request);
+      @Valid @RequestBody UpdateProfileRequest request) {
+    UserSummaryResponse response = userProfileService.updateProfile(userId, request);
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 

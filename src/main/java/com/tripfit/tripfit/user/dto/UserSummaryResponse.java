@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(
-    description = "사용자 요약. POST /auth/login · GET /auth/me · PATCH /users/profile · PATCH /users/my-page 응답 공통")
+    description = "사용자 요약. POST /auth/login · GET /auth/me · PATCH /users/onboarding/name · PATCH /users/profile 응답 공통")
 public record UserSummaryResponse(
     @Schema(description = "TripFit 사용자 ID (UUID v4)",
         example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
