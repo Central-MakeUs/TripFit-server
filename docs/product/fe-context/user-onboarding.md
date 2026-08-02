@@ -82,7 +82,7 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
 
 | HTTP | code | 상황 | 처리 |
 | --- | --- | --- | --- |
-| 400 | `VALIDATION_ERROR` | `PATCH /users/profile` 호출 시 이름이 빈 문자열 | 폼 검증 에러로 표시 |
+| 400 | `INVALID_INPUT` | `PATCH /users/profile` 호출 시 이름이 빈 문자열 등 검증 실패 | 폼 검증 에러로 표시 — 응답의 `errors[].field`/`errors[].message`로 필드별 매핑하라 |
 | 403 | `PROFILE_NAME_REQUIRED` | 이름 미완료 상태로 여행방 생성/참여 시도 | 이름 입력 화면으로 강제 이동(방어용 — 규칙 2 참고) |
 | 401 | `AUTH_EXPIRED` 등 | 토큰 없음·만료 | 재로그인 플로우로 보내라 |
 
