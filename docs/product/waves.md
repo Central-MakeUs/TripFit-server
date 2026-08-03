@@ -92,6 +92,8 @@
 | [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) | 스토어 제출 전 OAuth 콘솔 설정값 (리다이렉션 URI·자바스크립트 원본·App Store ID) |
 | [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) | 탈퇴 시 소셜 provider revoke 호출 (Google/Kakao/Apple) — Apple은 App Store Review Guideline 5.1.1(v) |
 
+**담당 구분(백엔드/프론트/외부):** [`development-wave.md` §7](development-wave.md#7-앱-배포심사-release-gate--wave와-무관) 표 참고 — 특히 #64는 Apple 로그인 요청에 `authorizationCode` 필드 추가가 필요해 **프론트 API 계약 변경**이 걸려 있음.
+
 **메타 트래커(SSOT):** [#65](https://github.com/Central-MakeUs/TripFit-server/issues/65) — 새 항목 발견 시 여기 + 위 표 + `development-wave.md` §7에 동시 추가. 라벨 `release: blocking`, Milestone 없음(Wave 컨테이너 아님).
 
 ## 리뷰 등급 (wave와 무관)

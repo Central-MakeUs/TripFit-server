@@ -442,6 +442,16 @@ Agent·개발자 **시작 체크:**
 | [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) | 스토어 제출 전 OAuth 콘솔 설정값 (리다이렉션 URI·자바스크립트 원본·App Store ID) | 미등록 시 로그인 자체가 `redirect_uri_mismatch` 등으로 실패 |
 | [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) | 탈퇴 시 소셜 provider revoke 호출 (Google/Kakao/Apple) | Apple: App Store Review Guideline 5.1.1(v) — 계정 삭제 지원 시 Sign in with Apple 토큰 revoke 필수 |
 
+### 담당 구분 (2026-07-28, 이슈별 상세는 각 이슈 "담당 구분" 절)
+
+Release Gate 항목은 백엔드 단독으로 끝나지 않는 것이 많다 — 프론트 계약 변경·외부 계정 콘솔 접근이 선행돼야 하는 항목을 놓치지 않도록 정리.
+
+| 이슈 | 백엔드 | 프론트 | 외부(계정 담당자) |
+|------|--------|--------|---------------------|
+| #5 | 엔드포인트·JWT 검증·이벤트 처리 전부 구현(`.p8` 불필요) | 없음 | Apple Developer Console에 웹훅 URL 등록(구현 완료 후) |
+| #62 | 콘솔 값 입력(코드 변경 없음) | 최종 도메인·콜백 라우트 확정해서 전달 | App Store ID는 앱 게시 담당자가 게시 후 전달 |
+| #64 | Google·Kakao는 바로 구현 가능, Apple은 신규 토큰 저장·revoke 인프라 필요 | **Apple만** — 로그인 요청(#1)에 `authorizationCode` 필드 추가 필요(현재 `idToken`만 전송) | Kakao Admin Key 발급, Apple `.p8`·Team ID·Key ID 발급 |
+
 **규칙:**
 
 - 새 Release Gate 항목 발견 시 **`#65`(메타 트래커) + 이 표 + `waves.md`**에 동시 추가 — `#2`([미정] 트래커)와 동일한 패턴.
