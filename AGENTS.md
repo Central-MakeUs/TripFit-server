@@ -14,7 +14,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 - Java 21
 - Spring Boot 4.1.0
 - Gradle (wrapper 포함)
-- MySQL 8.0 (런타임) / H2 (test)
+- MySQL 8.0 (런타임 · 테스트 — Testcontainers)
 - JUnit 5 (테스트)
 - Docker + GHCR (배포)
 
@@ -22,7 +22,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 
 - 패키지: `com.tripfit.tripfit` — 도메인 기반 레이어드 (`{domain}/controller|dto|service|domain|repository|client`, 필요 시 `{domain}/{feature}/…`, 공통 `common/`)
 - DB/API 네이밍은 기능 추가 시 `docs/architecture.md` 기준으로 통일
-- Java 주석: Swagger·`@Schema`와 중복 금지 — **Service/Support/Interceptor/Scheduler public 유스케이스는 메서드 위 `//` 역할 한 줄 필수**(facade·stub 포함) · 다단계는 `// 1.`+Why · Controller는 권한·검증만 — `.claude/rules/spring-boot-java.md` Comments 절
+- Java 주석: Swagger·`@Schema`와 중복 금지 — **이름·시그니처만으로 안 드러나는 것만** 메서드 위 `//` 역할 한 줄(이름이 곧 설명인 facade·자명한 위임은 생략 가능) · 다단계는 `// 1.`+Why · Controller는 권한·검증만, API 설명은 `@Operation(summary)` + Javadoc(`therapi-runtime-javadoc`) — `.claude/rules/spring-boot-java.md` Comments·OpenAPI 절
 - 범위 밖 리팩터링·포맷 변경 금지 — 요청된 작업만 수정
 - 커밋은 사용자가 명시적으로 요청할 때만
 - 커밋 요청 시 주제별 **최대 3개**로 분할 (상세: `.github/CONTRIBUTING.md`, `.claude/rules/harness-workflow.md`)
@@ -77,11 +77,12 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 ## Commands
 
 ```bash
-cp .env.example .env      # 최초 1회 — Auth env 등 채우기
-docker compose up -d      # MySQL만 (로컬 DB)
-./gradlew bootRun         # Spring 로컬 실행 (local 프로필, .env 자동 로드)
-./gradlew test            # 테스트
-./gradlew build           # 빌드
+cp .env.example .env             # 최초 1회 — Auth env 등 채우기
+./scripts/install-git-hooks.sh   # 최초 1회 — pre-commit·commit-msg 훅 설치
+docker compose up -d             # MySQL만 (로컬 DB)
+./gradlew bootRun                # Spring 로컬 실행 (local 프로필, .env 자동 로드)
+./gradlew test                   # 테스트
+./gradlew build                  # 빌드
 
 # 선택: Spring까지 Docker로 띄울 때
 docker compose --profile app up -d --build

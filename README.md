@@ -18,13 +18,15 @@ AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되
 | [`.claude/skills/specify/SKILL.md`](.claude/skills/specify/SKILL.md) | **승인 게이트** — 큰 변경은 스펙 작성 → 승인 후 구현 |
 | [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
 
-### 실행 경로를 제한하는 3가지 장치
+### 실행 경로를 제한하는 5가지 장치
 
-- **다층 SSOT** — 기획(`docs/product/`) → 기능 스펙(`docs/specs/`) → 아키텍처 결정(`docs/decisions/`) → 규칙(`.claude/rules/`). 값·계약이 문서와 다르면 조용히 맞추지 않고 질문한다.
-- **승인 게이트** — DB·인증·다파일 변경은 `specify` 스킬로 Approved 스펙을 만든 뒤에만 코드를 작성한다. 예: [`docs/specs/trip-room-api.md`](docs/specs/trip-room-api.md) (BR·wave·미정 항목까지 명시).
-- **안전 하한선** — `PreToolUse` 훅([`.claude/settings.json`](.claude/settings.json))이 `git push --force`·`rm -rf` 등 파괴적 명령을 **fail-closed**로 차단한다.
+- **다층 SSOT** — 기획(`docs/product/`) → 기능 스펙(`docs/specs/`) → 아키텍처 결정(`docs/decisions/`) → 규칙(`.claude/rules/`). 값·계약이 문서와 다르면 조용히 맞추지 않고 질문한다. 기존 Approved 스펙을 amend할 땐 `ADDED`/`MODIFIED`/`REMOVED` delta 표기로 변경 범위를 명시한다(OpenSpec 패턴).
+- **승인 게이트** — DB·인증·다파일 변경은 `specify` 스킬로 Approved 스펙을 만든 뒤에만 코드를 작성한다. 예: [`docs/specs/trip/trip-room-api.md`](docs/specs/trip/trip-room-api.md) (BR·wave·미정 항목까지 명시).
+- **컨텍스트 격리** — 광범위한 탐색·리서치는 메인 대화창을 어지럽히지 않도록 `Explore`/`general-purpose` 서브에이전트로 위임하고, 방향이 불확실한 큰 변경은 Plan Mode로 먼저 설계를 굳힌다.
+- **결정론적 하한선** — `.claude/settings.json`의 훅이 프롬프트 지시만으로는 보장 안 되는 것들을 강제한다: `PreToolUse`가 `git push --force`·`rm -rf` 등 파괴적 명령을 **fail-closed**로 차단하고, `git commit` 시 agent 훅이 diff를 실제로 읽어 `Breaking-Change-Reason:` 트레일러 누락 여부를 의미 판단으로 advisory 경고하며(둘 다 커밋을 막지는 않음), `PostToolUse`가 Java 파일 저장마다 포맷을 자동 적용한다.
+- **실행 가능한 아키텍처 규칙(ArchUnit)** — 레이어·의존 방향·PK 전략 등 `spring-boot-java.md`의 일부 규칙은 prose가 아니라 [`ArchitectureTest.java`](src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java)가 `./gradlew test`마다 실제로 검증한다.
 
-**워크플로:** `wave 확인 → (Plan Mode) → specify/Approved → 구현 → ./gradlew test → verify → PR`
+**워크플로:** `wave 확인 → 탐색(서브에이전트/Plan Mode) → (specify/Approved) → 구현 → 검증(필수) → 리뷰 → PR`
 
 ## AI 개발 워크플로 — 단계별 활용
 
@@ -32,17 +34,21 @@ AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되
 
 ```mermaid
 flowchart TD
-    A["범위 확인<br/>Wave · GitHub 이슈"] --> B{"DB·인증·다파일<br/>변경인가?"}
-    B -- Yes --> C["스펙 초안 작성<br/>(specify 스킬)"]
+    A["탐색<br/>Wave·GitHub 이슈 확인<br/>(Explore 서브에이전트/Plan Mode)"] --> BUG{"버그·테스트<br/>실패인가?"}
+    BUG -- Yes --> REPRO["재현 → 원인 분리<br/>→ 최소 수정"]
+    REPRO --> VERIFY
+    BUG -- No --> B{"DB·인증·다파일<br/>변경인가?"}
+    B -- Yes --> C["스펙 초안 작성<br/>(specify 스킬 — 충돌 검토 포함)"]
     C --> D{"사용자 승인?"}
     D -- "반려·수정" --> C
     D -- Approved --> E["구현<br/>(.claude/rules 준수)"]
     B -- No --> E
-    E --> F{"문서·스펙과<br/>충돌하는가?"}
-    F -- Yes --> G["질문 — STOP<br/>(임의로 맞추지 않음)"]
-    G --> C
-    F -- No --> H["검증<br/>./gradlew test · verify"]
-    H --> I["자체·교차 리뷰<br/>code-review / simplify"]
+    E --> F{"문서·스펙과<br/>새로 충돌?"}
+    F -- "가벼운 불일치<br/>(env명 등 한 줄 확인)" --> G["질문 — STOP<br/>(임의로 맞추지 않음)"]
+    G --> E
+    F -- "계약 자체를<br/>바꿔야 함" --> C
+    F -- No --> VERIFY["검증 — 필수 게이트<br/>./gradlew test → verify 스킬"]
+    VERIFY --> I["자체·교차 리뷰<br/>code-review / simplify"]
     I --> J{"사용자 커밋<br/>요청?"}
     J -- No --> K["대기 — 임의 커밋 금지"]
     J -- Yes --> L["커밋<br/>Co-Authored-By: Claude"]
@@ -50,22 +56,23 @@ flowchart TD
 
 | 단계 | AI의 역할 | 산출물·도구 |
 |------|-----------|-------------|
-| **범위 확인** | 활성 Wave·GitHub 이슈로 작업 범위를 먼저 확인 — Backlog 없이 Must/Nice를 임의 단정하지 않음 | `docs/product/development-wave.md`, `.claude/rules/harness-wave.md` |
-| **설계·스펙 작성** | 요구사항을 정리해 `specify` 스킬로 스펙 문서를 초안 작성 — DB·인증·다파일 변경은 **스펙 승인 전 구현 착수 금지** | `docs/specs/*.md` (Draft → Approved) |
+| **탐색** | 활성 Wave·GitHub 이슈로 범위 확인 — Backlog 없이 Must/Nice 임의 단정 금지. 파일이 많거나 방향이 불확실하면 서브에이전트/Plan Mode로 메인 컨텍스트를 아끼며 조사 | `docs/product/development-wave.md`, `.claude/rules/harness-wave.md`, `Explore`/`general-purpose` 서브에이전트 |
+| **버그·테스트 실패** | 스펙 경로와 별도로 재현 → 원인 분리 → 최소 수정 절차를 따름(전용 스킬 없음, 추측 수정 금지) | `.claude/rules/workflow-tools.md` 버그 절차 |
+| **설계·스펙 작성** | 요구사항을 정리해 `specify` 스킬로 스펙 문서를 초안 작성(문서·기존 스펙과의 충돌 검토 포함) — DB·인증·다파일 변경은 **스펙 승인 전 구현 착수 금지** | `docs/specs/{domain}/*.md` (Draft → Approved) |
 | **아키텍처 결정** | 구조적 트레이드오프·대안을 ADR로 기록 | `docs/decisions/00N-*.md` |
 | **구현** | Approved 스펙의 계약(API·에러코드·enum·DB) 안에서만 코드 작성. 레이어·네이밍·주석 규칙은 `.claude/rules/`가 강제 | `src/main/java/com/tripfit/tripfit/...` |
-| **검증** | 단위·통합 테스트 작성 및 회귀 확인, 필요 시 실제 구동으로 동작 확인 | `./gradlew test`, `verify` 스킬 |
+| **검증 (필수)** | 단위·통합 테스트 작성 및 회귀 확인, 필요 시 실제 구동으로 동작 확인. `verify` 스킬 없이 "테스트 통과"·"완료" 선언 금지 — 옵션이 아니라 게이트 | `./gradlew test`, `verify` 스킬 |
 | **자체·교차 리뷰** | 정확성·중복·단순화 관점의 자체 리뷰, 필요 시 다중 에이전트 클라우드 리뷰 | `code-review`/`simplify` 스킬, `/code-review ultra` |
-| **문서 동기화** | 구현이 문서와 어긋나면 임의로 맞추지 않고 **질문** — 문서·스펙·결정 간 충돌은 사람에게 확인 | `.claude/rules/harness-workflow.md` STOP 절 |
+| **문서 동기화** | 구현이 문서와 어긋나면 임의로 맞추지 않고 **질문** — 사소한 불일치는 채팅으로 바로 묻고 재개, 계약 자체가 바뀌어야 하면 스펙부터 다시 씀 | `.claude/rules/harness-workflow.md` STOP 절 |
 | **커밋·이력** | 사람이 명시적으로 요청할 때만 커밋, 주제별로 분할 | `Co-Authored-By: Claude` 커밋 트레일러 |
-| **안전장치** | `git push --force`·`rm -rf` 등 파괴적 명령을 실행 전 차단 | `PreToolUse` 훅([`.claude/hooks/block-dangerous.sh`](.claude/hooks/block-dangerous.sh)) |
+| **안전장치** | 파괴적 명령 차단(fail-closed), Breaking-Change-Reason 누락 경고, Java 파일 저장 시 자동 포맷 | `PreToolUse`/`PostToolUse` 훅([`.claude/hooks/`](.claude/hooks)) |
 
 이 저장소의 커밋 이력 상당수가 이 워크플로로 생성되었습니다(`git log --grep "Co-Authored-By: Claude"`로 확인 가능). 스펙·ADR 전체 목록은 [`docs/specs/README.md`](docs/specs/README.md)·[`docs/decisions/README.md`](docs/decisions/README.md) 참고.
 
 ## Tech Stack
 
 - Java 21 · Spring Boot 4.1.0 · Gradle (wrapper 포함)
-- MySQL 8.0 (런타임) / H2 (test) · JUnit 5
+- MySQL 8.0 (런타임 · 테스트 — Testcontainers) · JUnit 5
 - Docker + GHCR (배포) · EC2 Nginx + Spring Boot
 
 ## 문서 지도

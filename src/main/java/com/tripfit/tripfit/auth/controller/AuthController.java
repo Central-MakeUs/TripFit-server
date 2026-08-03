@@ -51,21 +51,18 @@ public class AuthController {
     this.appleNotificationService = appleNotificationService;
   }
 
-  @Operation(
-      summary = "소셜 로그인",
-      description = """
-          목적: 소셜 토큰으로 로그인하고 access·refresh를 발급한다.
-
-          호출 시점: 앱 최초 로그인·재로그인.
-
-          전제: Google/Kakao/Apple에서 받은 유효한 토큰. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은 authorizationCode도 함께 보내야 한다 — 값의 출처는 `LoginRequest.authorizationCode` 필드 설명 참고(GOOGLE은 네이티브 앱 로그인이냐 브라우저 리다이렉트 로그인이냐에 따라 값을 받는 방법이 다르다). GOOGLE 브라우저 리다이렉트 로그인이면 `redirectUri`도 함께 보내야 한다(로그인 리다이렉트에 실제로 쓴 URL과 정확히 일치해야 함) — `LoginRequest.redirectUri` 필드 설명 참고.
-
-          결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
-
-          주의: APPLE·GOOGLE 로그인은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 해당 provider 쪽 연결 해제(revoke)에 쓰이는 refresh token을 확보하기 위함. GOOGLE은 provider 특성상 재로그인 시 credential이 갱신되지 않을 수 있다(정상 동작). GOOGLE 브라우저 로그인인데 `redirectUri`가 누락되거나 실제 값과 다르면 Google 토큰 교환 자체가 실패해 credential 저장만 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).
-
-          주요 에러: AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED — APPLE인데 authorizationCode 누락 · AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED — GOOGLE인데 authorizationCode 누락 · AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)
-          """)
+  /**
+   * 소셜 토큰으로 로그인하고 access·refresh를 발급한다. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은
+   * authorizationCode도 함께 보내야 한다({@code LoginRequest.authorizationCode} 필드 설명 참고 — GOOGLE은 네이티브 앱이냐
+   * 브라우저 리다이렉트냐에 따라 값을 받는 방법이 다름). GOOGLE 브라우저 리다이렉트 로그인이면 {@code redirectUri}도 실제 리다이렉트에 쓴 값과 정확히
+   * 일치하게 보내야 한다.
+   *
+   * <p>
+   * APPLE·GOOGLE은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 provider revoke에 쓸
+   * refresh token을 확보하기 위함. GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고(정상 동작), redirectUri가 실제 값과 다르면
+   * 토큰 교환이 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).
+   */
+  @Operation(summary = "소셜 로그인")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -134,19 +131,8 @@ public class AuthController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  @Operation(
-      summary = "액세스 토큰 재발급",
-      description = """
-          목적: refresh token으로 access JWT만 다시 발급한다.
-
-          호출 시점: access 만료 직전·401 이후 재시도.
-
-          전제: 아직 폐기되지 않은 유효한 refresh token.
-
-          결과: 새 access JWT. refresh row는 유지된다.
-
-          주요 에러: AUTH_INVALID_REFRESH — refresh 무효·만료
-          """)
+  /** refresh token으로 access JWT만 다시 발급한다. refresh row는 그대로 유지된다(재사용 가능). */
+  @Operation(summary = "액세스 토큰 재발급")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -181,17 +167,8 @@ public class AuthController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  @Operation(
-      summary = "로그아웃",
-      description = """
-          목적: refresh token을 폐기해 재발급을 막는다.
-
-          호출 시점: 사용자가 로그아웃아웃할 때.
-
-          전제: 본인이 보유한 refresh token.
-
-          결과: 204 No Content. access는 만료까지 유효할 수 있다.
-          """)
+  /** refresh token을 폐기해 재발급을 막는다. access는 자체 만료 시각까지는 여전히 유효할 수 있다. */
+  @Operation(summary = "로그아웃")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "로그아웃 성공(No Content)"),
       @ApiResponse(
@@ -211,15 +188,8 @@ public class AuthController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
-  @Operation(
-      summary = "현재 사용자 조회",
-      description = """
-          목적: 로그인 사용자 요약을 조회한다.
-
-          호출 시점: 앱 진입·프로필/일정 변경 후 동기화.
-
-          결과: UserSummary. hasPreSchedule은 일정 row 존재 여부(파생), isAllFree는 DB 컬럼.
-          """)
+  /** 로그인 사용자 요약을 조회한다. hasPreSchedule은 일정 row 존재 여부에서 파생된 값, isAllFree는 DB 컬럼이다. */
+  @Operation(summary = "현재 사용자 조회")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -245,20 +215,15 @@ public class AuthController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  @Operation(
-      summary = "Apple 계정 변경 알림 수신",
-      description = """
-          목적: Apple이 push하는 계정 변경 이벤트(연동 해제·계정 삭제 등)를 수신해 TripFit user·refresh_token을 동기화한다.
-
-          호출 시점: Apple 서버가 계정 변경 시 직접 호출 — TripFit 클라이언트·로그인 흐름과 무관.
-
-          전제: Apple Developer Console에 이 엔드포인트가 Server-to-Server Notification Endpoint로 등록돼 있다.
-
-          결과: consent-revoked는 refresh_token만 폐기(계정 유지), account-delete는 user soft delete + refresh_token 폐기. email-enabled/email-disabled는 로그만(user.email 미보유). 존재하지 않는 sub·미인식 type도 200(no-op).
-
-          주요 에러: AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD — payload·events JSON 형식 오류·필수 필드 누락 · AUTH_APPLE_NOTIFICATION_ISSUER_INVALID — iss 불일치 · AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID — aud 불일치 · AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID — 서명 불일치·만료
-          """,
-      security = {})
+  /**
+   * Apple이 push하는 계정 변경 이벤트(연동 해제·계정 삭제 등)를 수신해 user·refresh_token을 동기화한다. TripFit 클라이언트·로그인 흐름과
+   * 무관하게 Apple 서버가 직접 호출한다(Apple Developer Console에 Server-to-Server Notification Endpoint로 등록됨).
+   *
+   * <p>
+   * consent-revoked는 refresh_token만 폐기(계정 유지), account-delete는 user soft delete + refresh_token 폐기,
+   * email-enabled/disabled는 로그만 남긴다(user.email 미보유). 존재하지 않는 sub·미인식 type도 200(no-op)이다.
+   */
+  @Operation(summary = "Apple 계정 변경 알림 수신", security = {})
   @ApiResponses({
       @ApiResponse(responseCode = "200",
           description = "수신·처리 완료 — no-op(존재하지 않는 sub·미인식 type)도 포함"),

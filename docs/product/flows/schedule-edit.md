@@ -1,7 +1,7 @@
 # 일정·조건 입력 플로우
 
 > NotebookLM 기획 자료 정리본.
-> 신규 trip 확인·`ACTIVE`: [`trip-create-join-guide.md`](trip-create-join-guide.md) · [`schedule-participation-onboarding.md`](../../specs/schedule-participation-onboarding.md)
+> 신규 trip 확인·`ACTIVE`: [`trip-create-join-guide.md`](trip-create-join-guide.md) · [`schedule-participation-onboarding.md`](../../specs/trip/schedule-participation-onboarding.md)
 
 - **목적:** 이미 `ACTIVE`인 멤버가 전역 일정(정기·개별)을 수정
 - **액터:** 방장, 참여자

@@ -2,7 +2,7 @@
 
 `docs/api/openapi.json`은 springdoc이 생성하는 OpenAPI 3.1 스펙의 **`main` 기준 스냅샷**입니다. **손으로 편집하지 마세요** — `main`에 push될 때마다 CI(`api-contract-check` job)가 자동으로 최신화·커밋합니다.
 
-설계 배경·결정 과정: [`docs/specs/api-contract-diff-ci.md`](../specs/api-contract-diff-ci.md)
+설계 배경·결정 과정: [`docs/specs/cross-cutting/api-contract-diff-ci.md`](../specs/cross-cutting/api-contract-diff-ci.md)
 
 ## 이게 왜 있나
 

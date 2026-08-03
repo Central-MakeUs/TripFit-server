@@ -34,6 +34,8 @@ main  ←  {type}/{issue-number}-{description}
 
 예: `Feat: 소셜 로그인 API 구현`, `Refactor: 도메인 기반 레이어드 패키지 구조로 재구성`
 
+`./scripts/install-git-hooks.sh`로 설치되는 `commit-msg` 훅이 이 형식을 로컬에서 기계적으로 검증한다(형식 위반 시 커밋 차단). Merge·Revert 커밋은 검사 대상에서 제외.
+
 ### `Breaking-Change-Reason:` 트레일러
 
 프론트가 **조금이라도 대응해야 하는** API 계약 변경(필드 추가·삭제·이름변경·타입변경·필수화 — optional 추가 포함, enum 값 추가·삭제, `ErrorCode` 신규·변경·삭제, 경로·메서드 변경 등)이 포함된 커밋은 본문에 `Breaking-Change-Reason: <한 줄 사유>` 트레일러를 추가한다. "필드 하나 추가일 뿐"·"optional이라 안전함"은 생략 사유가 아니다 — CI의 `oasdiff breaking`은 스키마 파괴적 변경만 잡아내므로, 그보다 넓은 실제 프론트 영향은 커밋 시점에 직접 남긴다.
@@ -124,10 +126,10 @@ Nice/Must 구분은 **Wave Backlog Issue** 본문 + 실행 Issue **비고** — 
 
 | 마일스톤 | wave |
 |----------|------|
-| Wave 1 — 준비 | 1 |
-| Wave 2 — 핵심 MVP | 2 |
-| Wave 3 — 출시 UX | 3 |
-| Wave 4 — 운영·확장 | 4 |
+| Wave 1 — 소셜 로그인 | 1 |
+| Wave 2 — MVP 로직 | 2 |
+| Wave 3 — 외부 API 연동 | 3 |
+| Wave 4 — 리팩토링·성능·런칭 후 UX | 4 |
 
 ## Agent 예시
 

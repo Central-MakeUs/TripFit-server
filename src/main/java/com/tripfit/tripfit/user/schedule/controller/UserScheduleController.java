@@ -46,13 +46,8 @@ public class UserScheduleController {
     this.scheduleService = scheduleService;
   }
 
-  @Operation(
-      summary = "정기 일정 목록",
-      description = """
-          목적: 본인 정기 일정 목록을 조회한다.
-
-          결과: 생성 시각 오름차순. 오전·오후·저녁 슬롯은 start/end로 계산된 값.
-          """)
+  /** 본인 정기 일정 목록을 생성 시각 오름차순으로 조회한다. 오전·오후·저녁 슬롯은 start/end로 계산된 값이다. */
+  @Operation(summary = "정기 일정 목록")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -78,19 +73,11 @@ public class UserScheduleController {
     return ResponseEntity.ok(SuccessResponse.of(scheduleService.listRegular(userId)));
   }
 
-  @Operation(
-      summary = "정기 일정 생성",
-      description = """
-          목적: 매주 반복되는 정기 일정을 추가한다.
-
-          호출 시점: 일정 온보딩·마이페이지에서 정기 일정 추가.
-
-          전제: startTime/endTime·요일(daysOfWeek) 필수.
-
-          결과: 저장된 정기 일정. 슬롯은 start/end로 계산된다. daysOfWeek는 Weekday(MON~SUN) 콤마 CSV.
-
-          주의: 첫 정기 일정 생성 시 hasPreSchedule이 true가 된다(GET /auth/me 등으로 재조회).
-          """)
+  /**
+   * 매주 반복되는 정기 일정을 추가한다. daysOfWeek는 Weekday(MON~SUN) 콤마 CSV이고, 슬롯은 start/end로 계산된다. 첫 정기 일정 생성 시
+   * hasPreSchedule이 true가 된다(GET /auth/me 등으로 재조회 필요).
+   */
+  @Operation(summary = "정기 일정 생성")
   @ApiResponses({
       @ApiResponse(
           responseCode = "201",
@@ -127,19 +114,8 @@ public class UserScheduleController {
         .body(SuccessResponse.of(scheduleService.createRegular(userId, request)));
   }
 
-  @Operation(
-      summary = "정기 일정 전체 수정",
-      description = """
-          목적: 기존 정기 일정의 제목·요일·시각·연차 설정을 통째로 갱신한다.
-
-          호출 시점: 정기 일정 편집 저장.
-
-          전제: 본인 소유 일정 ID.
-
-          결과: 갱신된 정기 일정. start/end 변경 시 슬롯을 다시 계산한다.
-
-          주요 에러: REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님
-          """)
+  /** 기존 정기 일정의 제목·요일·시각·연차 설정을 통째로 갱신한다. start/end가 바뀌면 슬롯을 다시 계산한다. */
+  @Operation(summary = "정기 일정 전체 수정")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -185,21 +161,8 @@ public class UserScheduleController {
         SuccessResponse.of(scheduleService.updateRegular(userId, id, request)));
   }
 
-  @Operation(
-      summary = "정기 일정 삭제",
-      description = """
-          목적: 본인 정기 일정을 삭제한다.
-
-          호출 시점: 정기 일정 삭제.
-
-          전제: 본인 소유 일정 ID.
-
-          결과: 204 No Content.
-
-          주의: 정기·개인이 모두 0건이 되면 hasPreSchedule이 false가 된다(GET /auth/me 재조회).
-
-          주요 에러: REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님
-          """)
+  /** 본인 정기 일정을 삭제한다. 정기·개인 일정이 모두 0건이 되면 hasPreSchedule이 false가 된다(GET /auth/me 재조회). */
+  @Operation(summary = "정기 일정 삭제")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "삭제 성공(No Content)"),
       @ApiResponse(
@@ -227,21 +190,13 @@ public class UserScheduleController {
     return ResponseEntity.noContent().build();
   }
 
-  @Operation(
-      summary = "개인 일정 슬롯 단위 오버라이드 upsert",
-      description = """
-          목적: 여러 날짜에 슬롯(오전/오후/저녁) 오버라이드·불확실 여부를 등록·수정한다.
-
-          호출 시점: 개인 일정 편집 저장.
-
-          전제: items 최소 1개, 같은 scheduleDate 중복 불가. 각 항목은 slots·uncertain을 독립적으로 선택한다 — 슬롯을 안 건드리려면 slots 필드 자체를 생략(그 슬롯은 정기+구글 계산값을 그대로 따름), 건드리려면 3개 전부 명시. 이 API로는 오버라이드가 삭제되지 않는다 — 한 번 반영된 날짜는 계속 유지된다.
-
-          결과: 반영된 날짜들의 정기+개별+구글을 합친 최종 확정값(POSSIBLE/IMPOSSIBLE로 확정, null 없음).
-
-          주의: 첫 저장 시 hasPreSchedule true(GET /auth/me 재조회).
-
-          주요 에러: INVALID_INPUT — items가 비어 있음·scheduleDate 중복·slots와 uncertain이 둘 다 없음·slots 필드 일부 누락
-          """)
+  /**
+   * 여러 날짜에 슬롯(오전/오후/저녁) 오버라이드·불확실 여부를 등록·수정한다. items는 최소 1개, 같은 scheduleDate 중복은 불가하다. 각 항목은
+   * slots·uncertain을 독립적으로 선택한다 — 슬롯을 안 건드리려면 slots 필드 자체를 생략(정기+구글 계산값을 그대로 따름), 건드리려면 3개 전부 명시해야
+   * 한다. 이 API로는 오버라이드가 삭제되지 않는다 — 한 번 반영된 날짜는 계속 유지된다. 첫 저장 시 hasPreSchedule이 true가 된다(GET /auth/me
+   * 재조회 필요).
+   */
+  @Operation(summary = "개인 일정 슬롯 단위 오버라이드 upsert")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -352,21 +307,12 @@ public class UserScheduleController {
     return ResponseEntity.ok(SuccessResponse.of(scheduleService.upsertPersonal(userId, request)));
   }
 
-  @Operation(
-      summary = "정기+개별 합친 일정 달력 조회",
-      description = """
-          목적: 본인 정기 일정과 개별 일정을 합쳐 날짜별 가능/불가능 달력을 조회한다.
-
-          호출 시점: 마이페이지 달력·일정 확인 화면.
-
-          전제: 요청 구간은 오늘부터 오늘+2년−1일 안이어야 한다. 단, 참여 중인 조율 중(ONGOING) 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다.
-
-          결과: 날짜별로 정기+개별을 합친 슬롯. 개인 일정이 정기보다 우선하고, 정기 복수면 IMPOSSIBLE이 우선. 빈 날은 응답에서 생략.
-
-          주의: 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출한다.
-
-          주요 에러: INVALID_INPUT — 조회 구간이 허용 윈도우 밖
-          """)
+  /**
+   * 본인 정기 일정과 개별 일정을 합쳐 날짜별 가능/불가능 달력을 조회한다. 요청 구간은 오늘부터 오늘+2년−1일 안이어야 하지만, 참여 중인 조율 중(ONGOING)
+   * 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다. 날짜별 슬롯은 개인 일정이 정기보다 우선하고, 정기가 여럿이면 IMPOSSIBLE이 우선하며, 빈
+   * 날은 응답에서 생략된다. 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출해야 한다.
+   */
+  @Operation(summary = "정기+개별 합친 일정 달력 조회")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",

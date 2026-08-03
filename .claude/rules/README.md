@@ -10,7 +10,9 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 ├── settings.json          ← PreToolUse 훅 등록 (버전 관리)
 ├── settings.local.json    ← 개인 권한 allowlist (버전 관리)
 ├── hooks/
-│   └── block-dangerous.sh
+│   ├── block-dangerous.sh
+│   ├── warn-breaking-change.sh
+│   └── format-java.sh
 ├── rules/                 ← 상황별 AI 규칙 (.md + paths frontmatter)
 │   ├── README.md                  ← 이 파일 (구조·사용법)
 │   ├── harness-workflow.md        # ⛔ STOP · Before/While/After (코어, always-load)
@@ -62,7 +64,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `spring-boot-java.md` | `**/*.java` | 레이어·enum·Entity·**ErrorCode·AOP**·OpenAPI(FE용 섹션 템플릿·JWT)·주석 |
 | `figma-product.md` | domain, service, specs | 도메인·BR·와이어프레임 |
 | `client-platform.md` | controller, service, config, specs | React 앱·스토어·API·인증 |
-| `deployment.md` | yml, Docker, domain, deploy | 배포 가드레일 — 절차는 `deploy/README.md` |
+| `deployment.md` | yml, Docker, deploy | 배포 가드레일 — 절차는 `deploy/README.md` (MySQL 예약어·quoting은 `spring-boot-java.md`로 이동) |
 | `testing.md` | `**/*Test.java`, `src/test/**` | JUnit 5·프로필·테스트 네이밍 |
 | `fe-context.md` | `docs/product/fe-context/**` | 도메인별 폴더(user/user-schedule/trip)·드리프트 체크리스트·상호 링크 규칙 |
 
@@ -80,7 +82,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 
 | 스킬 | 트리거 예시 | 산출물 |
 |------|-------------|--------|
-| `specify` | 새 기능, 리팩터 계획, 아키텍처 결정 | `docs/specs/{feature}.md` (**스펙 SSOT**) |
+| `specify` | 새 기능, 리팩터 계획, 아키텍처 결정 | `docs/specs/{domain}/{feature}.md` (**스펙 SSOT**, 도메인 amend 시 `ADDED`/`MODIFIED`/`REMOVED` delta 섹션) |
 
 **워크플로:** `wave 확인 → (Plan Mode) → specify/Approved → 구현 → ./gradlew test → verify → (후속 제안) → gh issue/PR`
 
@@ -90,11 +92,13 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 
 ## Hooks (`settings.json` + `hooks/`)
 
-| 이벤트 | 현재 동작 |
-|--------|-----------|
-| `PreToolUse` (matcher: `Bash`) | `block-dangerous.sh` — force push, `rm -rf`, `git reset --hard`, `docker compose down -v` 차단 |
+| 이벤트 | 매처 | 현재 동작 |
+|--------|------|-----------|
+| `PreToolUse` | `Bash` | `block-dangerous.sh` — force push, `rm -rf`, `git reset --hard`, `docker compose down -v` 차단(exit 2, fail-closed) |
+| `PreToolUse` | `Bash` | `warn-breaking-change.sh` — `git commit`에 DTO/ErrorCode/Controller 변경이 스테이징됐는데 `Breaking-Change-Reason:` 트레일러가 없으면 advisory 경고(항상 exit 0, 커밋을 막지 않음) |
+| `PostToolUse` | `Edit\|Write` | `format-java.sh` — Java 파일 저장 시 `spotlessApply` 자동 포맷(non-blocking) |
 
-exit code 2 반환 시 차단(fail-closed 동작).
+**agent-type 훅 관련 교훈:** `warn-breaking-change.sh`는 처음엔 `agent`-type(서브에이전트가 diff를 읽고 판단)으로 시도했으나, staged 아닌 working tree 변경까지 오판해 "절대 막지 마라"는 명시적 지시에도 커밋을 막는 사고가 있었다 — non-blocking을 LLM 판단에 맡기지 않고 `command`-type(exit code로 결정론적 통제)으로 확정했다. advisory-only 훅은 command-type을 기본으로 한다.
 
 ## `settings.json` / `settings.local.json`
 
@@ -123,4 +127,6 @@ docs/specs/        → 기능별 설계 산출물 (specify 스킬 결과)
 - [ ] 후속·Defer·ERD 제안 규칙 변경 → `harness-follow-up.md`만
 - [ ] 반복되는 코드 리뷰 코멘트 → 해당 `rules/*.md`에 한 줄 규칙으로 승격
 - [ ] 위험 명령 패턴 추가 필요 시 `hooks/block-dangerous.sh` + `settings.json` matcher 동시 수정
+- [ ] 훅 추가·삭제 시 이 README **Hooks** 절 표 동시 갱신 (이번 감사에서 실제로 2개 훅이 누락된 채 방치됐던 사례 있음)
+- [ ] 레이어·PK 등 구조 규칙 변경 시 `src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java`(ArchUnit) 반영 검토 — 일부 규칙은 prose가 아니라 `./gradlew test`가 실제로 검증함
 - [ ] 공용 응답 DTO에 필드 추가·삭제, 새 `ErrorCode`, 요청 DTO 필수/선택 여부 변경 시 → 해당 도메인 `docs/product/fe-context/{user,user-schedule,trip}/` 문서 동기화 (`fe-context.md` 드리프트 체크리스트)

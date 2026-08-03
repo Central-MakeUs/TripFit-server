@@ -3,7 +3,7 @@
 ## Overview
 
 Spring Boot 4.x 기반 단일 모듈 Gradle 프로젝트.  
-**도메인 기반 레이어드 아키텍처**로 `auth`, `user`, `trip`, `common` 단위로 코드를 묶고, 각 도메인 내부는 **Controller / DTO / Service / Domain / Repository** (+ 필요 시 Client) 레이어를 사용합니다. 풀 DDD는 적용하지 않으며, JPA 연관관계를 자유롭게 활용합니다.
+**도메인 기반 레이어드 아키텍처**로 `auth`, `user`, `trip`, `notification`, `common` 단위로 코드를 묶고, 각 도메인 내부는 **Controller / DTO / Service / Domain / Repository** (+ 필요 시 Client) 레이어를 사용합니다. 풀 DDD는 적용하지 않으며, JPA 연관관계를 자유롭게 활용합니다.
 
 > 아키텍처 결정: [`decisions/003-architecture-guide.md`](decisions/003-architecture-guide.md)
 
@@ -35,15 +35,19 @@ com.tripfit.tripfit
 │   └── schedule/                   # feature: 정기·개인 일정
 │       ├── controller|dto|service|domain|repository
 │       └── exception/              # ScheduleErrorCode
-└── trip/
+├── trip/
+│   ├── controller|dto|domain|exception|config
+│   ├── service/                    # TripService(facade), TripCommandService, TripQueryService, Recommendation* …
+│   └── repository/
+│       ├── TripRepository, TripMemberRepository, RecommendationRepository, …
+│       └── projection/             # TripMemberCountProjection 등
+└── notification/
     ├── controller|dto|domain|exception|config
-    ├── service/                    # TripService(facade), TripCommandService, TripQueryService, …
-    └── repository/
-        ├── TripRepository, TripMemberRepository, …
-        └── projection/             # TripMemberCountProjection 등
+    ├── service|repository|event    # NotificationEventListener 등
+    └── scheduler/                  # ScheduleReminderBatch 등
 ```
 
-새 기능 추가 시 `com.tripfit.tripfit.{domain}/` 레이어 규칙을 따른다. 도메인 안 기능이 커지면 `{domain}/{feature}/`에 동일 레이어를 둘 수 있다 (`user/schedule`). 상세: [`decisions/003-architecture-guide.md`](decisions/003-architecture-guide.md).
+새 기능 추가 시 `com.tripfit.tripfit.{domain}/` 레이어 규칙을 따른다. 도메인 안 기능이 커지면 `{domain}/{feature}/`에 동일 레이어를 둘 수 있다 (`user/schedule`, `user/googlecalendar`). recommendation은 별도 최상위 패키지가 아니라 `trip/` 안에 flat하게 있다 — 분리 여부는 [`docs/specs/trip/package-structure-refactor.md`](specs/trip/package-structure-refactor.md) Draft 검토 대상. 상세: [`decisions/003-architecture-guide.md`](decisions/003-architecture-guide.md).
 
 ## Layer Rules (도메인 내부)
 
@@ -80,7 +84,7 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 |--------|------|----------|
 | local | IDE / 로컬 MySQL | update |
 | dev | Docker·EC2 (**실제 배포 환경**) | update |
-| test | `./gradlew test` (H2) | create-drop |
+| test | `./gradlew test` (MySQL 8, Testcontainers) | create-drop |
 
 배포·검증 절차: [`deploy/README.md`](../deploy/README.md) (SSOT). 에이전트 배포 규칙: `.claude/rules/deployment.md`.
 
@@ -91,7 +95,7 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 
 ## Design Reference
 
-- Figma Wireframe v1: [figma-wireframe-v1.md](../product/design/figma-wireframe-v1.md)
+- Figma Wireframe v1: [figma-wireframe-v1.md](product/design/figma-wireframe-v1.md)
 - ERD 설계 시 와이어프레임 리소스 초안(`trip`, `trip_member` 등) 참고
 
 ## Data Model

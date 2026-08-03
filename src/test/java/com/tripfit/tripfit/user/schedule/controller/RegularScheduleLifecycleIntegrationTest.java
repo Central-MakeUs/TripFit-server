@@ -20,6 +20,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -34,9 +36,10 @@ import org.springframework.web.context.WebApplicationContext;
 // UserScheduleControllerTest(mock 단위)·ScheduleServiceTest(mock 단위)·
 // PersonalScheduleOverrideIntegrationTest(개별+달력만)로 개별 검증돼 있었지만, 정기 일정
 // 생성→목록→수정→달력 반영→삭제까지 이어지는 전체 생명주기와 hasPreSchedule 파생값 전이는
-// 실제 HTTP+H2 라운드트립으로 검증된 적이 없었다. 이 클래스가 그 공백을 메운다.
+// 실제 HTTP+MySQL(Testcontainers) 라운드트립으로 검증된 적이 없었다. 이 클래스가 그 공백을 메운다.
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class RegularScheduleLifecycleIntegrationTest {
 
   @Autowired

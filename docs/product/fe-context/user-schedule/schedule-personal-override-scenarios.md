@@ -1,6 +1,6 @@
 # 개별 일정 오버라이드 — 유저 시나리오 (프론트 공유용)
 
-> 이 문서는 [`schedule-slot-override.md`](../../../specs/schedule-slot-override.md)(O1.4, API 계약 SSOT)와 [`schedule-calendar-merge.md`](schedule-calendar-merge.md)(구현 규칙)에서 **"유저가 실제로 뭘 보고, 뭘 누르고, 그 다음 뭐가 보이는지"** 만 뽑아 이야기 형태로 정리한 자료다. API 필드·에러 코드의 정확한 계약은 위 두 문서가 SSOT이고, 이 문서는 **정합이 깨지면 안 된다** — 값이 다르면 이 문서가 틀린 것이니 스펙을 기준으로 고쳐라.
+> 이 문서는 [`schedule-slot-override.md`](../../../specs/user-schedule/schedule-slot-override.md)(O1.4, API 계약 SSOT)와 [`schedule-calendar-merge.md`](schedule-calendar-merge.md)(구현 규칙)에서 **"유저가 실제로 뭘 보고, 뭘 누르고, 그 다음 뭐가 보이는지"** 만 뽑아 이야기 형태로 정리한 자료다. API 필드·에러 코드의 정확한 계약은 위 두 문서가 SSOT이고, 이 문서는 **정합이 깨지면 안 된다** — 값이 다르면 이 문서가 틀린 것이니 스펙을 기준으로 고쳐라.
 >
 > 대상 독자: 프론트엔드. 목적: "왜 이렇게 동작해야 하는지"를 화면 흐름으로 이해시키는 것.
 

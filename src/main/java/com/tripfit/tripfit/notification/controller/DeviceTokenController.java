@@ -33,19 +33,11 @@ public class DeviceTokenController {
     this.deviceTokenService = deviceTokenService;
   }
 
-  @Operation(
-      summary = "디바이스 토큰 등록·갱신",
-      description = """
-          목적: 본인 기기의 FCM 등록 토큰을 저장해 푸시 알림을 받을 수 있게 한다.
-
-          호출 시점: 앱 시작·로그인 직후, FCM 토큰 최초 발급·갱신 시.
-
-          전제: 없음 — 이미 등록된 토큰이면 소유자·기기 플랫폼을 갱신한다.
-
-          결과: 204를 반환한다. 동일 토큰이 다른 유저 소유였다면 본인 소유로 재할당된다.
-
-          주요 에러: NOTIFICATION_TOKEN_REQUIRED — 토큰 값 누락 · INVALID_INPUT — deviceType 누락·범위 밖 값
-          """)
+  /**
+   * 본인 기기의 FCM 등록 토큰을 저장해 푸시 알림을 받을 수 있게 한다. 이미 등록된 토큰이면 소유자·기기 플랫폼을 갱신하고, 동일 토큰이 다른 유저 소유였다면 본인
+   * 소유로 재할당한다.
+   */
+  @Operation(summary = "디바이스 토큰 등록·갱신")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "등록·갱신 성공(No Content)"),
       @ApiResponse(
@@ -82,19 +74,8 @@ public class DeviceTokenController {
     return ResponseEntity.noContent().build();
   }
 
-  @Operation(
-      summary = "디바이스 토큰 해제",
-      description = """
-          목적: 로그아웃 시 본인 기기의 FCM 토큰을 해제해 더 이상 알림이 발송되지 않게 한다.
-
-          호출 시점: 로그아웃 직전.
-
-          전제: 해제하려는 토큰이 본인 소유로 등록돼 있어야 한다.
-
-          결과: 204를 반환한다.
-
-          주요 에러: NOTIFICATION_TOKEN_NOT_FOUND — 토큰이 없거나 본인 것이 아님
-          """)
+  /** 로그아웃 직전 본인 기기의 FCM 토큰을 해제해 더 이상 알림이 발송되지 않게 한다. */
+  @Operation(summary = "디바이스 토큰 해제")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "해제 성공(No Content)"),
       @ApiResponse(

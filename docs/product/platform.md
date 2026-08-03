@@ -48,7 +48,7 @@
 | **환경 B 권장** | 인앱 안에서 Google UI를 열지 않음. **시스템 브라우저(Safari/Chrome)로 탈출**해 동의 후, 앱/웹이 code·토큰을 받아 동일 REST로 전달 |
 | **백엔드** | 환경 A/B **동일 API**. code/token만 검증·교환. 서버가 Google로 302 하지 않음 |
 
-상세: 로그인 [`auth-social-login.md`](../specs/auth-social-login.md) · Calendar [`google-calendar-oauth.md`](../specs/google-calendar-oauth.md) · [`decisions/001`](../decisions/001-auth-mobile-token-verification.md)
+상세: 로그인 [`auth-social-login.md`](../specs/auth/auth-social-login.md) · Calendar [`google-calendar-oauth.md`](../specs/user/google-calendar-oauth.md) · [`decisions/001`](../decisions/001-auth-mobile-token-verification.md)
 
 ## 클라이언트 배포 형태 — 하이브리드 앱 (WebView)
 
@@ -69,7 +69,7 @@
 | 주의 | Google 등 OS·스토어 정책에 민감한 기능은 **환경 A/B에서 획득 경로만 다름** (API는 동일) |
 | 백엔드 전제 | **302 OAuth 금지** · **클라이언트 SDK/시스템 브라우저 → REST** (`decisions/001`) |
 
-상세 인증 API·검증 방식: [`docs/specs/auth-social-login.md`](../specs/auth-social-login.md)
+상세 인증 API·검증 방식: [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md)
 
 ## 소셜 로그인 — 프론트·백엔드 계약 (요약)
 
@@ -102,7 +102,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 | 카카오·구글 등 **타사 소셜** 포함 | **Apple 로그인도 함께** 지원 권장 (UI에서 동등한 비중). 없으면 거절 위험 |
 | 2024년 이후 | “타사 소셜이 있으면 Apple 로그인 **필수**” 문구는 가이드에서 완화됐으나, 실무에서는 여전히 함께 넣는 편이 안전 |
 
-- 백엔드: `AppleTokenVerifier` + `POST /api/v1/auth/login` (`provider: APPLE`) — [`auth-social-login.md`](../specs/auth-social-login.md)
+- 백엔드: `AppleTokenVerifier` + `POST /api/v1/auth/login` (`provider: APPLE`) — [`auth-social-login.md`](../specs/auth/auth-social-login.md)
 - 가이드: [App Store Review Guidelines — Login Services](https://developer.apple.com/kr/app-store/review/guidelines/#login-services)
 
 ### Google 로그인 · Calendar — WebView / 인앱 차단
@@ -112,7 +112,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 - **환경 A**: 네이티브 Google SDK · 시스템 계정 선택 (`id_token` / Calendar `authorizationCode`)
 - **환경 B**: 인앱 내 Google UI 금지 → **시스템 브라우저 탈출** 후 동일 REST
 - **백엔드**: 토큰·code 검증/교환만 (WebView·인앱 UX는 프론트 영역). **서버 302 리다이렉트 OAuth 구현 금지**
-- Calendar 상세: [`google-calendar-oauth.md`](../specs/google-calendar-oauth.md)
+- Calendar 상세: [`google-calendar-oauth.md`](../specs/user/google-calendar-oauth.md)
 
 ### Apple Server-to-Server Notification (스토어 제출 전)
 
@@ -121,7 +121,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 - 목적: 이메일 전달 설정 변경, 앱 내 계정 삭제, 애플 계정 영구 삭제 등 → TripFit `user` 데이터 동기화
 - 백엔드: 전용 webhook 엔드포인트 + JWT 검증 + 이벤트 처리
 - Apple Developer Console에 엔드포인트 URL 등록
-- **MVP 로그인 스펙과 별도** — [`docs/specs/auth-apple-server-notifications.md`](../specs/auth-apple-server-notifications.md)
+- **MVP 로그인 스펙과 별도** — [`docs/specs/auth/auth-apple-server-notifications.md`](../specs/auth/auth-apple-server-notifications.md)
 - 참고: [Apple News — Sign in with Apple account change notifications](https://developer.apple.com/news/?id=j9zukcr6)
 
 ## Agent가 API 설계할 때 전제
@@ -144,7 +144,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 - API 요청/응답·`data` shape·`code`는 **`docs/specs/`** + 프론트 2명과 맞출 것
 - 화면·한글 라벨은 `docs/product/design/`, `glossary.md` — 백엔드 enum 이름과 혼동 금지
 - OpenAPI(springdoc)는 **첫 API 공개·envelope 확정 후** 동기화
-- **여행방 멤버십:** `SCHEDULE_PENDING`≠일반 멤버 일정미완 — **방장 create 직후만**. 멤버 join=`ACTIVE` 즉시. 초대 공유=방장∧ACTIVE. create에 `inviteCode` 없음 — Swagger Info · [`glossary.md`](glossary.md) · [`trip-room-api.md`](../specs/trip-room-api.md) 필독 절
+- **여행방 멤버십:** `SCHEDULE_PENDING`≠일반 멤버 일정미완 — **방장 create 직후만**. 멤버 join=`ACTIVE` 즉시. 초대 공유=방장∧ACTIVE. create에 `inviteCode` 없음 — Swagger Info · [`glossary.md`](glossary.md) · [`trip-room-api.md`](../specs/trip/trip-room-api.md) 필독 절
 
 ### 프론트 합의 제안 — API 응답 (논의용 5줄)
 
@@ -162,8 +162,8 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 
 | wave | 작업 |
 |------|------|
-| **1** | [`auth-social-login.md`](../specs/auth-social-login.md) — login/refresh/logout |
-| **4** | [`auth-token-rotation.md`](../specs/auth-token-rotation.md) — RTR + Redis |
+| **1** | [`auth-social-login.md`](../specs/auth/auth-social-login.md) — login/refresh/logout |
+| **4** | [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) — RTR + Redis |
 | **4** | 딥링크, 앱 버전 호환 |
 | **3~4** | 푸시, 분석, 결제 등 — 각각 스펙 + decisions |
 | **Release Gate**(wave 무관) | Apple S2S webhook(#5) 등 스토어 심사 필수 항목 — [`waves.md`](waves.md#-앱-배포심사-체크리스트-release-gate-wave와-무관-최우선) |
@@ -179,7 +179,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 | `architecture.md` | 서버 도메인 기반 레이어드·Controller/Service/Repository |
 | `architecture/api-response.md` | REST JSON envelope **초안** (프론트 합의용) |
 | `specs/auth-social-login.md` | wave 1 소셜 로그인·JWT |
-| `specs/google-calendar-oauth.md` | wave 4 Google Calendar · 환경 A/B · code→POST |
+| `specs/google-calendar-oauth.md` | wave 3 Google Calendar · 환경 A/B · code→POST |
 | `specs/auth-token-rotation.md` | wave 4 RTR + Redis (Draft) |
 | `specs/auth-apple-server-notifications.md` | Apple 계정 변경 S2S webhook |
 | `decisions/001-auth-mobile-token-verification.md` | 모바일 토큰 검증 + JWT (안 B) |
@@ -188,7 +188,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 
 ## 미정 항목
 
-- ~~앱 패키징 기술 스택~~ → **확정(2026-07-31)**: WebView 껍데기 + 소셜 로그인(Google/Kakao/Apple 전부)은 네이티브 SDK(`@react-native-google-signin/google-signin`·`@react-native-seoul/kakao-login`·`expo-apple-authentication`), 환경 분기는 `nativeBridge.ts`(`isReactNativeWebView()`)가 이미 처리 중 — 39번째 줄 "환경 A 네이티브 SDK"가 그대로 맞았음. 상세 경위: [`google-login-native-sdk-decision.md`](../specs/google-login-native-sdk-decision.md)(Resolved)
+- ~~앱 패키징 기술 스택~~ → **확정(2026-07-31)**: WebView 껍데기 + 소셜 로그인(Google/Kakao/Apple 전부)은 네이티브 SDK(`@react-native-google-signin/google-signin`·`@react-native-seoul/kakao-login`·`expo-apple-authentication`), 환경 분기는 `nativeBridge.ts`(`isReactNativeWebView()`)가 이미 처리 중 — 39번째 줄 "환경 A 네이티브 SDK"가 그대로 맞았음. 상세 경위: [`google-login-native-sdk-decision.md`](../specs/auth/google-login-native-sdk-decision.md)(Resolved)
 - 스토어 계정·심사 일정
 - 환경 B에서 Google 동의 후 복귀 URL(커스텀 스킴 / Universal Link / 웹 콜백) 상세 — 프론트·Calendar 스펙과 합의
 

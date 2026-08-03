@@ -19,6 +19,8 @@ import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,9 +32,10 @@ import org.springframework.web.context.WebApplicationContext;
 
 // UserScheduleController.upsertPersonal의 Swagger(@RequestBody 예시·200/400 @ApiResponse 예시·
 // PersonalScheduleItem/SlotUpdate @Schema requiredMode)가 실제 컨트롤러 동작과 어긋나지 않는지
-// 검증한다 — "Swagger를 보고 프론트가 그대로 호출하면 문서와 같은 응답이 온다"를 실제 H2 DB로 확인
+// 검증한다 — "Swagger를 보고 프론트가 그대로 호출하면 문서와 같은 응답이 온다"를 실제 MySQL(Testcontainers) DB로 확인
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class UpsertPersonalSwaggerConsistencyTest {
 
   @Autowired

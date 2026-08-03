@@ -27,6 +27,8 @@ import java.time.LocalTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
@@ -36,11 +38,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 // docs/product/fe-context/schedule-personal-override-scenarios.md 시나리오 10 — 여행방 멤버 달력이
-// 본인 캘린더(schedule-slot-override O1.4)와 동일한 병합 결과를 내는지 실제 H2 DB로 검증한다
+// 본인 캘린더(schedule-slot-override O1.4)와 동일한 병합 결과를 내는지 실제 MySQL(Testcontainers) DB로 검증한다
 // (TripMemberQueryService.buildLive → TripServiceSupport.resolveMergedSchedule → 공용
 // ScheduleCalendarResolver 재사용 여부를 실제 DB 라운드트립으로 확인)
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class TripMemberScheduleCalendarIntegrationTest {
 
   @Autowired

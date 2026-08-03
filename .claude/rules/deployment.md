@@ -3,7 +3,6 @@ paths:
   - "**/application*.yml"
   - "**/docker-compose.yml"
   - "**/Dockerfile"
-  - "**/domain/**"
   - "deploy/**"
 ---
 
@@ -31,10 +30,7 @@ paths:
 
 ## MySQL / JPA 주의
 
-- `globally_quoted_identifiers: true` **사용 금지** (TEXT quoting 등과 조합 시 DDL 실패 유발)
-- 스키마 drift 원인은 보통 **단일 설정이 아니라** TEXT quoting + 예약어(`user`, `rank`) + dialect + naming strategy **조합**
-- 예약어 컬럼: `@Column(name = "...")` (`rank` → `recommendation_rank`)
-- 테이블명: **`users`** (구 `user` — MySQL 예약어 회피). Java 엔티티는 `User`
+Entity 작성 시 지켜야 할 예약어·quoting 규칙은 `spring-boot-java.md` Entity Conventions로 이동(`**/*.java` 저장 시 자동 로드되도록 — 이 파일은 Docker/EC2 파일에만 스코프돼 Entity 편집만으로는 로드되지 않음).
 
 ## 검증
 

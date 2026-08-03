@@ -8,317 +8,125 @@
 
 ## 0. Wave란 무엇인가
 
-**Wave = 사용자가 서비스를 어디까지 사용할 수 있는지(User Journey)를 끊어 놓은 릴리즈 단위.**
+**Wave = 백엔드 작업을 도메인/기술 축으로 끊어 놓은 릴리즈 단위.**
 
-| Wave는 **아니다** | Wave **이다** |
-|------------------|---------------|
-| 기술 스택 도입 단계 (Redis, RTR, Docker 개선…) | 사용자 가치·MVP 목표 기준의 출시 물결 |
-| “API 몇 개 만들었는지” | “데모·베타·출시에서 **무엇을 보여줄 수 있는지**” |
-| 이슈에 사후로 붙이는 라벨 | **이슈를 소유하는** 계획 단위 |
+| Wave | 축 |
+|------|-----|
+| **1** | 소셜 로그인 |
+| **2** | MVP 로직 — trip · recommend · member 등 서버 도메인 로직 |
+| **3** | 외부 API 연동 — Google Calendar · Firebase(FCM) · Kakao 등 |
+| **4** | 리팩토링·백엔드 성능 개선 + 이번 MVP엔 없으나 **런칭 이후 UX**로 추가될 기능 |
 
-**원칙:** Wave가 GitHub Issue를 소유한다. Issue가 Wave를 결정하면 안 된다.
+**원칙:** Wave가 GitHub Issue를 소유한다. Issue를 만들고 나서 사후에 "이거 몇 Wave 같네" 라벨을 붙이는 건 금지 — §2 결정 트리로 먼저 Wave를 정하고 Issue를 만든다.
+
+**tooling 이슈는 wave 라벨 생략 가능:** CI·로깅·모니터링처럼 3개 도메인(로그인/MVP 로직/외부연동) 어디에도 속하지 않고 Wave 4의 "리팩토링·성능"과도 딱 맞지 않는 순수 개발 도구성 이슈(`#63` API breaking-change CI, `#65` 구조화 로깅, `#75`·`#77` 등)는 `wave:N` 라벨 없이 `area: infra`만 붙여도 된다 — 억지로 4개 Wave 중 하나에 끼워 맞추지 않는다. `docs/specs/README.md`의 "도구 (Wave 무관)" 섹션과 동일한 취급.
 
 ```
-❌ Issue 생성 → 개발 → “Wave2인 것 같네?” → 문서 수정
-✅ Wave 정의·백로그 → Issue 생성 → 개발 → Wave DoD 검증
+❌ Issue 생성 → 개발 → "Wave2인 것 같네?" → 문서 수정
+✅ §2 결정 트리로 Wave 판단 → Backlog에 추가 → Issue 생성 → 개발
 ```
 
----
+### 변경 이력 (축 자체가 바뀐 이력)
 
-## 1. 현재 Wave 정의의 문제 (비판적 분석)
-
-### 1.1 기술·도메인 혼재
-
-기존 `waves.md`는 Wave 1을 “인증, JWT, API 규약, 배포…”처럼 **기술 레이어**로 설명했습니다.
-
-그 결과:
-
-- **#22(일정 참여·submit 재설계)** 같은 **제품·정책** 작업이 Wave 1에 들어가도 납득이 어렵고,
-- **#24(권한 가드)** 같은 **구현 편의** 작업도 Wave 1·2 어디에 둘지 매번 논쟁이 납니다.
-- “Redis는 Wave 4”처럼 **기술 이름**이 Wave 번호를 설명하는 경우가 생깁니다.
-
-→ Wave 번호만으로 **사용자에게 무엇이 가능해지는지**가 드러나지 않습니다.
-
-### 1.2 Wave가 결과 기록이 됨
-
-실제 운영 순서:
-
-1. 기능 필요성 발생
-2. Issue 생성 (`kind: feature`, `area: api`)
-3. 개발·merge
-4. 나중에 `wave:2` 라벨·마일스톤 부착
-
-이 순서에서는 Wave가 **계획**이 아니라 **분류 사후 기록**입니다.
-`#12(여행방)`이 Wave 2인데 `#22(일정 재설계)`가 Wave 1인 채 **동시에 진행**되는 것도, Wave가 “지금 뭘 끝내야 하는가”를 말해 주지 못해서 생긴 혼선입니다.
-
-### 1.3 Must / Nice / Out 구분 부재
-
-Wave 2 라벨이 붙은 이슈만 해도:
-
-| 이슈 | Wave 2 **필수**? |
-|------|------------------|
-| #11 · #12 · #13 | **예** — MVP DoD |
-| #26 · #27 | 아니오 — D5 polish defer |
-| #19 | 아니오 — Wave 3 **Must** (카카오·링크 공유) |
-| #20 | 아니오 — Wave 2 **Nice** (DoD 불필요) |
-
-같은 `wave:2`라도 **Wave 2 완료에 필수인지**가 문서·GitHub에서 한눈에 안 보입니다.
-
-### 1.4 판단 기준 공유 불가
-
-“이 기능 Wave 몇?” 질문에 사람마다 다른 답:
-
-- API 도메인 기준 → trip이면 Wave 2
-- 기술 난이도 기준 → Redis면 Wave 4
-- 급한 것 먼저 → 현재 sprint
-
-→ **누구나 같은 결론**을 내릴 **결정 트리**가 없었습니다.
+| 시점 | 축 | 비고 |
+|------|-----|------|
+| 초기 | 기술 스택 도입 단계 (Redis, RTR, Docker…) | "API 몇 개 만들었는지"로 흐르는 문제 — 사용자 가치가 안 보임 |
+| 2026-07 | User Journey ("로그인→여행방→추천→확정→베타→운영") | Wave가 결과 기록이 되는 문제 — 도메인 이슈가 저니 단계에 걸쳐 흩어짐(#22가 로그인 Wave인데 trip 로직인 식) |
+| **2026-08 (현재)** | **도메인/기술 축** (로그인 / MVP 서버로직 / 외부연동 / 리팩토링·성능·런칭후UX) | 이슈 하나가 어느 도메인인지로 바로 Wave가 정해짐 — 판단 기준이 가장 단순 |
 
 ---
 
-## 2. Wave를 나누는 기준 (제안)
+## 1. Wave 1~4 정의
 
-### 2.1 1순위: User Journey
+### Wave 1 — 소셜 로그인 (`Wave 1 — 소셜 로그인`)
 
-각 Wave는 **한 문장으로 설명 가능한 사용자 경험**이어야 합니다.
+**범위:** 카카오/구글/애플 로그인, JWT 발급·검증·refresh·logout, 온보딩(이름·프로필), 로그인 관련 에러 처리. **로그인 자격증명 자체**를 다루는 것만 — 특정 서비스(Calendar 등)와의 연동은 Wave 3.
 
-| Wave | 한 문장 |
-|------|---------|
-| 1 | 로그인하고, TripFit을 쓸 **준비**가 끝난다. |
-| 2 | 친구들과 여행방을 만들고, 일정을 모아, **추천을 받아 확정**한다. |
-| 3 | 알림·공유·달력으로 **실제 서비스처럼** 쓴다. |
-| 4 | 성능·운영·확장을 **개선**한다. (새 MVP 기능 아님) |
+**DoD:** Wave 1 Backlog Must 전부 Closed · `./gradlew test`
 
-### 2.2 2순위: MVP 목표·릴리즈 가능 여부
-
-[`mvp.md`](mvp.md) **MVP 완료 기준**을 Wave 2 DoD에 직접 연결합니다.
-
-> 방장이 여행방을 만들고, 참여자 일정이 수집되고, 추천 TOP 3로 **최종 날짜가 확정**되는 시점.
-
-Wave 3 = MVP **이후** “쓸 만한” UX. Wave 4 = MVP **범위 밖** 기술·운영 debt.
-
-### 2.3 3순위: 기술 작업은 “Wave 4로 미룸”
-
-다음은 **중요하지만 Wave 번호를 올리지 않습니다.** 기본 **Wave 4 (또는 현재 Wave Must 완료 후)**:
-
-- Redis, RTR, 캐싱, 성능 프로파일링
-- S3 미러, 계정 연결
-- 모니터링·알람·Docker/Nginx 고도화
-- “더 깔끔한” 리팩터링 (동작 변경 없음)
-
-**예외 1:** Wave N DoD를 **막는** 최소 인프라(예: Wave 1에서 EC2에 API 한 번 배포)만 해당 Wave Must에 포함.
-
-**예외 2 — Release Gate(§7):** "기술적으로 사소해 보이지만 앱스토어·플레이스토어 **심사 가이드라인상 필수**"인 항목은 Wave 4가 아니다. Wave 4는 **출시 이후** 운영·확장인데, Release Gate 항목은 **출시 전** 반드시 끝나야 하기 때문. 예: Apple S2S Notification webhook(#5, Sign in with Apple + 계정 삭제 지원 시 Apple 요구), 탈퇴 시 소셜 provider revoke(#64, App Store Review Guideline 5.1.1(v)). 판단 기준: "이게 없으면 스토어 심사를 통과 못 하는가?" → Yes면 §7 Release Gate.
-
-### 2.4 우리 팀 규모에 맞는 현실
-
-- 백엔드 2~3명 · Spring Boot 단일 모듈 · ~110 클래스
-- **Notion** = 여정·기획 메모 (선택) · **GitHub Milestone + Backlog Issue** = 실행 SSOT
-- Wave당 **Must 3~7개 이슈**가 상한 — 넘으면 다음 Wave로 쪼갬
-- 스프린트/칸반은 쓰지 않아도 됨. **“지금 Wave Must만”**이 우선순위
+| 분류 | 이슈 |
+|------|------|
+| **Must** | #1(소셜 로그인 API) · #3(JWT 필터) · #10(온보딩·프로필) · #57(AuthErrorCode 세분화) |
+| **포함 안 됨** | 여행방·추천·일정(#12, #13 등 → Wave 2) · Google Calendar·FCM·카카오(→ Wave 3) · RTR/Redis(#4 → Wave 4) |
 
 ---
 
-## 3. Wave 1~4 재정의
+### Wave 2 — MVP 로직 (`Wave 2 — MVP 로직`)
 
-### Wave 1 — 준비 (`Wave 1 — 준비`)
+**범위:** trip · recommend · member 등 **서비스 핵심 서버 도메인 로직**. 여행방 생성·참여·일정 수집·추천·확정, 관련 CRUD·정책·인터셉터·스케줄러.
 
-**목적:** 사용자(및 참여자)가 **로그인하고 TripFit을 쓸 준비**를 마친다. 여행방·추천은 아직 핵심 데모 범위가 아님.
+**DoD:** [`mvp.md`](mvp.md) MVP 완료 기준(방장이 추천 TOP 3로 최종 날짜 확정) 충족 + Wave 2 Backlog Must 전부 Closed · `./gradlew test`
 
-**User Journey (데모 시나리오):**
+| 분류 | 이슈 |
+|------|------|
+| **Must** | #11(일정 API) · #12(여행방 API) · #13(추천 API 껍데기) · #17(calendar resolve) · #22(참여·submit·sparse 재설계) · #24(권한 가드) · #37(조회 윈도우 +2년) · #38(EXPIRED snapshot) · #39(JOINED→confirm→RESPONDED) · #47(나가기·내보내기·삭제 정합성) · #48(TripStatus 정리) · #50(추천 계산 로직) · #53(마이페이지 달력 C1 상한) · #54(TripMember 상태 파생) · #60(TripDetailResponse 필드) · #67(슬롯 오버라이드) |
+| **Nice** (DoD 불필요) | #20(참여자 내보내기) · #26(`last_activity_at` hook) · #27(EXPIRED·Pin 스케줄러) |
+| **포함 안 됨** | Google Calendar·FCM·카카오(→ Wave 3) · Redis·RTR·S3·계정연결(→ Wave 4) |
 
-1. 카카오/구글/애플로 로그인
-2. 이름·온보딩 완료
-3. (정책 확정 후) “내 일정을 trip에 어떻게 제출하는지” 규칙이 **문서·API 계약**으로 확정됨
-
-**Definition of Done (DoD):**
-
-- [ ] 소셜 login / refresh / logout 동작 (#1)
-- [ ] JWT로 보호 API 호출 가능 (#3)
-- [ ] 프로필·온보딩 PATCH (#10)
-- [ ] **`#22` 스펙 Approved** — submit·sparse·온보딩 skip·ACTIVE SSOT 확정
-- [ ] `./gradlew test` · dev 배포에서 위 여정 **E2E 1회** (프론트 또는 curl 시나리오)
-- [ ] Wave 1 Backlog의 **Must** 이슈 전부 Closed
-
-**포함 (Must):**
-
-| 항목 | GitHub | 비고 |
-|------|--------|------|
-| 소셜 로그인·JWT·온보딩 | #1, #3, #10 | Closed |
-| 일정 참여·submit·sparse 재설계 | **#22** | **Wave 1 게이트** |
-| 최소 API 규약·예외 envelope | 스펙·코드 | Wave 1 Must |
-| dev 배포 가능 | deploy | Wave 1 Must |
-
-**포함 (Nice — Wave 1 DoD **불필요**):**
-
-| 항목 | GitHub | 처리 |
-|------|--------|------|
-| 여행방 권한 가드 | #24 | Closed — Wave 2 전 코드 품질 |
-
-**포함하면 안 됨 (Wave 1):**
-
-- 여행방 생성·참여·추천·확정 (#12, #13)
-- FCM·알림 (#21)
-- 카카오·링크 공유 (#19)
-- Redis·RTR (#4)
-- 참여자 내보내기 (#20) → Wave 2 **Nice** (DoD 불필요)
+> **용어:** 이슈 본문 `## Must Have` = **그 이슈** 완료 체크리스트. **Wave Must** = 이 표 · Backlog Issue Must 섹션. `MVP: In scope` ≠ Wave Must. **Nice와 Out 혼용 금지.**
 
 ---
 
-### Wave 2 — 핵심 MVP (`Wave 2 — 핵심 MVP`)
+### Wave 3 — 외부 API 연동 (`Wave 3 — 외부 API 연동`)
 
-**목적:** [`mvp.md`](mvp.md) **MVP 완료 기준**을 달성한다 — **일정 확정**까지.
+**범위:** TripFit 자체 로직이 아니라 **3rd-party 서비스 API/SDK 연동** — Google Calendar OAuth·이벤트 동기화, Firebase(FCM) 푸시, Kakao 공유 SDK.
 
-**User Journey (데모 시나리오):**
+**DoD:** Wave 3 Backlog Must 전부 Closed · `./gradlew test`
 
-1. 방장이 여행방 생성 → 초대 링크 공유
-2. 친구가 로그인 후 참여 → 일정 입력·제출
-3. 방장이 추천 4모드 중 하나로 TOP 3 확인 → **일정 확정**
-
-**Definition of Done:**
-
-- [ ] Wave 1 DoD **전부** 충족 (특히 #22 Approved + Hidden API 해제/제거 결정 반영)
-- [ ] 정기·개인 일정 API (#11) · 여행방 API (#12) · 추천 API 껍데기(#13) · 추천 계산 로직(#50) Must 완료
-- [ ] 여행방 일정 조회 윈도우 (#37) · EXPIRED snapshot (#38) Must 완료
-- [ ] `./gradlew test` · OpenAPI · **MVP 시나리오 E2E 1회**
-- [ ] Wave 2 Backlog **Must** 전부 Closed
-
-**포함 (Must):**
-
-| 항목 | GitHub |
-|------|--------|
-| User 일정 CRUD | #11 |
-| 여행방·참여·홈 D5 (submit 제외분) | #12 |
-| 추천 API 설계·DTO·ERD·확정·취소 | #13 |
-| 추천 계산 로직 (후보 윈도우·모드별 스코어링·동점) | **#50** |
-| calendar 정기+개별 합산 resolve | #17 |
-| 여행방 일정 조회 윈도우 (+2년) | **#37** |
-| EXPIRED 일정 snapshot | **#38** |
-
-**포함 (Nice — `wave:2`이지만 Wave DoD Must **아님**):**
-
-| 항목 | GitHub | Wave 2 DoD |
-|------|--------|------------|
-| `last_activity_at` hook 전체 | #26 | 불필요 |
-| EXPIRED·Pin 스케줄러 | #27 | 불필요 (Implemented · Closed) |
-| 참여자 내보내기 | #20 | 불필요 |
-
-Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N Nice`)로만 표시하고, **Wave Must 완료 전 착수 금지**(팀 예외는 Backlog에 명시).
-
-> **용어:** 이슈 본문 `## Must Have` = **그 이슈** 완료 체크리스트. **Wave Must** = Backlog Must 섹션 · Wave DoD. **`MVP: In scope` ≠ Wave Must** — Must는 Backlog에 명시. **Nice와 Out 혼용 금지.** harness `Wave Must / Nice / Out` 절.
-
-**포함하면 안 됨 (Wave 2 Out / other Wave):**
-
-| 항목 | GitHub | 처리 |
-|------|--------|------|
-| 푸시 알림·FCM | #21 | Wave 3 |
-| 카카오·링크 공유 (초대/확정/재촉) | **#19** | Wave 3 |
-| Redis·RTR·S3 미러 | #4, #9 | Wave 4 |
-| Google Calendar OAuth | **#44** | Wave 4 |
-| 그룹 달력 **시각화 UX** (프론트) | — | Wave 3 (백엔드 API는 Wave 2와 겹칠 수 있음 → Backlog에서 구분) |
+| 분류 | 이슈 |
+|------|------|
+| **Must** | #19(카카오·링크 공유) · #21(FCM 알림, BR-NOTI) · #44(Google Calendar OAuth — Implemented) · #56(Calendar env 버그 — Implemented) · #78(Calendar OAuth Client ID 분리) |
+| **포함 안 됨** | trip/recommend/member 신규 도메인 로직(→ Wave 2) · 로그인 자격증명 자체(→ Wave 1) |
 
 ---
 
-### Wave 3 — 출시 UX (`Wave 3 — 출시 UX`)
+### Wave 4 — 리팩토링·성능 · 런칭 이후 UX (`Wave 4 — 리팩토링·성능·런칭 후 UX`)
 
-**목적:** MVP **이후** “실제 서비스처럼” 쓸 수 있게 한다. **내부·친구 베타**에 내보낼 UX.
+**목적:** (a) 리팩토링·백엔드 성능·인프라 개선, (b) 이번 MVP In Scope엔 없지만 **런칭 이후** 붙일 UX/기능. 새 MVP 기능이 아님 — **스토어 제출 전 필수 항목은 여기 아니라 §5 Release Gate.**
 
-**User Journey:**
+**DoD:** 팀이 합의한 체크리스트 (출시 게이트 아님, 항목별 완료로 판단)
 
-1. 참여·확정 시 **알림**을 받는다
-2. 카카오 등으로 **초대 링크를 공유**한다
-3. **그룹 달력**에서 누가 응답했는지 본다
-
-**Definition of Done:**
-
-- [ ] Wave 2 DoD 충족
-- [ ] 알림 스펙 Approved + BR-NOTI Must 이벤트 구현 (#21)
-- [ ] 카카오톡 초대 링크 공유 (#19)
-- [ ] 그룹 달력 API·프론트 연동 가능
-- [ ] `./gradlew test` · **베타 시나리오** 1회
-
-**포함:** #21(BR-NOTI-005 정기 리마인드 포함 — 2026-07-23 wave 4→3 재분류), **#19**, 그룹 달력
-
-**포함하면 안 됨:**
-
-- RTR·Redis (#4)
-- 소셜 계정 다중 연결 (#6)
-- 여행방 삭제 시 VOC 사유 (wave 4, unconfirm 사유와 별개)
+| 분류 | 이슈 |
+|------|------|
+| **포함** | #4(RTR+Redis) · #6(소셜 계정 연결·해제) · #9(프로필 S3 미러링) · #35(join 정원 hold) · #52(Dev 인증 스텁 전환) |
+| **포함 안 됨** | MVP In Scope 신규 기능 — 넣으려면 **Wave 1~3 Backlog 개정 + `mvp.md` amend** 필요 · 스토어 심사 필수 항목(→ §5 Release Gate) |
 
 ---
 
-### Wave 4 — 운영·확장 (`Wave 4 — 운영·확장`)
-
-**목적:** **새 사용자 여정 없음.** 성능·보안·운영·확장·기술 debt. **출시 이후** 개선 — 스토어 제출 전 필수 항목은 Wave 4가 아니라 §7 Release Gate.
-
-**User Journey:** (없음 — 기존 기능의 품질·안정성 향상)
-
-**Definition of Done:** #44는 **확정 Must** (아래), 나머지는 Wave별로 **팀이 합의한 체크리스트** (출시 게이트). 예:
-
-- [x] Google Calendar OAuth (**#44**) — 확정 Must, Implemented (`docs/specs/google-calendar-oauth.md`)
-- [ ] RTR + Redis (#4)
-- [ ] 프로필 S3 미러 (#9)
-- [ ] 소셜 계정 연결 (#6)
-- [ ] (선택) 모니터링·부하 테스트
-
-**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #6, #9(팀 합의 시), 여행방 삭제 시 VOC 사유
-
-**포함하면 안 됨:**
-
-- MVP In Scope **신규** 기능 — 넣으려면 **Wave 1~3 Backlog 개정** + `mvp.md` amend 필요
-- **스토어 제출·심사 필수 항목** — §7 Release Gate. 2026-07-28: #5(Apple S2S)를 여기서 제외 — 심사 요건이라 "출시 이후" Wave 4 성격과 다름
-
----
-
-## 4. 새 기능 · 새 이슈 — Wave 배치 결정 트리
-
-아래를 **위에서부터 순서대로** 질문합니다. **한 번 Yes면 그 Wave (또는 더 낮은 Wave)에 넣고 종료.**
+## 2. 새 기능 · 새 이슈 — Wave 배치 결정 트리
 
 ```
-┌─ Q1. 이 기능 없이 현재 진행 중인 Wave의 DoD를 달성할 수 있는가?
-│     No  → 그 Wave Must (Backlog Must에 추가 후 Issue 생성)
-│     Yes ↓
-├─ Q2. MVP 완료 기준(mvp.md) — "일정 확정까지" — 을 막는가?
-│     Yes → Wave 2 Must
+┌─ Q1. 로그인/인증 자체(카카오·구글·애플 로그인, JWT 발급·검증·refresh)를 다루는가?
+│     Yes → Wave 1
 │     No  ↓
-├─ Q3. Wave 1 DoD — "로그인·준비·#22 Approved" — 을 막는가?
-│     Yes → Wave 1 Must
+├─ Q2. 3rd-party 서비스 API/SDK 연동인가? (Google Calendar, Firebase/FCM, Kakao SDK 등 —
+│     "우리 로그인 자격증명"이 아니라 "다른 서비스와 주고받는" 연동)
+│     Yes → Wave 3
 │     No  ↓
-├─ Q4. 없어도 MVP 핵심 데모(Wave 2 시나리오)는 가능한가?
-│     No  → Wave 2 Nice (Must 아님 — Backlog Nice)
-│     Yes ↓
-├─ Q5. 없어도 친구 베타(Wave 3 — 알림·공유·달력)는 가능한가?
-│     No  → Wave 3
-│     Yes ↓
-├─ Q6. Redis/RTR/캐시/리팩터/모니터링/S3/계정연결 계열인가?
+├─ Q3. trip·recommend·member 등 서비스 핵심 서버 도메인 로직이고 mvp.md In Scope인가?
+│     Yes → Wave 2 (Must/Nice는 §1 표 기준 — DoD 필수면 Must, 아니면 Nice)
+│     No  ↓
+├─ Q4. 리팩토링·성능·인프라 개선이거나, MVP엔 없지만 런칭 이후 추가할 UX/기능인가?
 │     Yes → Wave 4
 │     No  ↓
-└─ Q7. mvp.md Out of Scope인가?
-      Yes → Wave 4 또는 **하지 않음** (Backlog 보류)
-      No  → 팀 15분 리뷰 — development-wave.md amend
+└─ Q5. 스토어 제출·심사를 통과하기 위해 반드시 필요한가?
+      Yes → Wave 아님 — §5 Release Gate
+      No  → 팀 논의 (15분) → development-wave.md amend
 ```
 
-### 4.1 빠른 참조 표
+**주의 — 사용자 확인 우선:** 어느 질문 단계에서 답이 나오든, Wave를 **에이전트가 스스로 확정하지 않는다.** 특히 Q1/Q2 경계(로그인 자격증명 자체 vs 로그인이 매개하는 외부 서비스 연동)는 헷갈리기 쉬우므로 결론을 사용자에게 한 줄로 확인받고 Backlog에 반영한다. (2026-08 Google Calendar가 Wave 축 개편 중 Wave 2/3/4를 오가며 재분류된 사고 재발 방지.)
 
-| 질문 | Yes면 |
-|------|--------|
-| 현재 Wave DoD 불가? | **현재 Wave Must** |
-| MVP 일정 확정 불가? | **Wave 2 Must** |
-| 로그인·#22 확정 불가? | **Wave 1 Must** |
-| MVP 데모는 되지만 있으면 좋음? | **해당 Wave Nice** |
-| MVP·베타 데모 다 되는 기술 작업? | **Wave 4** |
+### 2.1 논쟁이 나면
 
-### 4.2 논쟁이 나면
-
-1. **User Journey 한 문장**으로 Wave 후보 적기
-2. **Must vs Nice** 먼저 결정 (Must면 DoD 문구에 직접 연결)
+1. 이 기능이 **어느 도메인**인지 한 문장으로 적기 (로그인 / trip·recommend·member / 외부연동 / 인프라·UX)
+2. Must vs Nice 결정 (Wave 2만 해당 — DoD 필수 여부)
 3. 15분 안에 안 되면 **Wave 4 또는 보류** — MVP 속도 우선
 
 ---
 
-## 5. GitHub 운영 방식
+## 3. GitHub 운영 방식
 
-### 5.1 역할 분담
+### 3.1 역할 분담
 
 | GitHub 객체 | 역할 |
 |-------------|------|
@@ -326,17 +134,13 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 | **Backlog Issue** (Wave당 1개) | Wave **계획 SSOT** — Must / Nice / Out 목록 · DoD 체크리스트 |
 | **Issue** | Backlog에서 **파생**된 실행 단위. `#n` = 브랜치·PR·스펙 |
 | **`wave:N` 라벨** | Milestone과 **1:1** (필터용). Issue 생성 **전** Backlog에서 확정 |
-| **`kind:` / `area:`** | feature/bug/docs · api/domain/… |
+| **`kind:` / `area:`** | feature/bug/docs/chore · api/domain/deploy/docs/infra |
 
 **Notion (선택):** PRD·와이어프레임·회의록. **실행·DoD·Issue 번호는 GitHub만 SSOT.**
 
-### 5.2 Wave 계획 → Issue 생성 (표준 절차)
+### 3.2 Wave 계획 → Issue 생성 (표준 절차)
 
-**① Wave Backlog Issue 유지** (각 Milestone에 pinned 1개)
-
-제목 예: `[Wave 2 Backlog] 핵심 MVP — Must / Nice / Out`
-
-본문 템플릿:
+**① Wave Backlog Issue 유지** (각 Milestone에 pinned 1개, 제목 예: `[Wave 2 Backlog] MVP 로직 — Must / Nice / Out`)
 
 ```markdown
 ## DoD (Wave N)
@@ -344,41 +148,28 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 
 ## Must (Issue 없으면 DoD 불가)
 - [ ] #13 추천·확정
-- [ ] ...
 
 ## Nice (Must 다음)
-- [ ] #26 last_activity_at
-- [ ] ...
+- [ ] #20 참여자 내보내기
 
 ## Out (이 Wave에서 안 함)
-- 알림 → Wave 3 #21
-- 카카오 초대 공유 → Wave 3 #19
-- Google Calendar OAuth → Wave 4 #44
+- Google Calendar → Wave 3 #44
 
 ## 보류 (Wave 미정)
 - ...
 ```
 
-**② 새 기능 발생**
+**② 새 기능 발생:** §2 결정 트리 실행 → Backlog에 한 줄 추가 → Must/Nice 확정 후 Feature Issue 생성(Milestone·`wave:N` 동시 지정) → DB·인증·3파일+는 `docs/specs/`(Approved 후 구현)
 
-1. 결정 트리(§4) 실행 → **Wave + Must/Nice** 확정
-2. **Backlog Issue에 한 줄 추가** (PR 또는 편집)
-3. Must/Nice 확정 후 **Feature Issue 생성** — Milestone·`wave:N` **동시 지정**
-4. DB·인증·3파일+ → `docs/specs/` (Approved 후 구현)
+**③ 금지 패턴:** Backlog에 없는데 "일단 Issue만" · merge 후 `wave:` 라벨만 붙이기 · Must/Nice 구분 없이 polish·Out을 Wave Must에 섞기
 
-**③ Issue 생성 금지 패턴**
-
-- Backlog에 없는데 “일단 Issue만”
-- merge 후 `wave:` 라벨만 붙이기
-- Must/Nice 구분 없이 Wave 2에 polish·Out 넣기
-
-### 5.3 브랜치 · PR · 스펙 (기존 유지)
+### 3.3 브랜치 · PR · 스펙
 
 - 브랜치: `{type}/{issue-number}-{description}` — [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)
 - PR: `Closes #n` · Spec 링크 · `./gradlew test`
 - 스펙 헤더: `> wave: N` — **Backlog와 동일**해야 함
 
-### 5.4 주기적 점검 (15분 · 주 1회)
+### 3.4 주기적 점검 (15분 · 주 1회)
 
 | 체크 | 조치 |
 |------|------|
@@ -387,24 +178,24 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 | Wave N DoD 전부 체크 | Milestone close · 다음 Wave Backlog kickoff |
 | `waves.md` / 본 문서와 GitHub 불일치 | 문서 amend (본 문서 우선) |
 
-### 5.5 스크립트
+### 3.5 스크립트
 
 - `./scripts/github-sync-issues.sh` — **라벨·마일스톤 정렬** (Backlog 결정 **후** 실행)
-- Wave 배치 **판단은 스크립트가 하지 않음** — 반드시 §4 + Backlog
+- Wave 배치 **판단은 스크립트가 하지 않음** — 반드시 §2 + Backlog
 
-### 5.6 현재 백로그 스냅샷 (2026-07-21)
+### 3.6 현재 백로그 스냅샷 (2026-08-03, Wave 재정의 반영)
 
 | Wave | Backlog Issue | Must (DoD) | Nice | Out / other Wave |
 |------|---------------|------------|------|------------------|
-| **1** | **#29** | #22 | #24 ✓ | trip·추천 → Wave 2 |
-| **2** | **#30** | #13·#50 (#11·#12·#17·#37·#38 ✓) | #20, #26✓, #27✓ | #21·#19 → Wave 3 |
-| **3** | **#31** | #21 · **#19** | — | NOTI-005 → Wave 4 |
-| **4** | **#32** | **#44**(확정) · (팀 합의 시) #4 · #6 · #9 | — | — |
-| **Release Gate** | — (전부 Closed, `#65`는 재사용됨 — §7) | #5✓ · #86✓(구 #62) · #64✓ (Wave 아님 — §7) | — | — |
+| **1** | **#29** | #1·#3·#10·#57 (전부 Closed) | — | trip·추천 → Wave 2, 외부연동 → Wave 3 |
+| **2** | **#30** | #13·#50 Open (#11·#12·#17·#22·#24·#37·#38·#39·#47·#48·#53·#54·#60·#67 Closed) | #20✓·#26✓·#27✓ | 외부연동(#19·#21·#44) → Wave 3 |
+| **3** | **#31** | #44✓·#56✓ (Closed) · #19✓·#21·#78 Open | — | trip·recommend → Wave 2 |
+| **4** | **#32** | — (팀 합의 체크리스트) | — | #4·#6·#9·#35·#52 |
+| **Release Gate** | — (Wave 무관, §5) | #5✓·#64✓ (전부 Closed) · OAuth 콘솔 설정값✓(완료, 이슈 번호 재사용됨) | — | — |
 
 ---
 
-## 6. 문서 · 스펙 · Agent
+## 4. 문서 · 스펙 · Agent
 
 | 문서 | 역할 |
 |------|------|
@@ -417,16 +208,16 @@ Agent·개발자 **시작 체크:**
 
 1. 현재 **활성 Wave**는? (Must 미완인 가장 낮은 N)
 2. 내 Issue가 그 Wave Backlog **Must**에 있는가?
-3. #22 Approved 전 — submit·ACTIVE·Hidden API 임의 구현 금지
-4. 열려있는 **Release Gate** 항목이 있는가? (§7 — 스토어 제출 전 필수, Wave와 무관)
+3. #22 관련 후속 변경 — submit·ACTIVE·Hidden API 임의 구현 금지(SSOT는 `schedule-participation-onboarding.md`)
+4. 열려있는 **Release Gate** 항목이 있는가? (§5 — 스토어 제출 전 필수, Wave와 무관)
 
 ---
 
-## 7. 앱 배포·심사 (Release Gate) — Wave와 무관
+## 5. 앱 배포·심사 (Release Gate) — Wave와 무관
 
-**2026-07-28 도입.** Wave는 "사용자 저니가 어디까지 열리는가"를 끊는 축이고, Release Gate는 **"스토어 심사를 통과할 수 있는가"**를 끊는 축이다. 두 축은 독립적 — Wave 1 작업 중에도 Release Gate 항목이 열려 있을 수 있고, Wave 4(운영·확장, **출시 이후** 개선)로 잘못 분류된 항목이 있으면 안 된다.
+Wave는 "백엔드 작업이 어느 도메인인가"를 끊는 축이고, Release Gate는 **"스토어 심사를 통과할 수 있는가"**를 끊는 축이다. 두 축은 독립적 — Wave 4(리팩토링·성능·런칭후UX)로 잘못 분류된 항목이 있으면 안 된다.
 
-**계기:** `#5`(Apple S2S Notification webhook)가 "App Store 심사 요건"이라고 이슈 본문에 이미 적혀 있었음에도 Wave 4(운영·확장) Milestone·라벨로 분류돼 있었다. Wave 4는 성능·기술 debt처럼 "없어도 출시는 되고 나중에 개선하는" 항목인데, Release Gate 항목은 "없으면 심사 자체가 안 되거나 리젝된다"는 점에서 근본적으로 다르다.
+**계기:** `#5`(Apple S2S Notification webhook)가 "App Store 심사 요건"이라고 이슈 본문에 이미 적혀 있었음에도 한때 Wave 4 Milestone·라벨로 분류돼 있었다.
 
 ### 판단 기준
 
@@ -436,12 +227,14 @@ Agent·개발자 **시작 체크:**
 
 ### 현재 상태 (2026-08-03)
 
-**열려 있는 Release Gate 항목 없음.** 과거 항목 3개([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#86](https://github.com/Central-MakeUs/TripFit-server/issues/86)(구 `#62`) OAuth 콘솔 설정값 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke) 전부 Closed. 메타 트래커였던 `#65`는 그동안 연 항목이 없었고, 관측성 개선 스펙([`social-integration-structured-logging.md`](../specs/social-integration-structured-logging.md))으로 재사용됐다 — 더 이상 Release Gate 트래커가 아니다.
+**열려 있는 Release Gate 항목 없음.** 과거 항목 3개([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · OAuth 콘솔 설정값 채우기(완료 확인 — 추적 이슈 번호는 이후 다른 용도로 재사용돼 고정 링크 없음) · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke) 전부 완료. 메타 트래커였던 `#65`는 관측성 개선 스펙([`social-integration-structured-logging.md`](../specs/cross-cutting/social-integration-structured-logging.md))으로 재사용됐다 — 더 이상 Release Gate 트래커가 아니다.
+
+**주의 — 이슈 번호 재사용 관행:** 이 프로젝트는 Closed 이슈 번호를 완전히 무관한 새 작업으로 재사용하는 경우가 있다(`#65`, `#86` 사례). 다른 문서·이슈 본문에서 과거 이슈 번호를 인용할 때는 링크를 걸기 전에 **현재 제목·상태를 다시 확인**한다.
 
 **규칙:**
 
 - 새 Release Gate 항목 발견 시 **새 이슈를 만들어** 이 절 + `waves.md`에 동시 추가 — `#2`([미정] 트래커)와 동일한 패턴, 단 트래커 이슈 번호는 그때 새로 발급.
-- `release: blocking` 라벨만 부여, **Milestone은 지정하지 않음**(Wave 컨테이너가 아니므로 — §5.1 "Milestone=Wave 컨테이너" 원칙의 의도적 예외).
+- `release: blocking` 라벨만 부여, **Milestone은 지정하지 않음**(Wave 컨테이너가 아니므로).
 - Wave 4 후보 이슈를 만들기 **전** 위 판단 기준으로 먼저 걸러본다.
 
 ---
@@ -455,12 +248,10 @@ Agent·개발자 **시작 체크:**
 
 | wave | Milestone (GitHub) | 한글 |
 |------|-------------------|------|
-| 1 | Wave 1 — 준비 | 준비 |
-| 2 | Wave 2 — 핵심 MVP | 핵심 MVP |
-| 3 | Wave 3 — 출시 UX | 출시 UX |
-| 4 | Wave 4 — 운영·확장 | 운영·확장 |
-
-> GitHub Milestone 제목은 위 표와 동기화됨 (2026-07-20). wave 번호(`wave:N`)는 SSOT.
+| 1 | Wave 1 — 소셜 로그인 | 소셜 로그인 |
+| 2 | Wave 2 — MVP 로직 | trip·recommend·member 서버 로직 |
+| 3 | Wave 3 — 외부 API 연동 | Google Calendar·Firebase·Kakao |
+| 4 | Wave 4 — 리팩토링·성능·런칭 후 UX | 리팩토링·백엔드 성능 + 런칭 이후 추가 기능 |
 
 ## 부록 C — Wave Backlog Issue (GitHub SSOT)
 
@@ -471,7 +262,7 @@ Agent·개발자 **시작 체크:**
 | 3 | **#31** | `[Wave 3 Backlog]` |
 | 4 | **#32** | `[Wave 4 Backlog]` |
 
-재생성 시 본문 템플릿: `docs/product/templates/wave-backlog-body.md` · §3 DoD/Must/Nice/Out 반영.
+재생성 시 본문 템플릿: `docs/product/templates/wave-backlog-body.md` · §1 DoD/Must/Nice/Out 반영.
 
 Wave Backlog Issue는 **코드 구현 Issue가 아님** — `kind: chore` + `area: docs` 권장.
 
@@ -481,4 +272,4 @@ Wave Backlog Issue는 **코드 구현 Issue가 아님** — `kind: chore` + `are
 
 ---
 
-*최종 갱신: 2026-07-28 (§7 Release Gate 신설 · #5를 Wave 4에서 재분류) · 이전: 2026-07-23 (§5.6 백로그 스냅샷·#44 Must 확정) · TripFit 백엔드 2~3명 · Spring Boot 단일 모듈*
+*최종 갱신: 2026-08-03 — Wave 축을 User Journey → 도메인(로그인/MVP 로직/외부연동/리팩토링·성능·런칭후UX)으로 재정의(#88). 이전: 2026-07-28 (§5 Release Gate 신설) · TripFit 백엔드 2~3명 · Spring Boot 단일 모듈*

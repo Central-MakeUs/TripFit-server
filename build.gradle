@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'jacoco'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'com.diffplug.spotless' version '7.0.3'
@@ -18,6 +19,8 @@ repositories {
 	mavenCentral()
 }
 
+ext['testcontainers.version'] = '1.21.3'
+
 dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -27,6 +30,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-scalar:3.0.3'
+	implementation 'com.github.therapi:therapi-runtime-javadoc:0.15.0'
+	annotationProcessor 'com.github.therapi:therapi-runtime-javadoc-scribe:0.15.0'
 	implementation 'com.nimbusds:nimbus-jose-jwt:10.9.1'
 	implementation 'com.google.firebase:firebase-admin:9.10.0'
 	implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
@@ -34,13 +40,25 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'com.h2database:h2'
+	testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.2'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:mysql'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		html.required = true
+	}
 }
 
 tasks.withType(JavaCompile).configureEach {

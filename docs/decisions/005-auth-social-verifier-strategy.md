@@ -5,7 +5,7 @@
 - **관련:**
   - [`001-auth-mobile-token-verification.md`](001-auth-mobile-token-verification.md) — 모바일 토큰 검증 + JWT (안 B)
   - [`003-architecture-guide.md`](003-architecture-guide.md) — 도메인 기반 레이어드·레이어 규칙
-  - [`docs/specs/auth-social-login.md`](../specs/auth-social-login.md) — wave 1 인증 API 스펙
+  - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — wave 1 인증 API 스펙
 
 ## 맥락
 
@@ -152,7 +152,7 @@ auth/
 4. `verify()`는 반드시 `OAuthProfile` 반환; 식별자는 `providerUserId`에만.
 5. 필요 시 `OAuthProperties`·env·`deploy/app/.env.example` 보완.
 6. 구현체 단위 테스트 + `AuthServiceTest`(registry mock) 보강.
-7. `docs/specs/auth-social-login.md` API·provider 표 동기화.
+7. `docs/specs/auth/auth-social-login.md` API·provider 표 동기화.
 
 **수정하지 않아도 되는 것 (원칙):** `AuthController`, `AuthService.login` 본문, Registry 클래스.
 
@@ -188,7 +188,7 @@ provider별 **실토큰 E2E**는 스테이징·수동; CI는 mock·fixture 위�
 - [ ] provider 추가 시 본 문서 체크리스트 + 스펙 동기화
 - [ ] wave 4: `TokenRevocationChecker` Redis 구현 — 본 Strategy 문서와 별도 ([`004`](004-auth-token-rotation.md))
 - [ ] wave 4: 계정 연결 시 `user_identity` — verifier 출력·upsert 정책 재검토
-- [ ] wave 4: 프로필 이미지 B안(S3 미러) — [`006`](006-profile-image-url-storage.md), [`user-profile-image-s3-mirror.md`](../specs/user-profile-image-s3-mirror.md)
+- [ ] wave 4: 프로필 이미지 B안(S3 미러) — [`006`](006-profile-image-url-storage.md), [`user-profile-image-s3-mirror.md`](../specs/user/user-profile-image-s3-mirror.md)
 
 ## 변경 이력
 

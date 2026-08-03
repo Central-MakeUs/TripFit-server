@@ -23,6 +23,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -32,10 +34,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// RecommendationController의 @ApiResponse 예시 필드 shape가 실제 응답과 어긋나지 않는지 실제 H2 DB로
+// RecommendationController의 @ApiResponse 예시 필드 shape가 실제 응답과 어긋나지 않는지 실제 MySQL(Testcontainers) DB로
 // 전 구간(추천 생성→목록→근거 상세→피드백→확정→확정취소) 검증한다
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class RecommendationControllerSwaggerConsistencyTest {
 
   @Autowired

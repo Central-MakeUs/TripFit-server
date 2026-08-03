@@ -65,9 +65,9 @@
 - 알림 문구·발송 조건·랜딩 화면을 기획자 전달 표 기준으로 반영
 - BR-NOTI-004(확정·취소 통합)를 **확정(BR-NOTI-004)** / **취소(BR-NOTI-009 신설)** 로 분리 — 카피·랜딩이 서로 다름
 - 구 BR-NOTI-006/007(카카오 공유·카피 예시)은 본문 표(001/002)에 통합되며 폐기. BR-NOTI-007 문구 "일정이 준비되었어요" → "일정이 제출되었어요"로 교체
-- **BR-NOTI-005를 wave 4 → wave 3로 재분류** (`docs/specs/notification.md` D1, 사용자 승인) — `#21`/`#31`/`#32`·`development-wave.md`·`waves.md`·`mvp.md` 동시 amend
-- **BR-USER-005(알림 on/off) 확정** (`docs/specs/notification.md` D2) — `user.md` BR-USER-005 참고. **예외 없이 NOTI-001~005·009 전체에 게이트 적용** (D10)
-- **NOTI-003/004/009 수신 대상 "참여자(방장 제외)"로 확정** (`docs/specs/notification.md` D3) — 액션을 수행한 방장 본인은 제외
-- **NOTI-002 판정 기준 확정**: 여행방 정원 도달 순간 (`docs/specs/notification.md` D11)
-- **NOTI-003 발송 조건 확정**: patchTrip이 실제 값 변경을 수반할 때만 발송, no-op은 미발송 (`docs/specs/notification.md` D12)
-- **NOTI-005 발송 방식 확정**: FCM 토픽이 아닌 **DB 조회 + 배치(500개) 멀티캐스트** — `notification_enabled=true`인 사용자만 대상, 게이트를 서버가 완전히 통제 (`docs/specs/notification.md` D6)
+- **BR-NOTI-005를 wave 4 → wave 3로 재분류** (`docs/specs/notification/notification.md` D1, 사용자 승인) — `#21`/`#31`/`#32`·`development-wave.md`·`waves.md`·`mvp.md` 동시 amend
+- **BR-USER-005(알림 on/off) 확정** (`docs/specs/notification/notification.md` D2) — `user.md` BR-USER-005 참고. **예외 없이 NOTI-001~005·009 전체에 게이트 적용** (D10)
+- **NOTI-003/004/009 수신 대상 "참여자(방장 제외)"로 확정** (`docs/specs/notification/notification.md` D3) — 액션을 수행한 방장 본인은 제외
+- **NOTI-002 판정 기준 확정**: 여행방 정원 도달 순간 (`docs/specs/notification/notification.md` D11)
+- **NOTI-003 발송 조건 확정**: patchTrip이 실제 값 변경을 수반할 때만 발송, no-op은 미발송 (`docs/specs/notification/notification.md` D12)
+- **NOTI-005 발송 방식 확정**: FCM 토픽이 아닌 **DB 조회 + 배치(500개) 멀티캐스트** — `notification_enabled=true`인 사용자만 대상, 게이트를 서버가 완전히 통제 (`docs/specs/notification/notification.md` D6)

@@ -33,20 +33,11 @@ public class GoogleCalendarController {
     this.googleCalendarService = googleCalendarService;
   }
 
-  @Operation(
-      summary = "Google Calendar 연동",
-      description = """
-          목적: Google OAuth authorization code로 Calendar 읽기 권한을 연동한다.
-
-          호출 시점: 온보딩·설정 화면에서 Google Calendar 연동 버튼 완료 직후.
-
-          전제: TripFit 로그인(JWT) 상태. 앱·웹이 Google OAuth 동의 후 authorization code를 전달한다. 브라우저
-          리다이렉트 방식이면 redirectUri도 함께 보내야 한다.
-
-          결과: isGoogleCalendarConnected=true로 갱신된 UserSummary. 연동 직후 freeBusy 1회 sync.
-
-          주요 에러: GOOGLE_CALENDAR_CONNECT_FAILED — code 교환·Google API 실패
-          """)
+  /**
+   * Google OAuth authorization code로 Calendar 읽기 권한을 연동한다. 앱·웹이 Google OAuth 동의 후 받은 authorization
+   * code를 전달하며, 브라우저 리다이렉트 방식이면 redirectUri도 함께 보내야 한다. 연동 직후 freeBusy를 1회 동기화한다.
+   */
+  @Operation(summary = "Google Calendar 연동")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -93,19 +84,11 @@ public class GoogleCalendarController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  @Operation(
-      summary = "Google Calendar 연동 해제",
-      description = """
-          목적: Google Calendar 연동을 의도적으로 해제한다.
-
-          호출 시점: 설정·온보딩에서 연동 해제 선택 시.
-
-          전제: isGoogleCalendarConnected=true.
-
-          결과: revoke(best-effort) 후 credential·busy_day 삭제, flag=false UserSummary. 정기·개별 일정은 유지.
-
-          주요 에러: GOOGLE_CALENDAR_NOT_CONNECTED — 미연동 상태에서 해제 요청
-          """)
+  /**
+   * Google Calendar 연동을 의도적으로 해제한다. revoke(best-effort) 후 credential·busy_day를 삭제하지만, 정기·개별 일정은 그대로
+   * 유지된다.
+   */
+  @Operation(summary = "Google Calendar 연동 해제")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",

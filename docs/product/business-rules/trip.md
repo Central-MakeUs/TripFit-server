@@ -15,7 +15,7 @@
 | **BR-TRIP-009** | 여행방 수정 권한 | 여행방 정보 수정 시 | **방장만** 이름·일수(또는 미정)·인원·**여행지** 수정. **희망 기간(`start_range`/`end_range`)은 생성 후 수정 불가** | 참여자 403 · 기간 변경 시도 400 |
 | **BR-TRIP-010** | 추천 결과 초기화 | 추천에 영향 주는 옵션 변경 시 | **일수(`duration_days`)** 변경 시 **`recommendation` hard DELETE** 후 재추천 (기간은 불변이므로 PATCH 트리거 없음) | stale 추천 노출 금지 |
 | **BR-TRIP-011** | 모두 참석 가중치 (2026-07-30 개정 — 구 "하드 필터" 폐기) | **모두 참석** 모드 | 인원 미달 후보를 제외하지 않음. 불참률 가중치 5.0·부분참석 가중치 3.0(다른 모드는 1.0)으로 점수에만 크게 반영 | 없음 — 필터가 아니므로 "후보 없음" 케이스 자체가 사라짐 |
-| **BR-TRIP-012** | 동점자 처리 (2026-07-30 개정) | 추천 점수 동일 시 | 1) 불확실 일정 수 적은 순, 2) 시작일 빠른 순 | 확정 — [`docs/specs/trip-recommendation-scoring-source.md`](../../specs/trip-recommendation-scoring-source.md) |
+| **BR-TRIP-012** | 동점자 처리 (2026-07-30 개정) | 추천 점수 동일 시 | 1) 불확실 일정 수 적은 순, 2) 시작일 빠른 순 | 확정 — [`docs/specs/trip/trip-recommendation-scoring-source.md`](../../specs/trip/trip-recommendation-scoring-source.md) |
 | **BR-TRIP-013** | 여행방 삭제 | 삭제 요청 시 | **방장만** 삭제(soft delete). 참여자 접근 상실 | 참여자 403 |
 
 생성 권한(로그인): **BR-USER-001**.
@@ -24,7 +24,7 @@
 
 ### 확정 (2026-07-26)
 
-- BR-TRIP-001: 박/일 검증을 `nights == days - 1` 등식 → `nights+1 ≤ days ≤ min(nights+2, T)` 범위로 확장. 당일치기(0박)도 예외 없이 동일 규칙 — [`trip-duration-range.md`](../../specs/trip-duration-range.md)
+- BR-TRIP-001: 박/일 검증을 `nights == days - 1` 등식 → `nights+1 ≤ days ≤ min(nights+2, T)` 범위로 확장. 당일치기(0박)도 예외 없이 동일 규칙 — [`trip-duration-range.md`](../../specs/trip/trip-duration-range.md)
 - `duration_nights`를 파생값(`days-1`)이 아닌 컬럼으로 영속화
 
 ### `[미정]`
@@ -35,7 +35,7 @@
 
 ### 확정 (2026-07-30)
 
-- BR-TRIP-005: 평가항목(불참률·부분참석비율·불확실인원비율·1인당평균연차일수) 패널티 구간표 + 모드별 가중치 확정 — `docs/specs/trip-recommendation-algorithm.md`
+- BR-TRIP-005: 평가항목(불참률·부분참석비율·불확실인원비율·1인당평균연차일수) 패널티 구간표 + 모드별 가중치 확정 — `docs/specs/trip/trip-recommendation-algorithm.md`
 - BR-TRIP-011: **하드 필터 폐기** — `ALL_ATTEND`도 가중치 기반 점수화로 통일
 - BR-TRIP-012: 동점 처리 = 1) 불확실 일정 수 적은 순 2) 시작일 빠른 순 (구 "연차→기간→주말·공휴일" 폐기)
 

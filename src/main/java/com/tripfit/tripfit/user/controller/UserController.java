@@ -39,19 +39,11 @@ public class UserController {
     this.userWithdrawalService = userWithdrawalService;
   }
 
-  @Operation(
-      summary = "온보딩 성·이름 최초 등록",
-      description = """
-          목적: 온보딩에서 성·이름을 최초로 등록한다. 등록 이후 재수정은 이 API가 아니라 마이페이지 프로필 수정(`PATCH /users/profile`)을 사용한다.
-
-          호출 시점: 소셜 로그인 직후, 성·이름이 아직 없는 사용자에게 노출되는 온보딩 입력 화면. 이미 등록된 사용자에게는 호출되지 않는다.
-
-          전제: 성·이름 모두 필수.
-
-          결과: UserSummary. hasPreSchedule은 일정 row EXISTS 파생(저장 필드 아님).
-
-          주의: 성·이름 미완료면 이후 여행방 생성·참여가 PROFILE_NAME_REQUIRED로 거부된다.
-          """)
+  /**
+   * 온보딩에서 성·이름을 최초로 등록한다. 등록 이후 재수정은 이 API가 아니라 마이페이지 프로필 수정 ({@code PATCH /users/profile})을 사용한다.
+   * 성·이름 미완료면 이후 여행방 생성·참여가 PROFILE_NAME_REQUIRED로 거부된다.
+   */
+  @Operation(summary = "온보딩 성·이름 최초 등록")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -88,19 +80,12 @@ public class UserController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  @Operation(
-      summary = "마이페이지 프로필(성·이름·알림 설정) 부분 수정",
-      description = """
-          목적: 온보딩에서 이미 등록된 성·이름을 다시 수정하거나, 알림 수신 여부(BR-USER-005)를 변경한다. 최초 이름 등록은 이 API가 아니라 온보딩 성·이름 등록(`PATCH /users/onboarding/name`)을 사용한다.
-
-          호출 시점: 마이페이지 프로필 수정 화면, 알림 설정 화면.
-
-          전제: firstName·lastName·notificationEnabled 중 최소 1개 필드를 포함해야 한다. 생략(요청에 없음)된 필드는 미변경. 포함된 firstName·lastName이 공백이면 400.
-
-          결과: 요청에 포함된 필드만 반영된 UserSummary. hasPreSchedule은 login/me와 동일하게 조회 시 파생.
-
-          주요 에러: INVALID_INPUT — 전 필드 생략(빈 patch) 또는 포함된 이름 필드가 공백
-          """)
+  /**
+   * 온보딩에서 이미 등록된 성·이름을 다시 수정하거나 알림 수신 여부를 변경한다. 최초 이름 등록은 이 API가 아니라 온보딩 성·이름
+   * 등록({@code PATCH /users/onboarding/name})을 사용한다. firstName·lastName· notificationEnabled 중 최소 1개
+   * 필드를 포함해야 하며, 생략된 필드는 미변경으로 처리되고 요청에 포함된 필드만 응답에 반영된다.
+   */
+  @Operation(summary = "마이페이지 프로필(성·이름·알림 설정) 부분 수정")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -137,19 +122,12 @@ public class UserController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  @Operation(
-      summary = "회원 탈퇴",
-      description = """
-          목적: 본인 계정을 탈퇴한다.
-
-          호출 시점: 마이페이지 탈퇴 확인.
-
-          전제: 없음 — 진행 중인 방이 있어도 차단하지 않는다.
-
-          결과: 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동으로 삭제된다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 204를 반환한다.
-
-          주의: 소유한 방이 있으면 그 방은 다른 참여자에게도 더 이상 보이지 않는다. 액세스 토큰은 자연 만료 전까지 유효할 수 있다.
-          """)
+  /**
+   * 본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지
+   * 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은 자연
+   * 만료 전까지는 유효할 수 있다.
+   */
+  @Operation(summary = "회원 탈퇴")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "탈퇴 성공(No Content)"),
       @ApiResponse(

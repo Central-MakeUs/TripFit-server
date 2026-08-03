@@ -27,7 +27,6 @@
 - 지난 데이터를 활용한 일정 자동 채우기
 - 숙소/교통 제휴 예약 서비스
 - 비회원·게스트 참여
-- 여행방 **삭제** 시 VOC 사유 저장 (`unconfirm` 사유와 별개 — wave 4)
 
 ## 개발 물결 (wave)
 
@@ -40,12 +39,12 @@
 
 ## 의존성 / 선행 조건
 
-- **#22 확정 완료 (2026-07-21, #39 amend까지 반영)** — 일정 참여·submit·sparse·온보딩 skip SSOT 확정됨. wave 2 일정 응답·추천(#13)은 이 SSOT 위에서 진행
-- 외부 캘린더(구글 등) API 연동 — Google Calendar OAuth(#44)로 wave 4 진행 중, 상세: [`google-calendar-oauth.md`](../specs/google-calendar-oauth.md)
-- 가중치 기반 추천 엔진(4모드) 페널티 점수 산출 로직 검증 — wave 2, [`trip-recommendation.md`](../specs/trip-recommendation.md) (Draft)
+- **#22 확정 완료 (2026-07-21, #39 amend까지 반영)** — 일정 참여·submit·sparse·온보딩 skip SSOT 확정됨(wave 2). wave 2 일정 응답·추천(#13)은 이 SSOT 위에서 진행
+- 외부 캘린더(구글 등) API 연동 — Google Calendar OAuth(#44)로 wave 3 진행, Implemented. 상세: [`google-calendar-oauth.md`](../specs/user/google-calendar-oauth.md)
+- 가중치 기반 추천 엔진(4모드) 페널티 점수 산출 로직 검증 — wave 2, [`trip-recommendation.md`](../specs/trip/trip-recommendation.md) (Draft)
 
 ## 기획 메모 (NotebookLM)
 
 - **근거 약한 In Scope:** 외부 캘린더 연동 — Pain Point 해결용 `[제안]`
 - **확정 (2026-07-08):** 참여자 소셜 로그인 필수, 추천 4모드 wave 2, `trip.destination` MVP In, ~~BR-NOTI-005 wave 4~~ (2026-07-23 번복)
-- **확정 (2026-07-23):** BR-NOTI-005 wave 4 → **wave 3** 재분류, 발송 주기 매월 1·15일 09:00, 채널 FCM 단일 (`docs/specs/notification.md` D1·D4)
+- **확정 (2026-07-23):** BR-NOTI-005 wave 4 → **wave 3** 재분류, 발송 주기 매월 1·15일 09:00, 채널 FCM 단일 (`docs/specs/notification/notification.md` D1·D4)

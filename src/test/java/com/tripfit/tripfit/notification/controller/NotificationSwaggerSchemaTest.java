@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,6 +21,7 @@ import org.springframework.web.context.WebApplicationContext;
 // 필드·enum(NotificationType·LandingType)까지 실제로 노출되는지 검증한다 — useReturnTypeSchema 누락 회귀 방지
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class NotificationSwaggerSchemaTest {
 
   @Autowired

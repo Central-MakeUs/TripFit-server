@@ -13,6 +13,8 @@ import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
@@ -24,6 +26,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class AuthSecurityIntegrationTest {
 
   @Autowired

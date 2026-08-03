@@ -46,8 +46,10 @@ Harness 형제: `harness-wave.md` (Wave·`[미정]`) · `harness-follow-up.md` (
 | “완료/통과” 선언 전 | `verify` 스킬 | `./gradlew test` + 이슈·스펙 체크리스트 |
 | Must Have급 구현 완료 후 (또는 사용자 요청) | — | `harness-follow-up.md` 💡 후속 제안 |
 | 「다른 이슈로」범위 미루기 | — | `harness-follow-up.md` ✅ Defer |
-| PR·머지 전 (요청 시) | `code-review` / `simplify` 스킬 | `.github/CONTRIBUTING.md` |
+| PR·머지 전(요청 시) · **API·DB 등 Must Have급 변경은 커밋 전 기본 권장** | `code-review` / `simplify` 스킬 — 둘 다 fresh 서브에이전트 컨텍스트에서 diff만 보고 판단 | `.github/CONTRIBUTING.md` |
 | 독립 작업 병렬 | `Agent` 툴 서브에이전트 (`Explore`, `general-purpose`) | 중복 시 하나만 사용 |
+
+**왜 서브에이전트 컨텍스트인가:** 방금 짠 코드를 같은 대화에서 스스로 리뷰하면 자기 판단을 재확인하는 편향이 생기기 쉽다(생성과 평가를 같은 컨텍스트에서 하면 self-grading 편향). `code-review`/`simplify`는 별도 컨텍스트에서 diff·기준만 보고 판단하므로 이 편향을 줄인다 — 한 줄·단일 파일 핫픽스까지 매번 강제하진 않되, API·DB·다파일 변경처럼 되돌리기 비싼 작업은 커밋 전에 기본으로 돌린다.
 
 ## 버그·테스트 실패 절차 (systematic-debugging 대체)
 
