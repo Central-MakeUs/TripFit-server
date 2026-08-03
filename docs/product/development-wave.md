@@ -102,11 +102,13 @@ Wave 3 = MVP **이후** “쓸 만한” UX. Wave 4 = MVP **범위 밖** 기술�
 다음은 **중요하지만 Wave 번호를 올리지 않습니다.** 기본 **Wave 4 (또는 현재 Wave Must 완료 후)**:
 
 - Redis, RTR, 캐싱, 성능 프로파일링
-- S3 미러, Apple S2S, 계정 연결
+- S3 미러, 계정 연결
 - 모니터링·알람·Docker/Nginx 고도화
 - “더 깔끔한” 리팩터링 (동작 변경 없음)
 
-**예외:** Wave N DoD를 **막는** 최소 인프라(예: Wave 1에서 EC2에 API 한 번 배포)만 해당 Wave Must에 포함.
+**예외 1:** Wave N DoD를 **막는** 최소 인프라(예: Wave 1에서 EC2에 API 한 번 배포)만 해당 Wave Must에 포함.
+
+**예외 2 — Release Gate(§7):** "기술적으로 사소해 보이지만 앱스토어·플레이스토어 **심사 가이드라인상 필수**"인 항목은 Wave 4가 아니다. Wave 4는 **출시 이후** 운영·확장인데, Release Gate 항목은 **출시 전** 반드시 끝나야 하기 때문. 예: Apple S2S Notification webhook(#5, Sign in with Apple + 계정 삭제 지원 시 Apple 요구), 탈퇴 시 소셜 provider revoke(#64, App Store Review Guideline 5.1.1(v)). 판단 기준: "이게 없으면 스토어 심사를 통과 못 하는가?" → Yes면 §7 Release Gate.
 
 ### 2.4 우리 팀 규모에 맞는 현실
 
@@ -247,7 +249,7 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 
 ### Wave 4 — 운영·확장 (`Wave 4 — 운영·확장`)
 
-**목적:** **새 사용자 여정 없음.** 성능·보안·운영·확장·기술 debt.
+**목적:** **새 사용자 여정 없음.** 성능·보안·운영·확장·기술 debt. **출시 이후** 개선 — 스토어 제출 전 필수 항목은 Wave 4가 아니라 §7 Release Gate.
 
 **User Journey:** (없음 — 기존 기능의 품질·안정성 향상)
 
@@ -255,16 +257,16 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 
 - [x] Google Calendar OAuth (**#44**) — 확정 Must, Implemented (`docs/specs/google-calendar-oauth.md`)
 - [ ] RTR + Redis (#4)
-- [ ] Apple S2S (#5)
 - [ ] 프로필 S3 미러 (#9)
 - [ ] 소셜 계정 연결 (#6)
 - [ ] (선택) 모니터링·부하 테스트
 
-**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #5, #6, #9(팀 합의 시), 여행방 삭제 시 VOC 사유
+**포함:** **#44** Google Calendar OAuth(확정 Must), #4, #6, #9(팀 합의 시), 여행방 삭제 시 VOC 사유
 
 **포함하면 안 됨:**
 
 - MVP In Scope **신규** 기능 — 넣으려면 **Wave 1~3 Backlog 개정** + `mvp.md` amend 필요
+- **스토어 제출·심사 필수 항목** — §7 Release Gate. 2026-07-28: #5(Apple S2S)를 여기서 제외 — 심사 요건이라 "출시 이후" Wave 4 성격과 다름
 
 ---
 
@@ -397,7 +399,8 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 | **1** | **#29** | #22 | #24 ✓ | trip·추천 → Wave 2 |
 | **2** | **#30** | #13·#50 (#11·#12·#17·#37·#38 ✓) | #20, #26✓, #27✓ | #21·#19 → Wave 3 |
 | **3** | **#31** | #21 · **#19** | — | NOTI-005 → Wave 4 |
-| **4** | **#32** | **#44**(확정) · (팀 합의 시) #4 · #5 · #6 · #9 | — | — |
+| **4** | **#32** | **#44**(확정) · (팀 합의 시) #4 · #6 · #9 | — | — |
+| **Release Gate** | **#65** | #5 · #62 · #64 (Wave 아님 — §7) | — | — |
 
 ---
 
@@ -415,6 +418,35 @@ Agent·개발자 **시작 체크:**
 1. 현재 **활성 Wave**는? (Must 미완인 가장 낮은 N)
 2. 내 Issue가 그 Wave Backlog **Must**에 있는가?
 3. #22 Approved 전 — submit·ACTIVE·Hidden API 임의 구현 금지
+4. 열려있는 **Release Gate** 항목이 있는가? (§7 — 스토어 제출 전 필수, Wave와 무관)
+
+---
+
+## 7. 앱 배포·심사 (Release Gate) — Wave와 무관
+
+**2026-07-28 도입.** Wave는 "사용자 저니가 어디까지 열리는가"를 끊는 축이고, Release Gate는 **"스토어 심사를 통과할 수 있는가"**를 끊는 축이다. 두 축은 독립적 — Wave 1 작업 중에도 Release Gate 항목이 열려 있을 수 있고, Wave 4(운영·확장, **출시 이후** 개선)로 잘못 분류된 항목이 있으면 안 된다.
+
+**계기:** `#5`(Apple S2S Notification webhook)가 "App Store 심사 요건"이라고 이슈 본문에 이미 적혀 있었음에도 Wave 4(운영·확장) Milestone·라벨로 분류돼 있었다. Wave 4는 성능·기술 debt처럼 "없어도 출시는 되고 나중에 개선하는" 항목인데, Release Gate 항목은 "없으면 심사 자체가 안 되거나 리젝된다"는 점에서 근본적으로 다르다.
+
+### 판단 기준
+
+> 이 항목이 없으면 **스토어 제출·심사를 통과할 수 없는가?**
+> - Yes → Release Gate (`release: blocking` 라벨, Milestone 없음 — Wave와 독립)
+> - No, 그냥 나중에 하면 좋은 개선 → Wave 4
+
+### 현재 목록 (SSOT: [#65](https://github.com/Central-MakeUs/TripFit-server/issues/65))
+
+| 이슈 | 내용 | 왜 Release Gate인가 |
+|------|------|----------------------|
+| [#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) | Apple S2S Notification webhook | Sign in with Apple 지원 시 Apple이 요구하는 서버 연동 |
+| [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) | 스토어 제출 전 OAuth 콘솔 설정값 (리다이렉션 URI·자바스크립트 원본·App Store ID) | 미등록 시 로그인 자체가 `redirect_uri_mismatch` 등으로 실패 |
+| [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) | 탈퇴 시 소셜 provider revoke 호출 (Google/Kakao/Apple) | Apple: App Store Review Guideline 5.1.1(v) — 계정 삭제 지원 시 Sign in with Apple 토큰 revoke 필수 |
+
+**규칙:**
+
+- 새 Release Gate 항목 발견 시 **`#65`(메타 트래커) + 이 표 + `waves.md`**에 동시 추가 — `#2`([미정] 트래커)와 동일한 패턴.
+- `release: blocking` 라벨만 부여, **Milestone은 지정하지 않음**(Wave 컨테이너가 아니므로 — §5.1 "Milestone=Wave 컨테이너" 원칙의 의도적 예외).
+- Wave 4 후보 이슈를 만들기 **전** 위 판단 기준으로 먼저 걸러본다.
 
 ---
 
@@ -453,4 +485,4 @@ Wave Backlog Issue는 **코드 구현 Issue가 아님** — `kind: chore` + `are
 
 ---
 
-*최종 갱신: 2026-07-23 (§5.6 백로그 스냅샷·#44 Must 확정) · TripFit 백엔드 2~3명 · Spring Boot 단일 모듈*
+*최종 갱신: 2026-07-28 (§7 Release Gate 신설 · #5를 Wave 4에서 재분류) · 이전: 2026-07-23 (§5.6 백로그 스냅샷·#44 Must 확정) · TripFit 백엔드 2~3명 · Spring Boot 단일 모듈*

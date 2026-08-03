@@ -51,7 +51,7 @@
 ### Out of Scope (이번 스펙)
 
 - 액세스 토큰(JWT) 즉시 무효화 — RTR/블랙리스트 인프라 없음(Wave 4 `#4`), 자연 만료까지는 유효할 수 있음. 리프레시 토큰은 hard delete로 즉시 무효화됨
-- 소셜 제공자 측 연결 해제(카카오·구글 unlink API 호출) — Wave 4 `#6`(소셜 계정 연결·해제)과 별개, 본 스펙은 TripFit 내부 계정 데이터만 처리
+- 소셜 provider 측 revoke·unlink API 호출(Google/Kakao/Apple) — **`#64`**(탈퇴 시 소셜 provider revoke 호출, Release Gate — 앱 배포·심사 필수, `development-wave.md` §7)로 이관. `#6`(소셜 계정 연결·해제)과는 다른 이슈 — `#6`은 계정을 유지한 채 여러 소셜을 연결/개별 해제하는 기능이고, `#64`는 **탈퇴(계정 삭제)가 트리거**인 별개 흐름(2026-07-28 amend, 최초엔 `#6`으로 잘못 위임했었음)
 - 탈퇴 확인 모달·UX — FE 책임 (다만 방장의 경우 소유한 모든 방이 삭제된다는 경고 문구가 필요할 수 있음 — FE 확인 필요)
 
 ## API
@@ -133,6 +133,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | Out of Scope "소셜 provider 측 unlink" 위임 대상을 `#6`→`#64`로 amend. `#64`는 Release Gate(앱 배포·심사 필수, `development-wave.md` §7)로 신규 분류 — Apple은 App Store Review Guideline 5.1.1(v) 요건 |
 | 2026-07-27 | 리스크·미결정 "탈퇴 계정 재가입(부활) 정책" 확정(사용자 결정) — **무조건 재가입 가능**. soft-deleted 계정 재로그인 시 차단하던 `AUTH_WITHDRAWN_ACCOUNT`(401)를 폐기하고, 기존 row를 부활시켜 로그인 진행하는 방식으로 구현·문서 amend |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조 동기화 |
 | 2026-07-24 | 구현 완료(`#47` 브랜치) — `UserWithdrawalService`(cascade→hard delete→soft delete/PII 스크럽), `AUTH_WITHDRAWN_ACCOUNT` 로그인 차단, `./gradlew test` 통과 |

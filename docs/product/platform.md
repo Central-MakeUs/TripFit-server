@@ -164,8 +164,9 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 |------|------|
 | **1** | [`auth-social-login.md`](../specs/auth-social-login.md) — login/refresh/logout |
 | **4** | [`auth-token-rotation.md`](../specs/auth-token-rotation.md) — RTR + Redis |
-| **4** | Apple S2S webhook, 딥링크, 앱 버전 호환 (스토어 직전) |
+| **4** | 딥링크, 앱 버전 호환 |
 | **3~4** | 푸시, 분석, 결제 등 — 각각 스펙 + decisions |
+| **Release Gate**(wave 무관) | Apple S2S webhook(#5) 등 스토어 심사 필수 항목 — [`waves.md`](waves.md#-앱-배포심사-체크리스트-release-gate-wave와-무관-최우선) |
 
 ## 관련 문서
 
