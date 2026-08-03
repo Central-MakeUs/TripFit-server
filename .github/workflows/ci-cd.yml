@@ -156,7 +156,7 @@ jobs:
             ${{ steps.image.outputs.full }}:latest
 
       - name: Deploy to EC2 A
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           GHCR_IMAGE: ${{ steps.image.outputs.full }}:latest
