@@ -67,7 +67,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseRegularScheduleListResponse"
                 },
                 "example": {
                   "data": {
@@ -142,7 +142,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseRegularScheduleResponse"
                 },
                 "example": {
                   "data": {
@@ -235,7 +235,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseUserSummaryResponse"
                 },
                 "example": {
                   "data": {
@@ -328,7 +328,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseUserSummaryResponse"
                 },
                 "example": {
                   "data": {
@@ -435,7 +435,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripListResponse"
                 },
                 "example": {
                   "data": {
@@ -526,7 +526,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseCreateTripResponse"
                 },
                 "example": {
                   "data": {
@@ -628,7 +628,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripDetailResponse"
                 },
                 "example": {
                   "data": {
@@ -735,7 +735,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripDetailResponse"
                 },
                 "example": {
                   "data": {
@@ -879,7 +879,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseRefreshResponse"
                 },
                 "example": {
                   "data": {
@@ -996,7 +996,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseLoginResponse"
                 },
                 "example": {
                   "data": {
@@ -1176,7 +1176,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseRegularScheduleResponse"
                 },
                 "example": {
                   "data": {
@@ -1295,7 +1295,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponsePersonalScheduleResponse"
                 },
                 "example": {
                   "data": {
@@ -1364,7 +1364,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponsePersonalScheduleResponse"
                 },
                 "example": {
                   "data": {
@@ -1449,7 +1449,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseUserSummaryResponse"
                 },
                 "example": {
                   "data": {
@@ -1540,7 +1540,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseUserSummaryResponse"
                 },
                 "example": {
                   "data": {
@@ -1630,7 +1630,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripDetailResponse"
                 },
                 "example": {
                   "data": {
@@ -1838,7 +1838,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripDetailResponse"
                 },
                 "example": {
                   "data": {
@@ -2002,7 +2002,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripDetailResponse"
                 },
                 "example": {
                   "data": {
@@ -2135,7 +2135,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseScheduleCalendarResponse"
                 },
                 "example": {
                   "data": {
@@ -2220,7 +2220,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripMembersResponse"
                 },
                 "example": {
                   "data": {
@@ -2325,7 +2325,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseMemberScheduleCalendarResponse"
                 },
                 "example": {
                   "data": {
@@ -2429,7 +2429,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseUserSummaryResponse"
                 },
                 "example": {
                   "data": {
@@ -2548,7 +2548,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripMembersResponse"
                 },
                 "example": {
                   "data": {
@@ -2808,29 +2808,6 @@
           "title"
         ]
       },
-      "SuccessResponse": {
-        "type": "object",
-        "description": "API 성공 응답 envelope",
-        "properties": {
-          "data": {
-            "description": "응답 본문"
-          },
-          "message": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "에러 메시지 (성공 시 null)"
-          },
-          "code": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "에러 코드 (성공 시 null)"
-          }
-        }
-      },
       "ErrorResponse": {
         "type": "object",
         "description": "API 에러 응답 envelope",
@@ -2873,6 +2850,137 @@
           }
         }
       },
+      "RegularScheduleResponse": {
+        "type": "object",
+        "description": "정기 일정 1건 응답. GET /users/schedule/regular · POST /users/schedule/regular · PATCH /users/schedule/regular/{id}",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "정기 일정 ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "title": {
+            "type": "string",
+            "description": "표시명 (출근·수업 등)",
+            "example": "출근"
+          },
+          "daysOfWeek": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "반복 요일. Weekday 콤마 구분(MON~SUN). 미설정 시 null",
+            "example": "MON,TUE,WED,THU,FRI"
+          },
+          "startTime": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "시작 시각. 미설정 시 null",
+            "example": "09:00:00"
+          },
+          "endTime": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "종료 시각. 미설정 시 null",
+            "example": "18:00:00"
+          },
+          "morningStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "오전 [00:00, 13:00) 슬롯. start/end 시각에서 파생",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "IMPOSSIBLE"
+          },
+          "afternoonStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "오후 [13:00, 18:00) 슬롯. start/end 시각에서 파생",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "IMPOSSIBLE"
+          },
+          "eveningStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "저녁 [18:00, 24:00) 슬롯. start/end 시각에서 파생",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "POSSIBLE"
+          },
+          "maxVacationDays": {
+            "type": "integer",
+            "format": "int32",
+            "description": "여행당 최대 연차 일수 (기본 2, 허용 0~10)",
+            "example": 2
+          },
+          "vacationApplyPeriod": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "연차 신청 가능 시점. 미설정 시 null",
+            "enum": [
+              "ANY",
+              "ONE_WEEK_BEFORE",
+              "TWO_WEEKS_BEFORE",
+              "ONE_MONTH_BEFORE"
+            ],
+            "example": "ONE_WEEK_BEFORE"
+          },
+          "halfVacationAvailable": {
+            "type": "boolean",
+            "description": "반차 사용 가능 여부 (기본 false)",
+            "example": false
+          },
+          "holidayRest": {
+            "type": "boolean",
+            "description": "공휴일 휴무 여부 (기본 true)",
+            "example": true
+          }
+        }
+      },
+      "SuccessResponseRegularScheduleResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RegularScheduleResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
       "ConnectGoogleCalendarRequest": {
         "type": "object",
         "description": "Google Calendar OAuth 연동 요청",
@@ -2887,6 +2995,106 @@
         "required": [
           "authorizationCode"
         ]
+      },
+      "SuccessResponseUserSummaryResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserSummaryResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "UserSummaryResponse": {
+        "type": "object",
+        "description": "사용자 요약. POST /auth/login · GET /auth/me · PATCH /users/onboarding/name · PATCH /users/profile 응답 공통",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "TripFit 사용자 ID (UUID v4)",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "소셜 계정 이메일. provider가 제공하지 않으면 null",
+            "example": "user@example.com"
+          },
+          "firstName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "사용자가 입력한 이름. 미입력 시 null",
+            "example": "길동"
+          },
+          "lastName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "사용자가 입력한 성. 미입력 시 null",
+            "example": "홍"
+          },
+          "nickname": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "소셜 provider 표시명. 프로필 입력 prefill용. 미제공 시 null",
+            "example": "홍길동"
+          },
+          "profileImageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "프로필 이미지 URL. 현재는 소셜 provider CDN URL. 미제공 시 null",
+            "example": "https://lh3.googleusercontent.com/a/example"
+          },
+          "provider": {
+            "type": "string",
+            "description": "로그인에 사용한 소셜 제공자",
+            "enum": [
+              "KAKAO",
+              "GOOGLE",
+              "APPLE"
+            ]
+          },
+          "isGoogleCalendarConnected": {
+            "type": "boolean",
+            "description": "Google Calendar OAuth 연동 여부",
+            "example": false
+          },
+          "hasPreSchedule": {
+            "type": "boolean",
+            "description": "정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\ntrue: 정기 일정 첫 생성 또는 개별 일정 첫 저장.\nfalse: 두 종류 일정 row가 모두 0건.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "example": false
+          },
+          "isAllFree": {
+            "type": "boolean",
+            "description": "전부 free 선언 여부 (user.is_all_free 저장, 기본 false).\n방 입장 조건: hasPreSchedule OR isAllFree.\ntrue: 일정 없이 Skip+0행으로 create/join·confirm 시 설정.\nfalse: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "example": false
+          }
+        }
       },
       "CreateTripRequest": {
         "type": "object",
@@ -2953,6 +3161,256 @@
           "startRange"
         ]
       },
+      "CreateTripResponse": {
+        "type": "object",
+        "description": "여행방 생성 응답. POST /trips.\n방장은 SCHEDULE_PENDING(입장 전) — myMemberStatus=SCHEDULE_PENDING면 클라가 일정 confirm 플로우로 라우팅.\ninviteCode 필드 없음 — confirm→ACTIVE 후 상세에서만 공유용 코드 제공.\n",
+        "properties": {
+          "tripId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "생성된 여행방 ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "여행방 진행 상태. create 직후 ONGOING",
+            "enum": [
+              "ONGOING",
+              "CONFIRMED",
+              "EXPIRED"
+            ]
+          },
+          "myMemberStatus": {
+            "type": "string",
+            "description": "방장 멤버십. create 직후 항상 SCHEDULE_PENDING(방장 전용) — 일정 confirm 전까지 아직 이 값.\n멤버는 이 응답을 받지 않음. confirm 후 myMemberStatus는 상세에서 ACTIVE.\n",
+            "enum": [
+              "SCHEDULE_PENDING",
+              "ACTIVE"
+            ]
+          }
+        }
+      },
+      "SuccessResponseCreateTripResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CreateTripResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "MemberPreviewResponse": {
+        "type": "object",
+        "description": "홈 카드 참여자 미리보기 1명. GET /trips 카드 membersPreview",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "사용자 ID"
+          },
+          "profileImageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "프로필 이미지 URL. 미제공 시 null"
+          },
+          "role": {
+            "type": "string",
+            "description": "방 내 역할 (방장 OWNER / 일반 MEMBER)",
+            "enum": [
+              "OWNER",
+              "MEMBER"
+            ]
+          }
+        }
+      },
+      "SuccessResponseTripDetailResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TripDetailResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "TripDetailResponse": {
+        "type": "object",
+        "description": "여행방 상세. GET/join/confirm/patch/pin 등.\n호출 전제=ACTIVE+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.\nSCHEDULE_PENDING 방장이 호출하면 SCHEDULE_CONFIRM_REQUIRED.\n",
+        "properties": {
+          "tripId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "여행방 ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "여행방 이름",
+            "maxLength": 15
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "여행지. null=미정"
+          },
+          "startRange": {
+            "type": "string",
+            "format": "date",
+            "description": "희망 여행 기간 시작일"
+          },
+          "endRange": {
+            "type": "string",
+            "format": "date",
+            "description": "희망 여행 기간 종료일"
+          },
+          "durationDays": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "희망 여행 일수 (m일). null=미정"
+          },
+          "durationNights": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "희망 여행 박수 (n박). durationDays와 쌍으로 저장(nights+1 ≤ days ≤ nights+2). null=미정",
+            "example": 3
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "모집 정원 (1~10)",
+            "example": 6,
+            "maximum": 10,
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "description": "여행방 진행 상태(effectiveStatus). end_range 경과 등 반영된 화면 표시용",
+            "enum": [
+              "ONGOING",
+              "CONFIRMED",
+              "EXPIRED"
+            ]
+          },
+          "inviteCode": {
+            "type": "string",
+            "description": "초대 코드 (6자). 방 입장(ACTIVE) 후 상세에서만 노출 — 공유용. create(SCHEDULE_PENDING) 응답에는 없음"
+          },
+          "confirmedStartDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "확정 시작일. CONFIRMED/EXPIRED에서만 값 있음"
+          },
+          "confirmedEndDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "확정 종료일. CONFIRMED/EXPIRED에서만 값 있음"
+          },
+          "lastRecommendationMode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "마지막 추천 모드. 아직 추천 전이면 null",
+            "enum": [
+              "BASIC",
+              "ALL_ATTEND",
+              "SAVE_VACATION",
+              "CERTAIN"
+            ]
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "여행방 최근 활동 시각"
+          },
+          "pinned": {
+            "type": "boolean",
+            "description": "본인이 이 방을 홈 상단에 Pin했는지"
+          },
+          "myRole": {
+            "type": "string",
+            "description": "본인 역할 (방장 OWNER / 일반 MEMBER)",
+            "enum": [
+              "OWNER",
+              "MEMBER"
+            ]
+          },
+          "myMemberStatus": {
+            "type": "string",
+            "description": "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장·공유 불가), ACTIVE=방장 confirm 후·멤버 join 시(입장 가능)",
+            "enum": [
+              "SCHEDULE_PENDING",
+              "ACTIVE"
+            ]
+          },
+          "activeMemberCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "일정 확인 완료(ACTIVE) 멤버 수"
+          },
+          "memberFillRate": {
+            "type": "number",
+            "format": "double",
+            "description": "모집 충원율(응답률) activeMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).\njoin·remove·정원 변경·일정 확인 완료 시 갱신 — GET /trips 또는 GET /trips/{tripId} 재호출.\n",
+            "example": 0.5
+          },
+          "membersPreview": {
+            "type": "array",
+            "description": "참여자 미리보기 (방장 우선 · joinedAt DESC · 최대 4명)",
+            "items": {
+              "$ref": "#/components/schemas/MemberPreviewResponse"
+            }
+          },
+          "membersPreviewOverflow": {
+            "type": "integer",
+            "format": "int32",
+            "description": "미리보기 초과 인원 (참여 인원 - 4, 최소 0). +N 배지 표시용"
+          }
+        }
+      },
       "JoinTripRequest": {
         "type": "object",
         "description": "초대 코드로 여행방 참여 요청. POST /trips/join",
@@ -2982,6 +3440,47 @@
         "required": [
           "refreshToken"
         ]
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "description": "액세스 토큰 재발급 성공 응답. POST /auth/refresh",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "새 TripFit access JWT",
+            "example": "eyJhbG..."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64",
+            "description": "access JWT 만료까지 남은 시간(초)",
+            "example": 7200
+          }
+        }
+      },
+      "SuccessResponseRefreshResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RefreshResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
       },
       "LogoutRequest": {
         "type": "object",
@@ -3031,6 +3530,56 @@
           "provider",
           "token"
         ]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "description": "소셜 로그인 성공 응답. POST /auth/login",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "TripFit API 호출용 access JWT",
+            "example": "eyJhbG..."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "access 만료 시 POST /auth/refresh에 사용하는 opaque refresh token",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64",
+            "description": "access JWT 만료까지 남은 시간(초)",
+            "example": 7200
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummaryResponse",
+            "description": "로그인한 사용자 요약 (hasPreSchedule·isAllFree 포함)"
+          }
+        }
+      },
+      "SuccessResponseLoginResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoginResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
       },
       "UpdateRegularScheduleRequest": {
         "type": "object",
@@ -3188,6 +3737,93 @@
           }
         }
       },
+      "PersonalScheduleItemResponse": {
+        "type": "object",
+        "description": "날짜별 개인 일정 1건",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "개인 일정 ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "scheduleDate": {
+            "type": "string",
+            "format": "date",
+            "description": "날짜",
+            "example": "2026-08-03"
+          },
+          "morningStatus": {
+            "type": "string",
+            "description": "오전 [00:00, 13:00) 슬롯",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "IMPOSSIBLE"
+          },
+          "afternoonStatus": {
+            "type": "string",
+            "description": "오후 [13:00, 18:00) 슬롯",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "POSSIBLE"
+          },
+          "eveningStatus": {
+            "type": "string",
+            "description": "저녁 [18:00, 24:00) 슬롯",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "POSSIBLE"
+          },
+          "uncertain": {
+            "type": "boolean",
+            "description": "해당 날짜 전체 불확실 여부",
+            "example": false
+          }
+        }
+      },
+      "PersonalScheduleResponse": {
+        "type": "object",
+        "description": "개인 일정 목록 응답. GET /users/schedule/personal",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "개인 일정 항목 목록",
+            "items": {
+              "$ref": "#/components/schemas/PersonalScheduleItemResponse"
+            }
+          }
+        }
+      },
+      "SuccessResponsePersonalScheduleResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PersonalScheduleResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
       "UpdateProfileRequest": {
         "type": "object",
         "description": "마이페이지 프로필(성·이름) 수정 요청. PATCH /users/profile",
@@ -3296,6 +3932,505 @@
         "required": [
           "pinned"
         ]
+      },
+      "RegularScheduleListResponse": {
+        "type": "object",
+        "description": "정기 일정 목록 응답. GET /users/schedule/regular",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "정기 일정 항목 목록",
+            "items": {
+              "$ref": "#/components/schemas/RegularScheduleResponse"
+            }
+          }
+        }
+      },
+      "SuccessResponseRegularScheduleListResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RegularScheduleListResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "CalendarDayResponse": {
+        "type": "object",
+        "description": "날짜 1일의 effective 슬롯",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "날짜",
+            "example": "2026-08-03"
+          },
+          "morningStatus": {
+            "type": "string",
+            "description": "오전 [00:00, 13:00) effective",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "IMPOSSIBLE"
+          },
+          "afternoonStatus": {
+            "type": "string",
+            "description": "오후 [13:00, 18:00) effective",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "IMPOSSIBLE"
+          },
+          "eveningStatus": {
+            "type": "string",
+            "description": "저녁 [18:00, 24:00) effective",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ],
+            "example": "POSSIBLE"
+          },
+          "uncertain": {
+            "type": "boolean",
+            "description": "날짜 단위 불확실. 개인 일정 uncertain=true일 때만 true 가능",
+            "example": false
+          }
+        }
+      },
+      "ScheduleCalendarResponse": {
+        "type": "object",
+        "description": "기간 내 effective(정기+개인 합친) 일정 달력. GET /users/schedule/calendar",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "조회 시작 날짜 (조회 윈도우 내)",
+            "example": "2026-08-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "조회 종료 날짜 (조회 윈도우 내)",
+            "example": "2026-08-07"
+          },
+          "days": {
+            "type": "array",
+            "description": "effective가 있는 날짜만 포함 (sparse)",
+            "items": {
+              "$ref": "#/components/schemas/CalendarDayResponse"
+            }
+          }
+        }
+      },
+      "SuccessResponseScheduleCalendarResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ScheduleCalendarResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "SuccessResponseTripListResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TripListResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "TripHomeCardResponse": {
+        "type": "object",
+        "description": "홈 여행방 카드. GET /trips.\ninviteCode 없음(공유는 입장 후 상세). myMemberStatus=SCHEDULE_PENDING면 탭 시 상세 말고 confirm 플로우.\n",
+        "properties": {
+          "tripId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "여행방 ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "여행방 이름",
+            "maxLength": 15
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "여행지. null=미정"
+          },
+          "startRange": {
+            "type": "string",
+            "format": "date",
+            "description": "희망 여행 기간 시작일"
+          },
+          "endRange": {
+            "type": "string",
+            "format": "date",
+            "description": "희망 여행 기간 종료일"
+          },
+          "durationDays": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "희망 여행 일수 (m일). null=미정"
+          },
+          "durationNights": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "희망 여행 박수 (n박). durationDays와 쌍으로 저장(nights+1 ≤ days ≤ nights+2). null=미정",
+            "example": 3
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "모집 정원 (1~10)",
+            "example": 6,
+            "maximum": 10,
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "description": "여행방 진행 상태(effectiveStatus). end_range 경과·방장 취소 등 반영된 화면 표시용",
+            "enum": [
+              "ONGOING",
+              "CONFIRMED",
+              "EXPIRED"
+            ]
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "여행방 최근 활동 시각"
+          },
+          "pinned": {
+            "type": "boolean",
+            "description": "본인이 이 방을 홈 상단에 Pin했는지"
+          },
+          "myRole": {
+            "type": "string",
+            "description": "본인 역할 (방장 OWNER / 일반 MEMBER)",
+            "enum": [
+              "OWNER",
+              "MEMBER"
+            ]
+          },
+          "myMemberStatus": {
+            "type": "string",
+            "description": "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 confirm 후·멤버 join 시(입장 가능)",
+            "enum": [
+              "SCHEDULE_PENDING",
+              "ACTIVE"
+            ]
+          },
+          "activeMemberCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "일정 확인 완료(ACTIVE) 멤버 수"
+          },
+          "memberFillRate": {
+            "type": "number",
+            "format": "double",
+            "description": "모집 충원율(응답률) activeMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).\njoin·remove·정원 변경·일정 확인 완료 시 갱신 — GET /trips 재호출.\n",
+            "example": 0.5
+          },
+          "membersPreview": {
+            "type": "array",
+            "description": "참여자 미리보기 (방장 우선 · joinedAt DESC · 최대 4명)",
+            "items": {
+              "$ref": "#/components/schemas/MemberPreviewResponse"
+            }
+          },
+          "membersPreviewOverflow": {
+            "type": "integer",
+            "format": "int32",
+            "description": "미리보기 초과 인원 (참여 인원 - 4, 최소 0). +N 배지 표시용"
+          }
+        }
+      },
+      "TripListResponse": {
+        "type": "object",
+        "description": "홈 여행방 목록 응답. GET /trips",
+        "properties": {
+          "trips": {
+            "type": "array",
+            "description": "여행방 카드 목록 (scope·statusFilter에 따라 정렬·필터됨)",
+            "items": {
+              "$ref": "#/components/schemas/TripHomeCardResponse"
+            }
+          }
+        }
+      },
+      "SuccessResponseTripMembersResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TripMembersResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "TripMemberItemResponse": {
+        "type": "object",
+        "description": "참여자 1명",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "사용자 ID"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "표시 이름 (동명이인 시 접미사)",
+            "example": "홍길동(2)"
+          },
+          "role": {
+            "type": "string",
+            "description": "방 내 역할 (방장 OWNER / 일반 MEMBER)",
+            "enum": [
+              "OWNER",
+              "MEMBER"
+            ]
+          },
+          "memberStatus": {
+            "type": "string",
+            "description": "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 confirm 후·멤버 join 시",
+            "enum": [
+              "SCHEDULE_PENDING",
+              "ACTIVE"
+            ]
+          },
+          "pinned": {
+            "type": "boolean",
+            "description": "본인이 이 방을 홈 상단에 Pin했는지 (본인 row만 의미)"
+          }
+        }
+      },
+      "TripMembersResponse": {
+        "type": "object",
+        "description": "여행방 참여자 목록. GET /trips/{tripId}/members",
+        "properties": {
+          "memberCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "방장이 설정한 모집 정원 (1~10)"
+          },
+          "activeMemberCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "일정 확인 완료(ACTIVE) 멤버 수"
+          },
+          "memberFillRate": {
+            "type": "number",
+            "format": "double",
+            "description": "모집 충원율(응답률) activeMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).\njoin·remove·정원 변경·일정 확인 완료 시 갱신 — GET /trips/{tripId}/members 재호출.\n",
+            "example": 0.5
+          },
+          "members": {
+            "type": "array",
+            "description": "참여자 목록",
+            "items": {
+              "$ref": "#/components/schemas/TripMemberItemResponse"
+            }
+          }
+        }
+      },
+      "CalendarDay": {
+        "type": "object",
+        "description": "날짜 1일의 effective 슬롯 (정기+개인 합산)",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "날짜"
+          },
+          "morningStatus": {
+            "type": "string",
+            "description": "오전 [00:00, 13:00) effective",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ]
+          },
+          "afternoonStatus": {
+            "type": "string",
+            "description": "오후 [13:00, 18:00) effective",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ]
+          },
+          "eveningStatus": {
+            "type": "string",
+            "description": "저녁 [18:00, 24:00) effective",
+            "enum": [
+              "POSSIBLE",
+              "IMPOSSIBLE"
+            ]
+          },
+          "uncertain": {
+            "type": "boolean",
+            "description": "날짜 단위 불확실 (개인 일정 uncertain=true일 때)"
+          }
+        }
+      },
+      "MemberCalendar": {
+        "type": "object",
+        "description": "멤버 1명의 effective 달력",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "사용자 ID"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "표시 이름 (동명이인 시 접미사)"
+          },
+          "role": {
+            "type": "string",
+            "description": "방 내 역할 (방장 OWNER / 일반 MEMBER)",
+            "enum": [
+              "OWNER",
+              "MEMBER"
+            ]
+          },
+          "memberStatus": {
+            "type": "string",
+            "description": "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 confirm 후·멤버 join 시",
+            "enum": [
+              "SCHEDULE_PENDING",
+              "ACTIVE"
+            ]
+          },
+          "days": {
+            "type": "array",
+            "description": "effective가 있는 날짜만 포함 (sparse)",
+            "items": {
+              "$ref": "#/components/schemas/CalendarDay"
+            }
+          }
+        }
+      },
+      "MemberScheduleCalendarResponse": {
+        "type": "object",
+        "description": "여행방 멤버 전원 effective 일정 달력. GET /trips/{tripId}/members/schedule/calendar",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "description": "조회 시작 날짜 (여행방 희망 기간 startRange)"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "description": "조회 종료 날짜 (여행방 희망 기간 endRange)"
+          },
+          "readOnly": {
+            "type": "boolean",
+            "description": "읽기 전용 여부. CONFIRMED·EXPIRED이면 true — 일정 snapshot 고정, 수정 불가"
+          },
+          "members": {
+            "type": "array",
+            "description": "멤버별 effective 달력",
+            "items": {
+              "$ref": "#/components/schemas/MemberCalendar"
+            }
+          }
+        }
+      },
+      "SuccessResponseMemberScheduleCalendarResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MemberScheduleCalendarResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
       }
     },
     "securitySchemes": {

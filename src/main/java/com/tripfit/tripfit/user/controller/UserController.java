@@ -56,8 +56,8 @@ public class UserController {
       @ApiResponse(
           responseCode = "200",
           description = "저장 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}
@@ -103,8 +103,8 @@ public class UserController {
       @ApiResponse(
           responseCode = "200",
           description = "수정 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}

@@ -57,8 +57,8 @@ public class UserScheduleController {
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}]}}
@@ -95,8 +95,8 @@ public class UserScheduleController {
       @ApiResponse(
           responseCode = "201",
           description = "생성 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
@@ -144,8 +144,8 @@ public class UserScheduleController {
       @ApiResponse(
           responseCode = "200",
           description = "수정 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
@@ -242,8 +242,8 @@ public class UserScheduleController {
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
@@ -287,8 +287,8 @@ public class UserScheduleController {
       @ApiResponse(
           responseCode = "200",
           description = "저장 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
@@ -336,8 +336,8 @@ public class UserScheduleController {
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"startDate": "2026-08-01", "endDate": "2026-08-07", "days": [{"date": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}

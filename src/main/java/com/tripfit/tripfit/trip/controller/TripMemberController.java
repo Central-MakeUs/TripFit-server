@@ -53,8 +53,8 @@ public class TripMemberController {
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"memberCount": 6, "activeMemberCount": 3, "memberFillRate": 0.5, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
@@ -109,8 +109,8 @@ public class TripMemberController {
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"startDate": "2026-08-01", "endDate": "2026-08-31", "readOnly": false, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "days": [{"date": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}]}}
@@ -168,8 +168,8 @@ public class TripMemberController {
       @ApiResponse(
           responseCode = "200",
           description = "내보내기 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": {"memberCount": 6, "activeMemberCount": 2, "memberFillRate": 0.33, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
