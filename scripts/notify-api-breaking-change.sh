@@ -66,7 +66,26 @@ FOOTER_TEXT="Commit ID: ${COMMIT_SHAS}"
 
 EMBEDS_JSON='[]'
 
+# 경로 → 도메인 라벨. 패키지 구조(auth/trip/trip.member/user/user.googlecalendar/user.schedule) 기준.
+# 더 구체적인 패턴(google-calendar, trips/{id}/members, users/schedule)을 먼저 검사해야
+# 상위 패턴(trips, users)에 잘못 먼저 매칭되지 않는다.
+read -r -d '' JQ_DOMAIN_DEF << 'EOF' || true
+def domain($p):
+  if ($p | test("^/api/v1/auth")) then "Auth"
+  elif ($p | test("^/api/v1/users/google-calendar")) then "Google Calendar"
+  elif ($p | test("^/api/v1/trips/[^/]+/members")) then "Trip Members"
+  elif ($p | test("^/api/v1/trips")) then "Trip"
+  elif ($p | test("^/api/v1/users/schedule")) then "User Schedule"
+  elif ($p | test("^/api/v1/users")) then "User"
+  else "기타"
+  end;
+EOF
+
 if [[ "$BREAKING_COUNT" -gt 0 ]]; then
+  BREAKING_DOMAINS="$(jq -r "$JQ_DOMAIN_DEF"'
+    [.[] | domain(.path)] | unique | join(", ")
+  ' "$BREAKING_JSON")"
+
   # 커밋 트레일러에서 사유 추출 — 여러 커밋에 있으면 모두 이어붙임. 없으면 안내문(하드코딩 값 아님)
   REASON="$(git log "$GIT_RANGE" --pretty=format:%B \
     | grep -i '^Breaking-Change-Reason:' \
@@ -99,70 +118,84 @@ if [[ "$BREAKING_COUNT" -gt 0 ]]; then
     map(.text = translate)
   ' "$BREAKING_JSON")"
 
-  BREAKING_CHANGES_TEXT="$(jq -r '
+  # 엔드포인트 1개 = 필드 1개로 분리 — Discord embed에서 필드명만 굵게 렌더링되므로,
+  # 한 필드에 전부 몰아넣으면 계층 없이 다 같은 크기로 보임(가독성 저하). 필드명을 소제목처럼 씀.
+  # Discord embed 필드 최대 25개 — breaking 쪽에 왜/체크리스트 필드 2개를 더 쓰므로 넉넉히 20개로 캡.
+  BREAKING_FIELDS_JSON="$(jq "$JQ_DOMAIN_DEF"'
     group_by(.path + " " + .operation)
-    | map(
-        "• " + .[0].operation + " " + .[0].path + "\n"
-        + (map("  - " + .text) | join("\n"))
-      )
-    | join("\n\n")
+    | .[:20]
+    | map({
+        name: ("[" + domain(.[0].path) + "] " + .[0].operation + " " + .[0].path),
+        value: (map("• " + .text) | join("\n") | if length > 1000 then .[0:1000] + "…" else . end),
+        inline: false
+      })
   ' <<< "$TRANSLATED_BREAKING_JSON")"
-  # Discord embed field value 상한(1024자) 방어 — 초과 시 자르고 안내 추가
-  if [[ "${#BREAKING_CHANGES_TEXT}" -gt 1000 ]]; then
-    BREAKING_CHANGES_TEXT="${BREAKING_CHANGES_TEXT:0:1000}...\n(전체 목록은 GitHub Actions 로그 참고)"
-  fi
 
   BREAKING_EMBED="$(jq -n \
     --arg url "$TITLE_URL" \
-    --arg changes "$BREAKING_CHANGES_TEXT" \
+    --arg domains "$BREAKING_DOMAINS" \
+    --argjson fields "$BREAKING_FIELDS_JSON" \
     --arg reason "$REASON" \
     --arg footer "$FOOTER_TEXT" \
     '{
       title: "🚨 API Breaking Change",
       url: $url,
       color: 15158332,
-      fields: [
-        { name: "발견된 변경", value: $changes, inline: false },
+      fields: ([{ name: "영향 도메인", value: $domains, inline: false }] + $fields + [
         { name: "왜 변경했는가", value: $reason, inline: false },
         { name: "프론트 작업", value: "1. orval 재생성  2. 타입 오류 확인  3. 영향받는 API 수정", inline: false }
-      ],
+      ]),
       footer: { text: $footer }
     }')"
   EMBEDS_JSON="$(jq --argjson e "$BREAKING_EMBED" '. + [$e]' <<< "$EMBEDS_JSON")"
 fi
 
 if [[ "$ADDITIONS_COUNT" -gt 0 ]]; then
-  TRANSLATED_ADDITIONS_JSON="$(jq '
+  ADDITIONS_DOMAINS="$(jq -r "$JQ_DOMAIN_DEF"'
+    [.[] | domain(.path)] | unique | join(", ")
+  ' "$ADDITIONS_JSON")"
+
+  # 필드명만으로는 "왜"가 안 보임(#64 사고) — 같은 필드의 @Schema(description)를 REVISED_SPEC에서
+  # 찾아 그대로 붙인다. requestBody가 $ref면 컴포넌트까지 따라가서 properties[prop].description을 조회.
+  # description이 없으면(작성 규칙 위반) 안내 문구로 대체 — 조용히 생략하지 않음.
+  TRANSLATED_ADDITIONS_JSON="$(jq --slurpfile spec "$REVISED_SPEC" '
+    def schema_desc(path; op; prop):
+      ($spec[0].paths[path][(op | ascii_downcase)].requestBody.content["application/json"].schema["$ref"] // "") as $ref
+      | if $ref == "" then null
+        else ($ref | sub("#/components/schemas/"; "")) as $comp
+        | $spec[0].components.schemas[$comp].properties[prop].description // null
+        end;
     def translate:
       (.text | capture("request property `(?<p>[^`]+)`")) as $c
-      | "요청 속성 `" + $c.p + "` 추가됨(optional) — 안 보내도 기존 동작 그대로, 필요 시 프론트에서 함께 반영";
+      | (schema_desc(.path; .operation; $c.p)) as $d
+      | "요청 속성 `" + $c.p + "` 추가됨(optional) — "
+        + ( $d // "⚠️ @Schema(description) 없음 — 왜 추가했는지 필드에 적어주세요" )
+        + " (안 보내도 기존 동작 그대로)";
     map(.text = translate)
   ' "$ADDITIONS_JSON")"
 
-  ADDITIONS_TEXT="$(jq -r '
+  ADDITIONS_FIELDS_JSON="$(jq "$JQ_DOMAIN_DEF"'
     group_by(.path + " " + .operation)
-    | map(
-        "• " + .[0].operation + " " + .[0].path + "\n"
-        + (map("  - " + .text) | join("\n"))
-      )
-    | join("\n\n")
+    | .[:22]
+    | map({
+        name: ("[" + domain(.[0].path) + "] " + .[0].operation + " " + .[0].path),
+        value: (map("• " + .text) | join("\n") | if length > 1000 then .[0:1000] + "…" else . end),
+        inline: false
+      })
   ' <<< "$TRANSLATED_ADDITIONS_JSON")"
-  if [[ "${#ADDITIONS_TEXT}" -gt 1000 ]]; then
-    ADDITIONS_TEXT="${ADDITIONS_TEXT:0:1000}...\n(전체 목록은 GitHub Actions 로그 참고)"
-  fi
 
   ADDITIONS_EMBED="$(jq -n \
     --arg url "$TITLE_URL" \
-    --arg changes "$ADDITIONS_TEXT" \
+    --arg domains "$ADDITIONS_DOMAINS" \
+    --argjson fields "$ADDITIONS_FIELDS_JSON" \
     --arg footer "$FOOTER_TEXT" \
     '{
       title: "ℹ️ API 필드 추가 (non-breaking)",
       url: $url,
       color: 3447003,
-      fields: [
-        { name: "추가된 optional 필드", value: $changes, inline: false },
+      fields: ([{ name: "영향 도메인", value: $domains, inline: false }] + $fields + [
         { name: "프론트 작업", value: "기존 클라이언트는 영향 없음 — 새 기능에서 이 필드를 쓰려면 orval 재생성 후 반영", inline: false }
-      ],
+      ]),
       footer: { text: $footer }
     }')"
   EMBEDS_JSON="$(jq --argjson e "$ADDITIONS_EMBED" '. + [$e]' <<< "$EMBEDS_JSON")"
