@@ -86,6 +86,7 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          DISCORD_BOT_AVATAR_URL: https://raw.githubusercontent.com/${{ github.repository }}/main/docs/api/tripfit_app_icon.png
         run: ./scripts/notify-api-breaking-change.sh
 
       - name: Refresh OpenAPI snapshot on main
