@@ -65,6 +65,7 @@
 | [`dev-mock-login.md`](dev-mock-login.md) | **Approved** (이슈 미생성 — 긴급) · **deferred→#52** | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 | auth-social-login |
 | [`swagger-openapi-docs.md`](swagger-openapi-docs.md) | Draft (이슈 미생성) | Swagger/OpenAPI 문서 가독성 개선 — `@ApiResponse` 부재·예시 부재·`OpenApiConfig` Info·`@Tag` 표기법 | — |
 | [`api-contract-diff-ci.md`](api-contract-diff-ci.md) | **Approved** (이슈 미생성) | oasdiff CLI로 breaking change 감지 + Discord `#frontend` push 알림(커밋 트레일러로 사유 전달), 별도 프론트 저장소 동기화 보조 | — |
+| [`openapi-response-schema-generics.md`](openapi-response-schema-generics.md) | **Approved** (이슈 미생성) | `SuccessResponse<T>` 응답 스키마가 스펙에 필드 노출 안 되는 문제 — `useReturnTypeSchema = true`로 해결, oasdiff 응답 필드 변경 감지 복구 | api-contract-diff-ci |
 
 **구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
