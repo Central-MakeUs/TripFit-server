@@ -20,6 +20,10 @@ push / PR → OpenApiSpecExportTest → oasdiff breaking → 있으면 Discord #
 
 oasdiff의 영어 breaking-change 문구는 알려진 `id`(`request-property-removed` 등) 기준으로 한글 템플릿에 매핑해 보냅니다(`notify-api-breaking-change.sh`의 `translate` 함수). 매핑 안 된 `id`는 추측 번역 없이 영어 원문 그대로 노출됩니다. footer에는 이번 변경에 포함된 커밋 short SHA가 `Commit ID: 9e1c878, 6e9df7e`처럼 전부 나열됩니다.
 
+## Release Gate #65 관련 엔드포인트 콜아웃
+
+`POST /api/v1/auth/login`(로그인)·`DELETE /api/v1/users/me`(탈퇴)는 앱 스토어 심사([`harness-wave.md`](../../.claude/rules/harness-wave.md) Release Gate 표 — [#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) OAuth 콘솔 설정 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke)와 직결돼 일반 API 변경보다 프론트와의 사전 논의가 중요하다. 이 두 엔드포인트에 breaking change·필드 추가가 생기면 Discord embed에 별도 "⚠️ Release Gate #65 관련" 필드가 추가되고, 변경 텍스트에서 `GOOGLE`/`KAKAO`/`APPLE` 언급을 스캔해 어떤 provider와 관련 있는지(특정 provider 언급이 없으면 "전체 영향") 함께 보여준다.
+
 ## "왜 변경했는가" — 커밋 트레일러 컨벤션
 
 Breaking change를 만드는 커밋에는 본문에 `Breaking-Change-Reason:` 트레일러를 추가하세요. Discord 알림의 "왜 변경했는가"란에 그대로 노출됩니다.
@@ -34,7 +38,7 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 ## 알림 봇 이름·아바타
 
-기본값은 `DISCORD_BOT_USERNAME="TripFit CI"` · `DISCORD_BOT_AVATAR_URL=https://github.com/{organization}.png`(레포 소속 조직의 GitHub 아바타)입니다. 바꾸고 싶으면 `.github/workflows/ci-cd.yml`의 `api-contract-check` job에 같은 이름의 env를 추가하세요.
+스크립트 기본값은 `DISCORD_BOT_USERNAME="TripFit CI"` · `DISCORD_BOT_AVATAR_URL=https://github.com/{organization}.png`(레포 소속 조직의 GitHub 아바타)이지만, `.github/workflows/ci-cd.yml`의 `api-contract-check` job이 `DISCORD_BOT_AVATAR_URL`을 `https://raw.githubusercontent.com/{repo}/main/docs/api/tripfit_app_icon.png`로 오버라이드해 실제로는 TripFit 앱 아이콘(`docs/api/tripfit_app_icon.png`)이 표시됩니다. repo가 public이라 별도 인증 없이 `main`에서 바로 fetch되며, `docs/api/openapi.json`과 같은 방식(raw URL)입니다. 아바타를 바꾸려면 이 파일을 교체하거나 워크플로의 env 값을 다른 URL로 바꾸세요.
 
 ## 로컬 재현
 
@@ -63,6 +67,7 @@ GITHUB_SHA="$(git rev-parse HEAD)" \
 | 경로 | 역할 |
 |------|------|
 | `docs/api/openapi.json` | `main` 스냅샷 (자동 갱신, 손편집 금지) |
+| `docs/api/tripfit_app_icon.png` | Discord 알림 봇 아바타 — raw URL로 CI에서 참조 |
 | `src/test/java/.../OpenApiSpecExportTest.java` | 현재 코드 기준 스펙을 `build/openapi/openapi.json`으로 export |
 | `scripts/notify-api-breaking-change.sh` | oasdiff 실행 → breaking이면 Discord 알림 + 실패 |
 | `.github/workflows/ci-cd.yml` `api-contract-check` job | 위 과정을 CI에 연결 |
