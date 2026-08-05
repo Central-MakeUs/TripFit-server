@@ -50,7 +50,7 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 //   6) OwnerOnly → trip.owner == userId 아니면 403 TRIP_FORBIDDEN
 //      (#39: SCHEDULE_PENDING 방장 PATCH/DELETE 허용 — ACTIVE·canEnterRoom 면제)
 //   7) MemberOnly → membership 없으면 403 TRIP_ACCESS_DENIED
-//      status != ACTIVE → 403 SCHEDULE_CONFIRM_REQUIRED (#39)
+//      status != ACTIVE → 403 SCHEDULE_ACTIVATION_REQUIRED (#39)
 //      canEnterRoom 불만족 → 403 SCHEDULE_ENTRY_REQUIRED (D-JOIN-ENTRY)
 ```
 
@@ -79,7 +79,7 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 
 - [x] `TripMemberOnly` / `TripOwnerOnly` 어노테이션 추가
 - [x] `TripAuthorizationInterceptor` + `WebMvcConfigurer` 등록 (`/api/v1/trips/**`)
-- [x] `TripController`·`TripMemberController`에 어노테이션 부착 (get/patch/delete/pin/members/confirm)
+- [x] `TripController`·`TripMemberController`에 어노테이션 부착 (get/patch/delete/pin/members/activate)
 - [x] Service `requireActiveMember`/`requireOwner`는 헬퍼로 유지 (중복 제거는 후속)
 - [x] 인터셉터 단위 테스트 (멤버/비멤버/방장/비방장/soft-delete/없는 tripId)
 - [x] `./gradlew test` · OpenAPI에는 영향 없음(어노테이션은 런타임 권한만)

@@ -35,7 +35,7 @@
 
 ### Out of Scope (이번 스펙에서 하지 않음)
 
-- SCHEDULE_PENDING/ACTIVE가 표현하는 비즈니스 규칙(방장 일정 확인 게이트, `SCHEDULE_CONFIRM_REQUIRED` 차단 조건) 자체 변경 — 이번 작업은 순수 내부 표현 단순화이며 상태 전이 정책은 동일하게 유지.
+- SCHEDULE_PENDING/ACTIVE가 표현하는 비즈니스 규칙(방장 일정 확인 게이트, `SCHEDULE_ACTIVATION_REQUIRED` 차단 조건) 자체 변경 — 이번 작업은 순수 내부 표현 단순화이며 상태 전이 정책은 동일하게 유지.
 - (당시) FE에 노출되는 API 계약(`CreateTripResponse.status`, 방 상세·멤버 목록의 `status` 필드) 변경 — `getStatus()`가 동일한 `TripMemberStatus` enum 값을 반환하므로 Swagger 스키마·필드명·값 모두 동일했음.
 - (당시) `TripMemberStatus` enum 자체(값, `@Schema` 설명) 변경.
 
@@ -65,22 +65,22 @@ trip_member
 
 | BR | 적용 내용 | 구현 위치 (예정) |
 |----|-----------|------------------|
-| BR-USER-002/007 관련 상태 의미 | SCHEDULE_PENDING=방장 confirm 전, ACTIVE=입장 가능 — **의미·전이 조건 변경 없음**, 저장 방식만 변경 | `TripMember.getStatus()` (파생), `markResponded()` |
+| BR-USER-002/007 관련 상태 의미 | SCHEDULE_PENDING=방장 activate 전, ACTIVE=입장 가능 — **의미·전이 조건 변경 없음**, 저장 방식만 변경 | `TripMember.getStatus()` (파생), `activate()` |
 
 ## 검증 시나리오
 
 ### 정상
 
 - [x] 방 생성 직후 방장 멤버 `getStatus() == SCHEDULE_PENDING`, `respondedAt == null`
-- [x] `confirmSchedule` 호출 후 방장 멤버 `getStatus() == ACTIVE`, `respondedAt`이 호출 시각으로 세팅
+- [x] `activateMembership` 호출 후 방장 멤버 `getStatus() == ACTIVE`, `activatedAt`이 호출 시각으로 세팅
 - [x] 신규 멤버 `join` 시 즉시 `getStatus() == ACTIVE`, `respondedAt == joinedAt`
 - [x] 방 상세 응답의 `respondedCount`가 변경 전과 동일한 값 산출 (신규 repository 메서드 기준)
 
 ### 엣지 · 실패
 
-- [x] SCHEDULE_PENDING 상태 멤버가 방 안 API 호출 시 여전히 `SCHEDULE_CONFIRM_REQUIRED` (인터셉터 동작 동일)
+- [x] SCHEDULE_PENDING 상태 멤버가 방 안 API 호출 시 여전히 `SCHEDULE_ACTIVATION_REQUIRED` (인터셉터 동작 동일)
 - [x] SCHEDULE_PENDING 방장이 방 메타 PATCH/DELETE는 여전히 허용 (ownerOnly 분기 영향 없음)
-- [x] 이미 ACTIVE인 멤버가 `confirmSchedule` 재호출 시 idempotent 동작 유지
+- [x] 이미 ACTIVE인 멤버가 `activateMembership` 재호출 시 idempotent 동작 유지
 
 ### 수동 / 통합
 
@@ -106,4 +106,5 @@ trip_member
 | 2026-07-27 | 초안 |
 | 2026-07-27 | 구현 완료 — `TripMember.status` 컬럼 제거, `getStatus()` 파생 메서드·`countByTripIdAndRespondedAtIsNotNullAndDeletedAtIsNull` 적용. `./gradlew test`·`build` 통과 |
 | 2026-07-27 | **후속 amend** — enum 값 `JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE` 개명(이름만으로 "일정 확인 대기중/방 활동 가능"이 드러나도록). DTO 필드명 `TripMembersResponse.status`→`memberStatus`로 통일(`myMemberStatus`/`memberStatus` 두 갈래로 정리, `MemberCalendar.memberStatus`는 기존 유지). 계기: `TripMemberStatus.java`가 별도 문서 없이도 신규 개발자·프론트가 이름만으로 의미를 알 수 있어야 한다는 피드백(`.claude/rules/spring-boot-java.md` Comments/OpenAPI 절 강화와 동반) |
+| 2026-07-28 | **Amend** — `TripCommandService.confirmSchedule`(`POST .../schedule/confirm`) → `activateMembership`(`POST .../activate`)로 rename. `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. 상세: [`trip-room-api.md`](trip-room-api.md) 변경 이력 |
 | 2026-08-01 | **후속 amend** — 위 enum 개명에서 놓쳤던 파생 컬럼·메서드·API 필드 정리: `responded_at`→`activated_at`, `markResponded()`→`activate()`, `requireResponded()`→`requireActive()`, API 필드 `respondedCount`→`activeMemberCount`. `docs/architecture/erd.md`·`trip-room-api.md`·`schedule-participation-onboarding.md`·`trip-create-join-guide.md` 동기화 |

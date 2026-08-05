@@ -27,7 +27,7 @@
 | 여행방 생성 | ✓ | `created_at`과 동일 시각으로 초기화 ([#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)) |
 | 신규 참여 (join) | ✓ | Implemented |
 | 여행방 정보 수정 (PATCH) | ✓ | Implemented |
-| 일정 확인 완료 (`POST .../schedule/confirm`) | ✓ | **#39** — `SCHEDULE_PENDING→ACTIVE` · `@TripActivity` (구 trip `submit` 폐기) |
+| 일정 확인 완료 (`POST .../activate`) | ✓ | **#39** — `SCHEDULE_PENDING→ACTIVE` · `@TripActivity` (구 trip `submit` 폐기) |
 | 추천 일정 생성 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 일정 확정 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |
 | 참여자 내보내기 | ✓ | [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) — MEMBER soft delete |
@@ -35,7 +35,7 @@
 | Pin 토글 | ✗ | Pin → `pinned_at` 별도 정렬 (D5) |
 | trip soft delete | ✗ | — |
 
-**“일정 확인/수정” 해석:** trip `schedule/confirm`은 touch. User **전역** regular/personal 일정 PATCH는 touch **하지 않음** (L2).
+**“일정 확인/수정” 해석:** trip `activate`는 touch. User **전역** regular/personal 일정 PATCH는 touch **하지 않음** (L2).
 
 **정렬 (D5 SSOT):** 진행 중 캐러셀 — Pin → `pinned_at` → `last_activity_at` 내림차순. 전체 보기 — `last_activity_at`만.
 
@@ -59,7 +59,7 @@
 
 **`TripCommandService`(및 trip command) + `TripRecommendationService`(#13) public 메서드**
 
-- trip 도메인: join · PATCH · `schedule/confirm` · 내보내기 등 L1 이벤트.
+- trip 도메인: join · PATCH · `activate` · 내보내기 등 L1 이벤트.
 - 추천 도메인(#13): 추천 일정 생성 · 일정 확정 — 동일 `@TripActivity` + aspect.
 
 ## 구현 Must Have

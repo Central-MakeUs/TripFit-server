@@ -9,16 +9,16 @@
 | **TripFit** | 서비스의 정식 명칭 (전 명칭: When We Meet) | |
 | **방장** | 여행 방을 생성한 사용자. 일정 확정 및 방 정보 수정 권한을 가짐 | 총대와 동일 |
 | **참여자** | `ACTIVE` 멤버. 링크만으로는 미가입 | 비회원 없음. 방장 create 직후는 `SCHEDULE_PENDING`(입장·공유 전) |
-| **SCHEDULE_PENDING** | **방장 전용** — create 직후·`schedule/confirm` 전 | 방 입장·초대 공유 불가. **멤버는 사용 안 함**(join → 곧 `ACTIVE`) |
-| **ACTIVE** | 방장(confirm 후)·멤버(join 시) | 방 입장 가능 · 방장 초대 공유 가능 |
+| **SCHEDULE_PENDING** | **방장 전용** — create 직후·`activate` 전 | 방 입장·초대 공유 불가. **멤버는 사용 안 함**(join → 곧 `ACTIVE`) |
+| **ACTIVE** | 방장(activate 후)·멤버(join 시) | 방 입장 가능 · 방장 초대 공유 가능 |
 
 ### 헷갈리기 쉬운 점 (프론트·신규 서버)
 
 | 오해 | 실제 |
 |------|------|
 | SCHEDULE_PENDING = “일정 아직 안 넣은 일반 멤버” | **아님.** SCHEDULE_PENDING은 **방장 create 직후만**. 멤버는 join 시 **바로 ACTIVE** |
-| create 응답의 inviteCode로 바로 카톡 공유 | **불가.** create에 `inviteCode` **없음**. confirm→ACTIVE→상세의 `inviteCode` |
-| 홈에 방이 보이면 상세·공유 가능 | SCHEDULE_PENDING면 홈에만 보일 수 있음 → **confirm 플로우**. 상세/공유는 ACTIVE 후 |
+| create 응답의 inviteCode로 바로 카톡 공유 | **불가.** create에 `inviteCode` **없음**. activate→ACTIVE→상세의 `inviteCode` |
+| 홈에 방이 보이면 상세·공유 가능 | SCHEDULE_PENDING면 홈에만 보일 수 있음 → **activate 플로우**. 상세/공유는 ACTIVE 후 |
 | 멤버도 SCHEDULE_PENDING을 거친다 | **거치지 않음** |
 | **여행 방** | 여행 일정을 조율하기 위해 생성된 가상의 협업 공간 | |
 | **후보 일정** | 추천 알고리즘이 계산하여 제시한 상위 3개의 일정 | |

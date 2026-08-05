@@ -3,7 +3,7 @@
 > wave: **1**
 > implements: BR-USER-001(이름 게이트), BR-USER-006(부분), BR-USER-007(부분)
 > deferred: BR-NOTI-001/002(wave 3), **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)
-> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend** (방장 `SCHEDULE_PENDING`→`schedule/confirm`→`ACTIVE`). submit 삭제 · `is_all_free` · canEnterRoom · hold→#35. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
+> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend** (방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`). submit 삭제 · `is_all_free` · canEnterRoom · hold→#35. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
 > GitHub: **#22** · amend **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)**
 > 선행: [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
 > 결정 amend: [`007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md) (D-REENTRY-2)
@@ -13,8 +13,8 @@
 다음이 **한 세트**로 엮여 있어, 개별 확정(D1 등)만으로는 제품·API가 모순된다. wave 1에서 **하나의 설계**로 재확정한다.
 
 1. **방 입장 3조건 (D-JOIN-ENTRY)** — 정기 OR 개별 OR **`is_all_free`**
-2. **신규 trip 확인 플로우** — 방장: create=`SCHEDULE_PENDING` → 일정 → **`POST .../schedule/confirm`**=`ACTIVE`. 멤버: 일정 → **`POST /trips/join`**=`ACTIVE` (#39)
-3. **구 `schedule/submit` 삭제** · 멤버십 완료 API는 join + confirm (방장)
+2. **신규 trip 확인 플로우** — 방장: create=`SCHEDULE_PENDING` → 일정 → **`POST .../activate`**=`ACTIVE`. 멤버: 일정 → **`POST /trips/join`**=`ACTIVE` (#39)
+3. **구 `schedule/submit` 삭제** · 멤버십 완료 API는 join + activate (방장)
 4. **omit ≠ is_all_free** (별개 유지) · Hidden **단계적** 공개
 
 ## 배경 — 왜 `[미정]`로 되돌렸는가
@@ -35,8 +35,8 @@
 
 | Method | Path | 비고 |
 |--------|------|------|
-| ~~POST~~ | ~~`/api/v1/trips/{tripId}/schedule/submit`~~ | **삭제** — 재사용 금지. 방장 확인은 **`schedule/confirm`** (#39) |
-| POST | `/api/v1/trips/{tripId}/schedule/confirm` | **#39** SCHEDULE_PENDING→ACTIVE |
+| ~~POST~~ | ~~`/api/v1/trips/{tripId}/schedule/submit`~~ | **삭제** — 재사용 금지. 방장 확인은 **`activate`** (#39) |
+| POST | `/api/v1/trips/{tripId}/activate` | **#39** SCHEDULE_PENDING→ACTIVE |
 | PATCH | `/api/v1/users/onboarding` | **삭제** (2026-07-20 #22) |
 | GET | `/api/v1/users/schedule/personal` | **1단계:** #22 PR에서 `@Hidden` 해제 |
 | PATCH | `/api/v1/users/schedule/personal` | 동일 |
@@ -141,11 +141,11 @@ canEnterRoom(user) =
 
 | 경로 | 동작 |
 |------|------|
-| **방장** | 「방 생성」→ **방 생성 폼** → `POST /trips`(`SCHEDULE_PENDING`) → **정기→개별** → `POST .../schedule/confirm`(`ACTIVE`) |
+| **방장** | 「방 생성」→ **방 생성 폼** → `POST /trips`(`SCHEDULE_PENDING`) → **정기→개별** → `POST .../activate`(`ACTIVE`) |
 | **참여자** | 초대 링크 → **정기→개별** → **(수정 시 patch)** → `POST /trips/join` (`ACTIVE`) |
 
 ```text
-방장:     [방 생성 폼] → POST /trips (SCHEDULE_PENDING) → [정기] → [개별] → POST .../schedule/confirm → [여행방]
+방장:     [방 생성 폼] → POST /trips (SCHEDULE_PENDING) → [정기] → [개별] → POST .../activate → [여행방]
 참여자:   [정기] → [개별] → (수정 시 patch) → POST /trips/join → [여행방]
 ```
 
@@ -154,19 +154,19 @@ canEnterRoom(user) =
 | 현재 전역 상태 | Skip / 마지막 버튼 시 |
 |----------------|----------------------|
 | 정기 또는 개별 ≥1 | **이전 상태 유지** (patch 불필요) |
-| regular 0 **AND** personal 0 | **`is_all_free = true`** — 방장 **confirm** · 참여자 **join** 시 서버 설정 (create에서는 안 함) |
+| regular 0 **AND** personal 0 | **`is_all_free = true`** — 방장 **activate** · 참여자 **join** 시 서버 설정 (create에서는 안 함) |
 
 **백엔드 가드 (프론트 “선언 버튼”과 분리):**
 
 1. **입장 게이트:** “방 안” 리소스는 `ACTIVE` ∧ `canEnterRoom` 불만족 시 **403**. UI Skip만으로 우회 불가.
-2. **방장 confirm / 참여자 join:** row ≥1 → 유지 · row 0 → 서버가 `is_all_free=true` 후 `ACTIVE`. create는 `SCHEDULE_PENDING`만 (markAllFree 안 함).
+2. **방장 activate / 참여자 join:** row ≥1 → 유지 · row 0 → 서버가 `is_all_free=true` 후 `ACTIVE`. create는 `SCHEDULE_PENDING`만 (markAllFree 안 함).
 3. **금지:** row ≥1인 채 `is_all_free=true` PATCH — **거부**. “전부 free 선언 버튼” API 없음.
 4. **카피/버튼 문구**는 **프론트 책임**.
 
 | 항목 | 확정 |
 |------|------|
 | 플로우 순서 | **정기 → 개별** |
-| **방장** | 생성 폼 → `POST /trips`=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../schedule/confirm`=`ACTIVE` (#39) |
+| **방장** | 생성 폼 → `POST /trips`=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE` (#39) |
 | **prefill** | **프론트 UX** — 백엔드 계약·#22 미정 **아님** |
 | 재입장 | `ACTIVE` → 방 상세 (BR-USER-010). `SCHEDULE_PENDING` → 일정 플로우. 미가입 참여자 → 플로우 |
 
@@ -174,12 +174,12 @@ canEnterRoom(user) =
 
 | 역할 | 흐름 | `trip_member` |
 |------|------|---------------|
-| **방장** | 방 생성 폼 → **`POST /trips`** → 일정 플로우 → **`POST .../schedule/confirm`** | create 시 **`SCHEDULE_PENDING`**. confirm 시 **`ACTIVE`** (+ row0이면 `is_all_free=true`). create에서는 `markAllFree` 안 함 |
+| **방장** | 방 생성 폼 → **`POST /trips`** → 일정 플로우 → **`POST .../activate`** | create 시 **`SCHEDULE_PENDING`**. activate 시 **`ACTIVE`** (+ row0이면 `is_all_free=true`). create에서는 `markAllFree` 안 함 |
 | **참여자** | 링크 → 일정 플로우 → **`POST /api/v1/trips/join`** | INSERT **`ACTIVE`** (+ row0이면 `is_all_free=true`). 미완료면 **row 없음**. 중간 `SCHEDULE_PENDING` 없음 |
 
 **멤버십 API:**
 - 참여자 가입: `POST /api/v1/trips/join` (`{ inviteCode }`)
-- 방장(및 SCHEDULE_PENDING) 일정 확인: `POST /api/v1/trips/{tripId}/schedule/confirm`
+- 방장(및 SCHEDULE_PENDING) 일정 확인: `POST /api/v1/trips/{tripId}/activate`
 - **구 `POST .../schedule/submit` — 삭제·재사용 금지.**
 
 **`SCHEDULE_PENDING`:** 방장 create 직후 **사용** (#39). 멤버 신규 INSERT는 **`ACTIVE`만**.
@@ -357,7 +357,7 @@ canEnterRoom(user) =
 
 | 파일 | 조치 |
 |------|------|
-| [`TripController.java`](../../src/main/java/com/tripfit/tripfit/trip/controller/TripController.java) | **`submitSchedule` 삭제** · **`schedule/confirm` 추가** (#39) |
+| [`TripController.java`](../../src/main/java/com/tripfit/tripfit/trip/controller/TripController.java) | **`submitSchedule` 삭제** · **`activate` 추가** (#39) |
 | [`UserScheduleController.java`](../../src/main/java/com/tripfit/tripfit/user/schedule/controller/UserScheduleController.java) | personal/calendar — **1단계** Hidden 해제 |
 | [`TripMemberController.java`](../../src/main/java/com/tripfit/tripfit/trip/controller/TripMemberController.java) | schedule-calendar — **2단계** |
 
@@ -365,7 +365,7 @@ canEnterRoom(user) =
 
 | 파일 | 검토 항목 |
 |------|-----------|
-| [`TripCommandService`](../../src/main/java/com/tripfit/tripfit/trip/service/TripCommandService.java) / [`TripJoinService`](../../src/main/java/com/tripfit/tripfit/trip/service/TripJoinService.java) | create=`SCHEDULE_PENDING` · confirm/join=`ACTIVE` (#39) · `is_all_free`는 confirm/join |
+| [`TripCommandService`](../../src/main/java/com/tripfit/tripfit/trip/service/TripCommandService.java) / [`TripJoinService`](../../src/main/java/com/tripfit/tripfit/trip/service/TripJoinService.java) | create=`SCHEDULE_PENDING` · activate/join=`ACTIVE` (#39) · `is_all_free`는 activate/join |
 | [`TripMemberStatus.java`](../../src/main/java/com/tripfit/tripfit/trip/domain/TripMemberStatus.java) | `SCHEDULE_PENDING` · `ACTIVE` (#39). 멤버 INSERT는 ACTIVE만 |
 | [`User.java`](../../src/main/java/com/tripfit/tripfit/user/domain/User.java) | `is_all_free` 컬럼 |
 | [`ScheduleService.java`](../../src/main/java/com/tripfit/tripfit/user/schedule/service/ScheduleService.java) | CLEAR/추가 ↔ `is_all_free` 전이 |
@@ -374,7 +374,7 @@ canEnterRoom(user) =
 
 | 파일 | 조치 |
 |------|------|
-| `TripControllerTest` / `TripServiceTest` | submit 제거 · create=`SCHEDULE_PENDING` · confirm (#39) |
+| `TripControllerTest` / `TripServiceTest` | submit 제거 · create=`SCHEDULE_PENDING` · activate (#39) |
 | `User*` / `Schedule*` | `is_all_free` · canEnterRoom |
 
 ### H. GitHub
@@ -409,7 +409,7 @@ canEnterRoom(user) =
 
 ### 미정
 
-- [x] **`POST /trips/join`(멤버) + `schedule/confirm`(방장)** · submit **삭제** · create=`SCHEDULE_PENDING` (#39)
+- [x] **`POST /trips/join`(멤버) + `activate`(방장)** · submit **삭제** · create=`SCHEDULE_PENDING` (#39)
 - [x] **prefill** — 프론트 영역 (백엔드 미정 제외)
 - [x] **omit ≠ is_all_free** (A)
 - [x] **Hidden 단계적 공개** (C)
@@ -420,9 +420,9 @@ canEnterRoom(user) =
 
 ## 완료 기준 (본 이슈)
 
-- [x] D-JOIN-ENTRY · CLEAR · TRIP-FLOW · ACTIVE · submit 폐기 · **#39 confirm** 문서화
-- [x] **멤버십 path** — `POST /trips` · `POST /trips/join` · `POST .../schedule/confirm` · submit **삭제**
-- [x] 코드: submit 제거 · create=`SCHEDULE_PENDING` · confirm/join=`ACTIVE` (#39)
+- [x] D-JOIN-ENTRY · CLEAR · TRIP-FLOW · ACTIVE · submit 폐기 · **#39 activate** 문서화
+- [x] **멤버십 path** — `POST /trips` · `POST /trips/join` · `POST .../activate` · submit **삭제**
+- [x] 코드: submit 제거 · create=`SCHEDULE_PENDING` · activate/join=`ACTIVE` (#39)
 - [x] 코드: `is_all_free` · canEnterRoom · Hidden 1단계 해제
 - [x] A~H 인벤토리 반영 · trip-room/#22 정합 · personal `deletedDates`
 - [x] `./gradlew test` 통과
@@ -432,6 +432,7 @@ canEnterRoom(user) =
 | 날짜 | 변경 |
 |------|------|
 | 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 (상세: [`schedule-unified.md`](schedule-unified.md) 변경 이력) |
+| 2026-07-28 | **Amend** — 방장 멤버십 전환 API `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. activate·join 자신에게는 도달 불가능했던 `SCHEDULE_ENTRY_REQUIRED` 문서·검증 제거(상세: [`trip-room-api.md`](trip-room-api.md) 변경 이력) |
 | 2026-07-28 | 온보딩 이름 API 경로 리네이밍 반영 — `PATCH /users/profile` → `PATCH /users/onboarding/name` (`user-onboarding.md` 변경 이력 참고) |
 | 2026-07-28 | **Amend (#60)** — D-MEMBER-FILL 공식 전환(`memberFillRate = activeMemberCount / memberCount`), `joinedMemberCount` API 미노출. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md) |
 | 2026-07-21 | **#39 amend** — 방장 SCHEDULE_PENDING→confirm · D-JOIN-MEMBER/TRIP-FLOW · 인벤토리 stale 정리 |

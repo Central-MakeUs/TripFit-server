@@ -13,17 +13,17 @@
 1. 홈에서 「여행방 신규 생성하기」→ 방 생성 폼(이름·기간·일수·인원·선택 여행지)
 2. `POST /trips` → OWNER **`SCHEDULE_PENDING`**. DB에 invite_code 발급하나 **응답에 inviteCode 없음**
 3. **정기→개별** 일정 확인(수정/Skip) — `canEnterRoom`이어도 강제
-4. `POST /trips/{tripId}/schedule/confirm` → **`ACTIVE`**
+4. `POST /trips/{tripId}/activate` → **`ACTIVE`**
 5. 방 상세(`inviteCode`) · **초대 공유** (방장·ACTIVE 이후만)
 
-사전 조건: 로그인 + 프로필 이름(BR-USER-001). 예외: confirm 전 이탈 → 재진입 시 일정 플로우, 상세 API는 `SCHEDULE_CONFIRM_REQUIRED`.
+사전 조건: 로그인 + 프로필 이름(BR-USER-001). 예외: activate 전 이탈 → 재진입 시 일정 플로우, 상세 API는 `SCHEDULE_ACTIVATION_REQUIRED`.
 
 **참여자(멤버):**
 
 1. 초대 링크 → (미멤버) **정기→개별** (수정/Skip)
 2. `POST /api/v1/trips/join` `{ inviteCode }` → INSERT **`ACTIVE` 즉시** (+ row0이면 `is_all_free`)
 3. **중간 `SCHEDULE_PENDING` 없음** — "일정 넣고 join = ACTIVE 한 방"
-4. 정원 full → 409 · 이미 ACTIVE → idempotent. 방장(SCHEDULE_PENDING)이 join으로 우회 → `SCHEDULE_CONFIRM_REQUIRED` → `schedule/confirm` 사용
+4. 정원 full → 409 · 이미 ACTIVE → idempotent. 방장(SCHEDULE_PENDING)이 join으로 우회 → `SCHEDULE_ACTIVATION_REQUIRED` → `activate` 사용
 
 모집 현황(응답률): `memberFillRate = activeMemberCount / memberCount`(구 공식 `joinedMemberCount / memberCount`에서 전환, `joinedMemberCount`는 API 미노출 — [`trip-member-fill-rate-refactor.md`](../../specs/trip-member-fill-rate-refactor.md)). 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
 
@@ -33,12 +33,12 @@
 
 TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 후:
 
-- **방장:** `POST /trips`(`SCHEDULE_PENDING`) → 일정 플로우 → `confirm`(`ACTIVE`) **이후에야** 방 안·초대 공유
+- **방장:** `POST /trips`(`SCHEDULE_PENDING`) → 일정 플로우 → `activate`(`ACTIVE`) **이후에야** 방 안·초대 공유
 - **참여자:** 일정 플로우 → `POST /trips/join` → **곧바로 `ACTIVE`** (중간 SCHEDULE_PENDING 없음)
 
 전역 `canEnterRoom`만으로는 부족하고, **해당 trip에서 `ACTIVE`** 가 추가로 필요하다.
 
-> **프론트 주의:** create 응답에 `inviteCode` 없음. 홈에 SCHEDULE_PENDING 카드가 보여도 상세/공유로 바로 가지 말고 confirm 플로우로.
+> **프론트 주의:** create 응답에 `inviteCode` 없음. 홈에 SCHEDULE_PENDING 카드가 보여도 상세/공유로 바로 가지 말고 activate 플로우로.
 > 용어·오해표: [`glossary.md`](../glossary.md) · 스펙 필독: [`trip-room-api.md`](../../specs/trip-room-api.md)
 
 ---
@@ -76,7 +76,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
        → trip + OWNER + SCHEDULE_PENDING + inviteCode
   → [정기 일정] → [개별 일정]  (수정하면 patch / Skip 가능)
        ※ canEnterRoom이어도 이 플로우를 보여 줌 (강제)
-  → POST /api/v1/trips/{tripId}/schedule/confirm  (가칭)
+  → POST /api/v1/trips/{tripId}/activate
        → SCHEDULE_PENDING → ACTIVE (+ row0이면 is_all_free)
   → 방 상세 (입장 완료)
 ```
@@ -87,12 +87,12 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | `POST /trips` | `trip`(`ONGOING`) + owner **`SCHEDULE_PENDING`** + DB에 6자 `invite_code` 발급. **응답에 inviteCode 미포함**(입장 전). **아직 방 안 입장·공유 아님** |
 | 정기→개별 | **이 방용 확인 플로우**. 전역 일정이 있어도 **매번** 노출 |
 | 수정 | 정기 CRUD / 개별 bulk upsert — User 전역 |
-| Skip | row≥1 유지 · 둘 다 0행이면 confirm 시 서버가 `is_all_free=true` |
-| `confirm` | `ACTIVE` 전환 · 이후 상세·멤버·달력 API 허용 |
+| Skip | row≥1 유지 · 둘 다 0행이면 activate 시 서버가 `is_all_free=true` |
+| `activate` | `ACTIVE` 전환 · 이후 상세·멤버·달력 API 허용 |
 
 ### 이탈·재진입 (방장)
 
-- create 직후~confirm 전: **member(`SCHEDULE_PENDING`)이지만 여행방 입장 불가**
+- create 직후~activate 전: **member(`SCHEDULE_PENDING`)이지만 여행방 입장 불가**
 - 앱 종료 후 같은 방 진입 시도 → 다시 **일정 플로우(2~3)** 로보냄
 - 홈 목록에 방이 보여도 탭 시 상세가 아니라 확인 플로우
 
@@ -101,11 +101,11 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 - `trip.status = ONGOING`
 - `invite_code` UNIQUE 6자
 - 방장 `role=OWNER`, `status=SCHEDULE_PENDING` (정원 카운트에는 포함)
-- `is_all_free`는 **confirm 시점**에 row0이면 설정 (create 시점이 아님)
+- `is_all_free`는 **activate 시점**에 row0이면 설정 (create 시점이 아님)
 
 ### 생성·확인 후
 
-- **`ACTIVE` 이후에만** 방 상세·초대 공유·방 안 활동 (`GET /trips/{id}`의 `inviteCode` 사용). **SCHEDULE_PENDING(confirm 전)에는 공유 불가** — 방 입장 자체가 막힘
+- **`ACTIVE` 이후에만** 방 상세·초대 공유·방 안 활동 (`GET /trips/{id}`의 `inviteCode` 사용). **SCHEDULE_PENDING(activate 전)에는 공유 불가** — 방 입장 자체가 막힘
 - 인원 가득·종료 시 공유 UI 비노출 + join 409 (D8) — 현행과 동일
 
 ---
@@ -165,7 +165,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 상태 | 방 입장 |
 |------|---------|
 | 비멤버 | ❌ (멤버는 join 전) |
-| 방장 `SCHEDULE_PENDING` | ❌ `SCHEDULE_CONFIRM_REQUIRED` — 일정 플로우 강제 |
+| 방장 `SCHEDULE_PENDING` | ❌ `SCHEDULE_ACTIVATION_REQUIRED` — 일정 플로우 강제 |
 | `ACTIVE` + `canEnterRoom` false | ❌ `SCHEDULE_ENTRY_REQUIRED` |
 | `ACTIVE` + `canEnterRoom` true | ✅ |
 
@@ -196,7 +196,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 행동 | 누가 |
 |------|------|
 | 방 생성 | 이름 완료한 로그인 유저 |
-| 일정 confirm | 해당 trip `SCHEDULE_PENDING` 멤버(방장) |
+| 일정 activate | 해당 trip `SCHEDULE_PENDING` 멤버(방장) |
 | 메타 수정·삭제 | 방장 (SCHEDULE_PENDING 단계 허용 범위는 Open Q) |
 | Pin·상세·그룹 달력 | **`ACTIVE` + canEnterRoom** |
 | 참여자 내보내기 | Nice (#20) |
@@ -213,7 +213,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 |------|------|------|
 | 400 | `INVALID_INPUT` | 이름·인원·duration 등 |
 | 403 | `PROFILE_NAME_REQUIRED` | 이름 미완료 |
-| 403 | `SCHEDULE_CONFIRM_REQUIRED` | `SCHEDULE_PENDING` — 방 안 API (**신규**) |
+| 403 | `SCHEDULE_ACTIVATION_REQUIRED` | `SCHEDULE_PENDING` — 방 안 API (**신규**) |
 | 403 | `SCHEDULE_ENTRY_REQUIRED` | `canEnterRoom` 불만족 |
 | 403 | `TRIP_FORBIDDEN` / `TRIP_ACCESS_DENIED` | 권한·비참여자 |
 | 404 | `TRIP_NOT_FOUND` / `INVITE_CODE_NOT_FOUND` | |
@@ -230,7 +230,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 진입 | 홈 「방 생성」 | 초대 링크 |
 | 멤버십 생성 시점 | **생성 직후** (`SCHEDULE_PENDING`) | **일정 완료 후** join (`ACTIVE`) |
 | 일정 확인 | 생성 **후** · 입장 **전** 강제 | join **전** |
-| 완료 API | `POST .../schedule/confirm` | `POST /trips/join` |
+| 완료 API | `POST .../activate` | `POST /trips/join` |
 | 미완료 이탈 | member이나 **입장 불가** | **member 아님** |
 | 최종 status | `ACTIVE` | `ACTIVE` |
 
@@ -244,7 +244,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 2. 「방 생성」→ 폼만 작성 (`제주 3박4일`, 8/1~8/10, 4일, 인원 6)
 3. `POST /trips` → OWNER **SCHEDULE_PENDING**, invite `K7M2N9` · 아직 상세 입장 아님
 4. 정기·개별 확인(이미 일정이 있어도 화면 강제) → 필요 시 patch
-5. `confirm` → **ACTIVE** → 방 상세
+5. `activate` → **ACTIVE** → 방 상세
 6. 링크 공유 · 홈에 방 노출 · 모집 `joined=1`, `responded=1`
 
 ### 시나리오 2 — 민수가 생성 직후 앱 종료 (핵심 케이스)
@@ -252,15 +252,15 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 1. `POST /trips`까지 완료 (`SCHEDULE_PENDING`)
 2. 일정 플로우 중 이탈
 3. 재실행 → 홈에서 방 탭 또는 딥링크
-4. **상세 불가** · 일정 플로우로 복귀 → confirm 전까지 반복
-5. confirm 후에야 입장
+4. **상세 불가** · 일정 플로우로 복귀 → activate 전까지 반복
+5. activate 후에야 입장
 
 ### 시나리오 3 — 이미 `canEnterRoom`인 방장의 새 방
 
 1. A방 참여로 전역 일정·`is_all_free` 충족
 2. B방 `POST /trips` → `SCHEDULE_PENDING`
 3. **그래도** 정기→개별 플로우 표시 (프리패스 없음)
-4. Skip만 해도 confirm → `ACTIVE` (row≥1이면 데이터 유지)
+4. Skip만 해도 activate → `ACTIVE` (row≥1이면 데이터 유지)
 
 ### 시나리오 4 — 지아가 링크로 처음 참여 (정상 · 멤버)
 
@@ -280,7 +280,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 1. `CONFIRMED`/`EXPIRED` 신규 join 409
 2. 기존 `ACTIVE` 멤버 재접속 OK
-3. 방장만 `SCHEDULE_PENDING`인 채 CONFIRMED가 되는 경로가 있는지는 제품상 막아야 함 (confirm 전 확정 금지 등 — Open Q)
+3. 방장만 `SCHEDULE_PENDING`인 채 CONFIRMED가 되는 경로가 있는지는 제품상 막아야 함 (activate 전 확정 금지 등 — Open Q)
 
 ### 시나리오 7 — 이름 없이 생성
 
@@ -314,5 +314,6 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-28 | **Amend** — `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. 상세: [`trip-room-api.md`](../../specs/trip-room-api.md) 변경 이력 |
 | 2026-07-23 | 문서 정리 — `trip-create.md`/`trip-join.md`를 "빠른 요약" 절로 흡수(파일 삭제), RFC 어투("제안"·"SSOT로 승격 예정") 제거해 Approved/Implemented 사실로 명시, 자기참조 깨진 링크 제거, `trip-create-join-flow-redesign.md`(대안 비교) 삭제에 따라 참조 제거 |
 | 2026-07-21 | **#39** — 대안 A SSOT (create SCHEDULE_PENDING → confirm ACTIVE) |
