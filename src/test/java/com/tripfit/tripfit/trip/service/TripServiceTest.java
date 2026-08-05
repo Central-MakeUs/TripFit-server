@@ -199,7 +199,7 @@ class TripServiceTest {
 
     assertThat(response.tripId()).isEqualTo(TRIP_ID);
     assertThat(response.status()).isEqualTo(TripStatus.ONGOING);
-    // create는 SCHEDULE_PENDING — inviteCode는 응답에 없음(방 입장·공유는 confirm 후)
+    // create는 SCHEDULE_PENDING — inviteCode는 응답에 없음(방 입장·공유는 activate 후)
 
     ArgumentCaptor<TripMember> memberCaptor = ArgumentCaptor.forClass(TripMember.class);
     verify(tripMemberRepository).save(memberCaptor.capture());
@@ -242,7 +242,7 @@ class TripServiceTest {
   }
 
   @Test
-  void confirmSchedule_pendingToActive_andMarksAllFree() {
+  void activateMembership_pendingToActive_andMarksAllFree() {
     owner.setAllFree(false);
     TripMember joined =
         new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.SCHEDULE_PENDING,
@@ -253,7 +253,7 @@ class TripServiceTest {
     when(regularScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
 
-    var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
+    var detail = tripService.activateMembership(TRIP_ID, OWNER_ID);
 
     assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.ACTIVE);
     assertThat(joined.getActivatedAt()).isNotNull();
@@ -262,13 +262,13 @@ class TripServiceTest {
   }
 
   @Test
-  void confirmSchedule_alreadyActive_idempotent() {
+  void activateMembership_alreadyActive_idempotent() {
     TripMember active = tripMember(owner, TripMemberRole.OWNER);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(active));
 
-    var detail = tripService.confirmSchedule(TRIP_ID, OWNER_ID);
+    var detail = tripService.activateMembership(TRIP_ID, OWNER_ID);
 
     assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
   }

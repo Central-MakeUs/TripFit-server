@@ -108,7 +108,7 @@ class TripAuthorizationInterceptorTest {
   }
 
   @Test
-  void preHandle_tripMemberOnly_joined_throwsConfirmRequired() throws Exception {
+  void preHandle_tripMemberOnly_joined_throwsActivationRequired() throws Exception {
     when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
         .thenReturn(Optional.of(membership(TripMemberStatus.SCHEDULE_PENDING)));
@@ -120,7 +120,7 @@ class TripAuthorizationInterceptorTest {
             handlerMethod("memberOnly", UUID.class)))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
-        .isEqualTo(UserErrorCode.SCHEDULE_CONFIRM_REQUIRED);
+        .isEqualTo(UserErrorCode.SCHEDULE_ACTIVATION_REQUIRED);
     verify(userSummaryService, never()).requireCanEnterRoom(USER_ID);
   }
 
