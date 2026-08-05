@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-// 여행방 생성·참여·일정 confirm·메타 수정·삭제·Pin·내보내기 등 쓰기 유스케이스
+// 여행방 생성·참여·멤버십 activate·메타 수정·삭제·Pin·내보내기 등 쓰기 유스케이스
 class TripCommandService {
 
   private final TripRepository tripRepository;
@@ -70,7 +70,7 @@ class TripCommandService {
     this.userSummaryService = userSummaryService;
   }
 
-  // 여행방 생성 — 방장은 SCHEDULE_PENDING(일정 확인 전). confirm 전에는 ACTIVE가 아님
+  // 여행방 생성 — 방장은 SCHEDULE_PENDING(일정 확인 전). activate 전에는 ACTIVE가 아님
   @Transactional
   public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = support.findUser(userId);
@@ -100,7 +100,7 @@ class TripCommandService {
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
     tripRepository.save(trip);
 
-    // create 직후는 SCHEDULE_PENDING — 일정 confirm 후에 ACTIVE. 전부 free 처리는 confirm/join에서.
+    // create 직후는 SCHEDULE_PENDING — 일정 activate 후에 ACTIVE. 전부 free 처리는 activate/join에서.
     TripMember ownerMember =
         new TripMember(
             trip,
@@ -110,27 +110,24 @@ class TripCommandService {
             LocalDateTime.now());
     tripMemberRepository.save(ownerMember);
 
-    // inviteCode는 DB에만 발급 — SCHEDULE_PENDING(입장 전) 생성 응답에는 안 실림. 공유는 confirm 후 상세에서
+    // inviteCode는 DB에만 발급 — SCHEDULE_PENDING(입장 전) 생성 응답에는 안 실림. 공유는 activate 후 상세에서
     return new CreateTripResponse(
         trip.getId(), support.effectiveStatus(trip), ownerMember.getStatus());
   }
 
-  // 방장 일정 확인을 끝내 SCHEDULE_PENDING→ACTIVE로 바꾼다 — 이미 ACTIVE면 동일 상세 반환(idempotent)
+  // 방장 멤버십을 SCHEDULE_PENDING→ACTIVE로 activate — 이미 ACTIVE면 동일 상세 반환(idempotent)
   @Transactional
   @TripActivity(tripIdParam = "tripId")
-  public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) {
+  public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
     Trip trip = support.requireActiveTrip(tripId);
     TripMember membership = support.requireActiveMember(tripId, userId);
 
-    User user = membership.getUser();
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
-      // 일정이 0건이면 전부 free로 표시한 뒤 ACTIVE로 전환
-      userSummaryService.markAllFreeIfNoSchedules(user);
+      // 일정이 0건이면 전부 free로 표시한 뒤 ACTIVE로 전환 — canEnterRoom을 항상 충족시키므로 별도 재검증 불필요
+      userSummaryService.markAllFreeIfNoSchedules(membership.getUser());
       membership.activate();
     }
 
-    // 입장 조건(일정≥1 또는 전부 free) 검사 — 이미 ACTIVE였어도 재확인
-    userSummaryService.requireCanEnterRoom(user);
     return tripQueryService.toDetail(trip, membership);
   }
 
@@ -183,7 +180,7 @@ class TripCommandService {
     }
   }
 
-  // 초대코드로 참여 — 신규 멤버는 바로 ACTIVE. SCHEDULE_PENDING(confirm 전 방장)는 confirm으로 유도
+  // 초대코드로 참여 — 신규 멤버는 바로 ACTIVE. SCHEDULE_PENDING(activate 전 방장)는 activate로 유도
   @Transactional
   public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
     User user = support.findUser(userId);
@@ -200,7 +197,7 @@ class TripCommandService {
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {
       TripMember membership = existing.get();
-      // SCHEDULE_PENDING면 join으로 상세를 우회하지 못함 — schedule/confirm 필요
+      // SCHEDULE_PENDING면 join으로 상세를 우회하지 못함 — activate 필요
       support.requireActive(membership);
       return tripQueryService.toDetail(trip, membership);
     }

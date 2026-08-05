@@ -56,7 +56,7 @@ public record UserSummaryResponse(
         description = """
             전부 free 선언 여부 (user.is_all_free 저장, 기본 false).
             방 입장 조건: hasPreSchedule OR isAllFree.
-            true: 일정 없이 Skip+0행으로 create/join·confirm 시 설정.
+            true: 일정 없이 Skip+0행으로 create/join·activate 시 설정.
             false: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.
             일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
             """,

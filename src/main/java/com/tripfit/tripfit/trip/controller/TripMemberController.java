@@ -69,12 +69,13 @@ public class TripMemberController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "SCHEDULE_CONFIRM_REQUIRED", "message": "이 여행방 일정 확인을 완료해야 입장할 수 있습니다."}
-                  """))),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "SCHEDULE_ACTIVATION_REQUIRED", "message": "이 여행방 일정 확인을 완료해야 입장할 수 있습니다."}
+                      """))),
       @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND — 여행방 없음·soft deleted",
@@ -103,7 +104,7 @@ public class TripMemberController {
 
           결과: 멤버별 날짜 슬롯. 조율 중(ONGOING)은 실시간 일정, 확정·종료 방은 당시 스냅샷(읽기 전용).
 
-          주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_CONFIRM_REQUIRED
+          주요 에러: TRIP_ACCESS_DENIED / SCHEDULE_ACTIVATION_REQUIRED
           """)
   @ApiResponses({
       @ApiResponse(
@@ -125,7 +126,7 @@ public class TripMemberController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """

@@ -58,9 +58,9 @@ public class TripController {
 
           전제: 성·이름 프로필 완료. 이름은 필수(최대 15자).
 
-          결과: 여행방 ID·상태. 방장 멤버 상태는 SCHEDULE_PENDING(방장 전용·confirm 전). inviteCode는 응답에 없음.
+          결과: 여행방 ID·상태. 방장 멤버 상태는 SCHEDULE_PENDING(방장 전용·activate 전). inviteCode는 응답에 없음.
 
-          주의: 생성만으로는 방 입장·초대 공유가 안 된다. 일정 플로우 후 confirm(ACTIVE)·상세에서 inviteCode를 쓴다.
+          주의: 생성만으로는 방 입장·초대 공유가 안 된다. 일정 플로우 후 activate(ACTIVE)·상세에서 inviteCode를 쓴다.
 
           주요 에러: PROFILE_NAME_REQUIRED — 성·이름 미입력
           """)
@@ -119,7 +119,7 @@ public class TripController {
 
           주의: status는 여행방 상태 필터(ONGOING|CONFIRMED|ALL). ownerOnly=true면 방장인 방만.
 
-          홈에 SCHEDULE_PENDING(방장 confirm 전) 카드가 보일 수 있다 — 탭 시 상세가 아니라 일정 confirm 플로우로 라우팅.
+          홈에 SCHEDULE_PENDING(방장 activate 전) 카드가 보일 수 있다 — 탭 시 상세가 아니라 일정 activate 플로우로 라우팅.
 
           목록 카드에는 inviteCode가 없다(공유는 입장 후 상세).
           """)
@@ -163,13 +163,13 @@ public class TripController {
 
           호출 시점: 방 홈·설정 화면 진입.
 
-          전제: 멤버이며 ACTIVE(일정 confirm/join 완료)이고 방 입장 조건(일정≥1 또는 전부 free)을 충족.
+          전제: 멤버이며 ACTIVE(일정 activate/join 완료)이고 방 입장 조건(일정≥1 또는 전부 free)을 충족.
 
           결과: TripDetailResponse(inviteCode 포함 — 방장 초대 공유용).
 
-          주의: SCHEDULE_PENDING(방장 confirm 전)면 SCHEDULE_CONFIRM_REQUIRED. create 응답에는 inviteCode가 없다.
+          주의: SCHEDULE_PENDING(방장 activate 전)면 SCHEDULE_ACTIVATION_REQUIRED. create 응답에는 inviteCode가 없다.
 
-          주요 에러: TRIP_ACCESS_DENIED · SCHEDULE_CONFIRM_REQUIRED · SCHEDULE_ENTRY_REQUIRED
+          주요 에러: TRIP_ACCESS_DENIED · SCHEDULE_ACTIVATION_REQUIRED · SCHEDULE_ENTRY_REQUIRED
           """)
   @ApiResponses({
       @ApiResponse(
@@ -191,7 +191,7 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -295,7 +295,7 @@ public class TripController {
 
           호출 시점: 방장이 방 삭제 확인.
 
-          전제: 방장. SCHEDULE_PENDING(confirm 전)여도 삭제 가능 — 단, 삭제는 메타 권한이지 방 입장·공유가 아님.
+          전제: 방장. SCHEDULE_PENDING(activate 전)여도 삭제 가능 — 단, 삭제는 메타 권한이지 방 입장·공유가 아님.
 
           결과: 204 No Content. 멤버 row도 연쇄 soft delete.
 
@@ -343,13 +343,13 @@ public class TripController {
 
           호출 시점: 초대 링크·코드 입력 후 일정 플로우를 마친 다음.
 
-          전제: 성·이름 완료. 입장 조건(일정≥1 또는 전부 free). 방이 ONGOING이고 정원 여유.
+          전제: 성·이름 완료. 방이 ONGOING이고 정원 여유.
 
-          결과: 멤버가 ACTIVE로 등록되고 TripDetail 반환(inviteCode 포함). 이미 ACTIVE면 변경 없이 동일 응답(idempotent).
+          결과: 멤버가 ACTIVE로 등록되고 TripDetail 반환(inviteCode 포함). 정기·개별 일정이 모두 없으면 isAllFree가 true가 된다. 이미 ACTIVE면 변경 없이 동일 응답(idempotent).
 
-          주의: 멤버는 SCHEDULE_PENDING 없이 join 한 번에 ACTIVE. 방장 create 직후(SCHEDULE_PENDING)는 이 API가 아니라 schedule/confirm.
+          주의: 멤버는 SCHEDULE_PENDING 없이 join 한 번에 ACTIVE. 방장 create 직후(SCHEDULE_PENDING)는 이 API가 아니라 activate.
 
-          주요 에러: INVITE_CODE_NOT_FOUND · TRIP_MEMBER_FULL · PROFILE_NAME_REQUIRED · SCHEDULE_ENTRY_REQUIRED · TRIP_ALREADY_CONFIRMED · TRIP_EXPIRED · SCHEDULE_CONFIRM_REQUIRED(방장이 join으로 우회 시도)
+          주요 에러: INVITE_CODE_NOT_FOUND · TRIP_MEMBER_FULL · PROFILE_NAME_REQUIRED · TRIP_ALREADY_CONFIRMED · TRIP_EXPIRED · SCHEDULE_ACTIVATION_REQUIRED(방장이 join으로 우회 시도)
           """)
   @ApiResponses({
       @ApiResponse(
@@ -380,7 +380,7 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족 · SCHEDULE_CONFIRM_REQUIRED — 방장이 join으로 우회 시도",
+          description = "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ACTIVATION_REQUIRED — 방장이 join으로 우회 시도",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -411,24 +411,24 @@ public class TripController {
   }
 
   @Operation(
-      summary = "여행방 일정 확인 완료",
+      summary = "여행방 멤버십 활성화",
       description = """
           목적: 방장의 일정 확인을 끝내고 여행방 입장·초대 공유를 가능하게 한다.
 
           호출 시점: 여행방 생성 직후, 일정 확인·입력 플로우를 마친 다음.
 
-          전제: 본인이 방장이고 myMemberStatus=SCHEDULE_PENDING(create 직후·confirm 전). 멤버는 이 API를 쓰지 않음(join으로 ACTIVE).
+          전제: 본인이 방장이고 myMemberStatus=SCHEDULE_PENDING(create 직후·activate 전). 멤버는 이 API를 쓰지 않음(join으로 ACTIVE).
 
           결과: ACTIVE로 바뀌고 TripDetail(inviteCode 포함) 반환. 정기·개별이 모두 없으면 isAllFree true.
 
           주의: 이미 ACTIVE면 idempotent. 이 호출 후에만 상세·공유·방 안 API.
 
-          주요 에러: SCHEDULE_ENTRY_REQUIRED — 입장 조건(일정≥1 또는 전부 free) 미충족
+          주요 에러: TRIP_ACCESS_DENIED — 비참여자
           """)
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
-          description = "확인 완료 성공",
+          description = "활성화 성공",
           useReturnTypeSchema = true,
           content = @Content(
               examples = @ExampleObject(
@@ -445,19 +445,18 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "SCHEDULE_ENTRY_REQUIRED", "message": "방 입장을 위해 일정을 등록하거나 전부 free를 확인해야 합니다."}
-                      """)))
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_ACCESS_DENIED", "message": "여행방 참여 권한이 없습니다."}
+                  """)))
   })
-  @PostMapping("/{tripId}/schedule/confirm")
-  ResponseEntity<SuccessResponse<TripDetailResponse>> confirmSchedule(
+  @PostMapping("/{tripId}/activate")
+  ResponseEntity<SuccessResponse<TripDetailResponse>> activateMembership(
       @PathVariable UUID tripId,
       @AuthorizedUser UUID userId) {
-    return ResponseEntity.ok(SuccessResponse.of(tripService.confirmSchedule(tripId, userId)));
+    return ResponseEntity.ok(SuccessResponse.of(tripService.activateMembership(tripId, userId)));
   }
 
   @TripMemberOnly
@@ -492,7 +491,7 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_CONFIRM_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """

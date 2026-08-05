@@ -63,9 +63,9 @@ public class TripService {
     return tripCommandService.joinTrip(userId, request);
   }
 
-  // facade: 방장 일정 확인(SCHEDULE_PENDING→ACTIVE) → TripCommandService
-  public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) {
-    return tripCommandService.confirmSchedule(tripId, userId);
+  // facade: 방장 멤버십 activate(SCHEDULE_PENDING→ACTIVE) → TripCommandService
+  public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
+    return tripCommandService.activateMembership(tripId, userId);
   }
 
   // facade: Pin on/off → TripCommandService

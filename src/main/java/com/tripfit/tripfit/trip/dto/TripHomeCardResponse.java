@@ -12,7 +12,7 @@ import java.util.UUID;
 @Schema(
     description = """
         홈 여행방 카드. GET /trips.
-        inviteCode 없음(공유는 입장 후 상세). myMemberStatus=SCHEDULE_PENDING면 탭 시 상세 말고 confirm 플로우.
+        inviteCode 없음(공유는 입장 후 상세). myMemberStatus=SCHEDULE_PENDING면 탭 시 상세 말고 activate 플로우.
         """)
 // @formatter:off
 public record TripHomeCardResponse(
@@ -50,7 +50,7 @@ public record TripHomeCardResponse(
 
     @Schema(
         description =
-            "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 confirm 후·멤버 join 시(입장 가능)")
+            "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 activate 후·멤버 join 시(입장 가능)")
     TripMemberStatus myMemberStatus,
 
     @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int activeMemberCount,

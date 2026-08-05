@@ -25,7 +25,7 @@ public record TripMembersResponse(
       @Schema(description = "표시 이름 (동명이인 시 접미사)", example = "홍길동(2)") String displayName,
       @Schema(description = "방 내 역할 (방장 OWNER / 일반 MEMBER)") TripMemberRole role,
       @Schema(
-          description = "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 confirm 후·멤버 join 시") TripMemberStatus memberStatus,
+          description = "멤버십 상태. SCHEDULE_PENDING=방장 create 직후만, ACTIVE=방장 activate 후·멤버 join 시") TripMemberStatus memberStatus,
       @Schema(description = "본인이 이 방을 홈 상단에 Pin했는지 (본인 row만 의미)") boolean pinned
   ) {
   }
