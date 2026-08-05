@@ -34,6 +34,18 @@ main  ←  {type}/{issue-number}-{description}
 
 예: `Feat: 소셜 로그인 API 구현`, `Refactor: 도메인 기반 레이어드 패키지 구조로 재구성`
 
+### `Breaking-Change-Reason:` 트레일러
+
+프론트가 **조금이라도 대응해야 하는** API 계약 변경(필드 추가·삭제·이름변경·타입변경·필수화 — optional 추가 포함, enum 값 추가·삭제, `ErrorCode` 신규·변경·삭제, 경로·메서드 변경 등)이 포함된 커밋은 본문에 `Breaking-Change-Reason: <한 줄 사유>` 트레일러를 추가한다. "필드 하나 추가일 뿐"·"optional이라 안전함"은 생략 사유가 아니다 — CI의 `oasdiff breaking`은 스키마 파괴적 변경만 잡아내므로, 그보다 넓은 실제 프론트 영향은 커밋 시점에 직접 남긴다.
+
+```
+Fix: 마이페이지 응답 필드명 정리
+
+Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자인 시스템 용어 정합)
+```
+
+상세 기준·Discord 알림 흐름: [`docs/api/README.md`](../docs/api/README.md) · [`harness-workflow.md`](../.claude/rules/harness-workflow.md) STOP §5.
+
 ### 커밋 분할 (에이전트)
 
 사용자가 **커밋을 요청**했을 때, staged되지 않은 전체 변경을 **주제별로 나눠 최대 3개** 커밋으로 만든다.

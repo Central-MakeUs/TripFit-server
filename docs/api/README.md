@@ -26,7 +26,9 @@ oasdiff의 영어 breaking-change 문구는 알려진 `id`(`request-property-rem
 
 ## "왜 변경했는가" — 커밋 트레일러 컨벤션
 
-Breaking change를 만드는 커밋에는 본문에 `Breaking-Change-Reason:` 트레일러를 추가하세요. Discord 알림의 "왜 변경했는가"란에 그대로 노출됩니다.
+**프론트가 조금이라도 대응해야 하는 API 계약 변경**(필드 추가·삭제·이름변경·타입변경·필수화, enum 값 추가·삭제, ErrorCode 신규·변경·삭제, 경로·메서드 변경 등 — optional 필드 추가도 포함)에는 본문에 `Breaking-Change-Reason:` 트레일러를 추가하세요. "필드 하나 추가일 뿐"이라는 이유로 생략하지 않습니다 — CI가 `oasdiff breaking`으로 잡아내는 것은 좁은 스키마 파괴적 변경뿐이라, 그보다 넓은 실제 영향 범위는 사람이 직접 기록해야 합니다. 상세 기준: [`harness-workflow.md`](../../.claude/rules/harness-workflow.md) STOP §5.
+
+Discord 알림의 "왜 변경했는가"란에 그대로 노출됩니다(breaking 임베드 기준 — 아래 "Breaking Change 감지 흐름" 참고).
 
 ```
 Fix: 마이페이지 응답 필드명 정리

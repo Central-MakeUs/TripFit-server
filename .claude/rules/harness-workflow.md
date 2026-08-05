@@ -50,6 +50,23 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 5. **예외 — 진짜 요청 밖:** 이번 정책과 **무관한** 기존 dead code만 언급. **정책 불일치·이번 교체 잔존은 이 절이 우선 → 삭제**
 6. **이력 문서:** 스펙 Changelog·과거 체크리스트의 “당시 A1=730” 등은 OK. **‘현행 코드/계약’** 으로 적힌 구 값은 §1·본 절로 **즉시 amend**
 
+### 5. API 계약 변경 — `Breaking-Change-Reason` 트레일러 (같은 커밋 필수)
+
+프론트가 **조금이라도 대응해야 하는** API 계약 변경은 CI의 `oasdiff breaking` 판정(좁은 스키마 기준)을 기다리지 않고 **변경을 만드는 커밋 시점에 직접** 기록한다. "필드 하나 추가일 뿐"·"optional이라 breaking 아님"·"enum 값만 늘렸을 뿐"이라는 이유로 생략하지 않는다.
+
+**대상 (하나라도 해당하면 필수):**
+
+- 요청/응답 필드 **추가·삭제·이름변경·타입변경·필수화**(optional 추가 포함)
+- enum 값 **추가·삭제·이름변경**
+- `ErrorCode` **신규·변경·삭제**, HTTP 상태 변경
+- 경로·HTTP 메서드 **변경·삭제**, 필드 의미(semantics)만 바뀌어 프론트 처리 로직이 달라지는 경우
+
+**필수 조치:** 위 변경이 포함된 커밋 본문에 `Breaking-Change-Reason: <한 줄 사유>` 트레일러 추가. 형식·예시·Discord 알림 흐름: [`docs/api/README.md`](../../docs/api/README.md) "왜 변경했는가" 절.
+
+**같은 턴 체크 (ErrorCode·AOP §2와 동일 패턴):** DTO·enum·`ErrorCode`·`@RequestMapping` 경로를 수정하는 파일을 커밋에 담기 **직전에** 이 절을 재확인한다. 커밋을 만든 뒤 사용자가 지적해서야, 또는 CI가 "⚠️ 사유 미기재"를 띄운 뒤에야 트레일러를 추가하는 흐름은 **금지** — 이미 늦은 대응이다.
+
+**금지:** 트레일러 없이 커밋 · oasdiff `breaking` 카테고리(스키마 파괴적 변경)에만 해당한다고 임의로 좁혀 해석 · "나중에 CI 알림 뜨면 추가" 미루기.
+
 ## 작업 분류 (시작 전 30초)
 
 1. `docs/product/development-wave.md` 활성 Wave·Must · 요약 `docs/product/waves.md`
@@ -89,7 +106,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 - 변경 요약 + 검증 (`./gradlew test` 등)
 - 스펙 있으면 완료 기준 체크리스트 대조
-- **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`)
+- **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`) + STOP §5 대상이면 커밋에 `Breaking-Change-Reason:` 트레일러 포함 확인
 - **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지
 - 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
 - **PR merge 확인 후:** 작업 브랜치 삭제 (원격+로컬) — CONTRIBUTING Pull Request "merge 후" 절. merge 안 된 브랜치는 삭제 금지
@@ -105,6 +122,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - 이슈 번호 없는 브랜치명 — CONTRIBUTING 위반
 - 문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋 — STOP §1
 - **교체 후 구 경로·상수·‘현행’ 문서 방치** — STOP §4 (dev에서 호환 레이어 불필요)
+- **프론트 대응이 필요한 API 계약 변경에 `Breaking-Change-Reason` 트레일러 누락** — STOP §5 (optional 필드 추가·enum 값 추가도 대상)
 - `git push --force` (main/master), `rm -rf`, 운영 DB 파괴
 - `.env`·API 키를 코드·커밋에 포함
 

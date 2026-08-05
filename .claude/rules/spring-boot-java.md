@@ -518,6 +518,7 @@ public TripMembersResponse removeMember(...) {
 - 예외: `@RestControllerAdvice` + `{ code, message }`
 - 문서: springdoc — `@Tag`, `@Operation`(위 **OpenAPI @Operation · JWT**), DTO·Entity·enum `@Schema`, enum은 **Enum** 절
 - Controller 파라미터 스타일: 위 **Controller 메서드 파라미터** 절 준수
+- **계약 변경(필드 추가·삭제·이름변경·타입변경·필수화, enum 값, `ErrorCode`, 경로·메서드):** optional 필드 추가라도 커밋 본문에 `Breaking-Change-Reason:` 트레일러 필수 — `harness-workflow.md` STOP §5 · `docs/api/README.md`
 
 ## Configuration
 
