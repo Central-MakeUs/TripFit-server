@@ -3,6 +3,7 @@ package com.tripfit.tripfit.user.schedule.dto;
 import com.tripfit.tripfit.trip.domain.ScheduleStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
@@ -10,13 +11,9 @@ import java.util.List;
 @Schema(description = "개인 일정 bulk upsert + 삭제 요청. PATCH /users/schedule/personal")
 public record UpdatePersonalScheduleRequest(
     @Schema(
-        description = "날짜별 upsert 항목. 비어 있거나 생략 가능(deletedDates만으로 CLEAR)",
-        nullable = true) @Valid List<PersonalScheduleItem> items,
-
-    @Schema(
-        description = "삭제할 날짜 목록. 해당 (user, date) row 삭제(해당 날 CLEAR). null/빈 배열 가능",
-        nullable = true,
-        example = "[\"2026-08-04\"]") List<LocalDate> deletedDates
+        description = "날짜별 upsert 항목. 슬롯 3개(morning/afternoon/evening) 모두 POSSIBLE이고 uncertain=false인 항목은"
+            + " 해당 날짜 row를 삭제(CLEAR)한다 — 오버라이드가 없는 기본 상태와 동일하기 때문",
+        requiredMode = Schema.RequiredMode.REQUIRED) @NotEmpty @Valid List<PersonalScheduleItem> items
 ) {
 
   @Schema(description = "특정 날짜의 슬롯 가능/불가 + 날짜 단위 불확실")

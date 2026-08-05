@@ -25,6 +25,7 @@ import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -150,7 +151,7 @@ public class ScheduleService {
     return new PersonalScheduleResponse(items);
   }
 
-  // 개별 일정 일괄 저장·삭제 — items upsert와 deletedDates 삭제를 한 요청에서 처리
+  // 개별 일정 일괄 저장·삭제 — 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목은 해당 날짜 row 삭제(CLEAR)로 처리
   @Transactional
   public PersonalScheduleResponse upsertPersonal(
       UUID userId,
@@ -158,58 +159,42 @@ public class ScheduleService {
     User user = userLookupService.requireUser(userId);
     List<PersonalScheduleItem> items =
         request.items() == null ? List.of() : request.items();
-    List<LocalDate> deletedDates =
-        request.deletedDates() == null ? List.of() : request.deletedDates();
-
-    if (items.isEmpty() && deletedDates.isEmpty()) {
+    if (items.isEmpty()) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
-    }
-
-    // items와 deletedDates에 같은 날짜가 있으면 400
-    for (PersonalScheduleItem item : items) {
-      if (deletedDates.contains(item.scheduleDate())) {
-        throw new TripFitException(CommonErrorCode.INVALID_INPUT);
-      }
     }
 
     LocalDate minDate = null;
     LocalDate maxDate = null;
+    List<LocalDate> deleteDates = new ArrayList<>();
+    boolean anyUpserted = false;
 
-    // 1. deletedDates에 해당하는 날짜 row를 먼저 삭제
-    if (!deletedDates.isEmpty()) {
-      personalScheduleRepository.deleteByUserIdAndScheduleDateIn(userId, deletedDates);
-      for (LocalDate d : deletedDates) {
-        if (minDate == null || d.isBefore(minDate)) {
-          minDate = d;
-        }
-        if (maxDate == null || d.isAfter(maxDate)) {
-          maxDate = d;
-        }
-      }
-    }
-
-    // 2. items를 insert 또는 update
+    // 1. 항목별로 삭제 신호(슬롯 전부 POSSIBLE·uncertain=false)와 upsert를 분리
     for (PersonalScheduleItem item : items) {
       validatePersonalItem(item);
-      PersonalSchedule existing =
-          personalScheduleRepository
-              .findByUserIdAndScheduleDate(userId, item.scheduleDate())
-              .orElse(null);
-      if (existing == null) {
-        personalScheduleRepository.save(
-            PersonalSchedule.create(
-                user,
-                item.scheduleDate(),
-                item.morningStatus(),
-                item.afternoonStatus(),
-                item.eveningStatus(),
-                item.uncertain()));
+      if (isDeleteSignal(item)) {
+        deleteDates.add(item.scheduleDate());
       } else {
-        existing.apply(
-            item.morningStatus(),
-            item.afternoonStatus(),
-            item.eveningStatus(),
-            item.uncertain());
+        PersonalSchedule existing =
+            personalScheduleRepository
+                .findByUserIdAndScheduleDate(userId, item.scheduleDate())
+                .orElse(null);
+        if (existing == null) {
+          personalScheduleRepository.save(
+              PersonalSchedule.create(
+                  user,
+                  item.scheduleDate(),
+                  item.morningStatus(),
+                  item.afternoonStatus(),
+                  item.eveningStatus(),
+                  item.uncertain()));
+        } else {
+          existing.apply(
+              item.morningStatus(),
+              item.afternoonStatus(),
+              item.eveningStatus(),
+              item.uncertain());
+        }
+        anyUpserted = true;
       }
       if (minDate == null || item.scheduleDate().isBefore(minDate)) {
         minDate = item.scheduleDate();
@@ -219,14 +204,27 @@ public class ScheduleService {
       }
     }
 
-    // 3. is_all_free 전이 — 추가 시 false · 삭제 후 0행이면 true
-    if (!items.isEmpty()) {
+    // 2. 삭제 신호로 모인 날짜 row를 일괄 삭제
+    if (!deleteDates.isEmpty()) {
+      personalScheduleRepository.deleteByUserIdAndScheduleDateIn(userId, deleteDates);
+    }
+
+    // 3. is_all_free 전이 — upsert 있으면 false · 삭제로 0행이 되면 true
+    if (anyUpserted) {
       userSummaryService.clearAllFreeOnScheduleAdded(user);
     }
-    if (!deletedDates.isEmpty()) {
+    if (!deleteDates.isEmpty()) {
       userSummaryService.markAllFreeIfSchedulesCleared(user);
     }
     return getPersonal(userId, minDate, maxDate);
+  }
+
+  // 삭제 신호 판정 — 슬롯 3개 모두 POSSIBLE·uncertain=false면 오버라이드 없는 기본 상태와 동일 → row 삭제
+  private static boolean isDeleteSignal(PersonalScheduleItem item) {
+    return !item.uncertain()
+        && item.morningStatus() == ScheduleStatus.POSSIBLE
+        && item.afternoonStatus() == ScheduleStatus.POSSIBLE
+        && item.eveningStatus() == ScheduleStatus.POSSIBLE;
   }
 
   // 합산 달력 조회 — 정기 일정 미등록도 403 없음, 일정 없는 날은 응답에서 날짜 키 생략(sparse)

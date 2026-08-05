@@ -128,9 +128,9 @@ canEnterRoom(user) =
 | 종류 | 동작 |
 |------|------|
 | **정기** | CRUD — `POST` 생성 · `PATCH /{id}` 단건 수정 · `DELETE /{id}` |
-| **개별** | **bulk upsert + 삭제** — `PATCH /personal` · `items` insert/update · **`deletedDates`** 로 날짜 row 삭제 |
+| **개별** | **bulk upsert + 삭제** — `PATCH /personal` · `items` insert/update · **슬롯 3개 모두 POSSIBLE·uncertain=false인 항목**은 날짜 row 삭제 |
 
-**개인 CLEAR:** `deletedDates`로 해당 날짜 삭제. regular도 0이면 `is_all_free=true` (D-JOIN-CLEAR). `items`와 `deletedDates`에 **같은 날짜** → 400 `INVALID_INPUT`. `items`·`deletedDates` **둘 다 비어 있으면** 400.
+**개인 CLEAR:** `items`에 슬롯 3개(오전/오후/저녁) 모두 `POSSIBLE`·`uncertain=false`인 항목을 보내면 해당 날짜를 삭제. regular도 0이면 `is_all_free=true` (D-JOIN-CLEAR). `items`가 **비어 있으면** 400.
 
 ### D-JOIN-TRIP-FLOW: 신규 trip · 일정 확인 플로우 (확정 — #39 amend)
 
@@ -431,6 +431,7 @@ canEnterRoom(user) =
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 (상세: [`schedule-unified.md`](schedule-unified.md) 변경 이력) |
 | 2026-07-28 | 온보딩 이름 API 경로 리네이밍 반영 — `PATCH /users/profile` → `PATCH /users/onboarding/name` (`user-onboarding.md` 변경 이력 참고) |
 | 2026-07-28 | **Amend (#60)** — D-MEMBER-FILL 공식 전환(`memberFillRate = activeMemberCount / memberCount`), `joinedMemberCount` API 미노출. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md) |
 | 2026-07-21 | **#39 amend** — 방장 SCHEDULE_PENDING→confirm · D-JOIN-MEMBER/TRIP-FLOW · 인벤토리 stale 정리 |

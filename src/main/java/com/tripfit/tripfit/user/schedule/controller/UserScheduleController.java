@@ -275,13 +275,13 @@ public class UserScheduleController {
 
           호출 시점: 개인 일정 편집 저장.
 
-          전제: items(upsert)와 deletedDates(삭제) 중 하나 이상 필요. 같은 날짜가 양쪽에 있으면 안 된다.
+          전제: items 최소 1개 필요. 슬롯 3개(오전/오후/저녁) 모두 POSSIBLE이고 uncertain=false인 항목은 해당 날짜를 삭제한다.
 
           결과: 반영 후 해당 구간 개인 일정 목록.
 
           주의: 첫 저장 시 hasPreSchedule true. 전부 삭제 후 정기·개인 0건이면 false(GET /auth/me 재조회).
 
-          주요 에러: INVALID_INPUT — items·deletedDates 교집합 날짜 또는 둘 다 비어 있음
+          주요 에러: INVALID_INPUT — items가 비어 있음
           """)
   @ApiResponses({
       @ApiResponse(
@@ -295,7 +295,7 @@ public class UserScheduleController {
                       """))),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT — 요청 값 검증 실패 또는 items·deletedDates 교집합 날짜·둘 다 비어 있음",
+          description = "INVALID_INPUT — 요청 값 검증 실패 또는 items가 비어 있음",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """

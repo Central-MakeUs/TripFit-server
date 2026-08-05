@@ -3,6 +3,7 @@ package com.tripfit.tripfit.user.schedule.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -270,8 +271,7 @@ class ScheduleServiceTest {
                         ScheduleStatus.IMPOSSIBLE,
                         ScheduleStatus.POSSIBLE,
                         ScheduleStatus.POSSIBLE,
-                        true)),
-                null));
+                        true))));
 
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().getFirst().uncertain()).isTrue();
@@ -307,7 +307,7 @@ class ScheduleServiceTest {
                   PersonalSchedule.create(
                       user,
                       LocalDate.of(2026, 8, 3),
-                      ScheduleStatus.POSSIBLE,
+                      ScheduleStatus.IMPOSSIBLE,
                       ScheduleStatus.POSSIBLE,
                       ScheduleStatus.POSSIBLE,
                       false);
@@ -322,17 +322,16 @@ class ScheduleServiceTest {
                 List.of(
                     new PersonalScheduleItem(
                         LocalDate.of(2026, 8, 3),
+                        ScheduleStatus.IMPOSSIBLE,
                         ScheduleStatus.POSSIBLE,
                         ScheduleStatus.POSSIBLE,
-                        ScheduleStatus.POSSIBLE,
-                        false)),
-                null));
+                        false))));
 
     assertThat(response.items()).hasSize(1);
   }
 
   @Test
-  void upsertPersonal_deletedDates_clearsAllFreeWhenNoSchedulesLeft() {
+  void upsertPersonal_allSlotsPossibleAndNotUncertain_deletesRowAndClearsAllFreeWhenNoSchedulesLeft() {
     user.setAllFree(false);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(
@@ -344,21 +343,29 @@ class ScheduleServiceTest {
 
     scheduleService.upsertPersonal(
         USER_ID,
-        new UpdatePersonalScheduleRequest(List.of(), List.of(LocalDate.of(2026, 8, 3))));
+        new UpdatePersonalScheduleRequest(
+            List.of(
+                new PersonalScheduleItem(
+                    LocalDate.of(2026, 8, 3),
+                    ScheduleStatus.POSSIBLE,
+                    ScheduleStatus.POSSIBLE,
+                    ScheduleStatus.POSSIBLE,
+                    false))));
 
     verify(personalScheduleRepository)
         .deleteByUserIdAndScheduleDateIn(USER_ID, List.of(LocalDate.of(2026, 8, 3)));
+    verify(personalScheduleRepository, never()).save(any(PersonalSchedule.class));
     verify(userSummaryService).markAllFreeIfSchedulesCleared(user);
   }
 
   @Test
-  void upsertPersonal_rejectsEmptyItemsAndDeletedDates() {
+  void upsertPersonal_rejectsEmptyItems() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     assertThatThrownBy(
         () -> scheduleService.upsertPersonal(
             USER_ID,
-            new UpdatePersonalScheduleRequest(List.of(), List.of())))
+            new UpdatePersonalScheduleRequest(List.of())))
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(CommonErrorCode.INVALID_INPUT);

@@ -53,15 +53,20 @@ user/schedule/
       "afternoonStatus": "POSSIBLE",
       "eveningStatus": "POSSIBLE",
       "uncertain": true
+    },
+    {
+      "scheduleDate": "2026-08-04",
+      "morningStatus": "POSSIBLE",
+      "afternoonStatus": "POSSIBLE",
+      "eveningStatus": "POSSIBLE",
+      "uncertain": false
     }
-  ],
-  "deletedDates": ["2026-08-04", "2026-08-05"]
+  ]
 }
 ```
 
-- **`items`:** `(user, date)` insert/update  
-- **`deletedDates`:** 해당 날짜 row 삭제 (CLEAR · #22). regular도 0이면 `is_all_free=true`  
-- `items` ∩ `deletedDates` 비공집합 → 400 · 둘 다 비어 있으면 400
+- **`items`:** `(user, date)` insert/update — **단, 슬롯 3개 모두 `POSSIBLE`이고 `uncertain=false`인 항목은 오버라이드가 없는 기본 상태와 동일하므로 해당 날짜 row를 삭제(CLEAR)한다.** regular도 0이면 `is_all_free=true`
+- `items`가 비어 있으면 400
 
 ## 정기 일정 (`RegularSchedule`)
 
@@ -79,7 +84,7 @@ user/schedule/
 |--------|------|------|
 | GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성 |
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
-| GET/PATCH | `/api/v1/users/schedule/personal` | 조회 / **upsert + `deletedDates`** (#22 Hidden **1단계 해제**) |
+| GET/PATCH | `/api/v1/users/schedule/personal` | 조회 / **upsert(전부 POSSIBLE·uncertain=false면 삭제)** (#22 Hidden **1단계 해제**) |
 | GET | `/api/v1/users/schedule/calendar` | effective 달력 · **today~+2년** (#37) · Hidden **1단계 해제** |
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 effective · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
 
@@ -95,6 +100,7 @@ user/schedule/
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 |
 | 2026-07-21 | **#22** — personal/calendar Hidden 해제 · `deletedDates` CLEAR · BR-USER-006 게이트 폐기 반영 |
 | 2026-07-14 | personal GET/PATCH에 BR-USER-006 `REGULAR_SCHEDULE_REQUIRED` 게이트 |
 | 2026-07-14 | 병합 S1 확정 링크 (`schedule-calendar-resolve.md`) |
