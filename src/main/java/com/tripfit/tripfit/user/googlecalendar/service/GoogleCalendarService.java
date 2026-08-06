@@ -231,6 +231,12 @@ public class GoogleCalendarService {
       // 메서드를 타므로, 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 같은 트랜잭션에서 삭제된다
       handlePermanentAuthFailure(user);
     } catch (Exception exception) {
+      // freeBusy·refresh 등 일시적 오류 — 30분 폴링이 자동 재시도하므로 credential은 보존하지만, 원인 없이
+      // markSyncError 메시지만 DB에 남으면 재현 없이는 언제·누구에게 발생했는지 알 수 없다
+      log.warn(
+          "Google Calendar sync failed — freeBusy/refresh error (userId={})",
+          user.getId(),
+          exception);
       credential.markSyncError(exception.getMessage());
       credentialRepository.save(credential);
     }
