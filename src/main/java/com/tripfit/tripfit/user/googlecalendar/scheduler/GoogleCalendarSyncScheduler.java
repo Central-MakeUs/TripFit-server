@@ -22,6 +22,10 @@ public class GoogleCalendarSyncScheduler {
   // docs/specs/google-calendar-oauth.md "폴링 30분" Must Have와 지금 값이 다름
   private static final long SYNC_INTERVAL_MS = 5 * 60 * 1000L;
 
+  // TEMP(디버그): 위와 같은 이유로 jitter까지 끄면 다음 틱(5분 내)에 연동 유저 전원이 무조건 재시도돼 원인 확정이
+  // 더 빨라진다 — 지금은 연동 유저가 2명뿐이라 부하 문제 없음. 원인 확정되면 false로 원복
+  private static final boolean SKIP_JITTER_FOR_DEBUG = true;
+
   private static final long JITTER_SLEEP_MS = 100L;
 
   private final UserRepository userRepository;
@@ -54,6 +58,9 @@ public class GoogleCalendarSyncScheduler {
   }
 
   private boolean shouldSkipThisCycle(UUID userId, long cycle) {
+    if (SKIP_JITTER_FOR_DEBUG) {
+      return false;
+    }
     int slot = Math.floorMod(userId.hashCode(), JITTER_SLOT_COUNT);
     return Math.floorMod(cycle, JITTER_SLOT_COUNT) != slot;
   }
