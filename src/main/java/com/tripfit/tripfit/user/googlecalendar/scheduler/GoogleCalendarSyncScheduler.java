@@ -17,6 +17,11 @@ public class GoogleCalendarSyncScheduler {
 
   private static final int JITTER_SLOT_COUNT = 6;
 
+  // TEMP(디버그): freeBusy 실패 원인 확정을 위해 30분 → 5분으로 임시 단축(JITTER_SLOT_COUNT=6과 곱하면 유저별
+  // 실질 재시도 주기도 3시간 → 30분으로 같이 줄어듦). 원인 확정되면 30분(30 * 60 * 1000L)으로 원복할 것 —
+  // docs/specs/google-calendar-oauth.md "폴링 30분" Must Have와 지금 값이 다름
+  private static final long SYNC_INTERVAL_MS = 5 * 60 * 1000L;
+
   private static final long JITTER_SLEEP_MS = 100L;
 
   private final UserRepository userRepository;
@@ -30,11 +35,11 @@ public class GoogleCalendarSyncScheduler {
     this.googleCalendarService = googleCalendarService;
   }
 
-  // 30분마다 연동 유저 freeBusy sync — 유저별 hash 지터 + 짧은 sleep으로 부하 분산
-  @Scheduled(fixedRate = 30 * 60 * 1000)
+  // 연동 유저 freeBusy sync — 유저별 hash 지터 + 짧은 sleep으로 부하 분산 (주기는 SYNC_INTERVAL_MS 참고)
+  @Scheduled(fixedRate = SYNC_INTERVAL_MS)
   public void syncConnectedUsers() {
     List<User> users = userRepository.findByIsGoogleCalendarConnectedTrue();
-    long cycle = System.currentTimeMillis() / (30L * 60L * 1000);
+    long cycle = System.currentTimeMillis() / SYNC_INTERVAL_MS;
     for (User user : users) {
       if (shouldSkipThisCycle(user.getId(), cycle)) {
         continue;
