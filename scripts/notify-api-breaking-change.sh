@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # oasdiff로 base/revised OpenAPI 스펙을 비교해 breaking change·non-breaking 필드 추가가 있으면
-# Discord #frontend 웹훅으로 알림을 보낸다. breaking change가 있으면 exit 1(CI 실패로 눈에 띄게),
-# non-breaking 필드 추가만 있으면 exit 0(정보 알림만, CI는 통과). 둘 다 없으면 조용히 통과한다.
+# Discord #frontend 웹훅으로 알림을 보낸다. breaking change·필드 추가 어느 쪽이든 알림만 보내고
+# job은 항상 통과시킨다(CI를 실패로 표시하지 않음). 둘 다 없으면 조용히 통과한다.
 # 필요 도구: oasdiff, jq, git, curl (CI에서 사전 설치)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -119,37 +119,32 @@ if [[ "$BREAKING_COUNT" -gt 0 ]]; then
     [.[] | domain(.path)] | unique | join(", ")
   ' "$BREAKING_JSON")"
 
-  # 커밋 트레일러에서 사유 추출 — 여러 커밋에 있으면 모두 이어붙임. 없으면 안내문(하드코딩 값 아님)
-  REASON="$(git log "$GIT_RANGE" --pretty=format:%B \
-    | grep -i '^Breaking-Change-Reason:' \
-    | sed -E 's/^[Bb]reaking-[Cc]hange-[Rr]eason:[[:space:]]*//' \
-    | awk '!seen[$0]++' \
-    | paste -sd $'\n' - || true)"
+  # 커밋 트레일러에서 사유 추출 — 값이 다음 줄로 wrap된 경우(들여쓰기 없는 연속 줄)까지 한 사유로 접어서
+  # 합친다. blank 줄이나 다른 트레일러 형식(`Key: value`) 줄을 만나면 그 사유를 종료. 여러 커밋에 있으면
+  # 커밋별로 나열(짧은 SHA 접두 — 어느 커밋 사유인지 구분되게). 하나도 없으면 안내문(하드코딩 값 아님)
+  # 커밋 1개씩 순회(NUL 구분 다중 레코드 방식은 BSD awk에서 NUL 바이트를 제대로 못 다뤄 회피)
+  REASON="$( { while IFS= read -r sha; do
+    body="$(git log -1 --format=%B "$sha")"
+    awk -v sha="$sha" '
+      /^[Bb]reaking-[Cc]hange-[Rr]eason:/ {
+        capturing = 1
+        sub(/^[Bb]reaking-[Cc]hange-[Rr]eason:[[:space:]]*/, "")
+        buf = $0
+        next
+      }
+      capturing && /^[[:space:]]*$/ { print sha ": " buf; capturing = 0; buf = ""; next }
+      capturing && /^[A-Za-z][A-Za-z-]*:[[:space:]]/ { print sha ": " buf; capturing = 0; buf = ""; next }
+      capturing { buf = buf " " $0; next }
+      END { if (capturing && buf != "") print sha ": " buf }
+    ' <<< "$body"
+  done < <(git log "$GIT_RANGE" --format=%h); } | awk '!seen[$0]++' | paste -sd $'\n' - || true)"
   if [[ -z "$REASON" ]]; then
     REASON="⚠️ 사유 미기재 — 커밋 메시지에 \`Breaking-Change-Reason:\` 트레일러를 추가해 주세요."
   fi
 
-  # oasdiff의 영어 breaking-change 문구를 id 기준으로 한글 템플릿에 매핑 — 매핑 안 된 id는 원문 영어 그대로(추측 번역 안 함)
-  TRANSLATED_BREAKING_JSON="$(jq '
-    def translate:
-      try (
-        if .id == "request-property-removed" then
-          "요청 속성 `" + (.text | capture("`(?<p>[^`]+)`")).p + "` 제거됨 — 더 이상 보내지 않아도 됨"
-        elif .id == "response-property-removed" then
-          "응답 속성 `" + (.text | capture("`(?<p>[^`]+)`")).p + "` 제거됨 — 더 이상 응답에 포함되지 않음"
-        elif .id == "request-property-became-required" then
-          "요청 속성 `" + (.text | capture("`(?<p>[^`]+)`")).p + "` 필수값으로 변경 — 요청 시 반드시 포함해야 함"
-        elif .id == "request-property-enum-value-removed" then
-          (.text | capture("enum value `(?<v>[^`]+)` of the request property `(?<p>[^`]+)`")) as $c
-          | "요청 속성 `" + $c.p + "`의 enum 값 `" + $c.v + "` 제거됨 — 더 이상 이 값을 보낼 수 없음"
-        elif .id == "api-path-removed-without-deprecation" then
-          "API 경로가 deprecated 처리 없이 삭제됨 — 더 이상 호출 불가"
-        else
-          .text
-        end
-      ) catch .text;
-    map(.text = translate)
-  ' "$BREAKING_JSON")"
+  # oasdiff 원문(영어) 그대로 노출 — 한글 템플릿 매핑은 id 커버리지(oasdiff breaking check 80개+)를
+  # 유지보수할 수 없고, 매핑 안 된 id만 영어로 남아 한/영이 뒤섞이는 문제가 있어 제거함(2026-07-29 amend)
+  TRANSLATED_BREAKING_JSON="$(jq '.' "$BREAKING_JSON")"
 
   # 엔드포인트 1개 = 필드 1개로 분리 — Discord embed에서 필드명만 굵게 렌더링되므로,
   # 한 필드에 전부 몰아넣으면 계층 없이 다 같은 크기로 보임(가독성 저하). 필드명을 소제목처럼 씀.
@@ -257,7 +252,4 @@ else
   curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL" > /dev/null
 fi
 
-if [[ "$BREAKING_COUNT" -gt 0 ]]; then
-  exit 1
-fi
 exit 0

@@ -14,11 +14,13 @@
 ## Breaking Change 감지 흐름
 
 ```
-push / PR → OpenApiSpecExportTest → oasdiff breaking → 있으면 Discord #frontend 알림 + job 실패
-                                                        → deploy는 막지 않음(이미 병합된 뒤라서)
+push / PR → OpenApiSpecExportTest → oasdiff breaking → 있으면 Discord #frontend 알림만 발송
+                                                        → job은 항상 통과(CI 실패로 표시 안 함), deploy도 막지 않음
 ```
 
-oasdiff의 영어 breaking-change 문구는 알려진 `id`(`request-property-removed` 등) 기준으로 한글 템플릿에 매핑해 보냅니다(`notify-api-breaking-change.sh`의 `translate` 함수). 매핑 안 된 `id`는 추측 번역 없이 영어 원문 그대로 노출됩니다. footer에는 이번 변경에 포함된 커밋 short SHA가 `Commit ID: 9e1c878, 6e9df7e`처럼 전부 나열됩니다.
+oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** 노출됩니다. oasdiff breaking check `id`가 80개+라 전부 한글 템플릿으로 매핑·유지보수하는 게 비현실적이고, 일부만 매핑하면 매핑 안 된 `id`만 영어로 남아 한 필드 안에서 한글·영어가 뒤섞이는 문제가 있어(2026-07-29 실제 사고) 아예 원문만 쓰기로 함(2026-07-29 amend). footer에는 이번 변경에 포함된 커밋 short SHA가 `Commit ID: 9e1c878, 6e9df7e`처럼 전부 나열됩니다.
+
+`GIT_RANGE`는 이번 push의 `before..after`(또는 PR의 `base..head`)라 로컬에 여러 커밋을 쌓아두고 한 번에 push하면 서로 무관한 여러 변경의 breaking change·사유가 한 알림에 뭉쳐서 나옵니다 — 가능하면 breaking change가 생긴 커밋은 바로바로 push하세요.
 
 ## Release Gate #65 관련 엔드포인트 콜아웃
 
@@ -28,7 +30,7 @@ oasdiff의 영어 breaking-change 문구는 알려진 `id`(`request-property-rem
 
 **프론트가 조금이라도 대응해야 하는 API 계약 변경**(필드 추가·삭제·이름변경·타입변경·필수화, enum 값 추가·삭제, ErrorCode 신규·변경·삭제, 경로·메서드 변경 등 — optional 필드 추가도 포함)에는 본문에 `Breaking-Change-Reason:` 트레일러를 추가하세요. "필드 하나 추가일 뿐"이라는 이유로 생략하지 않습니다 — CI가 `oasdiff breaking`으로 잡아내는 것은 좁은 스키마 파괴적 변경뿐이라, 그보다 넓은 실제 영향 범위는 사람이 직접 기록해야 합니다. 상세 기준: [`harness-workflow.md`](../../.claude/rules/harness-workflow.md) STOP §5.
 
-Discord 알림의 "왜 변경했는가"란에 그대로 노출됩니다(breaking 임베드 기준 — 아래 "Breaking Change 감지 흐름" 참고).
+Discord 알림의 "왜 변경했는가"란에 커밋 short SHA와 함께 그대로 노출됩니다(breaking 임베드 기준 — 아래 "Breaking Change 감지 흐름" 참고).
 
 ```
 Fix: 마이페이지 응답 필드명 정리
@@ -36,7 +38,9 @@ Fix: 마이페이지 응답 필드명 정리
 Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자인 시스템 용어 정합)
 ```
 
-트레일러가 없으면 "⚠️ 사유 미기재" 안내문이 대신 노출됩니다(하드코딩된 고정 문구가 아니라 트레일러 유무에 따라 동적으로 채워짐).
+**한 줄로 쓰세요 — 자동 줄바꿈으로 두 줄 이상 걸치게 두지 마세요.** 스크립트는 `Breaking-Change-Reason:` 다음 줄부터 빈 줄이나 다른 트레일러(`Key: value`)가 나올 때까지를 한 사유로 이어 붙이지만, 커밋 메시지 안에서 사유가 여러 줄로 wrap된 경우까지 안전하게 합치기 위한 보정일 뿐이니 애초에 한 줄로 쓰는 게 가장 안전합니다.
+
+여러 커밋에 걸쳐 있으면 각 사유 앞에 `짧은SHA: `를 붙여 어느 커밋의 사유인지 구분합니다(예: `04e3262: ...`). 트레일러가 없으면 "⚠️ 사유 미기재" 안내문이 대신 노출됩니다(하드코딩된 고정 문구가 아니라 트레일러 유무에 따라 동적으로 채워짐).
 
 ## 알림 봇 이름·아바타
 
@@ -71,9 +75,5 @@ GITHUB_SHA="$(git rev-parse HEAD)" \
 | `docs/api/openapi.json` | `main` 스냅샷 (자동 갱신, 손편집 금지) |
 | `docs/api/tripfit_app_icon.png` | Discord 알림 봇 아바타 — raw URL로 CI에서 참조 |
 | `src/test/java/.../OpenApiSpecExportTest.java` | 현재 코드 기준 스펙을 `build/openapi/openapi.json`으로 export |
-| `scripts/notify-api-breaking-change.sh` | oasdiff 실행 → breaking이면 Discord 알림 + 실패 |
+| `scripts/notify-api-breaking-change.sh` | oasdiff 실행 → breaking·필드 추가면 Discord 알림만 발송 (job은 항상 통과) |
 | `.github/workflows/ci-cd.yml` `api-contract-check` job | 위 과정을 CI에 연결 |
-
-## PR 단계에서 merge를 실제로 막고 싶다면
-
-워크플로만으로는 `api-contract-check` 실패가 merge 버튼을 막지 않습니다. GitHub 저장소 **Settings → Branches → Branch protection rules → Require status checks to pass**에 `api-contract-check`를 추가해야 합니다(이 저장소 범위 밖 — 필요 시 별도 진행).

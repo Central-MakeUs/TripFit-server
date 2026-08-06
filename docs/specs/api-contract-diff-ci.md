@@ -44,12 +44,12 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 ```
 test 통과 ──────────────▶ deploy (배포 진행)
-api-contract-check 실패 ──▶ Discord 알림만 (배포는 막지 않음)
+api-contract-check ─────▶ Discord 알림만 (job은 항상 통과, 배포도 막지 않음)
 ```
 
 - `api-contract-check`(신규 job)는 `test`/`deploy`와 **독립적으로 병렬 실행** — `deploy`의 `needs: test`는 변경하지 않음
-- breaking change 발견 시 `api-contract-check` 자체는 실패(⛔) 상태로 표시되어 PR 목록·Actions 탭에서 눈에 띄지만, 이미 `main`에 병합된 뒤(push 시점)라 배포까지 막으면 "병합은 됐는데 배포만 안 되는" 애매한 상태가 되므로 배포는 그대로 진행
-- **참고(이번 스펙 범위 밖)**: PR 단계에서 이 체크가 "merge 버튼을 막는" 효과를 가지려면 GitHub 저장소 Settings → Branches → Required status checks에 `api-contract-check`를 추가해야 함. 워크플로 yaml만으로는 안 됨 — 필요 시 별도 안내
+- breaking change가 있어도 `api-contract-check`는 **항상 통과(exit 0)** 한다 — Discord `#frontend` 알림만으로 충분하다는 판단(2026-07-29 amend, 아래 변경 이력). PR 목록·Actions 탭을 빨갛게 만들어 눈에 띄게 하는 대신, 알림 확인만으로 흐름을 끊지 않는다
+- job이 항상 통과하므로 GitHub 저장소 Required status checks에 `api-contract-check`를 추가해도 merge를 막는 효과가 없다 — merge 차단이 필요해지면 별도 메커니즘(리뷰 체크리스트 등)을 새로 설계해야 함
 
 ## 요구사항
 
@@ -60,9 +60,9 @@ api-contract-check 실패 ──▶ Discord 알림만 (배포는 막지 않음)
 - [ ] **oasdiff CLI**: `oasdiff breaking base.json build/openapi/openapi.json --format json` 실행, exit code 1 = breaking 존재(공식 문서 확인). 정확한 JSON 필드 구조(경로·method·설명 텍스트 키 이름)는 구현 착수 시 실제 실행 결과로 확정 — 추측으로 파서 작성 안 함
 - [ ] **`.github/workflows/ci-cd.yml`에 신규 job `api-contract-check` 추가**: workflow-level 기존 트리거(`push: main`, `pull_request: main`) 그대로 재사용, `test`/`deploy`와 병렬(간섭 없음)
 - [ ] breaking change 감지 시:
-  1. `git log <base>..<head> --pretty=format:%B`에서 `Breaking-Change-Reason:` 트레일러 추출(없으면 안내문)
+  1. 커밋별로 순회하며 `Breaking-Change-Reason:` 트레일러 추출 — 값이 다음 줄로 wrap돼도(빈 줄·다른 `Key: value` 트레일러 전까지) 한 사유로 접어 합치고 짧은 SHA를 붙여 나열(없으면 안내문). NUL 구분 다중 레코드 방식은 BSD awk가 NUL 바이트를 못 다뤄 커밋 1개씩 순회하는 방식으로 구현(2026-07-29 amend)
   2. Discord embed 조립 후 `curl -X POST`로 `${{ secrets.DISCORD_WEBHOOK_URL }}`에 전송(이미 등록된 secret, 새 secret 불필요)
-  3. job을 실패 처리(`exit 1`) — 단, `deploy`는 막지 않음("실패 처리 범위" 절)
+  3. job은 항상 통과(`exit 0`) — Discord 알림만으로 충분하다는 판단(2026-07-29 amend, "실패 처리 범위" 절)
 - [ ] **Discord 메시지 구성**(embed): 제목 `🚨 API Breaking Change` · Repository/Branch/Commit/PR(있을 때만) · 발견된 변경(endpoint·method별 breaking 설명 목록) · 왜 변경했는가(트레일러, 없으면 안내문) · 프론트 작업 체크리스트(고정 텍스트: orval 재생성 / 타입 오류 확인 / 영향받는 API 수정) · GitHub 링크(PR 또는 커밋 + Actions 실행 링크)
 - [ ] **Release Gate #65 관련 엔드포인트 콜아웃**: `POST /api/v1/auth/login`·`DELETE /api/v1/users/me`는 앱 스토어 심사([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) OAuth 콘솔 설정 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke)와 직결돼 프론트와 사전 논의가 필요 — 이 두 엔드포인트에 breaking change·non-breaking 필드 추가가 감지되면 breaking/추가 embed 모두에 별도 "⚠️ Release Gate #65 관련" 필드를 추가하고, 변경 텍스트에서 `GOOGLE`/`KAKAO`/`APPLE` 언급을 스캔해 관련 provider(없으면 "전체 영향")를 표시
 - [ ] non-breaking 변경만 있으면 Discord 알림 없이 조용히 통과
@@ -81,7 +81,7 @@ api-contract-check 실패 ──▶ Discord 알림만 (배포는 막지 않음)
 - tRPC·모노레포 전환 — `decisions/002`로 이미 확정 배제 (재질문 금지 대상)
 - Pact 등 본격 contract test — 2인 규모 프로젝트에 과함(오버엔지니어링 판단, 2026-07-28 대화에서 배제 합의)
 - 프론트 저장소에 자동으로 이슈를 생성하는 `repository_dispatch` 연동 — 현재 Discord 알림으로 충분(2026-07-28 대화)
-- GitHub 저장소 Settings → Branches의 Required status check 등록 — 워크플로 구현과 별개(위 "실패 처리 범위" 참고 절), 필요 시 사용자가 별도 진행
+- GitHub 저장소 Settings → Branches의 Required status check 등록 — job이 항상 통과하므로 이 스펙 범위에서는 의미가 없음(위 "실패 처리 범위" 참고 절)
 - `oasdiff/oasdiff-action`(마켓플레이스) 사용 — CLI 직접 사용으로 대체(위 "설계 변경 이력" 2번)
 
 ## API / 인터페이스
@@ -106,7 +106,7 @@ API 없음 — CI 인프라 변경.
 
 ### 엣지 · 실패
 
-- [ ] 필수 필드 삭제·타입 변경 등 breaking 변경 → `api-contract-check` 실패 + Discord `#frontend` 채널에 알림 도착, `deploy`(push 케이스)는 그대로 진행됨을 확인
+- [ ] 필수 필드 삭제·타입 변경 등 breaking 변경 → `api-contract-check`는 통과(⛔ 아님) + Discord `#frontend` 채널에 알림 도착, `deploy`(push 케이스)는 그대로 진행됨을 확인
 - [ ] `Breaking-Change-Reason:` 트레일러가 없는 커밋만 있는 breaking PR → Discord 메시지의 "왜 변경했는가"가 안내문으로 채워짐(빈 값/하드코딩 아님)
 - [ ] `docs/api/openapi.json`이 아직 없는 최초 실행 → breaking 비교 스킵, 안내 로그만
 
@@ -120,7 +120,7 @@ API 없음 — CI 인프라 변경.
 
 - [ ] `./gradlew test` 통과 (기존 test job 영향 없음 확인)
 - [ ] `./gradlew build` 성공
-- [ ] `.github/workflows/ci-cd.yml`의 `api-contract-check`가 실제 PR·push에서 breaking/non-breaking 두 케이스 모두 의도대로 동작(Discord 알림 여부 포함), `deploy`가 breaking 여부와 무관하게 정상 진행됨을 확인
+- [ ] `.github/workflows/ci-cd.yml`의 `api-contract-check`가 실제 PR·push에서 breaking/non-breaking 두 케이스 모두 의도대로 동작(Discord 알림 여부 포함), job은 항상 통과하고 `deploy`도 breaking 여부와 무관하게 정상 진행됨을 확인
 - [ ] `docs/api/openapi.json` 최초 시딩 커밋 완료
 - [ ] 사용법 문서(`docs/api/README.md` 등) 작성
 - [ ] OpenAPI/Swagger 반영 — 해당 없음(이 스펙 자체가 OpenAPI 활용 인프라)
@@ -138,6 +138,8 @@ API 없음 — CI 인프라 변경.
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-29 | **Amend #2** — 실제 알림에서 발견된 2가지 버그 수정: (1) breaking 문구 한글 템플릿 매핑을 전부 제거하고 oasdiff 원문(영어)만 노출 — 매핑 안 된 id가 많아 한 필드 안에서 한글·영어가 뒤섞이던 문제. (2) `Breaking-Change-Reason:` 트레일러가 여러 줄로 wrap된 커밋에서 사유가 중간에 잘려 다른 커밋 사유와 뒤섞이던 버그 수정 — 커밋별로 순회하며 wrap된 값을 접어 합치고 짧은 SHA를 붙여 나열하도록 재구현 |
+| 2026-07-29 | **Amend** — breaking change 감지 시 `api-contract-check` job을 실패(`exit 1`) 처리하던 로직 제거, 항상 통과(`exit 0`)로 변경. Discord `#frontend` 알림만으로 충분하다는 판단(job 실패로 인한 CI 빨간불이 실질적 이득 없이 혼란만 유발). `notify-api-breaking-change.sh`·`docs/api/README.md` 동기화 |
 | 2026-07-28 | 초안 |
 | 2026-07-28 | Discord `#frontend` webhook 알림을 Must Have로 승격, "PR 체크리스트" 수동 Nice to Have 제거·대체 |
 | 2026-07-28 | 사용자 요구사항(정확한 Discord 메시지 포맷·oasdiff CLI·"왜 변경했는가" 동적 전달)에 맞춰 전면 갱신 — oasdiff-action→CLI 전환, OpenAPI export를 JUnit 테스트 방식으로 전환, Commit 트레일러 채택, deploy 비차단 확정. **상태 Approved로 전환** |
