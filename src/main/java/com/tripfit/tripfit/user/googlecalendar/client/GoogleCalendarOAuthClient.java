@@ -7,6 +7,7 @@ import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -38,6 +39,10 @@ public class GoogleCalendarOAuthClient {
       "https://www.googleapis.com/calendar/v3/calendars/primary";
 
   private static final DateTimeFormatter RFC3339 = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+  // Google freeBusy.query가 한 번에 너무 긴 range를 거부한다(문서화 안 된 제한, "timeRangeTooLong" 확인됨) —
+  // C1 윈도우(최대 today+2년)를 이 단위로 잘라 여러 번 호출 후 병합한다
+  private static final long FREE_BUSY_CHUNK_DAYS = 90;
 
   private final RestClient restClient;
 
@@ -88,11 +93,30 @@ public class GoogleCalendarOAuthClient {
     }
   }
 
-  // primary 캘린더 freeBusy 조회 — 401(access token 무효)만 인증 실패로 간주해 GoogleCalendarAuthException을
+  // primary 캘린더 freeBusy 조회 — FREE_BUSY_CHUNK_DAYS 단위로 여러 번 호출해 병합(단일 호출은 아래
+  // queryFreeBusyChunk). 한 청크라도 실패하면 전체를 예외로 던짐(부분 sync 반영 안 함, 다음 스케줄에서 통째로 재시도)
+  public List<GoogleFreeBusyInterval> queryFreeBusy(
+      String accessToken,
+      Instant timeMin,
+      Instant timeMax) {
+    List<GoogleFreeBusyInterval> merged = new ArrayList<>();
+    Instant chunkStart = timeMin;
+    while (chunkStart.isBefore(timeMax)) {
+      Instant chunkEnd = chunkStart.plus(FREE_BUSY_CHUNK_DAYS, ChronoUnit.DAYS);
+      if (chunkEnd.isAfter(timeMax)) {
+        chunkEnd = timeMax;
+      }
+      merged.addAll(queryFreeBusyChunk(accessToken, chunkStart, chunkEnd));
+      chunkStart = chunkEnd;
+    }
+    return merged;
+  }
+
+  // freeBusy 단일 청크 호출 — 401(access token 무효)만 인증 실패로 간주해 GoogleCalendarAuthException을
   // 던진다. 그 외 4xx/5xx·네트워크·파싱 오류는 일반 RuntimeException으로 던져 syncUserInternal의 일반 catch로
   // 흘러가게 한다 — 여기서도 GoogleCalendarAuthException을 쓰면 connect() 직후 1회 sync가 일시적 오류(429·5xx 등)
   // 만 만나도 방금 저장한 credential이 같은 트랜잭션에서 즉시 삭제돼버린다
-  public List<GoogleFreeBusyInterval> queryFreeBusy(
+  private List<GoogleFreeBusyInterval> queryFreeBusyChunk(
       String accessToken,
       Instant timeMin,
       Instant timeMax) {
