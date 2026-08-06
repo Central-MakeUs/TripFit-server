@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.user.googlecalendar.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.tripfit.tripfit.auth.oauth.OAuthProperties;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarAuthException;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
 
 @Component
 public class GoogleCalendarOAuthClient {

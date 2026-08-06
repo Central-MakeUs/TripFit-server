@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.auth.oauth;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import tools.jackson.databind.JsonNode;
 
 @Component
 public class KakaoTokenVerifier implements SocialTokenVerifier {

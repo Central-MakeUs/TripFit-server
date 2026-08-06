@@ -12,7 +12,6 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -21,12 +20,9 @@ class KakaoTokenVerifierTest {
   private static final String KAKAO_USER_ME_URL = "https://kapi.kakao.com/v2/user/me";
 
   private KakaoTokenVerifier newVerifier(MockRestServiceServer[] serverHolder) {
-    // 프로덕션 RestClient 빈은 Boot 자동설정이 Jackson2 컨버터를 등록해주지만,
-    // 컨텍스트 없는 단위 테스트에서는 JsonNode(Jackson2) 역직렬화를 위해 명시적으로 추가해야 함
-    RestClient.Builder builder =
-        RestClient.builder()
-            .messageConverters(
-                converters -> converters.add(0, new MappingJackson2HttpMessageConverter()));
+    // RestClient.builder() 기본 메시지 컨버터가 classpath의 Jackson3(tools.jackson)을 자동 인식함 —
+    // KakaoTokenVerifier가 tools.jackson.databind.JsonNode로 역직렬화하므로 별도 등록 불필요
+    RestClient.Builder builder = RestClient.builder();
     serverHolder[0] = MockRestServiceServer.bindTo(builder).build();
     return new KakaoTokenVerifier(builder.build());
   }
