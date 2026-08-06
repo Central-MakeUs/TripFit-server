@@ -147,8 +147,7 @@ public class GoogleCalendarOAuthClient {
                     if (clientResponse.getStatusCode().value() == 401) {
                       throw new GoogleCalendarAuthException("freeBusy unauthorized");
                     }
-                    // TEMP(디버그): 400 원인 확정을 위해 Google 에러 응답 body까지 로그에 남긴다 — 원인
-                    // 확정되면 body 캡처는 지우고 상태 코드만 남기는 원래 형태로 되돌릴 것
+                    // Google 에러 응답 body까지 로그에 남겨 원인(예: timeRangeTooLong) 재현 없이도 바로 확인 가능하게 함
                     String errorBody =
                         StreamUtils.copyToString(
                             clientResponse.getBody(),
