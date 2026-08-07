@@ -43,8 +43,8 @@ public class NotificationController {
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
+          useReturnTypeSchema = true,
           content = @Content(
-              schema = @Schema(implementation = SuccessResponse.class),
               examples = @ExampleObject(
                   value = """
                       {"data": [{"id": "550e8400-e29b-41d4-a716-446655440000", "type": "JOIN_COMPLETED", "title": "여행방 참여 알림", "body": "홍길동님이 여행방에 참여했어요! 참여 현황을 확인해보세요.", "landingType": "TRAVEL_ROOM_DETAIL", "tripId": "660e8400-e29b-41d4-a716-446655440000", "roomName": "제주도 3박4일", "isRead": false, "sentAt": "2026-08-01T09:00:00"}]}
