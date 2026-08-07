@@ -1,5 +1,27 @@
 # cross-cutting Refactor Log
 
+## 2026-08-08 — 후속 제안 2건 반영 (스케줄러 스레드풀 공유, Lombok 규칙 문서 drift)
+
+`user/audit-round2.md` §15("신규 — Concurrency: `@Scheduled` 기본 단일 스레드 풀을 3개 도메인 스케줄러가 공유")와 `cross-cutting/audit-round2.md`(1차 C/D 재확인, `common/domain` Lombok vs 룰 문서 drift)에서 Later/문서 후속으로 남겨뒀던 2건을 사용자 요청으로 반영. 둘 다 API 계약·비즈니스 로직에 영향 없음.
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **스케줄러 스레드풀**: 이 서버에는 30분마다 도는 구글 캘린더 동기화, 매달 2번 도는 알림 리마인드, 매일 새벽 도는 여행방 정리 — 이렇게 자동으로 도는 작업이 3개 있는데, 스프링 부트가 기본으로 이런 작업 전용 일꾼(스레드)을 딱 1명만 배정해줘서 셋이 그 한 명을 순서대로 나눠 써야 했어요. 구글 캘린더 동기화가 사람마다 구글 서버에 순차로 요청을 보내느라 오래 걸리면, 그동안 나머지 두 작업이 밀릴 수 있는 구조였습니다. 실제로 지연이 관측된 건 아니었지만, 설정 한 줄로 일꾼을 3명으로 늘려서 각 작업이 서로를 기다리지 않게 미리 손봤어요.
+- **Lombok 규칙 문서**: 코딩 규칙 문서에 "Lombok(반복 코드를 자동 생성해주는 도구)을 안 쓴다"고 적혀 있었는데, 실제로는 DB 테이블과 매핑되는 엔티티 클래스들과 설정값을 담는 클래스들에서는 이미 쓰고 있었어요. 코드를 바꾼 게 아니라, 문서가 실제 상황과 다르게 적혀 있던 걸 사실대로 고쳤습니다.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| 1 | `@Scheduled` 3개(`GoogleCalendarSyncScheduler`·`ScheduleReminderBatch`·`TripHomeScheduler`)가 Spring Boot 기본 단일 스레드 풀(size=1)을 공유하며 서로 지연시킬 수 있던 구조 — `spring.task.scheduling.pool.size: 3`을 `application.yml`에 추가해 스케줄러별 전용 스레드 확보 | `src/main/resources/application.yml` |
+| 2 | `spring-boot-java.md` Style 절의 "Lombok 미사용" 문구가 실제 코드(Entity·`@ConfigurationProperties` 17개 파일에서 `@Getter`/`@Setter`/`@NoArgsConstructor`/`@Data` 등 사용 확인)와 어긋나 있던 것을 실제 범위(Entity·Properties만 사용, Service/Controller/DTO record는 미사용)로 정정 | `.claude/rules/spring-boot-java.md` |
+
+### 검증 결과
+
+- `./gradlew compileJava` — 통과
+- `./gradlew test` (전체) — 통과, 실패 0건
+- API 계약 변경 없음(설정값·문서 변경뿐, Controller·DTO·`ErrorCode` 미변경) — oasdiff 재실행 불필요
+
 ## 2026-08-05 — 2차 라운드 (A-1, A-2, B-1, B-2 반영)
 
 감사 문서: [`audit-round2.md`](audit-round2.md)

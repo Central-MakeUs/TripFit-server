@@ -312,7 +312,8 @@ ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID use
 ## Style
 
 - Java 21 (records, pattern matching) 사용 가능
-- Lombok 미사용
+- Lombok — Entity(JPA)·`@ConfigurationProperties` 클래스만 사용(`@Getter`/`@Setter`/`@NoArgsConstructor`/`@Data` 등). Service/Controller/DTO(record)는 미사용. `@Data`/`@EqualsAndHashCode`/`@ToString`은 Entity에 금지(JPA 프록시·지연로딩 함정) — Entity는 `@Getter`(+`@Setter`)만
+  - 단일 필드 `@ConfigurationProperties`(`FcmProperties`, `SocialTokenCryptoProperties`)는 예외적으로 수동 getter/setter 유지 — 유출 위험 없음, `cross-cutting/audit.md` C에서 검토 후 유지 결정
 - 공통 설정: `common/config/`, 도메인 전용: `{domain}/config/`
 
 ### DTO record 가독성
