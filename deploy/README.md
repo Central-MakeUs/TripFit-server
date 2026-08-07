@@ -148,6 +148,10 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 | `SOCIAL_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
 | `APPLE_BUNDLE_ID` | | Apple App ID(Bundle ID, 예: `com.tripfit.app`) — iOS 네이티브 앱 로그인 `aud` 검증·토큰교환/revoke `client_id` |
 | `APPLE_SERVICE_ID` | | Apple Services ID — 모바일 브라우저 로그인 경로 `aud` 검증·토큰교환/revoke `client_id` (`docs/specs/apple-oauth-multi-audience.md`) |
+| `APPLE_TEAM_ID` | ✅ (Apple 로그인 시) | Apple Developer Team ID — client_secret JWT `iss` |
+| `APPLE_KEY_ID` | ✅ (Apple 로그인 시) | Sign in with Apple용 `.p8` 키의 Key ID — client_secret JWT `kid` |
+| `APPLE_PRIVATE_KEY` | ✅ (Apple 로그인 시) | 위 `.p8` 키 원문 — client_secret JWT ES256 서명 |
+| `KAKAO_ADMIN_KEY` | ✅ (Kakao 로그인 시) | Kakao Developers 앱 Admin Key — 탈퇴 시 unlink 호출 전용(로그인 검증 자체에는 불필요) |
 | `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
 
 등록 위치: GitHub repo → **Settings → Secrets and variables → Actions**
@@ -165,16 +169,51 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 
 ### 스토어 제출 전 OAuth 콘솔 설정 체크리스트
 
-위 `GOOGLE_CLIENT_ID`류는 env에 client id 문자열만 등록하면 되지만, **각 소셜 로그인 콘솔(Google Cloud Console 등) 쪽 설정은 별도로 채워야** 실제 로그인이 동작한다. 코드·검증 로직(`GoogleTokenVerifier` 등)은 이미 완료된 상태 — 아래는 콘솔에서 값만 등록하면 되는 항목.
+위 `GOOGLE_CLIENT_ID`류·`KAKAO_ADMIN_KEY`는 env(GitHub Secrets)에 값만 등록하면 되지만, **각 소셜 로그인 콘솔(Google Cloud Console·Kakao Developers 등) 쪽 설정은 별도로 채워야** 실제 로그인이 동작한다. 코드·검증 로직(`GoogleTokenVerifier`·`KakaoTokenVerifier` 등)은 이미 완료된 상태 — 아래는 **콘솔 담당자가 콘솔 화면에서 직접 등록**하면 되는 항목. Apple은 [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) Must Have 참고.
 
-| 항목 | 콘솔 | 채울 수 있는 시점 |
-|------|------|-------------------|
-| 승인된 자바스크립트 원본 | Google Cloud Console (`GOOGLE_CLIENT_ID` Web 타입) | 프론트 최종 도메인 확정 후 |
-| 승인된 리다이렉션 URI | Google Cloud Console (`GOOGLE_CLIENT_ID` Web 타입) | 프론트 콜백 라우트 확정 후 (환경 B, `docs/product/platform.md`) |
-| App Store ID (선택 필드) | Google Cloud Console (`GOOGLE_CLIENT_ID_IOS`) | 앱이 App Store에 실제 게시된 후 |
-| Apple/Android 로그인 동일 설정값 | Apple Developer / Google Play Console | 각 콘솔 요구 시점에 맞춰 |
+미등록 상태로는 `redirect_uri_mismatch`·`DEVELOPER_ERROR` 등으로 로그인 자체가 실패하므로 **스토어 심사 제출 전 반드시 확인** — 추적: [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62)
 
-미등록 상태로는 `redirect_uri_mismatch` 등으로 로그인 자체가 실패하므로 **스토어 심사 제출 전 반드시 확인** — 추적: [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62)
+#### Google Cloud Console
+
+기존 로그인용 GCP 프로젝트의 **APIs & Services → Credentials**에서 아래 3개 Client(이미 발급돼 있음)를 각각 연다.
+
+| Client 타입 | 대응 env | 지금 등록할 것 | 시점 |
+|---|---|---|---|
+| **Web application** | `GOOGLE_CLIENT_ID` | 승인된 자바스크립트 원본(`https://tripfit.online`) + 승인된 리다이렉션 URI(프론트 콜백 경로) | 프론트 최종 도메인·콜백 라우트 확정 후 |
+| **Android** | `GOOGLE_CLIENT_ID_ANDROID` | 패키지명 `com.tripfit.app` + **SHA-1 인증서 지문**(디버그·릴리즈 각각) | SHA-1 확보 즉시 |
+| **iOS** | `GOOGLE_CLIENT_ID_IOS` | 번들 ID `com.tripfit.app` + App Store ID(선택 필드) | 앱 App Store 게시 후 |
+
+**SHA-1 확보 방법** — 리포에 keystore가 없어 콘솔 담당자가 직접 뽑을 수 없다. 빌드 환경(Android Studio/CI) 담당자에게 아래 명령 실행을 요청:
+
+```bash
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1
+```
+
+릴리즈 keystore는 별도 보유자가 동일 명령으로 추출(Google Play App Signing을 쓰면 Play Console의 "앱 무결성 → 앱 서명" 메뉴에서도 확인 가능).
+
+**값 일치 확인**: `apps/app`(네이티브 앱)의 `GOOGLE_WEB_CLIENT_ID`, `apps/web`의 `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, 백엔드 `GOOGLE_CLIENT_ID` 세 값이 전부 같은 Web Client ID를 가리켜야 한다 — 하나라도 다르면 그 경로만 `aud` mismatch로 로그인이 실패한다.
+
+Calendar 전용 Client(`GOOGLE_CALENDAR_CLIENT_ID`) 발급은 지금 안 해도 된다 — Calendar FE 착수 시점에 [`google-calendar-client-id-separation.md`](../docs/specs/google-calendar-client-id-separation.md) "GCP 콘솔 가이드" 절 참고.
+
+#### Kakao Developers Console
+
+앱 대시보드(`developers.kakao.com` → 내 애플리케이션 → 해당 앱)에서:
+
+| 메뉴 | 등록할 것 |
+|---|---|
+| 앱 설정 → 플랫폼 | Android 패키지명 `com.tripfit.app` + **키 해시**(아래 명령), iOS 번들 ID `com.tripfit.app`, 네이티브 앱 키가 `6a686bacf5c3efba84a1cc8d0e655cd5`와 일치하는지 확인 |
+| 카카오 로그인 → 활성화 설정 | ON |
+| 카카오 로그인 → Redirect URI | `https://tripfit.online/auth/kakao/callback`(운영) + `http://localhost:3000/auth/kakao/callback`(로컬) — 환경 B(모바일 웹/데스크톱 브라우저) JS SDK 리다이렉트 플로우용 |
+| 카카오 로그인 → 동의항목 | 닉네임·프로필 사진 활성화(선택 동의로 충분), 이메일은 필요 시 활성화 — 꺼져 있으면 백엔드는 해당 필드를 `null`로 받음(로그인 자체는 안 깨짐) |
+| 보안 → Admin Key | 이미 발급 완료 상태 — `KAKAO_ADMIN_KEY` GitHub Secret에 등록돼 있는지만 재확인 |
+
+**키 해시 확보 방법** (Google SHA-1과 같은 keystore 필요):
+
+```bash
+keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android | openssl sha1 -binary | openssl base64
+```
+
+릴리즈용은 릴리즈 keystore로 동일 명령을 실행해 별도 등록.
 
 ## CI/CD
 

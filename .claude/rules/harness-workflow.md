@@ -14,8 +14,9 @@ Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 3. **임의 개선 금지** — "더 나은 기본값", "업계 일반값", "코드가 간단해짐"만으로 문서와 다른 수치·구조를 바꾸지 않는다. 변경 시 **문서 amend 또는 사용자 명시 승인**.
 4. **불확실하면 질문** — 가정을 숨기지 않는다. 질문 없이 진행한 선택은 **잘못된 작업**.
 5. **구현 상태 보고 전 코드 우선 확인** — 스펙 Must Have 체크박스(`[ ]`/`[x]`)·"미구현"·"대기 중"·"`#n` 선행 필요" 같은 서술은 기능이 merge된 뒤 스펙 동기화가 누락되면 stale해진다. 사용자·프론트에게 "이 API·enum·이벤트가 아직 구현 안 됨/트리거 안 됨"이라고 **부정적으로 단정**해 답하기 전에, 관련 Controller·Service(이벤트 발행부)·테스트를 직접 grep/Read로 확인한다. `docs/specs/*.md` 문구 하나만 근거로 구현 여부를 판단하지 않는다 — 필요하면 `gh issue view`로 실제 이슈 상태도 함께 확인.
+6. **"Swagger에 있다"는 소스 어노테이션이 아니라 실제 생성 문서로 확인** — DTO·enum에 `@Schema`가 있다고 해서 Swagger에 실제로 노출된다고 단정하지 않는다. `@ApiResponse`에서 제네릭 wrapper(`SuccessResponse<T>`)를 `schema = @Schema(implementation = SuccessResponse.class)`처럼 raw 타입으로 지정하면 springdoc이 실제 `data` 타입(리스트·필드·enum)을 못 읽어 스키마가 통째로 사라진다(`useReturnTypeSchema = true` 필요 — `spring-boot-java.md` 참고, `NotificationController` 사고 사례). "프론트가 필요한 값이 Swagger에 이미 있다"고 답하기 전에 로컬 `/v3/api-docs`, 배포 서버 `/v3/api-docs`, 또는 `docs/api/openapi.json`을 실제로 열어 해당 스키마·enum이 진짜 노출되는지 확인한다.
 
-**절대 금지:** 문서와 다른 access/refresh TTL, API 필드, 에러 코드, env 키를 임의 구현·커밋. **에러 코드·`@TripActivity`·권한 어노테이션을 “다음 커밋에” 미루기.** **스펙 문서만 보고 "미구현"이라고 사용자에게 보고 — 코드 미확인 상태로 구현 상태 단정.**
+**절대 금지:** 문서와 다른 access/refresh TTL, API 필드, 에러 코드, env 키를 임의 구현·커밋. **에러 코드·`@TripActivity`·권한 어노테이션을 “다음 커밋에” 미루기.** **스펙 문서만 보고 "미구현"이라고 사용자에게 보고 — 코드 미확인 상태로 구현 상태 단정.** **`@Schema` 존재만 보고 "Swagger에 이미 노출된다"고 보고 — 실제 생성된 OpenAPI 문서 미확인.**
 
 ### 2. ErrorCode · AOP/Interceptor — 같은 턴 즉시 갱신
 

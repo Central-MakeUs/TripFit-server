@@ -346,20 +346,21 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 지금까지 `@ApiResponses`는 **에러 코드만** 문서화해 Swagger UI에서 성공 example을 볼 수 없었다. **모든 API**는 성공 케이스도 에러와 **같은 `@ApiResponses` 배열**에 명시한다 (프론트가 200 응답 example을 바로 확인할 수 있어야 함).
 
 - 실제 성공 HTTP 상태로 `responseCode`(`"200"`/`"201"`/`"204"`) 지정 — 배열 **맨 앞**(에러보다 먼저)에 둔다.
-- Body 있는 응답: `content = @Content(schema = @Schema(implementation = SuccessResponse.class), examples = @ExampleObject(value = "..."))`.
+- **Body 있는 응답: `useReturnTypeSchema = true` + `content = @Content(examples = @ExampleObject(value = "..."))`** — `schema`는 명시하지 않는다. Controller 메서드의 실제 반환 타입(`ResponseEntity<SuccessResponse<XxxResponse>>`)에서 springdoc이 `SuccessResponseXxxResponse`라는 파생 스키마를 자동 생성해, 그 안의 필드·enum까지 Swagger UI Schema 탭에 전부 노출된다.
+- **`schema = @Schema(implementation = SuccessResponse.class)`로 직접 지정 금지(성공 200/201에서).** 이 raw 타입 지정은 제네릭을 지워버려 springdoc이 실제 `data` 타입(리스트·필드·enum 포함)을 전혀 못 읽는다 — `data`가 무타입 처리되고 example 문자열만 남아, 프론트가 Swagger Schema 탭에서 응답 필드·enum 값을 확인할 수 없게 된다(`NotificationController` 사고 사례, `docs/specs/notification.md` 변경 이력 참고). 에러 응답(`ErrorResponse.class`)은 제네릭이 아니므로 `schema = @Schema(implementation = ErrorResponse.class)`를 그대로 써도 된다.
 - `SuccessResponse`는 `@JsonInclude(NON_NULL)`이라 성공 시 `message`/`code` 키가 실제 응답 바디에 **없다** — example도 `{"data": {...}}`만 쓰고 `message`/`code`는 넣지 않는다.
 - `data` 안 값은 **실제 DTO 필드 전부**를 반영한 값으로 채운다 — DTO에 없는 필드를 지어내지 않는다.
 - `ResponseEntity<Void>`(204 No Content): `content` 없이 `@ApiResponse(responseCode = "204", description = "...")`만.
 - 목록 API의 `data`는 실제 응답 DTO 구조(예: 배열 필드명)를 example에 그대로 반영.
 
 ```java
-// ✅ 200을 배열 맨 앞에 추가 (me 예시)
+// ✅ 200을 배열 맨 앞에 추가 (me 예시) — useReturnTypeSchema로 SuccessResponseUserSummaryResponse 자동 생성
 @ApiResponses({
 		@ApiResponse(
 				responseCode = "200",
 				description = "조회 성공",
+				useReturnTypeSchema = true,
 				content = @Content(
-						schema = @Schema(implementation = SuccessResponse.class),
 						examples = @ExampleObject(value = """
 								{"data": {"id": "3f2e2c1a-...", "name": "김트립", "hasPreSchedule": true, "isAllFree": false}}
 								"""))),
@@ -372,6 +373,8 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 								{"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
 								""")))
 })
+// ✅ 반환 타입도 반드시 구체 타입 — ResponseEntity<?>가 아니라 ResponseEntity<SuccessResponse<UserSummaryResponse>>
+ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) { ... }
 ```
 
 ## Style
