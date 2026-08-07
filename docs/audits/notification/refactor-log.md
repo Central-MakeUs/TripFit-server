@@ -1,5 +1,25 @@
 # notification Refactor Log
 
+## 2026-08-08 — 스펙-코드 drift 해소: `notification_history` 인덱스 누락 반영
+
+`docs/specs/notification/notification.md`(D9)·`docs/architecture/erd.md`가 이미 `(user_id, sent_at)` 인덱스를 명시하고 있었는데, 실제 `NotificationHistory` 엔티티에는 반영돼 있지 않았던 drift를 발견해 반영. 백엔드 성능 개선 검토 중 발견(신규 결정 아님 — 이미 승인된 스펙을 코드가 놓친 케이스).
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+알림센터 목록 조회(`GET /api/v1/notifications`)는 "이 사용자의 최근 7일 알림을 최신순으로" 가져오는데, 이때 DB가 빠르게 찾을 수 있도록 미리 준비해두는 색인(인덱스)이 있어야 합니다. 설계 문서에는 이 인덱스가 있어야 한다고 이미 적혀 있었는데, 실제 코드에는 빠져 있었어요 — 지금 데이터량에서는 체감되는 지연은 아니지만, 사용자·알림이 늘어날수록 매번 전체를 훑어야 해서 느려질 수 있는 구조였습니다. 문서에 이미 있던 내용을 코드에 채워 넣기만 한 것이라 새로운 결정은 없었습니다.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| 1 | `NotificationHistory`에 `@Table(indexes = @Index(columnList = "user_id, sent_at"))` 추가 | `NotificationHistory.java` |
+
+### 검증 결과
+
+- `./gradlew compileJava` — 통과
+- `./gradlew test --tests "com.tripfit.tripfit.notification.*" --tests "com.tripfit.tripfit.common.config.OpenApiSpecExportTest"` — 통과
+- API 계약 변경 없음(인덱스는 OpenAPI 스키마에 노출되지 않음) — oasdiff 재실행 불필요
+
 ## 2026-08-05 — 2차 라운드 A-1·A-2·B-1 반영
 
 2차 감사([`audit-round2.md`](audit-round2.md)) 기준 A(반드시 수정) 2건, B(유지보수성) 1건 전부 반영. 사용자 승인: "A-1·A-2·B-1 전부".

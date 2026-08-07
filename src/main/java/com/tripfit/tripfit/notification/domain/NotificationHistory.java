@@ -11,6 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -26,7 +27,10 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "notification_history")
+@Table(
+    name = "notification_history",
+    indexes = @Index(name = "idx_notification_history_user_sent_at",
+        columnList = "user_id, sent_at"))
 @Schema(description = "발송된 FCM 알림 이력 — 알림센터 조회·읽음 상태를 포함한다")
 public class NotificationHistory extends BaseTimeEntity {
 
