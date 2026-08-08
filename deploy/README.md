@@ -145,6 +145,7 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 | `GOOGLE_CLIENT_ID_ANDROID` | | Google Android client ID |
 | `GOOGLE_CALENDAR_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
 | `APPLE_CLIENT_ID` | | Apple Services ID (`aud` 검증) |
+| `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
 
 등록 위치: GitHub repo → **Settings → Secrets and variables → Actions**
 
