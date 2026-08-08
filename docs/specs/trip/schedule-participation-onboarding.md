@@ -350,14 +350,14 @@ canEnterRoom(user) =
 |------|------|
 | [`TripController.java`](../../../src/main/java/com/tripfit/tripfit/trip/controller/TripController.java) | **`submitSchedule` 삭제** · **`activate` 추가** (#39) |
 | [`UserScheduleController.java`](../../../src/main/java/com/tripfit/tripfit/user/schedule/controller/UserScheduleController.java) | personal/calendar — **1단계** Hidden 해제 |
-| [`TripMemberController.java`](../../../src/main/java/com/tripfit/tripfit/trip/controller/TripMemberController.java) | schedule-calendar — **2단계** |
+| [`TripMemberController.java`](../../../src/main/java/com/tripfit/tripfit/trip/membership/controller/TripMemberController.java) | schedule-calendar — **2단계** |
 
 ### F. Java — Service / Domain
 
 | 파일 | 검토 항목 |
 |------|-----------|
-| [`TripCommandService`](../../../src/main/java/com/tripfit/tripfit/trip/service/TripCommandService.java) / [`TripJoinService`](../../../src/main/java/com/tripfit/tripfit/trip/service/TripJoinService.java) | create=`SCHEDULE_PENDING` · activate/join=`ACTIVE` (#39) · `is_all_free`는 activate/join |
-| [`TripMemberStatus.java`](../../../src/main/java/com/tripfit/tripfit/trip/domain/TripMemberStatus.java) | `SCHEDULE_PENDING` · `ACTIVE` (#39). 멤버 INSERT는 ACTIVE만 |
+| [`TripCommandService`](../../../src/main/java/com/tripfit/tripfit/trip/service/TripCommandService.java) / [`TripJoinService`](../../../src/main/java/com/tripfit/tripfit/trip/membership/service/TripJoinService.java) | create=`SCHEDULE_PENDING` · activate/join=`ACTIVE` (#39) · `is_all_free`는 activate/join |
+| [`TripMemberStatus.java`](../../../src/main/java/com/tripfit/tripfit/trip/membership/domain/TripMemberStatus.java) | `SCHEDULE_PENDING` · `ACTIVE` (#39). 멤버 INSERT는 ACTIVE만 |
 | [`User.java`](../../../src/main/java/com/tripfit/tripfit/user/domain/User.java) | `is_all_free` 컬럼 |
 | [`ScheduleService.java`](../../../src/main/java/com/tripfit/tripfit/user/schedule/service/ScheduleService.java) | CLEAR/추가 ↔ `is_all_free` 전이 |
 
