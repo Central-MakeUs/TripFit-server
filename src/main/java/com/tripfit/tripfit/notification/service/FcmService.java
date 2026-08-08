@@ -11,6 +11,8 @@ import com.tripfit.tripfit.notification.domain.LandingType;
 import com.tripfit.tripfit.notification.repository.UserDeviceTokenRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -35,34 +37,51 @@ public class FcmService {
     this.userDeviceTokenRepository = userDeviceTokenRepository;
   }
 
-  // 토큰 목록에 동일 알림을 발송한다 — 대상 토큰이 0개면 skip(에러 아님)
+  // 토큰별 알림 이력 id를 매칭해 동일 알림을 발송한다 — 대상 토큰이 0개면 skip(에러 아님). tripId는 여행방과 무관한 알림(정기 리마인드)이면 null
   public void sendMulticast(
-      List<String> tokens,
+      Map<String, UUID> historyIdByToken,
       String title,
       String body,
-      LandingType landingType) {
-    if (tokens.isEmpty()) {
+      LandingType landingType,
+      UUID tripId) {
+    if (historyIdByToken.isEmpty()) {
       return;
     }
+    List<String> tokens = new ArrayList<>(historyIdByToken.keySet());
     for (int i = 0; i < tokens.size(); i += BATCH_SIZE) {
       List<String> batch = tokens.subList(i, Math.min(i + BATCH_SIZE, tokens.size()));
-      sendBatch(batch, title, body, landingType);
+      sendBatch(batch, historyIdByToken, title, body, landingType, tripId);
     }
   }
 
   // token(등록 토큰) 기반 발송 — SDK가 신규 fid(Firebase Installation ID) 필드를 권장하지만 클라이언트는
   // 표준 FCM 등록 토큰만 발급하므로(스펙 데이터 모델) token 유지
   @SuppressWarnings("deprecation")
-  private void sendBatch(List<String> tokens, String title, String body, LandingType landingType) {
+  private void sendBatch(
+      List<String> tokens,
+      Map<String, UUID> historyIdByToken,
+      String title,
+      String body,
+      LandingType landingType,
+      UUID tripId) {
     Notification notification = Notification.builder().setTitle(title).setBody(body).build();
     List<Message> messages =
         tokens.stream()
             .map(
-                token -> Message.builder()
-                    .setToken(token)
-                    .setNotification(notification)
-                    .putData("landingType", landingType.name())
-                    .build())
+                token -> {
+                  Message.Builder builder =
+                      Message.builder()
+                          .setToken(token)
+                          .setNotification(notification)
+                          // GET /notifications 응답 필드명(id/landingType/tripId)과 동일하게 맞춤 — FE가
+                          // REST·FCM data를 같은 파서로 처리
+                          .putData("id", historyIdByToken.get(token).toString())
+                          .putData("landingType", landingType.name());
+                  if (tripId != null) {
+                    builder.putData("tripId", tripId.toString());
+                  }
+                  return builder.build();
+                })
             .toList();
     try {
       BatchResponse response = firebaseMessaging.sendEach(messages);

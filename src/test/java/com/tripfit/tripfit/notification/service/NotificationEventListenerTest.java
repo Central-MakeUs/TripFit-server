@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import com.tripfit.tripfit.notification.event.TripInfoChangedEvent;
 import com.tripfit.tripfit.notification.event.TripJoinCompletedEvent;
 import com.tripfit.tripfit.notification.repository.NotificationHistoryRepository;
 import com.tripfit.tripfit.notification.repository.UserDeviceTokenRepository;
+import com.tripfit.tripfit.notification.repository.UserDeviceTokenRepository.UserTokenView;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberRole;
@@ -29,7 +31,9 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,9 +100,13 @@ class NotificationEventListenerTest {
   @Test
   void onTripJoinCompleted_notifiesOwnerOnly() {
     User joinedMember = user("member-sub", "김", "철수");
+    UserTokenView tokenView = mock(UserTokenView.class);
+    when(tokenView.getUserId()).thenReturn(owner.getId());
+    when(tokenView.getToken()).thenReturn("token-1");
     when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
     when(userRepository.findById(joinedMember.getId())).thenReturn(Optional.of(joinedMember));
-    when(userDeviceTokenRepository.findTokensByUserIdIn(anyList())).thenReturn(List.of("token-1"));
+    when(userDeviceTokenRepository.findUserIdAndTokenByUserIdIn(anyList()))
+        .thenReturn(List.of(tokenView));
 
     listener.onTripJoinCompleted(new TripJoinCompletedEvent(TRIP_ID, joinedMember.getId()));
 
@@ -107,8 +115,16 @@ class NotificationEventListenerTest {
     assertThat(captor.getValue()).hasSize(1);
     assertThat(captor.getValue().get(0).getUser()).isEqualTo(owner);
     assertThat(captor.getValue().get(0).getBody()).contains("김철수님이 여행방에 참여했어요");
+    // mock 저장이라 UuidGenerator가 실제로 id를 채우지 않으므로 token-1의 매핑 값은 null
+    Map<String, UUID> expectedHistoryIdByToken = new HashMap<>();
+    expectedHistoryIdByToken.put("token-1", null);
     verify(fcmService)
-        .sendMulticast(eq(List.of("token-1")), any(), any(), eq(LandingType.TRAVEL_ROOM_DETAIL));
+        .sendMulticast(
+            eq(expectedHistoryIdByToken),
+            any(),
+            any(),
+            eq(LandingType.TRAVEL_ROOM_DETAIL),
+            eq(TRIP_ID));
   }
 
   @Test
@@ -121,7 +137,7 @@ class NotificationEventListenerTest {
     listener.onTripJoinCompleted(new TripJoinCompletedEvent(TRIP_ID, joinedMember.getId()));
 
     verify(notificationHistoryRepository, never()).saveAll(any());
-    verify(fcmService, never()).sendMulticast(any(), any(), any(), any());
+    verify(fcmService, never()).sendMulticast(any(), any(), any(), any(), any());
   }
 
   @Test

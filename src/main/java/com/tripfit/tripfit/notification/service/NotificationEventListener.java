@@ -20,7 +20,9 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -184,8 +186,19 @@ public class NotificationEventListener {
             .toList();
     notificationHistoryRepository.saveAll(histories);
 
+    // 토큰마다 소유 유저의 알림 이력 id를 붙여야 FCM data에 id를 실을 수 있음(멀티기기·멀티유저 혼재)
+    // Collectors.toMap은 value null을 허용하지 않아 HashMap을 직접 채움
+    Map<UUID, UUID> historyIdByUserId = new HashMap<>();
+    for (NotificationHistory history : histories) {
+      historyIdByUserId.put(history.getUser().getId(), history.getId());
+    }
     List<UUID> userIds = eligible.stream().map(User::getId).toList();
-    List<String> tokens = userDeviceTokenRepository.findTokensByUserIdIn(userIds);
-    fcmService.sendMulticast(tokens, title, body, landingType);
+    Map<String, UUID> historyIdByToken = new HashMap<>();
+    for (UserDeviceTokenRepository.UserTokenView view : userDeviceTokenRepository
+        .findUserIdAndTokenByUserIdIn(userIds)) {
+      historyIdByToken.put(view.getToken(), historyIdByUserId.get(view.getUserId()));
+    }
+    UUID tripId = trip != null ? trip.getId() : null;
+    fcmService.sendMulticast(historyIdByToken, title, body, landingType, tripId);
   }
 }

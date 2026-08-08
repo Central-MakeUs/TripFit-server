@@ -20,7 +20,14 @@ public interface UserDeviceTokenRepository extends JpaRepository<UserDeviceToken
   // FCM 무효 토큰 자동 정리 대상
   void deleteByTokenIn(Collection<String> tokens);
 
-  // 알림 발송 대상 유저들의 등록 토큰 전체 — FCM 멀티캐스트 페이로드 SSOT
-  @Query("SELECT t.token FROM UserDeviceToken t WHERE t.user.id IN :userIds")
-  List<String> findTokensByUserIdIn(@Param("userIds") Collection<UUID> userIds);
+  // 알림 발송 대상 유저들의 (userId, token) — FCM data에 유저별 알림 이력 id를 매칭하기 위해 토큰 소유자와 함께 조회
+  @Query("SELECT t.user.id AS userId, t.token AS token FROM UserDeviceToken t WHERE t.user.id IN :userIds")
+  List<UserTokenView> findUserIdAndTokenByUserIdIn(@Param("userIds") Collection<UUID> userIds);
+
+  // userId·token 프로젝션 — 알림 이력 id를 토큰별 FCM data에 매핑할 때 사용
+  interface UserTokenView {
+    UUID getUserId();
+
+    String getToken();
+  }
 }
