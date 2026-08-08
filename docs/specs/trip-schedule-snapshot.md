@@ -10,7 +10,7 @@
 
 ## 목표
 
-**CONFIRMED ∪ EXPIRED** 여행방 달력은 freeze 시점 effective를 **보존**하고 **읽기 전용**으로 열람한다.
+**CONFIRMED ∪ EXPIRED** 여행방 달력은 freeze 시점 정기+개별 합친 값을 **보존**하고 **읽기 전용**으로 열람한다.
 
 ## 제품 확정
 
@@ -18,7 +18,7 @@
 
 | ID | 확정 |
 |----|------|
-| **S3** | 멤버 전원 **effective** (regular⊕personal, R2=A — [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md)) — freeze 시점 값을 snapshot 테이블에 저장 |
+| **S3** | 멤버 전원 **정기+개별 합친 값** (regular⊕personal, R2=A — [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md)) — freeze 시점 값을 snapshot 테이블에 저장 |
 | **S5** | ONGOING = live (본 스펙 밖, `trip-schedule-calendar-window.md` C2) |
 
 ### Freeze 시점 (R-freeze) — 공백 없음 (R-gap)
@@ -32,7 +32,7 @@
 
 | 선택 | 내용 |
 |------|------|
-| **A (확정)** | `trip_member_schedule_snapshot` — 멤버×날짜 effective. 희망 기간·sparse |
+| **A (확정)** | `trip_member_schedule_snapshot` — 멤버×날짜 정기+개별 합친 값. 희망 기간·sparse |
 
 ### 추천 (X8)
 

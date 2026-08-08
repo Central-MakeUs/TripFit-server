@@ -23,7 +23,7 @@
 ### Must Have
 
 - [ ] 후보 윈도우: `[trip.startRange, trip.endRange]` 내 길이 = `durationDays`인 모든 연속 `[startDate, endDate]` 슬라이딩 생성. `durationDays` null이면 계산 자체 불가(호출 측에서 처리, 이 스펙은 non-null 전제)
-- [ ] **입력 resolve 재사용:** `#17` `ScheduleCalendarResolveService`를 그대로 호출해 멤버×날짜 effective(가능/불가/미정) 집계 (C1 — 별도 병합 로직 신설 금지)
+- [ ] **입력 resolve 재사용:** `#17` `ScheduleCalendarResolveService`를 그대로 호출해 멤버×날짜 정기+개별 합친 값(가능/불가/미정) 집계 (C1 — 별도 병합 로직 신설 금지)
 - [ ] TBD 판정: `personal_schedule.uncertain=true`인 날짜 (CERTAIN 모드 · U1 달력과 동일 정의)
 - [ ] 정기 일정 연차 산출: `maxVacationDays`·`VacationApplyPeriod`·반차·공휴일 휴무 필드 참고 (BR-TRIP-006). workday IMPOSSIBLE → +1일 추정 `[제안]`(복수 행 집계 규칙은 `[미정]`)
 - [ ] 모드별 점수화 4종 — 가중치 수치는 `[미정]`, **deterministic + 테스트로 순위 재현 가능**하면 충분:
@@ -69,7 +69,7 @@ interface RecommendationEngine {
 - [ ] `SAVE_VACATION`/`CERTAIN` — primary 정렬 키 확인
 - [ ] 동점 fixture — comparator 순서(연차→기간→주말) 확인
 - [ ] `ALL_ATTEND` 후보 0건 — `NO_RECOMMENDATION_CANDIDATES` 신호 반환
-- [ ] resolve 결과가 `#17`과 동일한 effective 값을 사용하는지(별도 병합 로직 없음) 확인
+- [ ] resolve 결과가 `#17`과 동일한 합친 값을 사용하는지(별도 병합 로직 없음) 확인
 
 ## 완료 기준
 

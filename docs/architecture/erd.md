@@ -352,7 +352,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 ### `trip_member_schedule_snapshot` (#38)
 
-완료(CONFIRMED)·만료(EXPIRED) 방의 **멤버×날짜 effective** 고정본. 희망 기간·sparse. live `regular`/`personal`과 분리 (BR-USER-008).
+완료(CONFIRMED)·만료(EXPIRED) 방의 **멤버×날짜 정기+개별 합친 값** 고정본. 희망 기간·sparse. live `regular`/`personal`과 분리 (BR-USER-008).
 
 - **관련 스펙:** [`trip-schedule-snapshot.md`](../specs/trip-schedule-snapshot.md)
 
@@ -402,7 +402,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | users | trip | 1:N | owner_id (방장) |
 | users | refresh_token | 1:N | |
 | trip | trip_member | 1:N | |
-| trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/EXPIRED effective freeze |
+| trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/EXPIRED 정기+개별 합친 값 freeze |
 | users | trip_member_schedule_snapshot | 1:N | |
 | trip | recommendation | 1:N | 최대 3 (현재 모드) |
 

@@ -59,7 +59,7 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 |------|------|
 | **정기 일정** | 반복 패턴 (출근·수업 등). user당 N행 |
 | **개인 일정** | 날짜×슬롯 가능/불가 + `uncertain` |
-| **effective** | #17 resolve — regular ⊕ personal (S1·R2=A) |
+| **정기+개별 합친 달력** | #17 resolve — regular ⊕ personal (S1·R2=A) |
 | **time_slot** | MORNING(00–13), AFTERNOON(13–18), EVENING(18–24) |
 | **status** | POSSIBLE, IMPOSSIBLE (슬롯). **uncertain** = 날짜 단위 미정 |
 | **프라이버시** | 타인에게 상태만 — **BR-TRIP-004** |

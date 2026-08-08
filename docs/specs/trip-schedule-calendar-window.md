@@ -29,7 +29,7 @@
 
 | 항목 | 확정 |
 |------|------|
-| 데이터 | 참여 **전원** effective · **live** |
+| 데이터 | 참여 **전원** 정기+개별 합친 달력 · **live** |
 | 조회 기간 | **`startRange` ~ `endRange`** |
 | 수정 | 본인 전역 regular/personal CRUD |
 

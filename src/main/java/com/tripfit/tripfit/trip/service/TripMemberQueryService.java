@@ -109,7 +109,7 @@ class TripMemberQueryService {
     return new MemberScheduleCalendarResponse(startDate, endDate, readOnly, memberCalendars);
   }
 
-  // 조율 중(ONGOING) — 정기·개인 일정을 합쳐 effective 달력 생성
+  // 조율 중(ONGOING) — 정기·개인 일정을 합친 달력 생성
   private List<MemberCalendar> buildLive(
       List<TripMember> members,
       Map<UUID, String> displayNames,
@@ -123,7 +123,7 @@ class TripMemberQueryService {
     for (TripMember member : members) {
       UUID memberUserId = member.getUser().getId();
       List<CalendarDayResponse> resolved =
-          support.resolveEffectiveSchedule(
+          support.resolveMergedSchedule(
               regularScheduleRepository,
               personalScheduleRepository,
               memberUserId,

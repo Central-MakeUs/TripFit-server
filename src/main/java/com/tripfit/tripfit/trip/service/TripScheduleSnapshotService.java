@@ -16,7 +16,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 확정·종료 시 희망 기간의 멤버 effective 일정을 스냅샷으로 고정한다 (이후 읽기 전용). */
+/** 확정·종료 시 희망 기간의 멤버 정기+개별 합친 일정을 스냅샷으로 고정한다 (이후 읽기 전용). */
 @Service
 public class TripScheduleSnapshotService {
 
@@ -60,7 +60,7 @@ public class TripScheduleSnapshotService {
     for (TripMember member : members) {
       UUID userId = member.getUser().getId();
       List<CalendarDayResponse> days =
-          support.resolveEffectiveSchedule(
+          support.resolveMergedSchedule(
               regularScheduleRepository,
               personalScheduleRepository,
               userId,

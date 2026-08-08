@@ -257,7 +257,7 @@ canEnterRoom(user) =
 |------|------|
 | 전제 | **이미 여행방에 입장한 이후** (join·D-JOIN-ENTRY/TRIP-FLOW 통과 후) |
 | omit day | regular·personal 모두 없어 calendar에서 **날짜가 생략된 날** = **하루 종일 가능 (`POSSIBLE`)** |
-| 범위 | 추천(#13)·그룹 달력·trip 기간 effective 계산에 동일 적용 (방 **밖** join 게이트와 별개) |
+| 범위 | 추천(#13)·그룹 달력·trip 기간 정기+개별 합산 계산에 동일 적용 (방 **밖** join 게이트와 별개) |
 
 > **전부 free vs omit=POSSIBLE:** **별개 유지 (A안)**. `is_all_free` = 입장 게이트 · omit = 입장 후 달력/추천. 합치지 않음 — D-SPARSE vs `is_all_free` 절.
 
@@ -278,7 +278,7 @@ canEnterRoom(user) =
 |------|------|
 | 범위 | 여행방 **참여 중** 마이페이지·외부 달력 등에서 `personal_schedule` 수정 |
 | 동작 | **아무 변화 없음** — `ACTIVE` **유지**(되돌림 없음), 알림 **없음**, 방 UI **별도 갱신 유도 없음** |
-| 데이터 | BR-USER-008 — User 전역 일정, 참여 중 모든 trip에 **동일 데이터** 반영 (조회 시 최신 effective) |
+| 데이터 | BR-USER-008 — User 전역 일정, 참여 중 모든 trip에 **동일 데이터** 반영 (조회 시 최신 합친 값) |
 
 ### D-SUBMIT-2: submit 폐기 (확정) — 상단 D-TRIP-CONFIRM · D-SUBMIT-2 절 참조
 

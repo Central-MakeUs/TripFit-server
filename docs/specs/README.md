@@ -25,7 +25,8 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`schedule-unified.md`](schedule-unified.md) | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
-| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A · **A1→#37** (today~+2년) | regular+personal → 날짜별 effective 달력 조회 | schedule-unified (#11) · #37 |
+| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | **Implemented** (#17) · S1·R2=A · **A1→#37** (today~+2년) | regular+personal → 날짜별 정기+개별 합친 달력 조회 | schedule-unified (#11) · #37 |
+| [`schedule-slot-override.md`](schedule-slot-override.md) | **Approved** (#67) | S1(개별 전체 대체) → O1(슬롯 단위 오버라이드) 전환 — 슬롯 nullable, 정기 정보가 부분 개별 편집으로 사라지는 문제 해결 | schedule-calendar-resolve.md |
 | [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · ONGOING 칩 (구 CANCELED 거부 — #48 enum 삭제로 해당 없음) | #17 · #12 |
 | [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) | **Approved** (#38) · **구현 중** · Wave 2 Must | CONFIRMED/EXPIRED snapshot · R-model A | #27 · #17 · #37 |
 | [`trip-room-api.md`](trip-room-api.md) | **Approved** (#12) · D5 홈 · **#39** SCHEDULE_PENDING/activate | 여행방 CRUD·홈 목록·Pin · activate | #17 · #22 · #39 |

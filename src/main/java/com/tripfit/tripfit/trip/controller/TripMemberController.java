@@ -94,9 +94,9 @@ public class TripMemberController {
 
   @TripMemberOnly
   @Operation(
-      summary = "멤버 effective 일정 달력",
+      summary = "멤버 정기+개별 합친 일정 달력",
       description = """
-          목적: 희망 기간(startRange~endRange) 동안 멤버 전원의 effective 일정을 조회한다.
+          목적: 희망 기간(startRange~endRange) 동안 멤버 전원의 정기+개별을 합친 일정을 조회한다.
 
           호출 시점: 방 안 일정 조율·추천 전 달력.
 

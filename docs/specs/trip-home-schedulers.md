@@ -69,7 +69,7 @@
 
 ## 후속 (본 job 확장 — #38 Approved)
 
-`TripHomeMaintenanceService` **동일 `@Transactional` job**에 EXPIRED 전환 시 희망 기간 **effective snapshot** 작성 추가.  
+`TripHomeMaintenanceService` **동일 `@Transactional` job**에 EXPIRED 전환 시 희망 기간 **정기+개별 합친 snapshot** 작성 추가.  
 상세: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) R-freeze · R-gap(공백 불허) · R-model A.
 
 ## 변경 이력

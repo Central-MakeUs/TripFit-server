@@ -47,7 +47,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 | ID | 항목 | 결정 | 확정일 |
 |----|------|------|--------|
 | **D1** | 참여 완료 | 방장 create=`SCHEDULE_PENDING` → `POST .../activate`=`ACTIVE`. 멤버 join=`ACTIVE`. **submit 없음** — [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39) | 2026-07-21 |
-| **D2** | 그룹 일정 조회 | **T1** — `members/schedule-calendar`(effective) **OpenAPI 공개**. 기간=`startRange`~`endRange`. **#38** CONFIRMED/EXPIRED snapshot · **#37** 마이페이지 today+2년·칩 | 2026-07-21 |
+| **D2** | 그룹 일정 조회 | **T1** — `members/schedule-calendar`(정기+개별 합친 달력) **OpenAPI 공개**. 기간=`startRange`~`endRange`. **#38** CONFIRMED/EXPIRED snapshot · **#37** 마이페이지 today+2년·칩 | 2026-07-21 |
 | **D3** | `invite_code` | **6자** Crockford Base32 (`0`/`O`/`I`/`1` 제외). 링크 공유 UX — 아래 §초대 | 2026-07-17 |
 | **D4** | CONFIRMED·EXPIRED | 기존 멤버 재접속 idempotent · **신규 join 409** · PATCH는 **`ONGOING`만** | 2026-07-17 |
 | **D5** | 홈 목록 | **2뷰** (`scope=ongoing` \| `all`) · `last_activity_at` · `pinned_at` — 아래 §홈 목록 | **2026-07-19** |
@@ -319,7 +319,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 
 ### `members/schedule-calendar` 응답 (D2)
 
-trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤버 **전원** × effective (S1·R2=A · #17).
+trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤버 **전원** × 정기+개별 합친 값 (S1·R2=A · #17).
 - **ONGOING:** live · 본인 전역 일정 수정 가능
 - **CONFIRMED / EXPIRED:** snapshot · **읽기 전용** — [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (#38)
 - 마이페이지 today+2년·ONGOING 칩 인덱싱 — [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (#37 C1)

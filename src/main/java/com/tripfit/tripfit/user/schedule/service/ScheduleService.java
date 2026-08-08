@@ -237,7 +237,7 @@ public class ScheduleService {
     // 1. 조회 구간이 today ~ max(today+2년−1, 참여 중 ONGOING 여행 endRange 최댓값) 안에 있는지 검증
     validateCalendarDateRange(userId, startDate, endDate);
 
-    // 2. regular·personal을 읽어 날짜별 effective로 합침
+    // 2. regular·personal을 읽어 날짜별로 정기+개별을 합침
     List<RegularSchedule> regulars =
         regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
     List<PersonalSchedule> personals =

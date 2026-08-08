@@ -13,7 +13,7 @@
 2. 정기 CRUD / 개별 `PATCH /personal` (`items` upsert — 슬롯 3개 모두 POSSIBLE·uncertain=false면 **삭제**)
 3. **저장** — `ACTIVE` **유지** (D-PERSONAL-6). 구 「일정 제출하기」/submit **없음**
 
-**성공 종료 조건:** effective 달력·추천 입력 반영. 기간·일수 변경 시 추천 초기화 (BR-TRIP-010)
+**성공 종료 조건:** 정기+개별 합친 달력·추천 입력 반영. 기간·일수 변경 시 추천 초기화 (BR-TRIP-010)
 
 **예외 / 분기:**
 

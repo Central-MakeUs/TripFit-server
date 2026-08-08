@@ -168,8 +168,8 @@ public class TripServiceSupport {
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
   }
 
-  // 정기+개별 일정을 로드해 effective 달력으로 합친다 — live 조회·snapshot freeze 공용(Google busy 조회 방식만 호출부가 다름)
-  List<CalendarDayResponse> resolveEffectiveSchedule(
+  // 정기+개별 일정을 로드해 합친 달력으로 만든다 — live 조회·snapshot freeze 공용(Google busy 조회 방식만 호출부가 다름)
+  List<CalendarDayResponse> resolveMergedSchedule(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
       UUID userId,

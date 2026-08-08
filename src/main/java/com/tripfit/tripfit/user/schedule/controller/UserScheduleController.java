@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "User Schedule", description = "본인 정기·개인 일정과 달력(effective)")
+@Tag(name = "User Schedule", description = "본인 정기·개인 일정과 정기+개별을 합친 달력")
 @RestController
 @RequestMapping("/api/v1/users/schedule")
 public class UserScheduleController {
@@ -277,15 +277,15 @@ public class UserScheduleController {
   }
 
   @Operation(
-      summary = "일정 달력(effective) 조회",
+      summary = "정기+개별 합친 일정 달력 조회",
       description = """
-          목적: 본인 전역 가능/불가능 달력(effective)을 조회한다.
+          목적: 본인 정기 일정과 개별 일정을 합쳐 날짜별 가능/불가능 달력을 조회한다.
 
           호출 시점: 마이페이지 달력·일정 확인 화면.
 
           전제: 요청 구간은 오늘부터 오늘+2년−1일 안이어야 한다. 단, 참여 중인 조율 중(ONGOING) 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다.
 
-          결과: 날짜별 effective 슬롯. 개인 일정이 정기보다 우선하고, 정기 복수면 IMPOSSIBLE이 우선. 빈 날은 응답에서 생략.
+          결과: 날짜별로 정기+개별을 합친 슬롯. 개인 일정이 정기보다 우선하고, 정기 복수면 IMPOSSIBLE이 우선. 빈 날은 응답에서 생략.
 
           주의: 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출한다.
 

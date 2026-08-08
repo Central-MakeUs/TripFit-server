@@ -85,10 +85,12 @@ user/schedule/
 | GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성 |
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
 | PATCH | `/api/v1/users/schedule/personal` | **upsert(전부 POSSIBLE·uncertain=false면 삭제)**, 반영 후 구간 목록 반환 |
-| GET | `/api/v1/users/schedule/calendar` | effective 달력 · **today~+2년** (#37) · Hidden **1단계 해제** |
-| GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 effective · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
+| GET | `/api/v1/users/schedule/calendar` | 정기+개별 합친 달력 · **today~+2년** (#37) · Hidden **1단계 해제** |
+| GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 정기+개별 합친 달력 · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
 
 > 폐기: `/schedule/availability`, per-slot TBD, `note` · ~~BR-USER-006 regular 선행 403~~ (#22 D-BR006-5) · ~~`members/personal-summary`~~ · ~~GET `/schedule/personal`~~ (조회 API 삭제, PATCH 응답으로 대체)
+
+**정기 유래 날짜를 클릭해 하루만 고치는 UX**(프리필·엣지케이스·`PATCH .../personal` vs `GET .../calendar` DTO 차이)는 [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) "마이페이지 개별 일정 편집 UX" 절 참고.
 
 ## 잔여
 

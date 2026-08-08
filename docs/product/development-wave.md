@@ -191,7 +191,7 @@ Wave 3 = MVP **이후** “쓸 만한” UX. Wave 4 = MVP **범위 밖** 기술�
 | 여행방·참여·홈 D5 (submit 제외분) | #12 |
 | 추천 API 설계·DTO·ERD·확정·취소 | #13 |
 | 추천 계산 로직 (후보 윈도우·모드별 스코어링·동점) | **#50** |
-| calendar effective resolve | #17 |
+| calendar 정기+개별 합산 resolve | #17 |
 | 여행방 일정 조회 윈도우 (+2년) | **#37** |
 | EXPIRED 일정 snapshot | **#38** |
 
