@@ -73,13 +73,27 @@ public class GoogleCalendarService {
   public UserSummaryResponse connect(UUID userId, String authorizationCode, String redirectUri) {
     User user = userLookupService.requireUser(userId);
     GoogleOAuthTokenResponse tokens;
+    boolean hasRedirectUri = redirectUri != null && !redirectUri.isBlank();
     try {
       tokens = googleCalendarOAuthClient.exchangeAuthorizationCode(authorizationCode, redirectUri);
     } catch (GoogleCalendarAuthException exception) {
       // 원인(HTTP status·Google 에러 body)을 로그로 남겨야 진단 가능 — GlobalExceptionHandler는
       // TripFitException을 로깅하지 않으므로 여기서 남기지 않으면 실패 원인이 완전히 유실된다
-      log.warn("Google Calendar connect failed — authorization code exchange error", exception);
+      log.warn(
+          "Google Calendar connect failed — authorization code exchange error (userId={}, hasRedirectUri={})",
+          userId,
+          hasRedirectUri,
+          exception);
       throw new TripFitException(GoogleCalendarErrorCode.GOOGLE_CALENDAR_CONNECT_FAILED);
+    } catch (TripFitException exception) {
+      // exchangeAuthorizationCode()가 토큰 응답에 refresh_token이 없을 때 여기로 온다(같은 Google 계정을
+      // 다른 client_id 재동의 없이 재연동하면 Google이 refresh_token을 생략) — 이 분기도 로그 없이 삼켜지고
+      // 있었음. hasRedirectUri로 네이티브(false)/브라우저(true) 경로를 구분해 재현 조건을 좁힐 수 있게 한다
+      log.warn(
+          "Google Calendar connect failed — token response missing refresh_token (userId={}, hasRedirectUri={})",
+          userId,
+          hasRedirectUri);
+      throw exception;
     }
 
     String refreshCiphertext = tokenCrypto.encrypt(tokens.refreshToken());
