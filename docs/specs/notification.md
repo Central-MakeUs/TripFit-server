@@ -198,6 +198,7 @@ com.tripfit.tripfit.notification
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-08 | FCM `data` payload에 `id`(알림 이력 ID) 추가 — 프론트 요청(푸시 탭 시 목록 재조회 없이 `PATCH .../{id}/read` 바로 호출). `landingType`/`tripId`와 함께 `GET /api/v1/notifications` 응답 필드명과 동일하게 유지. `FcmService.sendMulticast`가 토큰 목록 대신 토큰별 알림 이력 id 매핑(`Map<String, UUID>`)을 받도록 변경 |
 | 2026-07-31 | `GET /api/v1/notifications` 응답에 `roomName`(관련 여행방 이름, `tripId`와 동일하게 nullable) 필드 추가 — 프론트 요청(알림 카드에 방 이름 표시). `NotificationHistory.trip` 연관관계로 파생, DB 컬럼 추가 없음 |
 | 2026-07-31 | 문서 드리프트 정정 — `#13`(추천·확정·취소)이 이미 Closed·구현 완료 상태인데 본 문서가 "미구현/Draft"로 stale하게 남아 있었음. BR-NOTI-009는 `TripRecommendationService.unconfirm`에서 이미 `TripConfirmCanceledEvent`를 발행 중(리스너·테스트 존재 확인) — Must Have·완료 기준·리스크 표 전부 완료로 수정 |
 | 2026-07-30 | Must Have 대부분 구현 완료 — FCM 연동·디바이스 토큰·알림센터 API·NOTI-001~005 트리거·`user-my-page.md` D8 amend. NOTI-009는 `#13` 취소 API 선행 대기(이벤트·리스너만 준비) |
