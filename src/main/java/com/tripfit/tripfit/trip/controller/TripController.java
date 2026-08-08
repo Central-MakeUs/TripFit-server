@@ -8,7 +8,7 @@ import com.tripfit.tripfit.trip.config.TripMembershipOnly;
 import com.tripfit.tripfit.trip.config.TripOwnerOnly;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
-import com.tripfit.tripfit.trip.dto.JoinTripRequest;
+import com.tripfit.tripfit.trip.membership.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;

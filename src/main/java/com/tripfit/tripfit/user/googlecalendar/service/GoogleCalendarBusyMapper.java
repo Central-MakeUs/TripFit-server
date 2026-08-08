@@ -1,6 +1,6 @@
 package com.tripfit.tripfit.user.googlecalendar.service;
 
-import com.tripfit.tripfit.trip.domain.TimeSlot;
+import com.tripfit.tripfit.trip.schedule.domain.TimeSlot;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleFreeBusyInterval;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.domain.User;

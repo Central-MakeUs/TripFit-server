@@ -122,6 +122,30 @@ jobs:
           git commit -m "Chore: OpenAPI 스펙 스냅샷 갱신 [skip ci]"
           git push
 
+  update-readme-badge:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update AI co-authored commit badge
+        run: |
+          ./scripts/update-ai-commit-badge.sh
+          if git diff --quiet -- .github/badges/ai-commits.json; then
+            echo "배지 수치 변경 없음 — 커밋 스킵"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/badges/ai-commits.json
+          git commit -m "Chore: AI co-authored commit 배지 자동 갱신 [skip ci]"
+          git push
+
   deploy:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

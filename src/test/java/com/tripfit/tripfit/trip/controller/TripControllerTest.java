@@ -13,8 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
-import com.tripfit.tripfit.trip.domain.TripMemberRole;
-import com.tripfit.tripfit.trip.domain.TripMemberStatus;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;

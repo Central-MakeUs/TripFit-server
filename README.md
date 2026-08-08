@@ -1,122 +1,219 @@
 # TripFit-server
 
-여행 일정 조율 서비스 **TripFit**의 백엔드 API 서버.
+[![CI/CD](https://github.com/Central-MakeUs/TripFit-server/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Central-MakeUs/TripFit-server/actions/workflows/ci-cd.yml)
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-6DB33F?logo=springboot&logoColor=white)
+![AI co-authored commits](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Central-MakeUs/TripFit-server/main/.github/badges/ai-commits.json)
+![AI Engineering](https://img.shields.io/badge/AI--native-Engineering-6366F1)
 
-이 저장소는 코드뿐 아니라, **AI 코딩 에이전트의 실행 환경을 설계·통제(Harnessing)** 하는 방식을 함께 담고 있습니다. 기획·스펙·아키텍처 결정을 문서로 고정하고, AI가 그 계약 안에서만 구현하도록 규칙·스킬·훅으로 실행 경로를 제한합니다.
+## 프로젝트 소개
 
-**"바이브 코딩 대신 하네스 엔지니어링을 어떻게 했는가"를 처음부터 끝까지 정리한 문서:** [`docs/harness-engineering.md`](docs/harness-engineering.md) — 구조·실제 적용 사례·인시던트에서 규칙으로 이어진 이력·수치까지 한 파일에 있습니다. 아래는 그 요약입니다.
+**TripFit**은 여행 일정 조율 서비스의 백엔드 API 서버입니다. 그룹 여행에서 각자의 일정을 모아 최적의 날짜 후보를 산출하고, 방장이 일정을 확정합니다.
 
-## 관련 링크
+이 프로젝트의 핵심은 **AI를 실제 백엔드 개발에 적용하면서 품질을 자동 검증하는 환경**을 만든 것입니다.
+
+**사람이 결정하고, AI가 구현하고, 자동으로 검증한 뒤 사람이 최종 확인합니다.**
+
+설계 배경: [`docs/harness-engineering.md`](docs/harness-engineering.md)
 
 | 항목 | 링크 |
 |------|------|
-| API 서버 (운영) | https://api.tripfit.online |
+| API 서버 | https://api.tripfit.online |
 | Swagger UI | https://api.tripfit.online/swagger-ui.html |
-| OpenAPI 스펙 (JSON, 실시간) | https://api.tripfit.online/v3/api-docs |
-| OpenAPI 스냅샷 (`main`, 프론트 codegen 소스) | [`docs/api/openapi.json`](docs/api/openapi.json) |
+| OpenAPI 스냅샷 | [`docs/api/openapi.json`](docs/api/openapi.json) |
 | 모니터링 (Grafana + Loki) | https://grafana.tripfit.online |
-| 프론트엔드 (운영) | https://tripfit.online |
-| GitHub 저장소 | https://github.com/Central-MakeUs/TripFit-server |
+| 프론트엔드 | https://tripfit.online |
 
-## AI Harness — 어디부터 볼까
+## 핵심 기능
 
-AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되게 작업하도록, 다층 컨텍스트를 저장소에 박아 두었습니다.
+- **가중치 기반 추천 엔진** — 개인 근무일정·연차 조건을 반영한 페널티 스코어링으로 4가지 모드별 TOP 3 날짜 후보 산출
+- **그룹 일정 조율** — 참여자별 오전/오후/저녁 일정 입력 및 그룹 달력 시각화
+- **소셜 로그인 3종** — 카카오·구글·애플 로그인과 provider별 토큰 검증·탈퇴 revoke 정책 통일
+- **여행방 홈** — 진행 중/전체 2-뷰와 Pin·최근 활동(`last_activity_at`) 기준 정렬
+- **알림** — FCM 기반 일정 리마인더 배치 스케줄러
 
-| 진입점 | 역할 |
-|--------|------|
-| [`docs/harness-engineering.md`](docs/harness-engineering.md) | **총정리 서술 문서** — 구조·사례·인시던트 이력·수치 (발표·질의용) |
-| [`AGENTS.md`](AGENTS.md) | **프로젝트 지도** — 무엇을 어디서 찾는지, 기술 스택, 금기사항 |
-| [`.claude/rules/README.md`](.claude/rules/README.md) | **에이전트 행동 규칙** — rules(`.md`) · skills · hooks 구조 |
-| [`.claude/rules/harness-workflow.md`](.claude/rules/harness-workflow.md) | **최우선 STOP** — 문서·스펙 정합 · ErrorCode/AOP · DB · 레거시 |
-| [`.claude/rules/harness-wave.md`](.claude/rules/harness-wave.md) | Wave Must/Nice/Out · `[미정]`→#2 · 일정·기간 용어 |
-| [`.claude/rules/harness-follow-up.md`](.claude/rules/harness-follow-up.md) | 후속 제안 · Defer · ERD 적극 제안 |
-| [`.claude/skills/specify/SKILL.md`](.claude/skills/specify/SKILL.md) | **승인 게이트** — 큰 변경은 스펙 작성 → 승인 후 구현 |
-| [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
+## 기술 스택
 
-### 실행 경로를 제한하는 5가지 장치
+Java 21 · Spring Boot 4.1 · Gradle · MySQL 8.0 · JUnit 5 · Docker + GHCR · EC2 Nginx
 
-- **다층 SSOT** — 기획(`docs/product/`) → 기능 스펙(`docs/specs/`) → 아키텍처 결정(`docs/decisions/`) → 규칙(`.claude/rules/`). 값·계약이 문서와 다르면 조용히 맞추지 않고 질문한다. 기존 Approved 스펙을 amend할 땐 `ADDED`/`MODIFIED`/`REMOVED` delta 표기로 변경 범위를 명시한다(OpenSpec 패턴).
-- **승인 게이트** — DB·인증·다파일 변경은 `specify` 스킬로 Approved 스펙을 만든 뒤에만 코드를 작성한다. 예: [`docs/specs/trip/trip-room-api.md`](docs/specs/trip/trip-room-api.md) (BR·wave·미정 항목까지 명시).
-- **컨텍스트 격리** — 광범위한 탐색·리서치는 메인 대화창을 어지럽히지 않도록 `Explore`/`general-purpose` 서브에이전트로 위임하고, 방향이 불확실한 큰 변경은 Plan Mode로 먼저 설계를 굳힌다.
-- **결정론적 하한선** — `.claude/settings.json`의 훅이 프롬프트 지시만으로는 보장 안 되는 것들을 강제한다: `PreToolUse`가 `git push --force`·`rm -rf`·DB 마이그레이션 파일 생성 등을 **fail-closed**로 차단하고, `git commit` 시 command-type 스크립트가 `Breaking-Change-Reason:` 트레일러 누락 여부를 advisory 경고하며(커밋을 막지는 않음 — 처음엔 agent 훅으로 만들었다가 working tree 변경까지 오판해 커밋을 막는 사고가 있어 command-type으로 전환, [`docs/harness-engineering.md`](docs/harness-engineering.md) §5), `PostToolUse`가 Java 파일 저장마다 포맷을 자동 적용한다.
-- **실행 가능한 아키텍처 규칙(ArchUnit)** — 레이어·의존 방향·PK 전략 등 `spring-boot-java.md`의 일부 규칙은 prose가 아니라 [`ArchitectureTest.java`](src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java)가 `./gradlew test`마다 실제로 검증한다.
+- **MySQL 8 + Testcontainers** — 로컬 목킹 대신 실제 DB 엔진으로 테스트해 dev(EC2)와 DB 동작 차이를 줄임
+- **API·프론트 배포 분리** — `api.tripfit.online` EC2 / `tripfit.online` Vercel. 두 시스템의 유일한 접점인 API contract를 자동 검증
 
-**워크플로:** `wave 확인 → 탐색(서브에이전트/Plan Mode) → (specify/Approved) → 구현 → 검증(필수) → 리뷰 → PR`
+## 아키텍처
 
-## AI 개발 워크플로 — 단계별 활용
+- **도메인 기반 레이어드** — `auth · user · trip · notification · common`, 도메인 내부는 `controller → dto → service → domain → repository` 구조. 도메인 안 기능이 커지면 `{domain}/{feature}/`에 같은 레이어를 반복 (`user/schedule`, `trip/membership`, `trip/recommendation`, `trip/schedule` 등)
+- **포트/어댑터로 도메인 간 참조 역전** — `trip`이 `user`(개인 일정·Google Calendar 연동·유저 조회)를 참조할 때는 `trip/port/out/`에 정의한 인터페이스로만 접근하고, 실제 구현(어댑터)은 `user` 도메인이 가진다. 풀 DDD 애그리거트 없이 크로스 도메인 의존 방향만 역전한 절충안 — ADR: [`decisions/003`](docs/decisions/003-architecture-guide.md)
+- **Architecture enforcement** — 레이어·의존 방향 규칙을 [`ArchitectureTest.java`](src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java)(ArchUnit)가 `./gradlew test`마다 검증
+- **DB** — PK/FK UUID v4, snake_case, Soft Delete. ERD: [`docs/architecture/erd.md`](docs/architecture/erd.md)
+- **배포** — GitHub Actions → GHCR → EC2 Nginx + Spring Boot. ADR: [`decisions/002`](docs/decisions/002-domain-split-vercel-api.md)
 
-이 저장소는 기획 확인부터 커밋까지, 각 단계에서 AI 코딩 에이전트(Claude Code)가 실행 주체를 맡고 사람은 **승인·리뷰 게이트**로 개입하는 방식으로 개발됩니다. 코드 자체뿐 아니라 스펙·ADR·규칙 문서도 대부분 AI가 초안을 작성하고 사람이 확정합니다.
+## AI Engineering
+
+TripFit의 AI 개발 방식은 간단합니다.
+
+**사람이 결정 → AI가 구현 → 자동으로 검증 → 사람이 최종 확인**
+
+AI를 많이 사용하는 것보다, **AI가 만든 결과를 안전하게 확인할 수 있는 구조**를 만드는 데 집중했습니다.
+
+### 1. 전체 개발 흐름
 
 ```mermaid
-flowchart TD
-    A["탐색<br/>Wave·GitHub 이슈 확인<br/>(Explore 서브에이전트/Plan Mode)"] --> BUG{"버그·테스트<br/>실패인가?"}
-    BUG -- Yes --> REPRO["재현 → 원인 분리<br/>→ 최소 수정"]
-    REPRO --> VERIFY
-    BUG -- No --> B{"DB·인증·다파일<br/>변경인가?"}
-    B -- Yes --> C["스펙 초안 작성<br/>(specify 스킬 — 충돌 검토 포함)"]
-    C --> D{"사용자 승인?"}
-    D -- "반려·수정" --> C
-    D -- Approved --> E["구현<br/>(.claude/rules 준수)"]
-    B -- No --> E
-    E --> F{"문서·스펙과<br/>새로 충돌?"}
-    F -- "가벼운 불일치<br/>(env명 등 한 줄 확인)" --> G["질문 — STOP<br/>(임의로 맞추지 않음)"]
-    G --> E
-    F -- "계약 자체를<br/>바꿔야 함" --> C
-    F -- No --> VERIFY["검증 — 필수 게이트<br/>./gradlew test → verify 스킬"]
-    VERIFY --> I["자체·교차 리뷰<br/>code-review / simplify"]
-    I --> J{"사용자 커밋<br/>요청?"}
-    J -- No --> K["대기 — 임의 커밋 금지"]
-    J -- Yes --> L["커밋<br/>Co-Authored-By: Claude"]
+flowchart LR
+    A["사람<br/>요구사항 결정"]
+    B["AI Agent<br/>설계·구현"]
+    C["자동 검증<br/>Test · Architecture · API"]
+    D["사람<br/>Review · Merge"]
+
+    A --> B --> C --> D
+    C -. "실패" .-> B
+
+    classDef human fill:#EDE9FE,stroke:#8B5CF6,color:#4C1D95
+    classDef ai fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A
+    classDef machine fill:#FEF3C7,stroke:#D97706,color:#78350F
+
+    class A,D human
+    class B ai
+    class C machine
 ```
 
-| 단계 | AI의 역할 | 산출물·도구 |
-|------|-----------|-------------|
-| **탐색** | 활성 Wave·GitHub 이슈로 범위 확인 — Backlog 없이 Must/Nice 임의 단정 금지. 파일이 많거나 방향이 불확실하면 서브에이전트/Plan Mode로 메인 컨텍스트를 아끼며 조사 | `docs/product/development-wave.md`, `.claude/rules/harness-wave.md`, `Explore`/`general-purpose` 서브에이전트 |
-| **버그·테스트 실패** | 스펙 경로와 별도로 재현 → 원인 분리 → 최소 수정 절차를 따름(전용 스킬 없음, 추측 수정 금지) | `.claude/rules/workflow-tools.md` 버그 절차 |
-| **설계·스펙 작성** | 요구사항을 정리해 `specify` 스킬로 스펙 문서를 초안 작성(문서·기존 스펙과의 충돌 검토 포함) — DB·인증·다파일 변경은 **스펙 승인 전 구현 착수 금지** | `docs/specs/{domain}/*.md` (Draft → Approved) |
-| **아키텍처 결정** | 구조적 트레이드오프·대안을 ADR로 기록 | `docs/decisions/00N-*.md` |
-| **구현** | Approved 스펙의 계약(API·에러코드·enum·DB) 안에서만 코드 작성. 레이어·네이밍·주석 규칙은 `.claude/rules/`가 강제 | `src/main/java/com/tripfit/tripfit/...` |
-| **검증 (필수)** | 단위·통합 테스트 작성 및 회귀 확인, 필요 시 실제 구동으로 동작 확인. `verify` 스킬 없이 "테스트 통과"·"완료" 선언 금지 — 옵션이 아니라 게이트 | `./gradlew test`, `verify` 스킬 |
-| **자체·교차 리뷰** | 정확성·중복·단순화 관점의 자체 리뷰, 필요 시 다중 에이전트 클라우드 리뷰 | `code-review`/`simplify` 스킬, `/code-review ultra` |
-| **문서 동기화** | 구현이 문서와 어긋나면 임의로 맞추지 않고 **질문** — 사소한 불일치는 채팅으로 바로 묻고 재개, 계약 자체가 바뀌어야 하면 스펙부터 다시 씀 | `.claude/rules/harness-workflow.md` STOP 절 |
-| **커밋·이력** | 사람이 명시적으로 요청할 때만 커밋, 주제별로 분할 | `Co-Authored-By: Claude` 커밋 트레일러 |
-| **안전장치** | 파괴적 명령 차단(fail-closed), Breaking-Change-Reason 누락 경고, Java 파일 저장 시 자동 포맷 | `PreToolUse`/`PostToolUse` 훅([`.claude/hooks/`](.claude/hooks)) |
+사람은 요구사항과 중요한 변경을 결정합니다. AI는 구현을 담당하고, 자동 검증이 통과된 결과만 사람이 최종 확인합니다.
 
-이 저장소의 커밋 이력 상당수가 이 워크플로로 생성되었습니다(`git log --grep "Co-Authored-By: Claude"`로 확인 가능). 스펙·ADR 전체 목록은 [`docs/specs/README.md`](docs/specs/README.md)·[`docs/decisions/README.md`](docs/decisions/README.md) 참고.
+### 2. Human · AI · Machine 역할
 
-## Tech Stack
+| 단계 | Human | AI Agent | Machine |
+|---|---:|---:|---:|
+| 요구사항·설계 의도 | ✓ | 보조 | |
+| 구현 계획·코드 작성 | | ✓ | |
+| 테스트 작성 | | ✓ | |
+| 테스트 실행 | | | ✓ |
+| Architecture 검증 | | | ✓ |
+| API Contract 검증 | | | ✓ |
+| 변경 범위 검증 | | | ✓ |
+| 중요한 변경 승인 | ✓ | | |
 
-- Java 21 · Spring Boot 4.1.0 · Gradle (wrapper 포함)
-- MySQL 8.0 (런타임 · 테스트 — Testcontainers) · JUnit 5
-- Docker + GHCR (배포) · EC2 Nginx + Spring Boot
+### 3. 직접 만든 Claude Code Skills
 
-## 문서 지도
+AI가 매번 임의의 방식으로 작업하지 않도록 repository 안에 작업별 Skill을 만들었습니다.
 
-| 경로 | 용도 |
-|------|------|
-| [`docs/product/development-wave.md`](docs/product/development-wave.md) | **Wave 운영·판단·Backlog** SSOT |
-| [`docs/product/waves.md`](docs/product/waves.md) | Wave 1~4 요약표 |
-| [`docs/product/`](docs/product) | PRD · MVP · 비즈니스 룰(BR-*) · 용어 · 플로우 |
-| [`docs/specs/`](docs/specs) | 기능 스펙 (구현 전 Approved) |
-| [`docs/architecture.md`](docs/architecture.md) | 레이어·패키지·설정·DB 요약 |
-| [`docs/decisions/`](docs/decisions) | 인프라·아키텍처 확정 (ADR) |
-| [`deploy/README.md`](deploy/README.md) | Docker·EC2 배포 SSOT |
-| [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) | 브랜치·커밋·PR 규약 |
+```mermaid
+flowchart LR
+    T["개발 작업"] --> S["Claude Code Skills"]
 
-## 로컬 실행
+    S --> A["specify<br/>무엇을 만들지 고정"]
+    S --> B["refactor-audit<br/>무엇이 바뀌는지 확인"]
+    S --> C["verify<br/>제대로 동작하는지 확인"]
+    S --> D["defer-followup<br/>범위 밖 작업 분리"]
+
+    classDef task fill:#F3F4F6,stroke:#6B7280,color:#111827
+    classDef skill fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A
+
+    class T task
+    class S,A,B,C,D skill
+```
+
+대표 Skill: [`specify`](.claude/skills/specify/SKILL.md) · [`refactor-audit`](.claude/skills/refactor-audit/SKILL.md) · [`verify`](.claude/skills/verify/SKILL.md) · [`defer-followup`](.claude/skills/defer-followup/SKILL.md)
+
+Skill은 프롬프트 모음이 아닙니다. **작업 범위와 검증 절차를 repository에 규칙으로 남긴 것**입니다.
+
+### 4. API Contract + Discord 안전장치
+
+프론트엔드와 백엔드가 별도 배포되기 때문에 API 변경을 Claude Code에만 맡기지 않습니다.
+
+GitHub Actions에서 oasdiff로 API contract를 독립적으로 비교하고, breaking change가 발견되면 Discord #frontend에 알립니다.
+
+```mermaid
+flowchart LR
+    A["Backend PR"]
+    B["OpenAPI"]
+    C["oasdiff"]
+    D{"Breaking Change?"}
+    E["CI Pass"]
+    F["Discord<br/>#frontend 알림"]
+    G["Frontend Review"]
+
+    A --> B --> C --> D
+    D -->|No| E
+    D -->|Yes| F --> G
+
+    classDef source fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A
+    classDef check fill:#FEF3C7,stroke:#D97706,color:#78350F
+    classDef success fill:#DCFCE7,stroke:#16A34A,color:#14532D
+    classDef alert fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D
+
+    class A,B source
+    class C,D check
+    class E success
+    class F,G alert
+```
+
+이 검증은 **Claude Code와 별개로 CI에서 항상 실행**됩니다.
+
+실제 incident를 통해 검증 범위도 확장했습니다.
+
+- [`#64`](https://github.com/Central-MakeUs/TripFit-server/issues/64) — API contract drift 이후 2차 감지 추가
+- [`#75`](https://github.com/Central-MakeUs/TripFit-server/issues/75) — 교차검증 필요성을 발견해 3차 검증 추가
+- [`509a328`](https://github.com/Central-MakeUs/TripFit-server/commit/509a328) — 관련 수정
+
+### 5. 검증 체크포인트
+
+| 체크포인트 | 담당 | 무엇을 확인하는가 | 실패 시 |
+|---|---|---|---|
+| `specify` | Human | 스펙과 범위 | 구현 중단 |
+| `refactor-audit` | Machine | API diff | 구현 되돌림 |
+| `verify` | Machine | 실제 테스트·contract 결과 | 완료 처리 불가 |
+| `defer-followup` | Human | 범위 밖 작업 | 후속 이슈로 분리 |
+| API contract CI | External Machine | OpenAPI breaking change | Discord 알림 |
+
+### 6. Harness가 진화한 방식
+
+하네스는 처음부터 완성된 규칙이 아니었습니다. 실제 실패가 발생할 때마다 검증 장치를 추가했습니다.
+
+```text
+Incident
+  ↓
+실패 원인 확인
+  ↓
+검증 공백 발견
+  ↓
+자동 검증 추가
+  ↓
+재발 방지
+```
+
+결국 이 프로젝트의 AI Engineering은 **AI가 더 많은 일을 맡아도 품질을 확인할 수 있는 개발 시스템을 만드는 것**입니다.
+
+## 프로젝트 구조
+
+```text
+com.tripfit.tripfit
+├── auth/           # 소셜 로그인 3종·JWT·OAuth
+├── user/           # 프로필·온보딩·개인 일정 (schedule 서브패키지)
+├── trip/           # 여행방 (membership/recommendation/schedule 서브패키지, port/out으로 user 참조)
+├── notification/   # FCM·배치 스케줄러
+└── common/         # 응답 envelope·예외·베이스 엔티티
+```
+
+도메인 내부는 `controller → dto → service → domain → repository` 구조입니다. 전체 레이아웃: [`docs/architecture.md`](docs/architecture.md)
+
+## 실행 방법
 
 ```bash
 cp .env.example .env      # 최초 1회 — Auth env 등 채우기
 docker compose up -d      # MySQL만 (로컬 DB)
 ./gradlew bootRun         # Spring 로컬 실행 (local 프로필, .env 자동 로드)
 ./gradlew test            # 테스트
-./gradlew build           # 빌드
 ```
 
-배포·검증 스크립트는 [`deploy/README.md`](deploy/README.md) 참고.
+배포·검증 스크립트: [`deploy/README.md`](deploy/README.md)
 
-## Conventions
+## 문서
 
-- 패키지: `com.tripfit.tripfit` — 도메인 기반 레이어드 (`{domain}/controller|dto|service|domain|repository|client`, 공통 `common/`)
-- 커밋: `{Type}: {한글 설명}` (Type 첫 글자 대문자) — 상세 [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md)
-- 범위 밖 리팩터링·포맷 변경 금지, 비밀값(`.env`·API 키)은 커밋 금지
+| 경로 | 용도 |
+|------|------|
+| [`docs/harness-engineering.md`](docs/harness-engineering.md) | 하네스 엔지니어링 설계 배경·전체 인시던트 이력 |
+| [`docs/product/development-wave.md`](docs/product/development-wave.md) | Wave 운영·판단·Backlog SSOT |
+| [`docs/specs/`](docs/specs) | 기능 스펙 (구현 전 Approved) |
+| [`docs/decisions/`](docs/decisions) | 인프라·아키텍처 확정 (ADR) |
+| [`docs/architecture.md`](docs/architecture.md) | 레이어·패키지·설정·DB 요약 |
+| [`deploy/README.md`](deploy/README.md) | Docker·EC2 배포 SSOT |
+| [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) | 브랜치·커밋·PR 규약 |

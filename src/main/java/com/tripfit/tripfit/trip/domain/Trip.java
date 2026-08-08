@@ -2,6 +2,8 @@ package com.tripfit.tripfit.trip.domain;
 
 import com.tripfit.tripfit.common.domain.SoftDeleteEntity;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
+import com.tripfit.tripfit.trip.recommendation.domain.UnconfirmReason;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

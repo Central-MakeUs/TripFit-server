@@ -12,7 +12,7 @@ paths:
 가이드: `docs/decisions/003-architecture-guide.md`.
 **풀 DDD 미적용** — JPA 연관관계·객체 그래프 탐색 허용.
 
-**feature 하위 패키지:** 도메인 안 기능이 커지면 `{domain}/{feature}/`에 **동일 레이어 세트**를 둘 수 있다 (예: `user/schedule/`, `user/googlecalendar/`). 최상위 도메인으로 승격하지 않는 한 소유 도메인 안에 둔다. `controller/dto/`처럼 **레이어만 중첩**하는 것은 금지. recommendation은 `trip/` 안에 flat하게 있다(별도 최상위 패키지 아님) — 분리 여부는 `docs/specs/trip/package-structure-refactor.md` Draft 검토 대상.
+**feature 하위 패키지:** 도메인 안 기능이 커지면 `{domain}/{feature}/`에 **동일 레이어 세트**를 둘 수 있다 (예: `user/schedule/`, `user/googlecalendar/`, `trip/membership/`, `trip/recommendation/`, `trip/schedule/`). 최상위 도메인으로 승격하지 않는 한 소유 도메인 안에 둔다. `controller/dto/`처럼 **레이어만 중첩**하는 것은 금지. 여러 feature가 공유하는 코드(`TripServiceSupport` 등)나 크로스 도메인 조회 포트(`{domain}/port/out/`)는 도메인 루트에 둔다 — 상세: `docs/specs/trip/package-structure-refactor.md`(Implemented), `docs/decisions/003-architecture-guide.md` 결정 11·12.
 
 **자동 검증(ArchUnit):** 아래 규칙 중 일부는 prose가 아니라 `src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java`가 `./gradlew test`마다 실제로 검증한다 — domain이 controller/service에 의존하지 않음, controller가 repository에 직접 의존하지 않음, repository는 인터페이스만, `@Autowired` 필드 주입 금지(생성자 주입만), `@RestController`에 `@Transactional` 금지, `@Id` 필드는 UUID 타입, `*ErrorCode`는 `ErrorCode` 구현. 새 아키텍처 규칙을 추가할 때 이 테스트에도 반영을 검토할 것.
 

@@ -1,7 +1,7 @@
 package com.tripfit.tripfit.user.schedule.domain;
 
 import com.tripfit.tripfit.common.domain.BaseTimeEntity;
-import com.tripfit.tripfit.trip.domain.SlotStatuses;
+import com.tripfit.tripfit.trip.schedule.domain.SlotStatuses;
 import com.tripfit.tripfit.user.domain.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;

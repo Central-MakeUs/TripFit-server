@@ -1,14 +1,14 @@
 package com.tripfit.tripfit.trip.service;
 
-import com.tripfit.tripfit.trip.domain.TripMember;
-import com.tripfit.tripfit.trip.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.membership.domain.TripMember;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
-import com.tripfit.tripfit.trip.dto.MemberPreviewResponse;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
-import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
+import com.tripfit.tripfit.trip.membership.dto.MemberPreviewResponse;
+import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.membership.repository.projection.TripMemberCountProjection;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;

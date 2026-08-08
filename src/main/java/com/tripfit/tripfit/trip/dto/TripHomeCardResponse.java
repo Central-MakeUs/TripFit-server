@@ -1,7 +1,8 @@
 package com.tripfit.tripfit.trip.dto;
 
-import com.tripfit.tripfit.trip.domain.TripMemberRole;
-import com.tripfit.tripfit.trip.domain.TripMemberStatus;
+import com.tripfit.tripfit.trip.membership.dto.MemberPreviewResponse;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;

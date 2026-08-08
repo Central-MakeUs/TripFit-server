@@ -6,7 +6,7 @@ import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
 import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
 import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.common.security.SocialTokenCrypto;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;

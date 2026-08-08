@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;

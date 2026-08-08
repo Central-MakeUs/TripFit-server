@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse.PersonalScheduleItemResponse;

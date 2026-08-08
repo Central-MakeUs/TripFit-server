@@ -1,6 +1,6 @@
 package com.tripfit.tripfit.user.schedule.dto;
 
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
