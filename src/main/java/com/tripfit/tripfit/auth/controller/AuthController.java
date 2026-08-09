@@ -50,8 +50,7 @@ public class AuthController {
           결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
 
           주요 에러: AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)
-          """,
-      security = {})
+          """)
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -109,8 +108,7 @@ public class AuthController {
           결과: 새 access JWT. refresh row는 유지된다.
 
           주요 에러: AUTH_INVALID_REFRESH — refresh 무효·만료
-          """,
-      security = {})
+          """)
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -155,8 +153,7 @@ public class AuthController {
           전제: 본인이 보유한 refresh token.
 
           결과: 204 No Content. access는 만료까지 유효할 수 있다.
-          """,
-      security = {})
+          """)
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "로그아웃 성공(No Content)"),
       @ApiResponse(
