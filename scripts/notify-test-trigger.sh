@@ -204,6 +204,10 @@ EOF
     cat <<EOF
 -- 정리용 SQL — 검토 후 배포 DB에서 직접 실행하세요 (자동 실행 안 함)
 START TRANSACTION;
+-- notification_history가 trip을 FK로 참조하므로 trip_member/trip보다 먼저 지운다
+-- (fire 단계가 실제로 알림을 발송했다면 이 trip을 가리키는 이력 row가 생겨 있음).
+DELETE nh FROM notification_history nh JOIN trip t ON t.id = nh.trip_id
+  WHERE t.invite_code IN ('${INVITE_CODE}', 'NOTIFYI${RUN_SUFFIX}');
 DELETE tm FROM trip_member tm JOIN trip t ON t.id = tm.trip_id
   WHERE t.invite_code IN ('${INVITE_CODE}', 'NOTIFYI${RUN_SUFFIX}');
 DELETE FROM trip WHERE invite_code IN ('${INVITE_CODE}', 'NOTIFYI${RUN_SUFFIX}');
