@@ -54,7 +54,7 @@ class ScheduleCalendarResolverTest {
   }
 
   @Test
-  void resolve_personalOverridesEntireDay_s1() {
+  void resolve_personalFullOverride_allThreeSlotsExplicit() {
     RegularSchedule work =
         RegularSchedule.create(
             user,
@@ -86,6 +86,60 @@ class ScheduleCalendarResolverTest {
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
     assertThat(days.getFirst().eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+  }
+
+  @Test
+  void resolve_personalPartialOverride_untouchedSlotKeepsRegularValue() {
+    RegularSchedule work =
+        RegularSchedule.create(
+            user,
+            "출근",
+            "MON,TUE,WED,THU,FRI",
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
+    LocalDate thursday = LocalDate.of(2026, 8, 6);
+    // 오후만 오버라이드(반차) — 아침·저녁은 null이라 정기값을 그대로 따름
+    PersonalSchedule personal =
+        PersonalSchedule.create(user, thursday, null, ScheduleStatus.POSSIBLE, null, false);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(List.of(work), List.of(personal), thursday, thursday);
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(days.getFirst().eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+  }
+
+  @Test
+  void resolve_personalUncertainOnly_slotsFollowRegularButUncertainTrue() {
+    RegularSchedule work =
+        RegularSchedule.create(
+            user,
+            "출근",
+            "MON,TUE,WED,THU,FRI",
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
+    LocalDate thursday = LocalDate.of(2026, 8, 6);
+    PersonalSchedule personal =
+        PersonalSchedule.create(user, thursday, null, null, null, true);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(List.of(work), List.of(personal), thursday, thursday);
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(days.getFirst().uncertain()).isTrue();
   }
 
   @Test
@@ -156,16 +210,34 @@ class ScheduleCalendarResolverTest {
   }
 
   @Test
-  void resolve_mergeWithGoogle_orImpossibleWins() {
+  void resolve_regularAndGoogleBothBusy_orMergedWhenNoOverride() {
     LocalDate date = LocalDate.of(2026, 8, 11);
-    PersonalSchedule personal =
-        PersonalSchedule.create(
+    var googleBusy =
+        com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay.create(
             user,
             date,
-            ScheduleStatus.POSSIBLE,
-            ScheduleStatus.POSSIBLE,
-            ScheduleStatus.POSSIBLE,
+            false,
+            true,
             false);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(),
+            List.of(),
+            date,
+            date,
+            Map.of(date, googleBusy));
+
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+  }
+
+  @Test
+  void resolve_personalOverride_winsOverGoogleBusy() {
+    // O1 핵심: 개별 오버라이드는 정기뿐 아니라 구글 busy 신호도 이긴다
+    LocalDate date = LocalDate.of(2026, 8, 11);
+    PersonalSchedule personal =
+        PersonalSchedule.create(user, date, null, ScheduleStatus.POSSIBLE, null, false);
     var googleBusy =
         com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay.create(
             user,
@@ -182,7 +254,27 @@ class ScheduleCalendarResolverTest {
             date,
             Map.of(date, googleBusy));
 
-    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
-    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+  }
+
+  @Test
+  void resolve_regularOnly_noPersonalNoGoogle_sparseOmitted() {
+    LocalDate saturday = LocalDate.of(2026, 8, 8);
+    RegularSchedule work =
+        RegularSchedule.create(
+            user,
+            "출근",
+            "MON,TUE,WED,THU,FRI",
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(List.of(work), List.of(), saturday, saturday);
+
+    assertThat(days).isEmpty();
   }
 }
