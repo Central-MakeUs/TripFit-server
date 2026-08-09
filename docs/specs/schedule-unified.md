@@ -38,35 +38,38 @@ user/schedule/
 
 슬롯 status: **`POSSIBLE` | `IMPOSSIBLE`만** (슬롯에 TBD 없음).
 
-## 개인 일정 (`PersonalSchedule`)
+## 개인 일정 (`PersonalSchedule`) — 슬롯 단위 오버라이드 (O1, [`schedule-slot-override.md`](schedule-slot-override.md) #67)
 
 - 행 단위: `(user_id, schedule_date)` UNIQUE — **날짜당 1행**
-- `morningStatus` / `afternoonStatus` / `eveningStatus` — 가능/불가  
-- `uncertain` (boolean) — **그 날짜 전체** 불확실 여부 (슬롯별 아님). 추천 시 미정(TBD)으로 취급 `[제안]`
+- `morningStatus` / `afternoonStatus` / `eveningStatus` — **각각 nullable.** 값이 있으면 그 슬롯을 오버라이드, `null`이면 그 슬롯은 손대지 않고 정기+구글 계산값을 그대로 따른다(구 S1 "행 있으면 그 날 전체 대체"는 폐기)
+- `uncertain` (boolean) — **그 날짜 전체** 불확실 여부 (슬롯별 아님). 슬롯 오버라이드가 하나도 없어도 이 값만 `true`로 둘 수 있음. 추천 시 미정(TBD)으로 취급 `[제안]`
 
 ```json
 {
   "items": [
     {
       "scheduleDate": "2026-08-03",
-      "morningStatus": "IMPOSSIBLE",
+      "morningStatus": null,
       "afternoonStatus": "POSSIBLE",
-      "eveningStatus": "POSSIBLE",
-      "uncertain": true
+      "eveningStatus": null,
+      "uncertain": false
     },
     {
       "scheduleDate": "2026-08-04",
-      "morningStatus": "POSSIBLE",
-      "afternoonStatus": "POSSIBLE",
-      "eveningStatus": "POSSIBLE",
-      "uncertain": false
+      "morningStatus": null,
+      "afternoonStatus": null,
+      "eveningStatus": null,
+      "uncertain": true
     }
   ]
 }
 ```
 
-- **`items`:** `(user, date)` insert/update — **단, 슬롯 3개 모두 `POSSIBLE`이고 `uncertain=false`인 항목은 오버라이드가 없는 기본 상태와 동일하므로 해당 날짜 row를 삭제(CLEAR)한다.** regular도 0이면 `is_all_free=true`
+위 예시: 8/3은 오후만 오버라이드(아침·저녁은 정기+구글 값을 그대로 따름), 8/4는 슬롯 오버라이드 없이 "불확실"만 표시.
+
+- **`items`:** `(user, date)` insert/update — **단, 슬롯 3개가 전부 `null`이고 `uncertain=false`인 항목은 오버라이드가 하나도 없는 상태와 동일하므로 해당 날짜 row를 삭제(CLEAR)한다.** regular도 0이면 `is_all_free=true`
 - `items`가 비어 있으면 400
+- 응답(`PATCH` 결과)은 저장된 원본이 아니라 정기+개별+구글까지 합친 **최종 확정값**(POSSIBLE/IMPOSSIBLE로 확정, null 없음)으로 내려간다
 
 ## 정기 일정 (`RegularSchedule`)
 
@@ -84,7 +87,7 @@ user/schedule/
 |--------|------|------|
 | GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성 |
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
-| PATCH | `/api/v1/users/schedule/personal` | **upsert(전부 POSSIBLE·uncertain=false면 삭제)**, 반영 후 구간 목록 반환 |
+| PATCH | `/api/v1/users/schedule/personal` | **슬롯 단위 오버라이드 upsert(전부 null·uncertain=false면 삭제)**, 반영된 날짜들의 최종 확정값 반환 |
 | GET | `/api/v1/users/schedule/calendar` | 정기+개별 합친 달력 · **today~+2년** (#37) · Hidden **1단계 해제** |
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 정기+개별 합친 달력 · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
 
@@ -102,6 +105,7 @@ user/schedule/
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-29 | **개인 일정 = 슬롯 단위 오버라이드(O1)로 전환** (#67, [`schedule-slot-override.md`](schedule-slot-override.md)) — 슬롯 3개 nullable, 삭제(CLEAR) 신호 "전부 POSSIBLE" → "전부 null", `PATCH` 응답은 정기+구글까지 합친 최종 확정값. 구 S1(행 있으면 그 날 전체 대체) 폐기 |
 | 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 |
 | 2026-07-21 | **#22** — personal/calendar Hidden 해제 · `deletedDates` CLEAR · BR-USER-006 게이트 폐기 반영 |
 | 2026-07-14 | personal GET/PATCH에 BR-USER-006 `REGULAR_SCHEDULE_REQUIRED` 게이트 |

@@ -237,9 +237,9 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 
 **제약:** user당 **0..N행**. 1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY). soft delete 없음.
 
-### `personal_schedule` (개인 일정)
+### `personal_schedule` (개인 일정 — 슬롯 단위 오버라이드, O1)
 
-User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜 단위 불확실. **trip FK 없음.**
+User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라이드(`null`=오버라이드 없음, 정기+구글 계산값을 그대로 씀) + 날짜 단위 불확실. **trip FK 없음.** 병합 규칙: [`schedule-slot-override.md`](../specs/schedule-slot-override.md)(O1, #67) — 구 S1(그 날 전체 대체)은 폐기.
 
 - **관련 BR:** BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-008
 
@@ -248,14 +248,14 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 가능·불가 + 날짜
 | id | char(36) | N | PK | UUID v4 |
 | user_id | char(36) | N | FK → users.id | |
 | schedule_date | date | N | | |
-| morning_status | varchar | N | | POSSIBLE / IMPOSSIBLE (`SlotStatuses`) |
-| afternoon_status | varchar | N | | POSSIBLE / IMPOSSIBLE |
-| evening_status | varchar | N | | POSSIBLE / IMPOSSIBLE |
-| is_uncertain | boolean | N | | **날짜 전체** 불확실 (슬롯별 TBD 아님) |
+| morning_status | varchar | **Y** | | POSSIBLE/IMPOSSIBLE(오버라이드) — null이면 이 슬롯은 정기+구글 계산값을 그대로 씀 |
+| afternoon_status | varchar | **Y** | | 위와 동일 |
+| evening_status | varchar | **Y** | | 위와 동일 |
+| is_uncertain | boolean | N | | **날짜 전체** 불확실 (슬롯별 아님). 슬롯 오버라이드 없이 이 값만 true로 둘 수 있음 |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
-**제약:** `UNIQUE (user_id, schedule_date)`. soft delete 없음.
+**제약:** `UNIQUE (user_id, schedule_date)`. soft delete 없음. 슬롯 3개가 전부 `null`이고 `is_uncertain=false`면 row 삭제(CLEAR) — 담을 정보가 없는 상태이기 때문.
 
 **시간대 (BR-TRIP-002, 확정):** MORNING `[00:00,13:00)`, AFTERNOON `[13:00,18:00)`, EVENING `[18:00,24:00)` — 공통 `TimeSlot` + `SlotStatuses` (정기와 동일)
 

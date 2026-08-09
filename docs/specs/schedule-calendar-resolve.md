@@ -7,6 +7,8 @@
 > 상태: **Implemented** (#17) — S1·R2=A · sparse. **A1:** #37에서 today~+2년 윈도우로 amend (**Implemented** on feat/37)  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 
+> ⚠️ **개인 일정 병합 규칙 S1은 폐기되었다.** [`schedule-slot-override.md`](schedule-slot-override.md)(O1, #67, **Approved**)가 "개별 행이 있으면 그 날 전체 대체"(S1)를 "슬롯 단위 오버라이드"로 대체한다 — 아래 R1·S1 관련 서술은 **이력 문서**로만 남기고, 현재 병합 계약은 O1 스펙을 SSOT로 본다. R2(정기 복수 겹침)·R3(uncertain)·R4(레이어 없음)·A1(기간 상한)·sparse 원칙은 O1에서도 그대로 유지된다.
+
 ## 목표
 
 클라이언트가 **기간 내 날짜×오전/오후/저녁**을 달력·일정 시트·추천에 바로 쓸 수 있도록,  
@@ -18,8 +20,8 @@
 
 | # | 항목 | 결정 |
 |---|------|------|
-| 1 | 병합 모델 | **S1** — personal 행이 있으면 그날 슬롯 3개 + `uncertain` **전부**가 합친 값이 된다 |
-| 2 | personal 쓰기 계약 | 추가/수정 시 **오전·오후·저녁 3필드 필수** (현행 API 유지, 스키마 변경 없음) |
+| 1 | 병합 모델 | ~~**S1** — personal 행이 있으면 그날 슬롯 3개 + `uncertain` **전부**가 합친 값이 된다~~ **폐기 → O1로 대체** ([`schedule-slot-override.md`](schedule-slot-override.md)): 슬롯 단위로 개별 오버라이드(있으면) > 정기⊕구글 |
+| 2 | personal 쓰기 계약 | ~~추가/수정 시 오전·오후·저녁 3필드 필수~~ **폐기** — 슬롯 3필드는 nullable(`null`=오버라이드 없음), O1 참고 |
 | 3 | empty day | **sparse** — regular·personal 모두 없으면 `days`에서 **omit** |
 | 4 | 응답 깊이 | 본인·그룹 **모두 정기+개별 합친 값만** (원본 레이어 없음, 납작한 day) |
 | 5 | 용어 | 합친 결과 = **정기+개별 합친 값**(= "합친 달력"의 하루치). 중첩 wrapper 없이 day에 슬롯 필드 그대로 노출 |
@@ -489,3 +491,4 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-21 | **제품 재확정** — A1→마이페이지 today+2년(#37 C1) · 방=희망 기간 · #38 CONFIRMED∪TERMINATED |
 | 2026-07-29 | **용어 변경** — "effective" 표현을 전부 "정기+개별 합친 값/달력"으로 교체(Swagger·docs·내부 메서드명 `resolveEffectiveSchedule`→`resolveMergedSchedule` 동일 적용, DB·API 계약 변경 없음) · "응답 DTO 비교"·"마이페이지 개별 일정 편집 UX"(시나리오·엣지케이스) 절 추가 · FE 전달용 [`schedule-calendar-merge.md`](../product/fe-context/schedule-calendar-merge.md) 작성 |
 | 2026-07-29 | **문서 보강** — 여행 칩(`GET /trips?scope=ongoing`)과 본 API `startDate`/`endDate`의 관계 명문화("트립 칩 → 조회 구간 선택" 절, API 계약 변경 없음) · "화면 요소 ↔ API 필드 매핑" 절 추가 |
+| 2026-07-29 | **S1 폐기 → O1로 대체** ([`schedule-slot-override.md`](schedule-slot-override.md), #67, **Approved·구현 완료**) — 개별 일정이 "그 날 전체 대체"에서 "슬롯 단위 오버라이드"로 전환. 본 문서의 S1·R1 서술은 이력 문서로 유지, 확정 사항 표 #1·#2에 폐기 표시 |

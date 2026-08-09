@@ -8,15 +8,19 @@ TripFit 프론트엔드 저장소에서 Google 캘린더 연동 관련 화면·�
 
 `GET /api/v1/users/schedule/calendar`, `GET /api/v1/trips/{tripId}/members/schedule-calendar` 두 API는 이미 Google busy와 수동 일정을 병합한 최종 `POSSIBLE`/`IMPOSSIBLE` 슬롯을 `days[]`로 내려준다. Google 연동 여부에 따라 프론트에서 별도 병합 로직을 짜지 마라 — 서버 응답을 그대로 렌더링하라.
 
-디버깅·QA 목적으로 병합 규칙을 알아야 할 때만 아래를 참고하라. 병합은 슬롯별 **OR(IMPOSSIBLE)**이다: 수동 일정과 Google busy 중 하나라도 불가능이면 그 슬롯은 `IMPOSSIBLE`이다.
+디버깅·QA 목적으로 병합 규칙을 알아야 할 때만 아래를 참고하라. **2단계로 계산된다:**
 
-| 수동 입력 | Google busy | 결과 |
+**1단계 — 자동 계산(정기⊕Google, OR):** 슬롯별로 정기 일정과 Google busy 중 하나라도 불가능이면 그 슬롯은 `IMPOSSIBLE`이다.
+
+| 정기 | Google busy | 자동 계산 결과 |
 |---|---|---|
 | POSSIBLE | busy 아님 | POSSIBLE |
 | POSSIBLE | busy | IMPOSSIBLE |
 | IMPOSSIBLE | busy 아님 | IMPOSSIBLE |
-| 수동 일정 없음 | busy | IMPOSSIBLE(응답에 처음 등장) |
-| 수동 일정 없음 | busy 아님 | 응답에 없음(생략) |
+| 매칭 정기 없음 | busy | IMPOSSIBLE(응답에 처음 등장) |
+| 매칭 정기 없음 | busy 아님 | 응답에 없음(생략) |
+
+**2단계 — 개별(personal) 슬롯 오버라이드가 있으면 그 슬롯은 1단계 결과를 완전히 무시하고 최종값이 된다.** 즉 그날 Google이 `busy`라고 해도, 유저가 그 슬롯을 개별 일정으로 명시적으로 `POSSIBLE`로 오버라이드했다면 최종 응답은 `POSSIBLE`이다 — "Google busy가 항상 이긴다"고 가정하지 마라. 개별 오버라이드가 없는 슬롯만 위 1단계 표를 따른다.
 
 - `uncertain` 플래그는 개별 일정(personal)에서만 온다고 가정하라 — Google busy가 이 값에 영향을 준다고 가정하지 마라.
 - Google 종일(all-day) busy는 그 날짜 오전·오후·저녁 **전부**를 `IMPOSSIBLE`로 만든다고 가정하라.
@@ -82,7 +86,7 @@ TripFit 프론트엔드 저장소에서 Google 캘린더 연동 관련 화면·�
 | Method | Path |
 |---|---|
 | `GET/POST/PATCH/DELETE` | `/api/v1/users/schedule/regular` |
-| `PATCH` | `/api/v1/users/schedule/personal` (조회 없음 — upsert 응답만) |
+| `PATCH` | `/api/v1/users/schedule/personal` (조회 없음 — upsert 응답만, 슬롯 3필드는 각각 선택/nullable — 상세는 [`schedule-calendar-merge.md`](schedule-calendar-merge.md) 규칙 2) |
 
 ## 규칙 4 — 동기화 상태를 UI에 노출하려면 먼저 확인하라
 

@@ -16,31 +16,34 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 
 **개별(personal)을 조회 전용으로 따로 보여주는 API는 없다** — `GET /users/schedule/personal` 같은 조회 API는 존재하지 않는다(제거됨). 개별 일정만 훑어보고 싶어도 위 두 캘린더 API를 써라. 반대로 "정기만 반영된 상태"를 보여주는 조회도 없다 — 캘린더는 언제나 병합 결과다.
 
-## 규칙 2 — 날짜를 클릭하면 항상 "그 날짜 하나"의 개별 일정 편집이다. 정기 일정 수정 API를 부르지 마라
+## 규칙 2 — 날짜를 클릭하면 항상 "그 날짜 하나"의 개별 일정 편집이다. 건드린 슬롯만 보내라
 
 마이페이지 달력에 찍히는 점(예: 빨간 점)이 정기에서 나온 값이든 이미 저장된 개별 오버라이드든 상관없다. **날짜를 클릭했을 때 항상 그 날짜 1건의 개별 일정 편집 바텀시트를 띄우고, 저장은 항상 `PATCH /api/v1/users/schedule/personal`로만 하라.** `PATCH /users/schedule/regular/{id}`를 여기서 호출하지 마라 — 그건 정기 패턴 자체(예: 매주 평일)를 바꾸는 API라서, 하루만 고치려는 의도와 다르게 그 패턴이 매칭되는 **모든 날짜**가 한꺼번에 바뀐다.
 
+**핵심 변경(O1):** `morningStatus`/`afternoonStatus`/`eveningStatus`는 이제 **각각 선택(nullable) 필드**다. 유저가 건드리지 않은 슬롯은 `null`로 보내라 — 서버가 그 슬롯을 "오버라이드 없음"으로 이해하고 정기+구글 계산값을 그대로 쓴다. **슬롯 3개를 항상 다 채워 보내야 한다는 예전 규칙은 폐기됐다.**
+
 ### 구현 순서 (예: 매주 평일 9~18시 근무자가 특정 하루만 오후를 비움)
 
-1. 달력에서 날짜를 클릭하면, **그 날짜의 바텀시트를 `GET .../calendar` 응답의 그 날짜 값으로 프리필하라** — 정기 row 하나만 베껴서 프리필하지 마라. 같은 요일에 정기가 여러 개 겹쳐 있으면 정기 row 하나만으로는 실제 병합 결과와 다를 수 있다.
+1. 달력에서 날짜를 클릭하면, 바텀시트를 `GET .../calendar` 응답의 그 날짜 값으로 프리필하라(화면에 현재 값을 보여주기 위함일 뿐, 저장 시 안 바꾼 슬롯까지 다시 보낼 필요는 없다).
 2. 유저가 슬롯 일부(예: 오후)만 바꾼다.
-3. 저장 시 **그 날짜 하나에 대해서만** `PATCH .../personal`을 호출한다. 오전·오후·저녁 3개 슬롯을 **전부** 채워 보내야 한다(부분 필드 생략 불가) — 안 바꾼 슬롯도 프리필된 값 그대로 같이 보내라.
+3. 저장 시 **그 날짜 하나에 대해서만** `PATCH .../personal`을 호출한다. **유저가 실제로 바꾼 슬롯만 값을 채우고, 나머지는 `null`로 보내라.**
 
 ```json
 {
   "items": [
-    { "scheduleDate": "2026-06-19", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false }
+    { "scheduleDate": "2026-06-19", "morningStatus": null, "afternoonStatus": "POSSIBLE", "eveningStatus": null, "uncertain": false }
   ]
 }
 ```
 
-4. 저장 후에는 그 날짜만 바뀐다 — 같은 요일의 다른 날짜(정기 패턴)는 그대로다.
+4. 저장 후에는 그 날짜의 오후만 바뀐다 — 아침·저녁은 정기+구글 계산값을 계속 따르고, 같은 요일의 다른 날짜(정기 패턴)도 그대로다.
 
 ### 아래 상황을 가정하고 UI를 짜라
 
 - 이미 개별 오버라이드가 있는 날짜를 다시 클릭해도 프리필 소스는 동일하게 `GET .../calendar` 값이다 — 별도 분기 없이 항상 같은 흐름으로 열어라.
-- 유저가 바텀시트에서 슬롯 3개를 **전부 POSSIBLE, `uncertain=false`**로 만들어 저장하면, 서버는 이를 "오버라이드 해제" 신호로 보고 그 날짜의 개별 일정을 **삭제**한다 — 이후 그 날짜는 다시 정기 값을 따른다. 즉 "기본값으로 되돌리기" 버튼은 별도 API 없이 이 값으로 저장하면 된다.
+- 유저가 바텀시트에서 슬롯 3개를 **전부 안 건드린 상태(모두 `null`)로 `uncertain=false`** 저장하면, 서버는 이를 "오버라이드 없음" 상태로 보고 그 날짜의 개별 일정 row를 **삭제**한다 — 이후 그 날짜는 다시 정기+구글 계산값을 따른다. 다만 제품에 "기본값으로 되돌리기" 전용 버튼은 없다 — 이건 어디까지나 CLEAR 조건의 부수 효과다.
 - 정기가 아예 없는 날짜(주말 등, 캘린더에서 생략된 날)에도 개별 일정만 단독으로 등록할 수 있다 — 정기 일정이 하나도 없어도 막히지 않는다.
+- 슬롯 오버라이드를 하나도 안 걸고 `uncertain=true`만 보낼 수도 있다 — "이 날 일정이 바뀔 수도 있어요"만 표시하고 슬롯은 정기+구글 계산값 그대로 둔다.
 - `PATCH .../personal`의 `items`는 여러 날짜를 한 번에 보낼 수 있지만(bulk), 단일 날짜 편집 화면에서는 그 날짜 1건만 담아 보내라 — 다른 날짜까지 같이 보내면 그 날짜들도 함께 덮어써진다.
 
 ## 규칙 3 — `PATCH .../personal` 응답과 `GET .../calendar` 응답을 같은 타입으로 파싱하지 마라
@@ -51,7 +54,8 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 |---|---|---|
 | 최상위 | `{ "items": [...] }` | `{ "startDate", "endDate", "days": [...] }` |
 | 날짜 필드명 | `scheduleDate` | `date` |
-| `id` | 있음(그 개별 일정 row의 UUID) | **없음** — 그 값이 정기 유래일 수 있어 단일 row가 없다 |
+| `id` | 있음 — 단, 그 날짜에 오버라이드가 하나도 안 남아 있으면(정기+구글 값만 내려가는 날짜) `null`일 수 있다 | **없음** — 그 값이 정기 유래일 수 있어 단일 row가 없다 |
+| 슬롯 값의 의미 | 항상 **최종 확정값**(POSSIBLE/IMPOSSIBLE로 확정) — 저장된 원본(`null` 포함)이 아니다 | 동일 |
 | 슬롯 필드명 | `morningStatus`/`afternoonStatus`/`eveningStatus`/`uncertain` | 동일 |
 
 `scheduleDate`와 `date`를 같은 키로 매핑하면 날짜가 `undefined`가 되니 주의하라.
@@ -70,7 +74,7 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 
 | HTTP | code | 상황 |
 |---|---|---|
-| 400 | `INVALID_INPUT` | `personal` upsert의 `items` 비어 있음·슬롯 필드 누락, `regular` 시각/요일 값 오류, `calendar` 조회 구간이 허용 윈도우 밖 |
+| 400 | `INVALID_INPUT` | `personal` upsert의 `items` 비어 있음·`scheduleDate` 누락·슬롯 값이 `POSSIBLE`/`IMPOSSIBLE`/`null` 외의 값, `regular` 시각/요일 값 오류, `calendar` 조회 구간이 허용 윈도우 밖 |
 | 404 | `REGULAR_SCHEDULE_NOT_FOUND` | 존재하지 않거나 본인 소유가 아닌 정기 일정 ID로 수정/삭제 시도 |
 | 401 | `AUTH_INVALID_TOKEN` / `AUTH_EXPIRED` | 토큰 없음·무효·만료 — 재로그인 플로우로 보내라 |
 
@@ -92,4 +96,4 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 | 날짜 클릭 → 바텀시트 헤더 "YYYY년 M월 D일" | 클릭한 날짜(정기 유래 날짜를 클릭해도 항상 개별 편집 바텀시트 — 규칙 2) |
 | "이 날 일정이 변경될 수 있어요" 토글 | 그 날짜의 `uncertain` |
 | 아침/오후/저녁 각 행 버튼("여행 가능해요" ↔ "일정이 있어요") | 각각 `morningStatus`/`afternoonStatus`/`eveningStatus` — "여행 가능해요"=`POSSIBLE`, "일정이 있어요"=`IMPOSSIBLE`. 바텀시트를 열 때는 이 3개+토글을 `GET .../calendar`의 그 날짜 값으로 프리필하라(규칙 2) |
-| "저장하기" 버튼 | `PATCH /users/schedule/personal`을 그 날짜 1건만 담아 호출 — 정기 일정은 절대 수정하지 않는다(규칙 2) |
+| "저장하기" 버튼 | `PATCH /users/schedule/personal`을 그 날짜 1건만 담아 호출 — 유저가 바꾼 슬롯만 값을 채우고 안 바꾼 슬롯은 `null`로 보낸다. 정기 일정은 절대 수정하지 않는다(규칙 2) |
