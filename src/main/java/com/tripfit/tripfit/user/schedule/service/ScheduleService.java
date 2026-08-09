@@ -16,10 +16,12 @@ import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse.RegularSche
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.PersonalScheduleItem;
+import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.exception.ScheduleErrorCode;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
+import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
@@ -27,7 +29,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -135,23 +140,7 @@ public class ScheduleService {
         .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
   }
 
-  // 개별 일정 기간 조회 — 정기 일정 없이 개별만 있어도 허용
-  @Transactional(readOnly = true)
-  public PersonalScheduleResponse getPersonal(
-      UUID userId,
-      LocalDate startDate,
-      LocalDate endDate) {
-    validateDateRange(startDate, endDate);
-    List<PersonalScheduleItemResponse> items =
-        personalScheduleRepository
-            .findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(userId, startDate, endDate)
-            .stream()
-            .map(this::toPersonalItem)
-            .toList();
-    return new PersonalScheduleResponse(items);
-  }
-
-  // 개별 일정 일괄 저장·삭제 — 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목은 해당 날짜 row 삭제(CLEAR)로 처리
+  // 개별 일정 일괄 저장·삭제 — 슬롯 3개가 전부 null(오버라이드 없음)이고 uncertain=false인 항목은 해당 날짜 row 삭제(CLEAR)로 처리
   @Transactional
   public PersonalScheduleResponse upsertPersonal(
       UUID userId,
@@ -163,12 +152,11 @@ public class ScheduleService {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
 
-    LocalDate minDate = null;
-    LocalDate maxDate = null;
+    List<LocalDate> touchedDates = new ArrayList<>();
     List<LocalDate> deleteDates = new ArrayList<>();
     boolean anyUpserted = false;
 
-    // 1. 항목별로 삭제 신호(슬롯 전부 POSSIBLE·uncertain=false)와 upsert를 분리
+    // 1. 항목별로 삭제 신호(슬롯 전부 null·uncertain=false)와 upsert를 분리
     for (PersonalScheduleItem item : items) {
       validatePersonalItem(item);
       if (isDeleteSignal(item)) {
@@ -196,12 +184,7 @@ public class ScheduleService {
         }
         anyUpserted = true;
       }
-      if (minDate == null || item.scheduleDate().isBefore(minDate)) {
-        minDate = item.scheduleDate();
-      }
-      if (maxDate == null || item.scheduleDate().isAfter(maxDate)) {
-        maxDate = item.scheduleDate();
-      }
+      touchedDates.add(item.scheduleDate());
     }
 
     // 2. 삭제 신호로 모인 날짜 row를 일괄 삭제
@@ -216,15 +199,58 @@ public class ScheduleService {
     if (!deleteDates.isEmpty()) {
       userSummaryService.markAllFreeIfSchedulesCleared(user);
     }
-    return getPersonal(userId, minDate, maxDate);
+    return buildPersonalResponse(userId, touchedDates);
   }
 
-  // 삭제 신호 판정 — 슬롯 3개 모두 POSSIBLE·uncertain=false면 오버라이드 없는 기본 상태와 동일 → row 삭제
+  // 방금 반영한 날짜들의 최종 확정값(정기+개별+구글 합친 값)을 계산해 응답 — 아무 신호도 없는 날짜는 생략
+  private PersonalScheduleResponse buildPersonalResponse(
+      UUID userId,
+      List<LocalDate> touchedDates) {
+    List<LocalDate> dates = touchedDates.stream().distinct().sorted().toList();
+    LocalDate minDate = dates.getFirst();
+    LocalDate maxDate = dates.getLast();
+
+    List<RegularSchedule> regulars =
+        regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
+    List<PersonalSchedule> personals =
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            userId,
+            minDate,
+            maxDate);
+    Map<LocalDate, GoogleCalendarBusyDay> googleBusy =
+        googleCalendarService.findBusyDaysByUserId(userId, minDate, maxDate);
+
+    Map<LocalDate, UUID> idsByDate =
+        personals.stream()
+            .collect(Collectors.toMap(PersonalSchedule::getScheduleDate, PersonalSchedule::getId));
+    Map<LocalDate, CalendarDayResponse> resolvedByDate =
+        ScheduleCalendarResolver.resolve(regulars, personals, minDate, maxDate, googleBusy).stream()
+            .collect(Collectors.toMap(CalendarDayResponse::date, Function.identity()));
+
+    List<PersonalScheduleItemResponse> items = new ArrayList<>();
+    for (LocalDate date : dates) {
+      CalendarDayResponse resolved = resolvedByDate.get(date);
+      if (resolved == null) {
+        continue;
+      }
+      items.add(
+          new PersonalScheduleItemResponse(
+              idsByDate.get(date),
+              date,
+              resolved.morningStatus(),
+              resolved.afternoonStatus(),
+              resolved.eveningStatus(),
+              resolved.uncertain()));
+    }
+    return new PersonalScheduleResponse(items);
+  }
+
+  // 삭제 신호 판정 — 슬롯 3개 전부 오버라이드 없음(null)이고 uncertain=false면 이 row가 담을 정보가 없음 → row 삭제
   private static boolean isDeleteSignal(PersonalScheduleItem item) {
     return !item.uncertain()
-        && item.morningStatus() == ScheduleStatus.POSSIBLE
-        && item.afternoonStatus() == ScheduleStatus.POSSIBLE
-        && item.eveningStatus() == ScheduleStatus.POSSIBLE;
+        && item.morningStatus() == null
+        && item.afternoonStatus() == null
+        && item.eveningStatus() == null;
   }
 
   // 합산 달력 조회 — 정기 일정 미등록도 403 없음, 일정 없는 날은 응답에서 날짜 키 생략(sparse)
@@ -306,20 +332,18 @@ public class ScheduleService {
   }
 
   private void validatePersonalItem(PersonalScheduleItem item) {
-    if (item.scheduleDate() == null
-        || item.morningStatus() == null
-        || item.afternoonStatus() == null
-        || item.eveningStatus() == null) {
+    if (item.scheduleDate() == null) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
-    requireSlotStatus(item.morningStatus());
-    requireSlotStatus(item.afternoonStatus());
-    requireSlotStatus(item.eveningStatus());
+    requireSlotStatusIfPresent(item.morningStatus());
+    requireSlotStatusIfPresent(item.afternoonStatus());
+    requireSlotStatusIfPresent(item.eveningStatus());
   }
 
-  // 달력 API 슬롯 값 검증 — POSSIBLE/IMPOSSIBLE만 허용, ON_LEAVE 등은 추후 wave
-  private void requireSlotStatus(ScheduleStatus status) {
-    if (status != ScheduleStatus.POSSIBLE && status != ScheduleStatus.IMPOSSIBLE) {
+  // 슬롯 오버라이드 값 검증 — null(오버라이드 없음)은 허용, 값이 있으면 POSSIBLE/IMPOSSIBLE만 허용(ON_LEAVE 등은 추후 wave)
+  private void requireSlotStatusIfPresent(ScheduleStatus status) {
+    if (status != null && status != ScheduleStatus.POSSIBLE
+        && status != ScheduleStatus.IMPOSSIBLE) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }
@@ -366,17 +390,6 @@ public class ScheduleService {
         schedule.getVacationApplyPeriod(),
         schedule.isHalfVacationAvailable(),
         schedule.isHolidayRest());
-  }
-
-  private PersonalScheduleItemResponse toPersonalItem(PersonalSchedule schedule) {
-    var slots = schedule.getSlotStatuses();
-    return new PersonalScheduleItemResponse(
-        schedule.getId(),
-        schedule.getScheduleDate(),
-        slots.getMorningStatus(),
-        slots.getAfternoonStatus(),
-        slots.getEveningStatus(),
-        schedule.isUncertain());
   }
 
   // 사용자 표시명 결정 — 성+이름 → nickname → "사용자" 기본값
