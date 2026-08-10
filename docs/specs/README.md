@@ -45,7 +45,7 @@
 | 스펙 | 상태 | 범위 | 선행 |
 |------|------|------|------|
 | [`kakao-invite-share.md`](kakao-invite-share.md) | **Approved** (#19) | 카카오·링크 공유 A/B/C · create에 inviteCode 없음 · 신규 API 없음 | trip-room-api D3 · #12 |
-| [`notification.md`](notification.md) | **Draft** (#21) · D1~D5 확정 | FCM 푸시 · BR-NOTI-001~005·009 · BR-USER-005 · 알림센터 | #12 · #13 · 참여 완료 정의 |
+| [`notification.md`](notification.md) | **Approved** (#21) · 구현 중 | FCM 푸시 · BR-NOTI-001~005·009 · BR-USER-005 · 알림센터 | #12 · #13 · 참여 완료 정의 |
 
 ## wave 4
 
@@ -81,7 +81,7 @@
 | **#50** | trip-recommendation-algorithm (계산 로직) | Open |
 | **#19** | kakao-invite-share | **Approved** · Wave 3 Must · create inviteCode 미노출 Implemented |
 | #20 | trip-member-remove | Implemented · **Wave 2 Nice** |
-| **#21** | 알림 (Draft 예정) | Open · **Wave 3 Must** |
+| **#21** | notification | Open · **Wave 3 Must** · 구현 중 |
 | **#26** | trip-last-activity-at | Implemented |
 | **#27** | trip-home-schedulers | Implemented |
 | **#54** | trip-member-status-derive | Implemented |

@@ -1,6 +1,6 @@
 # 알림 (Notification) — FCM 푸시 · 알림 설정 · 알림센터
 
-> 상태: Draft
+> 상태: Approved (2026-07-29 — D1~D12 확정 반영, `#67` 브랜치에서 구현 착수 승인)
 > MVP: In scope (Wave 3 Must — Wave Backlog `#31`)
 > 관련 BR: BR-NOTI-001~005, 009 · BR-NOTI-008(카카오 공유, `#19` 소관) · BR-USER-005
 > wave: 3
@@ -41,24 +41,24 @@
 
 ### Must Have
 
-- [ ] `UserDeviceToken` 엔티티 + Repository — 유저별 다중 기기 토큰(`ANDROID`/`IOS`/`WEB`), `token` UNIQUE
-- [ ] 토큰 등록 시 **기존 토큰이 다른 `user_id` 소유면 재할당**(D7) — 단순 upsert 아님, 소유자 갱신 로직 필요
-- [ ] `NotificationHistory` 엔티티 + Repository — 발송 이력 + 읽음 상태(D5), `sent_at` 기준 최근 7일 조회 메서드
-- [ ] `FirebaseConfig` — 서비스 계정 키 env 로드, `FirebaseMessaging` Bean (D4)
-- [ ] `FcmService` — 단일/멀티캐스트 발송 + 무효 토큰(`UNREGISTERED`/`INVALID_ARGUMENT`) 자동 삭제, 멀티캐스트 500건 배치 분할(D6)
-- [ ] `POST /api/v1/notifications/device-tokens` — 디바이스 토큰 등록/갱신(JWT)
-- [ ] `DELETE /api/v1/notifications/device-tokens` — 로그아웃 시 토큰 해제(JWT)
-- [ ] `GET /api/v1/notifications` — 알림센터 목록(JWT, 최근 7일, 최신순) (D5·D9)
-- [ ] `PATCH /api/v1/notifications/{id}/read` — 읽음 처리 (D5)
-- [ ] **`user-my-page.md` amend 반영** — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환은 **이 스펙이 아니라 `user-my-page.md`의 Must Have**로 구현 (D8, 중복 정의 금지)
-- [ ] 이벤트 발행 + `@Async` `@TransactionalEventListener(phase = AFTER_COMMIT)` 리스너로 트랜잭션 커밋 후 발송
-- [ ] BR-NOTI-001 — `TripCommandService.joinTrip` 커밋 후 방장(`notification_enabled=true`)에게 발송
-- [ ] BR-NOTI-002 — 같은 join 흐름에서 **정원 도달**(D11) 판정 후 방장(게이트 적용)에게 발송
-- [ ] BR-NOTI-003 — `TripCommandService.patchTrip` 커밋 후, **실제 값이 바뀐 경우만**(D12) 참여자(방장 제외, 게이트 적용)에게 발송
-- [ ] BR-NOTI-004 — `TripRecommendationService.confirmSchedule` 커밋 후 참여자(방장 제외, 게이트 적용)에게 발송
-- [ ] BR-NOTI-009 — **`#13`의 취소 API 구현 이후** 커밋 시 참여자(방장 제외, 게이트 적용)에게 발송 (선행 미완료 시 이벤트 발행 지점만 준비)
-- [ ] BR-NOTI-005 — `@Scheduled` cron으로 매월 1일·15일 09:00(KST), `notification_enabled=true` ∧ `deleted_at IS NULL` 사용자 조회 → 배치 멀티캐스트(D6)
-- [ ] `./gradlew test`
+- [x] `UserDeviceToken` 엔티티 + Repository — 유저별 다중 기기 토큰(`ANDROID`/`IOS`/`WEB`), `token` UNIQUE
+- [x] 토큰 등록 시 **기존 토큰이 다른 `user_id` 소유면 재할당**(D7) — 단순 upsert 아님, 소유자 갱신 로직 필요
+- [x] `NotificationHistory` 엔티티 + Repository — 발송 이력 + 읽음 상태(D5), `sent_at` 기준 최근 7일 조회 메서드
+- [x] `FirebaseConfig` — 서비스 계정 키 env 로드, `FirebaseMessaging` Bean (D4). 키 미설정 로컬·테스트에서도 부팅되도록 `@Lazy` 지연 초기화(`GoogleCalendarTokenCrypto`와 동일 패턴)
+- [x] `FcmService` — 단일/멀티캐스트 발송 + 무효 토큰(`UNREGISTERED`/`INVALID_ARGUMENT`) 자동 삭제, 멀티캐스트 500건 배치 분할(D6)
+- [x] `POST /api/v1/notifications/device-tokens` — 디바이스 토큰 등록/갱신(JWT)
+- [x] `DELETE /api/v1/notifications/device-tokens` — 로그아웃 시 토큰 해제(JWT)
+- [x] `GET /api/v1/notifications` — 알림센터 목록(JWT, 최근 7일, 최신순) (D5·D9)
+- [x] `PATCH /api/v1/notifications/{id}/read` — 읽음 처리 (D5)
+- [x] **`user-my-page.md` amend 반영** — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환은 **이 스펙이 아니라 `user-my-page.md`의 Must Have**로 구현 (D8, 중복 정의 금지)
+- [x] 이벤트 발행 + `@Async` `@TransactionalEventListener(phase = AFTER_COMMIT)` 리스너로 트랜잭션 커밋 후 발송
+- [x] BR-NOTI-001 — `TripCommandService.joinTrip` 커밋 후 방장(`notification_enabled=true`)에게 발송
+- [x] BR-NOTI-002 — 같은 join 흐름에서 **정원 도달**(D11) 판정 후 방장(게이트 적용)에게 발송
+- [x] BR-NOTI-003 — `TripCommandService.patchTrip` 커밋 후, **실제 값이 바뀐 경우만**(D12) 참여자(방장 제외, 게이트 적용)에게 발송
+- [x] BR-NOTI-004 — `TripRecommendationService.confirmSchedule` 커밋 후 참여자(방장 제외, 게이트 적용)에게 발송
+- [ ] BR-NOTI-009 — **`#13`의 취소 API 구현 이후** 커밋 시 참여자(방장 제외, 게이트 적용)에게 발송 (선행 미완료 — 이벤트 클래스·리스너는 준비 완료, 발행 지점만 대기)
+- [x] BR-NOTI-005 — `@Scheduled` cron으로 매월 1일·15일 09:00(KST), `notification_enabled=true` ∧ `deleted_at IS NULL` 사용자 조회 → 배치 멀티캐스트(D6)
+- [x] `./gradlew test`
 
 ### Out of Scope (이번 스펙)
 
@@ -178,12 +178,12 @@ com.tripfit.tripfit.notification
 
 ## 완료 기준
 
-- [ ] Must Have 전부 (본 스펙 + `user-my-page.md` amend)
-- [ ] `./gradlew test` 통과
-- [ ] OpenAPI 반영 (device-tokens·notifications API, `user-my-page.md`의 my-page PATCH 변경분)
-- [ ] `docs/architecture/erd.md` §2·§5·§8 갱신
-- [ ] `docs/specs/README.md` wave 3 표 갱신
-- [ ] `.env.example`에 FCM 관련 키 추가
+- [ ] Must Have 전부 (본 스펙 + `user-my-page.md` amend) — **BR-NOTI-009만 `#13` 선행 대기, 나머지 완료**
+- [x] `./gradlew test` 통과
+- [x] OpenAPI 반영 (device-tokens·notifications API, `user-my-page.md`의 my-page PATCH 변경분) — `docs/api/openapi.json`은 CI가 `main` push 시 자동 갱신
+- [x] `docs/architecture/erd.md` §2·§5·§8 갱신
+- [x] `docs/specs/README.md` wave 3 표 갱신
+- [x] `.env.example`에 FCM 관련 키 추가 (기 반영)
 
 ## 리스크·미결정
 
@@ -198,6 +198,8 @@ com.tripfit.tripfit.notification
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-30 | Must Have 대부분 구현 완료 — FCM 연동·디바이스 토큰·알림센터 API·NOTI-001~005 트리거·`user-my-page.md` D8 amend. NOTI-009는 `#13` 취소 API 선행 대기(이벤트·리스너만 준비) |
+| 2026-07-29 | Draft → Approved (사용자 승인, `#67` 브랜치에서 구현 착수 후 `#21`로 커밋 이전 예정) |
 | 2026-07-28 | `user-my-page.md`의 API 경로 리네이밍(`PATCH /users/my-page` → `PATCH /users/profile`) 반영 — 알림 on/off는 여전히 별도 엔드포인트 없이 이 경로에 편입 |
 | 2026-07-23 | D6~D12 추가 확정 (사용자 감수 확인 요청 후) — NOTI-005 배치 발송, 토큰 재할당, 알림 설정 API를 `user-my-page.md`로 이관, 알림센터 7일 윈도우, 001/002 게이트 적용, 정원 기준 판정, no-op 스킵 |
 | 2026-07-23 | D1~D5 확정 (사용자 승인) — BR-NOTI-005 wave 3 편입, BR-USER-005 구현 포함, 방장 제외, FCM 단일, 알림센터 API 포함 |
