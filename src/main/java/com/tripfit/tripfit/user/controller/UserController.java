@@ -60,7 +60,7 @@ public class UserController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false, "notificationEnabled": true}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -89,15 +89,17 @@ public class UserController {
   }
 
   @Operation(
-      summary = "마이페이지 프로필(성·이름) 재수정",
+      summary = "마이페이지 프로필(성·이름·알림 설정) 부분 수정",
       description = """
-          목적: 온보딩에서 이미 등록된 성·이름을 마이페이지에서 다시 수정한다. 최초 등록은 이 API가 아니라 온보딩 성·이름 등록(`PATCH /users/onboarding/name`)을 사용한다.
+          목적: 온보딩에서 이미 등록된 성·이름을 다시 수정하거나, 알림 수신 여부(BR-USER-005)를 변경한다. 최초 이름 등록은 이 API가 아니라 온보딩 성·이름 등록(`PATCH /users/onboarding/name`)을 사용한다.
 
-          호출 시점: 마이페이지 프로필 수정 화면 — 성·이름 등록을 이미 마친 사용자만 호출한다.
+          호출 시점: 마이페이지 프로필 수정 화면, 알림 설정 화면.
 
-          전제: 성·이름 모두 필수.
+          전제: firstName·lastName·notificationEnabled 중 최소 1개 필드를 포함해야 한다. 생략(요청에 없음)된 필드는 미변경. 포함된 firstName·lastName이 공백이면 400.
 
-          결과: UserSummary. hasPreSchedule은 login/me와 동일하게 조회 시 파생.
+          결과: 요청에 포함된 필드만 반영된 UserSummary. hasPreSchedule은 login/me와 동일하게 조회 시 파생.
+
+          주요 에러: INVALID_INPUT — 전 필드 생략(빈 patch) 또는 포함된 이름 필드가 공백
           """)
   @ApiResponses({
       @ApiResponse(
@@ -107,7 +109,7 @@ public class UserController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false}}
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false, "notificationEnabled": false}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -116,7 +118,7 @@ public class UserController {
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(
                   value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "name", "message": "이름은 필수입니다."}]}
+                      {"code": "INVALID_INPUT", "message": "최소 1개 필드가 필요합니다."}
                       """))),
       @ApiResponse(
           responseCode = "401",

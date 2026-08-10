@@ -55,3 +55,5 @@ tripfit:
     apple-client-id: ${APPLE_CLIENT_ID:}
   google-calendar:
     token-aes-key: ${GOOGLE_CALENDAR_TOKEN_AES_KEY:}
+  fcm:
+    credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
