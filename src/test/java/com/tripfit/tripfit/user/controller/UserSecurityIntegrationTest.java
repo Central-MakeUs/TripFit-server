@@ -66,7 +66,8 @@ class UserSecurityIntegrationTest {
                 SocialProvider.GOOGLE,
                 false,
                 false,
-                false));
+                false,
+                true));
   }
 
   @Test

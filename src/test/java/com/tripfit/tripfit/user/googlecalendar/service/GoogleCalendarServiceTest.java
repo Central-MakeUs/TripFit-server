@@ -106,7 +106,8 @@ class GoogleCalendarServiceTest {
                 user.getProvider(),
                 true,
                 false,
-                false));
+                false,
+                true));
 
     googleCalendarService.connect(USER_ID, "auth-code");
 
@@ -191,7 +192,8 @@ class GoogleCalendarServiceTest {
                 user.getProvider(),
                 false,
                 true,
-                false));
+                false,
+                true));
 
     googleCalendarService.disconnect(USER_ID);
 

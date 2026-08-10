@@ -59,7 +59,8 @@ class AuthSecurityIntegrationTest {
                 SocialProvider.GOOGLE,
                 false,
                 false,
-                false));
+                false,
+                true));
   }
 
   @Test
