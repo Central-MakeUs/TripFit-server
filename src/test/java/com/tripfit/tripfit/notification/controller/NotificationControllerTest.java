@@ -69,6 +69,7 @@ class NotificationControllerTest {
                     "홍길동님이 여행방에 참여했어요! 참여 현황을 확인해보세요.",
                     LandingType.TRAVEL_ROOM_DETAIL,
                     UUID.fromString("550e8400-e29b-41d4-a716-446655440010"),
+                    "제주도 3박4일",
                     false,
                     LocalDateTime.of(2026, 8, 1, 9, 0))));
 
@@ -76,6 +77,7 @@ class NotificationControllerTest {
         .perform(get("/api/v1/notifications"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].type").value("JOIN_COMPLETED"))
+        .andExpect(jsonPath("$.data[0].roomName").value("제주도 3박4일"))
         .andExpect(jsonPath("$.data[0].isRead").value(false));
   }
 

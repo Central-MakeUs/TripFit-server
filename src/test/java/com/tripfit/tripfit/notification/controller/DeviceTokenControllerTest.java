@@ -85,6 +85,19 @@ class DeviceTokenControllerTest {
   }
 
   @Test
+  void register_missingDeviceType_returns400InvalidInput() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/notifications/device-tokens")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"token":"fcm-token-1"}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+  }
+
+  @Test
   void unregister_returnsNoContent() throws Exception {
     mockMvc
         .perform(delete("/api/v1/notifications/device-tokens").param("token", "fcm-token-1"))
