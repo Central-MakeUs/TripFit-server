@@ -24,6 +24,11 @@ public record NotificationResponse(
         description = "관련 여행방 ID. 여행방과 무관한 알림(정기 리마인드)은 null",
         nullable = true) UUID tripId,
 
+    @Schema(
+        description = "관련 여행방 이름. 여행방과 무관한 알림(정기 리마인드)은 null",
+        nullable = true,
+        example = "제주도 3박4일") String roomName,
+
     @Schema(description = "읽음 여부", example = "false") boolean isRead,
 
     @Schema(description = "발송 시각") LocalDateTime sentAt
@@ -37,6 +42,7 @@ public record NotificationResponse(
         history.getBody(),
         history.getLandingType(),
         history.getTrip() != null ? history.getTrip().getId() : null,
+        history.getTrip() != null ? history.getTrip().getName() : null,
         history.isRead(),
         history.getSentAt());
   }

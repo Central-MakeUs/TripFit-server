@@ -44,7 +44,7 @@ public class DeviceTokenController {
 
           결과: 204를 반환한다. 동일 토큰이 다른 유저 소유였다면 본인 소유로 재할당된다.
 
-          주요 에러: NOTIFICATION_TOKEN_REQUIRED — 토큰 값 누락
+          주요 에러: NOTIFICATION_TOKEN_REQUIRED — 토큰 값 누락 · INVALID_INPUT — deviceType 누락·범위 밖 값
           """)
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "등록·갱신 성공(No Content)"),
@@ -56,6 +56,15 @@ public class DeviceTokenController {
               examples = @ExampleObject(value = """
                   {"code": "NOTIFICATION_TOKEN_REQUIRED", "message": "디바이스 토큰 값이 필요합니다."}
                   """))),
+      @ApiResponse(
+          responseCode = "400",
+          description = "INVALID_INPUT — deviceType 누락(필수)·정의되지 않은 값",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "deviceType", "message": "필수 값입니다."}]}
+                      """))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
