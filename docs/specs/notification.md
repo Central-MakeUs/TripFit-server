@@ -7,7 +7,7 @@
 > implements: BR-NOTI-001, BR-NOTI-002, BR-NOTI-003, BR-NOTI-004, BR-NOTI-005, BR-NOTI-009, BR-USER-005
 > deferred: BR-NOTI-008(카카오 공유) → `#19`(Approved)
 > GitHub: **#21**
-> 선행: `#12`(여행방 CRUD, Implemented) · `#13`(추천·확정·취소, **Draft** — BR-NOTI-004는 `confirmSchedule` 기존 구현에 훅 가능, **BR-NOTI-009는 `#13`의 취소 API 구현 후에만 실제 발송 가능**) · 참여 완료 정의(`#22`/`#39`, 확정됨)
+> 선행: `#12`(여행방 CRUD, Implemented) · `#13`(추천·확정·취소, **Closed/Implemented** — `TripRecommendationService.confirmSchedule`/`unconfirm`에 BR-NOTI-004/009 이벤트 발행 완료) · 참여 완료 정의(`#22`/`#39`, 확정됨)
 > amend 대상(다른 스펙): [`user-my-page.md`](user-my-page.md) — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환 (D8, 별도 승인·changelog 완료)
 
 ## 목표
@@ -56,7 +56,7 @@
 - [x] BR-NOTI-002 — 같은 join 흐름에서 **정원 도달**(D11) 판정 후 방장(게이트 적용)에게 발송
 - [x] BR-NOTI-003 — `TripCommandService.patchTrip` 커밋 후, **실제 값이 바뀐 경우만**(D12) 참여자(방장 제외, 게이트 적용)에게 발송
 - [x] BR-NOTI-004 — `TripRecommendationService.confirmSchedule` 커밋 후 참여자(방장 제외, 게이트 적용)에게 발송
-- [ ] BR-NOTI-009 — **`#13`의 취소 API 구현 이후** 커밋 시 참여자(방장 제외, 게이트 적용)에게 발송 (선행 미완료 — 이벤트 클래스·리스너는 준비 완료, 발행 지점만 대기)
+- [x] BR-NOTI-009 — `TripRecommendationService.unconfirm`(`POST /api/v1/trips/{tripId}/recommendations/unconfirm`) 커밋 후 참여자(방장 제외, 게이트 적용)에게 발송
 - [x] BR-NOTI-005 — `@Scheduled` cron으로 매월 1일·15일 09:00(KST), `notification_enabled=true` ∧ `deleted_at IS NULL` 사용자 조회 → 배치 멀티캐스트(D6)
 - [x] `./gradlew test`
 
@@ -127,7 +127,7 @@ notification_history
 | BR-NOTI-002 | 여행방 정원 도달 시 방장(게이트 적용)에게 발송 | 위와 동일 지점, `joinedMemberCount == capacity` 판정 후 `AllMembersSubmittedEvent` |
 | BR-NOTI-003 | 방장이 여행방을 수정해 실제 값이 바뀐 경우 참여자(방장 제외, 게이트 적용)에게 발송 | `TripCommandService.patchTrip` → diff 있을 때만 `TripInfoChangedEvent` |
 | BR-NOTI-004 | 방장이 일정 확정 시 참여자(방장 제외, 게이트 적용)에게 발송 | `TripRecommendationService.confirmSchedule` → `TripConfirmedEvent` |
-| BR-NOTI-009 | 방장이 확정 취소 시 참여자(방장 제외, 게이트 적용)에게 발송 | `#13` 취소 API(미구현) → `TripConfirmCanceledEvent` |
+| BR-NOTI-009 | 방장이 확정 취소 시 참여자(방장 제외, 게이트 적용)에게 발송 | `TripRecommendationService.unconfirm` → `TripConfirmCanceledEvent` |
 | BR-NOTI-005 | 매월 1·15일 09:00(KST) 게이트 통과 전체 사용자에게 발송 | `ScheduleReminderBatch`(`@Scheduled`) → DB 조회 + 배치 멀티캐스트 |
 | BR-USER-005 | 마이페이지 알림 on/off, 전 이벤트에 예외 없이 적용 | `User.notificationEnabled` · `user-my-page.md`(`UserProfileService`) |
 
@@ -173,12 +173,12 @@ com.tripfit.tripfit.notification
 - [ ] 멀티캐스트 중 일부 토큰 무효 → 해당 토큰만 일괄 삭제, 나머지는 정상 발송
 - [ ] 수신 대상에 등록된 토큰이 0개 → 발송 skip(에러 아님)
 - [ ] 트랜잭션 롤백 시 알림 미발송 (`AFTER_COMMIT` 보장 확인)
-- [ ] `#13` 취소 API 미구현 상태에서 NOTI-009는 이벤트 발행 코드만 존재, 실제 트리거 없음 확인
+- [x] `POST /api/v1/trips/{tripId}/recommendations/unconfirm` 호출 시 NOTI-009가 참여자(방장 제외)에게 발송되는지 확인
 - [ ] 8일 전 알림은 `GET /api/v1/notifications` 결과에서 제외
 
 ## 완료 기준
 
-- [ ] Must Have 전부 (본 스펙 + `user-my-page.md` amend) — **BR-NOTI-009만 `#13` 선행 대기, 나머지 완료**
+- [x] Must Have 전부 (본 스펙 + `user-my-page.md` amend)
 - [x] `./gradlew test` 통과
 - [x] OpenAPI 반영 (device-tokens·notifications API, `user-my-page.md`의 my-page PATCH 변경분) — `docs/api/openapi.json`은 CI가 `main` push 시 자동 갱신
 - [x] `docs/architecture/erd.md` §2·§5·§8 갱신
@@ -190,7 +190,7 @@ com.tripfit.tripfit.notification
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | D1~D12 | 확정 | 위 "확정 사항" 표 — 2026-07-23 사용자 승인 |
-| BR-NOTI-009 트리거 | 확정(선행 의존) | `#13`(Draft, 취소 API 미구현) 완료 전까지 이벤트 발행 지점만 준비 |
+| BR-NOTI-009 트리거 | 해소 | `#13` Closed — `unconfirm` API에 이벤트 발행 연결 완료 |
 | 알림 실패 재시도·추가 "필수 알림" 예외 | `[미정]` | `notification.md` 동일 항목 |
 | `BR-TRIP-010` 변경 시 NOTI-003 타이밍 | `[미정]` | `notification.md` 동일 항목 |
 
@@ -198,6 +198,8 @@ com.tripfit.tripfit.notification
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-31 | `GET /api/v1/notifications` 응답에 `roomName`(관련 여행방 이름, `tripId`와 동일하게 nullable) 필드 추가 — 프론트 요청(알림 카드에 방 이름 표시). `NotificationHistory.trip` 연관관계로 파생, DB 컬럼 추가 없음 |
+| 2026-07-31 | 문서 드리프트 정정 — `#13`(추천·확정·취소)이 이미 Closed·구현 완료 상태인데 본 문서가 "미구현/Draft"로 stale하게 남아 있었음. BR-NOTI-009는 `TripRecommendationService.unconfirm`에서 이미 `TripConfirmCanceledEvent`를 발행 중(리스너·테스트 존재 확인) — Must Have·완료 기준·리스크 표 전부 완료로 수정 |
 | 2026-07-30 | Must Have 대부분 구현 완료 — FCM 연동·디바이스 토큰·알림센터 API·NOTI-001~005 트리거·`user-my-page.md` D8 amend. NOTI-009는 `#13` 취소 API 선행 대기(이벤트·리스너만 준비) |
 | 2026-07-29 | Draft → Approved (사용자 승인, `#67` 브랜치에서 구현 착수 후 `#21`로 커밋 이전 예정) |
 | 2026-07-28 | `user-my-page.md`의 API 경로 리네이밍(`PATCH /users/my-page` → `PATCH /users/profile`) 반영 — 알림 on/off는 여전히 별도 엔드포인트 없이 이 경로에 편입 |
