@@ -16,6 +16,7 @@ import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse.RegularSche
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.PersonalScheduleItem;
+import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.SlotUpdate;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
 import com.tripfit.tripfit.user.schedule.exception.ScheduleErrorCode;
@@ -28,8 +29,10 @@ import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -140,7 +143,7 @@ public class ScheduleService {
         .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
   }
 
-  // 개별 일정 일괄 저장·삭제 — 슬롯 3개가 전부 null(오버라이드 없음)이고 uncertain=false인 항목은 해당 날짜 row 삭제(CLEAR)로 처리
+  // 개별 일정 슬롯 단위 오버라이드 upsert — slots/uncertain 각각 있는 것만 부분 반영, 삭제 경로 없음(O1.4)
   @Transactional
   public PersonalScheduleResponse upsertPersonal(
       UUID userId,
@@ -151,54 +154,43 @@ public class ScheduleService {
     if (items.isEmpty()) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
+    requireNoDuplicateDates(items);
 
     List<LocalDate> touchedDates = new ArrayList<>();
-    List<LocalDate> deleteDates = new ArrayList<>();
-    boolean anyUpserted = false;
 
-    // 1. 항목별로 삭제 신호(슬롯 전부 null·uncertain=false)와 upsert를 분리
+    // 1. 항목마다 find-or-create 후 slots 있으면 슬롯만, uncertain 있으면 그것만 갱신(둘 다 있으면 둘 다) — row는 절대 삭제되지 않는다
     for (PersonalScheduleItem item : items) {
       validatePersonalItem(item);
-      if (isDeleteSignal(item)) {
-        deleteDates.add(item.scheduleDate());
+      PersonalSchedule existing =
+          personalScheduleRepository
+              .findByUserIdAndScheduleDate(userId, item.scheduleDate())
+              .orElse(null);
+      if (existing == null) {
+        SlotUpdate slots = item.slots();
+        personalScheduleRepository.save(
+            PersonalSchedule.create(
+                user,
+                item.scheduleDate(),
+                slots != null ? slots.morningStatus() : null,
+                slots != null ? slots.afternoonStatus() : null,
+                slots != null ? slots.eveningStatus() : null,
+                item.uncertain() != null && item.uncertain()));
       } else {
-        PersonalSchedule existing =
-            personalScheduleRepository
-                .findByUserIdAndScheduleDate(userId, item.scheduleDate())
-                .orElse(null);
-        if (existing == null) {
-          personalScheduleRepository.save(
-              PersonalSchedule.create(
-                  user,
-                  item.scheduleDate(),
-                  item.morningStatus(),
-                  item.afternoonStatus(),
-                  item.eveningStatus(),
-                  item.uncertain()));
-        } else {
-          existing.apply(
-              item.morningStatus(),
-              item.afternoonStatus(),
-              item.eveningStatus(),
-              item.uncertain());
+        if (item.slots() != null) {
+          existing.applySlots(
+              item.slots().morningStatus(),
+              item.slots().afternoonStatus(),
+              item.slots().eveningStatus());
         }
-        anyUpserted = true;
+        if (item.uncertain() != null) {
+          existing.applyUncertain(item.uncertain());
+        }
       }
       touchedDates.add(item.scheduleDate());
     }
 
-    // 2. 삭제 신호로 모인 날짜 row를 일괄 삭제
-    if (!deleteDates.isEmpty()) {
-      personalScheduleRepository.deleteByUserIdAndScheduleDateIn(userId, deleteDates);
-    }
-
-    // 3. is_all_free 전이 — upsert 있으면 false · 삭제로 0행이 되면 true
-    if (anyUpserted) {
-      userSummaryService.clearAllFreeOnScheduleAdded(user);
-    }
-    if (!deleteDates.isEmpty()) {
-      userSummaryService.markAllFreeIfSchedulesCleared(user);
-    }
+    // 2. 삭제 경로가 없어 upsert는 항상 일어남 — is_all_free를 false로 전이
+    userSummaryService.clearAllFreeOnScheduleAdded(user);
     return buildPersonalResponse(userId, touchedDates);
   }
 
@@ -245,12 +237,14 @@ public class ScheduleService {
     return new PersonalScheduleResponse(items);
   }
 
-  // 삭제 신호 판정 — 슬롯 3개 전부 오버라이드 없음(null)이고 uncertain=false면 이 row가 담을 정보가 없음 → row 삭제
-  private static boolean isDeleteSignal(PersonalScheduleItem item) {
-    return !item.uncertain()
-        && item.morningStatus() == null
-        && item.afternoonStatus() == null
-        && item.eveningStatus() == null;
+  // 같은 scheduleDate가 배열에 중복되면 어느 값이 최종인지 모호하므로 거부
+  private static void requireNoDuplicateDates(List<PersonalScheduleItem> items) {
+    Set<LocalDate> seen = new HashSet<>();
+    for (PersonalScheduleItem item : items) {
+      if (!seen.add(item.scheduleDate())) {
+        throw new TripFitException(CommonErrorCode.INVALID_INPUT);
+      }
+    }
   }
 
   // 합산 달력 조회 — 정기 일정 미등록도 403 없음, 일정 없는 날은 응답에서 날짜 키 생략(sparse)
@@ -331,19 +325,22 @@ public class ScheduleService {
     }
   }
 
+  // slots·uncertain 둘 다 없으면 뭘 바꾸라는 요청인지 알 수 없어 거부
   private void validatePersonalItem(PersonalScheduleItem item) {
-    if (item.scheduleDate() == null) {
+    if (item.slots() == null && item.uncertain() == null) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
-    requireSlotStatusIfPresent(item.morningStatus());
-    requireSlotStatusIfPresent(item.afternoonStatus());
-    requireSlotStatusIfPresent(item.eveningStatus());
+    if (item.slots() != null) {
+      requireSlotStatus(item.slots().morningStatus());
+      requireSlotStatus(item.slots().afternoonStatus());
+      requireSlotStatus(item.slots().eveningStatus());
+    }
   }
 
-  // 슬롯 오버라이드 값 검증 — null(오버라이드 없음)은 허용, 값이 있으면 POSSIBLE/IMPOSSIBLE만 허용(ON_LEAVE 등은 추후 wave)
-  private void requireSlotStatusIfPresent(ScheduleStatus status) {
-    if (status != null && status != ScheduleStatus.POSSIBLE
-        && status != ScheduleStatus.IMPOSSIBLE) {
+  // 슬롯 오버라이드 값 검증 — POSSIBLE/IMPOSSIBLE만 허용(ON_LEAVE 등은 추후 wave, enum 값 제한은 Bean Validation으로 표현
+  // 불가)
+  private void requireSlotStatus(ScheduleStatus status) {
+    if (status != ScheduleStatus.POSSIBLE && status != ScheduleStatus.IMPOSSIBLE) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }
