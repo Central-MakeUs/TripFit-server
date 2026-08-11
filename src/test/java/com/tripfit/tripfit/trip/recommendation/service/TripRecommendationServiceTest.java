@@ -101,7 +101,7 @@ class TripRecommendationServiceTest {
     User owner = user(OWNER_ID);
     trip =
         new Trip(
-            owner, "제주 여행", LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31), 2, 3, 6,
+            owner, "제주 여행", LocalDate.now(), LocalDate.now().plusDays(30), 2, 3, 6,
             "ABC123", TripStatus.ONGOING);
     trip.setId(TRIP_ID);
     ownerMembership =
@@ -129,7 +129,7 @@ class TripRecommendationServiceTest {
         .thenReturn(List.of(ownerMembership));
     RecommendationCandidate candidate =
         new RecommendationCandidate(
-            LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5, 1);
+            LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5, 1);
     when(recommendationEngine.generate(eq(trip), eq(RecommendationMode.BASIC), any()))
         .thenReturn(List.of(candidate));
 
@@ -171,7 +171,7 @@ class TripRecommendationServiceTest {
   void getRecommendationDetail_returnsMemberBreakdownAndNullFeedbackWhenNoneSaved() {
     Recommendation recommendation =
         new Recommendation(
-            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+            trip, 1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5);
     when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
         .thenReturn(Optional.of(recommendation));
     when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
@@ -179,8 +179,8 @@ class TripRecommendationServiceTest {
     UUID memberUserId = ownerMembership.getUser().getId();
     when(
         recommendationEngine.classifyMembers(
-            eq(LocalDate.of(2026, 8, 3)),
-            eq(LocalDate.of(2026, 8, 5)),
+            eq(LocalDate.now().plusDays(2)),
+            eq(LocalDate.now().plusDays(4)),
             any()))
         .thenReturn(
             List.of(
@@ -204,7 +204,7 @@ class TripRecommendationServiceTest {
   void getRecommendationDetail_returnsPreviouslySavedFeedback() {
     Recommendation recommendation =
         new Recommendation(
-            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+            trip, 1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5);
     when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
         .thenReturn(Optional.of(recommendation));
     when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
@@ -219,8 +219,8 @@ class TripRecommendationServiceTest {
             recommendation.getId(),
             RecommendationMode.BASIC,
             1,
-            LocalDate.of(2026, 8, 3),
-            LocalDate.of(2026, 8, 5),
+            LocalDate.now().plusDays(2),
+            LocalDate.now().plusDays(4),
             RecommendationFeedbackStatus.NOT_HELPFUL,
             RecommendationFeedbackReason.TOO_FEW_ATTENDEES,
             null);
@@ -260,7 +260,7 @@ class TripRecommendationServiceTest {
   void confirmSchedule_byRank_setsConfirmedFieldsAndFreezesSnapshot() {
     Recommendation recommendation =
         new Recommendation(
-            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+            trip, 1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5);
     when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
         .thenReturn(Optional.of(recommendation));
     when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
@@ -270,8 +270,8 @@ class TripRecommendationServiceTest {
     UUID memberUserId = ownerMembership.getUser().getId();
     when(
         recommendationEngine.classifyMembers(
-            eq(LocalDate.of(2026, 8, 3)),
-            eq(LocalDate.of(2026, 8, 5)),
+            eq(LocalDate.now().plusDays(2)),
+            eq(LocalDate.now().plusDays(4)),
             any()))
         .thenReturn(
             List.of(new MemberAttendanceDetail(memberUserId, AttendanceType.FULL_ATTEND, 0, 1.0)));
@@ -280,7 +280,7 @@ class TripRecommendationServiceTest {
         service.confirmSchedule(TRIP_ID, OWNER_ID, new ConfirmTripRequest(1, null, null));
 
     assertThat(response.status()).isEqualTo(TripStatus.CONFIRMED);
-    assertThat(trip.getConfirmedStartDate()).isEqualTo(LocalDate.of(2026, 8, 3));
+    assertThat(trip.getConfirmedStartDate()).isEqualTo(LocalDate.now().plusDays(2));
     assertThat(trip.getConfirmedAttendCount()).isEqualTo(1);
     assertThat(trip.getConfirmedVacationMemberCount()).isEqualTo(1);
     verify(tripScheduleSnapshotService).freezeTrip(trip);
@@ -293,8 +293,8 @@ class TripRecommendationServiceTest {
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(ownerMembership));
     UUID memberUserId = ownerMembership.getUser().getId();
-    LocalDate customStart = LocalDate.of(2026, 8, 10);
-    LocalDate customEnd = LocalDate.of(2026, 8, 12);
+    LocalDate customStart = LocalDate.now().plusDays(9);
+    LocalDate customEnd = LocalDate.now().plusDays(11);
     when(recommendationEngine.classifyMembers(eq(customStart), eq(customEnd), any()))
         .thenReturn(
             List.of(new MemberAttendanceDetail(memberUserId, AttendanceType.FULL_ATTEND, 0, 1.0)));
@@ -319,7 +319,7 @@ class TripRecommendationServiceTest {
         () -> service.confirmSchedule(
             TRIP_ID,
             OWNER_ID,
-            new ConfirmTripRequest(null, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 4))))
+            new ConfirmTripRequest(null, LocalDate.now().plusDays(2), LocalDate.now().plusDays(3))))
         .isInstanceOfSatisfying(
             TripFitException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(TripErrorCode.CONFIRM_DURATION_MISMATCH));
@@ -331,7 +331,7 @@ class TripRecommendationServiceTest {
         () -> service.confirmSchedule(
             TRIP_ID,
             OWNER_ID,
-            new ConfirmTripRequest(1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5))))
+            new ConfirmTripRequest(1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4))))
         .isInstanceOfSatisfying(
             TripFitException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(TripErrorCode.INVALID_CONFIRM_REQUEST));
@@ -349,8 +349,8 @@ class TripRecommendationServiceTest {
   @Test
   void unconfirm_success_clearsConfirmedFieldsAndDeletesRecommendationsAndSnapshot() {
     trip.setStatus(TripStatus.CONFIRMED);
-    trip.setConfirmedStartDate(LocalDate.of(2026, 8, 3));
-    trip.setConfirmedEndDate(LocalDate.of(2026, 8, 5));
+    trip.setConfirmedStartDate(LocalDate.now().plusDays(2));
+    trip.setConfirmedEndDate(LocalDate.now().plusDays(4));
     trip.setConfirmedAttendCount(5);
     trip.setConfirmedVacationMemberCount(1);
     trip.setConfirmedUncertainCount(0);
@@ -409,7 +409,7 @@ class TripRecommendationServiceTest {
   void saveFeedback_notHelpfulWithoutReason_throwsInvalidRecommendationFeedback() {
     Recommendation recommendation =
         new Recommendation(
-            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+            trip, 1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5);
     when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
         .thenReturn(Optional.of(recommendation));
 
@@ -430,7 +430,7 @@ class TripRecommendationServiceTest {
   void saveFeedback_otherReasonWithoutDetail_throwsInvalidRecommendationFeedback() {
     Recommendation recommendation =
         new Recommendation(
-            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+            trip, 1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5);
     when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
         .thenReturn(Optional.of(recommendation));
 
@@ -452,7 +452,7 @@ class TripRecommendationServiceTest {
   void saveFeedback_upsertsNewRow() {
     Recommendation recommendation =
         new Recommendation(
-            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+            trip, 1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5);
     when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
         .thenReturn(Optional.of(recommendation));
     when(recommendationFeedbackRepository.findByRecommendationId(any()))
@@ -473,7 +473,7 @@ class TripRecommendationServiceTest {
   void saveFeedback_existingRow_overwritesStatusAndReason() {
     Recommendation recommendation =
         new Recommendation(
-            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+            trip, 1, LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 80, 1, 1, 2.0, 91.5);
     when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
         .thenReturn(Optional.of(recommendation));
     RecommendationFeedback existing =
@@ -482,8 +482,8 @@ class TripRecommendationServiceTest {
             recommendation.getId(),
             RecommendationMode.BASIC,
             1,
-            LocalDate.of(2026, 8, 3),
-            LocalDate.of(2026, 8, 5),
+            LocalDate.now().plusDays(2),
+            LocalDate.now().plusDays(4),
             RecommendationFeedbackStatus.HELPFUL,
             null,
             null);
@@ -506,8 +506,8 @@ class TripRecommendationServiceTest {
   @Test
   void unconfirm_success_doesNotCascadeDeleteRecommendationFeedback() {
     trip.setStatus(TripStatus.CONFIRMED);
-    trip.setConfirmedStartDate(LocalDate.of(2026, 8, 3));
-    trip.setConfirmedEndDate(LocalDate.of(2026, 8, 5));
+    trip.setConfirmedStartDate(LocalDate.now().plusDays(2));
+    trip.setConfirmedEndDate(LocalDate.now().plusDays(4));
 
     service.unconfirm(
         TRIP_ID,

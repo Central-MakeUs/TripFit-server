@@ -95,8 +95,8 @@ class TripScheduleSnapshotServiceTest {
         new Trip(
             user,
             "제주",
-            LocalDate.of(2026, 8, 3),
-            LocalDate.of(2026, 8, 7),
+            LocalDate.now(),
+            LocalDate.now().plusDays(4),
             2,
             3,
             4,
