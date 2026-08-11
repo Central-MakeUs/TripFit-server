@@ -265,9 +265,9 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 
 **제약:** user당 **0..N행**. 1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY). soft delete 없음.
 
-### `personal_schedule` (개인 일정 — 슬롯 단위 오버라이드, O1)
+### `personal_schedule` (개인 일정 — 슬롯 단위 오버라이드, O1.4)
 
-User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라이드(`null`=오버라이드 없음, 정기+구글 계산값을 그대로 씀) + 날짜 단위 불확실. **trip FK 없음.** 병합 규칙: [`schedule-slot-override.md`](../specs/schedule-slot-override.md)(O1, #67) — 구 S1(그 날 전체 대체)은 폐기.
+User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라이드(`null`=오버라이드 없음, 정기+구글 계산값을 그대로 씀) + 날짜 단위 불확실. **trip FK 없음.** 병합 규칙: [`schedule-slot-override.md`](../specs/schedule-slot-override.md)(O1.4, #67) — 구 S1(그 날 전체 대체)은 폐기.
 
 - **관련 BR:** BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-008
 
@@ -283,7 +283,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
-**제약:** `UNIQUE (user_id, schedule_date)`. soft delete 없음. 슬롯 3개가 전부 `null`이고 `is_uncertain=false`면 row 삭제(CLEAR) — 담을 정보가 없는 상태이기 때문.
+**제약:** `UNIQUE (user_id, schedule_date)`. soft delete 없음. **삭제 API·경로 자체가 없음(O1.4)** — 한 번 생성된 row는 어떤 값 조합을 보내도 삭제되지 않고 영구히 유지된다. 사용자가 슬롯 3개를 명시적으로 `POSSIBLE`로 선언하는 경우(정기 계산값과 값이 우연히 같아 보여도)를 "오버라이드 없음"으로 오인해 삭제하면 "개별 오버라이드가 항상 정기를 이긴다"는 규칙이 깨지므로, O1.3의 값 조합 기반 삭제(CLEAR)를 O1.4에서 전면 제거했다(`schedule-slot-override.md` "계약 개정 이력 — O1.4" 참고).
 
 **시간대 (BR-TRIP-002, 확정):** MORNING `[00:00,13:00)`, AFTERNOON `[13:00,18:00)`, EVENING `[18:00,24:00)` — 공통 `TimeSlot` + `SlotStatuses` (정기와 동일)
 

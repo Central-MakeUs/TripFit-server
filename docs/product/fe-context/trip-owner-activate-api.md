@@ -48,8 +48,8 @@
 | 1 | `POST /api/v1/trips` | `trip` 생성, 본인 `trip_member`를 **`SCHEDULE_PENDING`**으로 INSERT. 응답에 `inviteCode` 없음 |
 | 2 | (일정 확인 화면 — 정기) `GET /api/v1/users/schedule/regular` 로 기존 정기 일정 확인 | 조회만, 상태 변화 없음 |
 | 3 | *(수정할 때만)* `POST /api/v1/users/schedule/regular` / `PATCH /regular/{id}` / `DELETE /regular/{id}` | User 전역 정기 일정 갱신 |
-| 4 | (일정 확인 화면 — 개별) `GET /api/v1/users/schedule/personal` 로 기존 개별 일정 확인 | 조회만 |
-| 5 | *(수정할 때만)* `PATCH /api/v1/users/schedule/personal` (`items`/`deletedDates`) | User 전역 개별 일정 upsert/삭제 |
+| 4 | (일정 확인 화면 — 개별) `GET /api/v1/users/schedule/calendar` 로 기존 개별 일정 확인 (전용 조회 API 없음 — 정기+개별 합친 달력으로 확인, `schedule-calendar-merge.md` 규칙 1) | 조회만 |
+| 5 | *(수정할 때만)* `PATCH /api/v1/users/schedule/personal` (`items`, `slots`/`uncertain` 각각 선택) | User 전역 개별 일정 upsert — **삭제 경로 없음(O1.4)** |
 | 6 | `POST /api/v1/trips/{tripId}/activate` | `trip_member.status` **`SCHEDULE_PENDING` → `ACTIVE`**. 정기·개별 둘 다 0행이면 서버가 `is_all_free=true`로 설정 |
 | 7 | `GET /api/v1/trips/{tripId}` (방 상세) | 이제 `ACTIVE` — 방 입장·`inviteCode` 확인·공유 가능 |
 
@@ -60,8 +60,8 @@
 | 1 | 초대 링크/코드 수신 → 로그인(JWT 보유) | `trip_member` row 아직 없음 |
 | 2 | (일정 확인 화면 — 정기) `GET /api/v1/users/schedule/regular` | 조회만 |
 | 3 | *(수정할 때만)* 정기 CRUD (`POST`/`PATCH /{id}`/`DELETE /{id}`) | User 전역 갱신 |
-| 4 | (일정 확인 화면 — 개별) `GET /api/v1/users/schedule/personal` | 조회만 |
-| 5 | *(수정할 때만)* `PATCH /api/v1/users/schedule/personal` | User 전역 갱신 |
+| 4 | (일정 확인 화면 — 개별) `GET /api/v1/users/schedule/calendar` (전용 조회 API 없음) | 조회만 |
+| 5 | *(수정할 때만)* `PATCH /api/v1/users/schedule/personal` (삭제 경로 없음, O1.4) | User 전역 갱신 |
 | 6 | `POST /api/v1/trips/join` (`{ inviteCode }`) | `trip_member`를 **바로 `ACTIVE`로 INSERT** (중간에 `SCHEDULE_PENDING` 없음). 0행이면 `is_all_free=true` 서버 설정 |
 | 7 | `GET /api/v1/trips/{tripId}` (방 상세) | 방 입장 |
 

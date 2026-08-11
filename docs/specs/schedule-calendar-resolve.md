@@ -264,7 +264,7 @@ trip CRUD 전이면 **①만** 구현.
 | 날짜 필드명 | `scheduleDate` | `date` |
 | `id` | 있음 — `personal_schedule` row의 UUID | **없음** — 그날 값이 regular 유래일 수도 있어 단일 row가 없음 |
 | 슬롯·`uncertain` | `morningStatus`/`afternoonStatus`/`eveningStatus`/`uncertain` | 필드명 동일 |
-| 값의 의미 | **저장된 개별 오버라이드 그 자체** (regular 유래는 애초에 나오지 않음) | **정기+개별을 합친 값** (regular 유래도 포함) |
+| 값의 의미 | **최종 확정값**(정기+개별+구글까지 합친 값, `schedule-slot-override.md` O1.4 — 저장된 원본이 아님) | **정기+개별을 합친 값** (regular 유래도 포함) |
 
 ## 마이페이지 개별 일정 편집 UX — 정기 유래 날짜를 클릭했을 때
 
@@ -276,7 +276,7 @@ trip CRUD 전이면 **①만** 구현.
 2. 마이페이지 달력에서 6/19(금)을 클릭 — 이 날짜는 `personal_schedule` row가 없어 6/19의 합친 값은 정기 펼침 결과(I/I/P)
 3. FE는 바텀시트를 열 때 **`GET /users/schedule/calendar`의 6/19 합친 값(I/I/P)으로 프리필**한다 (C3 — 정기 row 하나만 베끼면 다른 정기와 어긋날 수 있으므로 반드시 합친 값을 써야 함)
 4. 유저가 "오후" 토글을 꺼서 오후만 `POSSIBLE`로 변경
-5. 저장 시 `PATCH /users/schedule/personal`을 **6/19 하루에 대해서만** 호출: `{"items": [{"scheduleDate": "2026-06-19", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}`
+5. 저장 시 `PATCH /users/schedule/personal`을 **6/19 하루에 대해서만** 호출(O1.4 — `slots`는 건드릴 때 3필드 전부 명시): `{"items": [{"scheduleDate": "2026-06-19", "slots": {"morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}`
 6. 서버는 `personal_schedule`에 (user, 2026-06-19) 1행을 새로 만든다 — `regular_schedule`은 무엇도 바뀌지 않는다
 7. 이후 `GET /calendar`에서 6/19는 I/P/P(개별 우선), 정기가 그대로인 6/20(토는 매칭 안 됨) · 6/22(월)은 여전히 I/I/P
 
@@ -286,8 +286,8 @@ trip CRUD 전이면 **①만** 구현.
 |------|------|
 | 이미 개별 오버라이드가 있는 날짜를 다시 클릭 | 프리필 값은 (동일하게) `GET /calendar` 합친 값 — 이 경우 정기가 아니라 그 personal row 값 그대로. 저장 시 같은 날짜 row를 **update**(insert 아님) |
 | 같은 요일에 정기가 2개 이상 겹치는 날짜에 새로 오버라이드 생성 | 그 날짜는 personal 값만 적용되고, 겹쳤던 정기 슬롯 합성(R2=A) 결과는 그날에 한해 **완전히 무시**된다 |
-| 유저가 바텀시트에서 아무것도 안 바꾸고 저장 | 정기 유래 날짜였다면 값이 정기와 동일(3슬롯 다 프리필값 그대로)하므로, 그 값이 "3슬롯 모두 POSSIBLE·uncertain=false"가 **아닌 한** 그대로 개별 row가 생성된다 — 이 경우도 정기와 값이 같은 불필요한 override가 남을 수 있어, FE가 "변경 없으면 호출 자체를 생략"하는 걸 권장 |
-| 유저가 슬롯을 다시 정기와 완전히 같은 값(3슬롯 POSSIBLE·`uncertain=false`)으로 되돌려 저장 | 삭제 신호로 처리되어 그 날짜 `personal_schedule` row가 삭제(CLEAR)된다 → 다음 조회부터 다시 정기 유래 값으로 돌아감 (`ScheduleService.isDeleteSignal`) |
+| 유저가 바텀시트에서 슬롯을 프리필값 그대로(정기와 동일한 값) 다시 저장 | **O1.4: 값 조합과 무관하게 그대로 개별 row가 생성/유지된다** — 정기와 값이 같아 보여도 삭제되지 않는다(구 `isDeleteSignal`류 판정 자체가 없음). 정기와 값이 같은 "불필요해 보이는" override가 남을 수 있으니, FE가 "변경 없으면 호출 자체를 생략"하는 걸 권장 |
+| 유저가 슬롯을 정기와 완전히 같은 값(3슬롯 POSSIBLE·`uncertain=false` 등)으로 명시 저장 | **삭제되지 않는다.** O1.3까지는 이 값 조합을 삭제(CLEAR) 신호로 오인해 정기값으로 조용히 되돌아가는 버그가 있었으나, O1.4에서 삭제 경로 자체를 제거해 근본 해결했다(`schedule-slot-override.md` "계약 개정 이력 — O1.4"). 이 값 그대로 오버라이드 row가 영구히 저장된다 |
 | 정기가 전혀 없는 날짜(주말 등, sparse omit)에 개별 일정만 새로 등록 | 정상 동작 — personal만 있어도 됨(regular 선행 요구 없음). 이후 `GET /calendar`에 그 날짜가 새로 나타남 |
 | 하루만 고치려고 `PATCH /regular/{id}`를 호출 | **잘못된 API 선택.** 그 정기 패턴이 매칭되는 **모든 요일**이 한꺼번에 바뀐다 — 특정 하루만 바꾸려면 반드시 `PATCH /personal` |
 | FE가 두 응답을 같은 타입으로 파싱 | `scheduleDate`(personal) vs `date`(calendar) 필드명이 달라 매핑 누락 시 날짜가 `undefined`가 됨 — 위 DTO 비교 표 참고 |
