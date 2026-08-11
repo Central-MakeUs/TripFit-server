@@ -69,8 +69,8 @@ class RecommendationEngineTest {
   // scoring_draft.md 예시: 10일 오전·12일 오후만 불가능 → 연속 6슬롯(⌈9*0.5⌉=5 이상) → 부분 참석
   @Test
   void classifyMembers_partialAttendBoundaryExample_yoonji() {
-    LocalDate start = LocalDate.of(2026, 8, 10);
-    LocalDate end = LocalDate.of(2026, 8, 12);
+    LocalDate start = LocalDate.now().plusDays(9);
+    LocalDate end = LocalDate.now().plusDays(11);
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -106,8 +106,8 @@ class RecommendationEngineTest {
   // scoring_draft.md 예시: 10일 오후·12일 오전 불가능 → 최장 연속 4슬롯(<5) → 불참(분리된 구간 합산 금지)
   @Test
   void classifyMembers_nonAttendBoundaryExample_eunseo() {
-    LocalDate start = LocalDate.of(2026, 8, 10);
-    LocalDate end = LocalDate.of(2026, 8, 12);
+    LocalDate start = LocalDate.now().plusDays(9);
+    LocalDate end = LocalDate.now().plusDays(11);
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -144,8 +144,8 @@ class RecommendationEngineTest {
 
   @Test
   void classifyMembers_noSchedules_fullAttendNoUncertainNoVacation() {
-    LocalDate start = LocalDate.of(2026, 8, 10);
-    LocalDate end = LocalDate.of(2026, 8, 12);
+    LocalDate start = LocalDate.now().plusDays(9);
+    LocalDate end = LocalDate.now().plusDays(11);
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
         .thenReturn(List.of());
 
@@ -159,8 +159,8 @@ class RecommendationEngineTest {
 
   @Test
   void classifyMembers_uncertainDayCounted_regardlessOfAttendance() {
-    LocalDate start = LocalDate.of(2026, 8, 10);
-    LocalDate end = LocalDate.of(2026, 8, 11);
+    LocalDate start = LocalDate.now().plusDays(9);
+    LocalDate end = LocalDate.now().plusDays(10);
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -181,7 +181,7 @@ class RecommendationEngineTest {
   // 정기 일정(근무)이 IMPOSSIBLE인 날 개별 일정으로 오전만 override해 참석 가능하게 만들면 반차(0.5일) 필요
   @Test
   void classifyMembers_halfDayOverrideOnWorkday_needsHalfDayVacation() {
-    LocalDate date = LocalDate.of(2026, 8, 10);
+    LocalDate date = LocalDate.now().plusDays(9);
     LocalDate end = date;
     RegularSchedule work =
         RegularSchedule.create(
@@ -220,7 +220,7 @@ class RecommendationEngineTest {
   @Test
   void generate_allAttendMode_doesNotHardFilterLowAttendanceCandidates() {
     Trip trip =
-        trip(RecommendationMode.ALL_ATTEND, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 4), 2);
+        trip(RecommendationMode.ALL_ATTEND, LocalDate.now(), LocalDate.now().plusDays(3), 2);
     RegularSchedule alwaysBusy =
         RegularSchedule.create(
             eunseo,
@@ -250,8 +250,8 @@ class RecommendationEngineTest {
   // 동점 처리 — 점수가 같으면 불확실 일정 수가 적은 후보가 먼저(시작일이 더 늦어도 우선)
   @Test
   void generate_tieBreak_byUncertainScheduleCountBeforeStartDate() {
-    LocalDate earlierUncertainDay = LocalDate.of(2026, 8, 1);
-    LocalDate laterCleanDay = LocalDate.of(2026, 8, 2);
+    LocalDate earlierUncertainDay = LocalDate.now();
+    LocalDate laterCleanDay = LocalDate.now().plusDays(1);
     Trip trip = trip(RecommendationMode.BASIC, earlierUncertainDay, laterCleanDay, 1);
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
         .thenReturn(
@@ -283,7 +283,7 @@ class RecommendationEngineTest {
   private static TripMember member(User user) {
     Trip trip =
         new Trip(
-            user, "테스트", LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31), 2, 3, 6, "ABC123",
+            user, "테스트", LocalDate.now(), LocalDate.now().plusDays(30), 2, 3, 6, "ABC123",
             TripStatus.ONGOING);
     return new TripMember(trip, user, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
         LocalDateTime.now());

@@ -76,6 +76,16 @@ class TripServiceTest {
 
   private static final UUID TRIP_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440010");
 
+  // 희망 기간을 오늘 기준 상대 날짜로 고정 — 하드코딩된 절대 날짜는 시간이 지나면 endRange가 과거가 되어
+  // effectiveStatus()가 EXPIRED로 판정해버리는 date bomb이 됨(TripServiceSupport.effectiveStatus 참고)
+  private static final LocalDate TRIP_START = LocalDate.now();
+
+  private static final LocalDate TRIP_END = TRIP_START.plusDays(9);
+
+  private static final LocalDate OTHER_TRIP_START = TRIP_START.plusMonths(1);
+
+  private static final LocalDate OTHER_TRIP_END = OTHER_TRIP_START.plusDays(9);
+
   @Mock
   private TripRepository tripRepository;
 
@@ -215,8 +225,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "서울 당일치기",
-            LocalDate.now().plusDays(1),
-            LocalDate.now().plusDays(10),
+            TRIP_START,
+            TRIP_END,
             0,
             1,
             4,
@@ -244,8 +254,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주 3박4일",
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(10),
+                TRIP_START,
+                TRIP_END,
                 3,
                 4,
                 6,
@@ -284,8 +294,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "제주 3박4일",
-            LocalDate.now().plusDays(1),
-            LocalDate.now().plusDays(10),
+            TRIP_START,
+            TRIP_END,
             3,
             4,
             6,
@@ -336,8 +346,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "가".repeat(16),
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(10),
+                TRIP_START,
+                TRIP_END,
                 3,
                 4,
                 6,
@@ -356,8 +366,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주 3박4일",
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(10),
+                TRIP_START,
+                TRIP_END,
                 3,
                 4,
                 11,
@@ -379,8 +389,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주",
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(10),
+                TRIP_START,
+                TRIP_END,
                 3,
                 4,
                 6,
@@ -739,8 +749,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "제주",
-            LocalDate.now().plusDays(1),
-            LocalDate.now().plusDays(10),
+            TRIP_START,
+            TRIP_END,
             null,
             null,
             6,
@@ -758,8 +768,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주",
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(10),
+                TRIP_START,
+                TRIP_END,
                 3,
                 6,
                 6,
@@ -785,8 +795,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "제주",
-            LocalDate.now().plusDays(1),
-            LocalDate.now().plusDays(10),
+            TRIP_START,
+            TRIP_END,
             3,
             5,
             6,
@@ -1086,7 +1096,7 @@ class TripServiceTest {
         TripMemberScheduleSnapshot.create(
             trip,
             owner,
-            LocalDate.of(2026, 8, 3),
+            TRIP_START.plusDays(2),
             ScheduleStatus.IMPOSSIBLE,
             ScheduleStatus.POSSIBLE,
             ScheduleStatus.POSSIBLE,
@@ -1119,8 +1129,8 @@ class TripServiceTest {
         new Trip(
             owner,
             "제주 3박4일",
-            LocalDate.now().plusDays(1),
-            LocalDate.now().plusDays(10),
+            TRIP_START,
+            TRIP_END,
             3,
             4,
             6,
@@ -1135,8 +1145,8 @@ class TripServiceTest {
         new Trip(
             owner,
             "부산 2박3일",
-            LocalDate.of(2026, 9, 1),
-            LocalDate.of(2026, 9, 10),
+            OTHER_TRIP_START,
+            OTHER_TRIP_END,
             2,
             3,
             4,
