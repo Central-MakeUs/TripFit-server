@@ -8,29 +8,30 @@ import com.tripfit.tripfit.common.exception.TripFitException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class AppleTokenVerifierTest {
+class AppleNotificationVerifierTest {
 
-  private AppleTokenVerifier appleTokenVerifier;
+  private AppleNotificationVerifier appleNotificationVerifier;
 
   @BeforeEach
   void setUp() {
     OAuthProperties oAuthProperties = new OAuthProperties();
     oAuthProperties.setAppleClientId("test-apple-client-id");
-    appleTokenVerifier = new AppleTokenVerifier(oAuthProperties, new AppleJwkVerifier());
+    appleNotificationVerifier =
+        new AppleNotificationVerifier(oAuthProperties, new AppleJwkVerifier());
   }
 
   @Test
-  void verify_malformedToken_throwsSocialTokenInvalid() {
-    assertThatThrownBy(() -> appleTokenVerifier.verify("not-a-valid-jwt"))
+  void verify_malformedJwt_throwsInvalidPayload() {
+    assertThatThrownBy(() -> appleNotificationVerifier.verify("not-a-valid-jwt"))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
-        .isEqualTo(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
+        .isEqualTo(AuthErrorCode.AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD);
   }
 
   @Test
   void verify_missingClientId_throwsInternalError() {
-    AppleTokenVerifier verifierWithoutClientId =
-        new AppleTokenVerifier(new OAuthProperties(), new AppleJwkVerifier());
+    AppleNotificationVerifier verifierWithoutClientId =
+        new AppleNotificationVerifier(new OAuthProperties(), new AppleJwkVerifier());
 
     assertThatThrownBy(() -> verifierWithoutClientId.verify("not-a-valid-jwt"))
         .isInstanceOf(TripFitException.class)

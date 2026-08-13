@@ -4,6 +4,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -12,6 +13,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
+import com.tripfit.tripfit.auth.oauth.AppleNotificationEvent;
+import com.tripfit.tripfit.auth.oauth.AppleNotificationVerifier;
+import com.tripfit.tripfit.auth.service.AppleNotificationService;
 import com.tripfit.tripfit.auth.service.AuthService;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.common.exception.TripFitException;
@@ -32,11 +36,18 @@ class AuthControllerTest {
   @Mock
   private AuthService authService;
 
+  @Mock
+  private AppleNotificationVerifier appleNotificationVerifier;
+
+  @Mock
+  private AppleNotificationService appleNotificationService;
+
   private MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
-    AuthController authController = new AuthController(authService);
+    AuthController authController =
+        new AuthController(authService, appleNotificationVerifier, appleNotificationService);
     mockMvc =
         MockMvcBuilders.standaloneSetup(authController)
             .setControllerAdvice(new GlobalExceptionHandler())
@@ -123,6 +134,76 @@ class AuthControllerTest {
                         """))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.code").value("AUTH_SOCIAL_TOKEN_INVALID"));
+  }
+
+  @Test
+  void appleNotifications_valid_returns200AndDelegatesToService() throws Exception {
+    AppleNotificationEvent event =
+        new AppleNotificationEvent("consent-revoked", "apple-sub", 1234567890L, null, null);
+    when(appleNotificationVerifier.verify("signed-jwt")).thenReturn(event);
+
+    mockMvc
+        .perform(
+            post("/api/v1/auth/apple/notifications")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"payload":"signed-jwt"}
+                        """))
+        .andExpect(status().isOk());
+
+    verify(appleNotificationService).handle(event);
+  }
+
+  @Test
+  void appleNotifications_invalidPayload_returns400() throws Exception {
+    doThrow(new TripFitException(AuthErrorCode.AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD))
+        .when(appleNotificationVerifier)
+        .verify(any());
+
+    mockMvc
+        .perform(
+            post("/api/v1/auth/apple/notifications")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"payload":"not-a-jwt"}
+                        """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD"));
+  }
+
+  @Test
+  void appleNotifications_signatureInvalid_returns401() throws Exception {
+    doThrow(new TripFitException(AuthErrorCode.AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID))
+        .when(appleNotificationVerifier)
+        .verify(any());
+
+    mockMvc
+        .perform(
+            post("/api/v1/auth/apple/notifications")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"payload":"forged-jwt"}
+                        """))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID"));
+  }
+
+  @Test
+  void appleNotifications_missingPayload_returns400WithFieldErrors() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/apple/notifications")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"payload":""}
+                        """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+        .andExpect(jsonPath("$.errors[0].field").value("payload"));
   }
 
   private static UserSummaryResponse sampleUserSummary() {
