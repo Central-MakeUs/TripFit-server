@@ -117,11 +117,16 @@ Apple의 outer JWT는 `{ "iss": "https://appleid.apple.com", "aud": "<client_id>
 
 **Response**
 
-| HTTP | 상황 |
-|------|------|
-| 200 | 수신·처리 완료 — 존재하지 않는 `sub`, 미인식 `type`도 200(no-op)으로 응답해 Apple 재시도 폭주 방지 |
-| 400 | payload 형식 오류 (JSON parse 실패 등) |
-| 401 | JWT 서명 검증 실패 (`iss`/`aud` 불일치 포함) |
+심사 전 오류 탐지를 촘촘히 하기 위해 401을 원인별로 분리한다(구현 2026-08-12 확정).
+
+| HTTP | `code` | 상황 |
+|------|--------|------|
+| 200 | — | 수신·처리 완료 — 존재하지 않는 `sub`, 미인식 `type`도 200(no-op)으로 응답해 Apple 재시도 폭주 방지 |
+| 400 | `AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD` | outer JWT 파싱 실패·`events` JSON 파싱 실패·`type` 누락·`sub`가 필요한 이벤트(`consent-revoked`/`account-delete`)에서 `sub` 누락 |
+| 401 | `AUTH_APPLE_NOTIFICATION_ISSUER_INVALID` | `iss` ≠ `https://appleid.apple.com` |
+| 401 | `AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID` | `aud` ≠ `APPLE_CLIENT_ID` |
+| 401 | `AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID` | 서명 자체 불일치·만료 |
+| 500 | `INTERNAL_ERROR` | Apple JWKS 조회 실패, 그 외 예상치 못한 서버 오류 — Apple이 5xx에 재시도하도록 400/401로 숨기지 않음 |
 
 ### SecurityConfig
 
@@ -154,10 +159,14 @@ login 스펙과 완전히 공유 — **신규 env 없음**. outer JWT는 Apple J
 - [ ] 유효한 Apple signed JWT(`consent-revoked`) → 200 + 해당 user `refresh_token` 삭제, `deleted_at`은 유지
 - [ ] 유효한 Apple signed JWT(`account-delete`) → 200 + 해당 user soft delete + `refresh_token` 삭제
 - [ ] 유효한 Apple signed JWT(`email-enabled`/`email-disabled`) → 200 + 로그만, DB 변경 없음
-- [ ] 위조 JWT(서명 불일치) → 401
-- [ ] `aud` 불일치 JWT → 401
+- [ ] 위조 JWT(서명 불일치)·만료 JWT → 401 `AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID`
+- [ ] `iss` 불일치 JWT → 401 `AUTH_APPLE_NOTIFICATION_ISSUER_INVALID`
+- [ ] `aud` 불일치 JWT → 401 `AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID`
+- [ ] `events` JSON 파싱 실패·`type` 누락 → 400 `AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD`
+- [ ] `consent-revoked`/`account-delete`인데 `sub` 누락 → 400 `AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD`
 - [ ] 존재하지 않는 `sub` → 200 (no-op)
 - [ ] 미인식 `type` → 200 (no-op, 로그만)
+- [ ] Apple JWKS 조회 실패 → 500 `INTERNAL_ERROR` (Apple 재시도 유도)
 
 ## 완료 기준
 
@@ -182,3 +191,4 @@ login 스펙과 완전히 공유 — **신규 env 없음**. outer JWT는 Apple J
 |------|------|
 | 2026-07-06 | 초안 — 하이브리드 앱·스토어 심사 맥락에서 분리 작성 |
 | 2026-07-30 | Approved — 이벤트 4종·payload 구조(Apple 공식 문서 확인)·path·미인식 sub 응답 확정. `consent-revoked`는 soft delete 아닌 로그아웃(refresh_token 삭제)만으로 정정. 신규 env 불필요함을 명시 |
+| 2026-08-12 | 구현 — 심사 전 오류 탐지 강화: `iss` 검증 추가, 401을 `ISSUER_INVALID`/`AUDIENCE_INVALID`/`SIGNATURE_INVALID` 3종으로 세분화, `sub` 필수 이벤트의 누락 가드 추가, JWKS 조회 실패·예상치 못한 서버 오류는 400 대신 500(`INTERNAL_ERROR`)으로 분리해 Apple 재시도를 유도 |
