@@ -1,11 +1,15 @@
 package com.tripfit.tripfit.auth.controller;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
+import com.tripfit.tripfit.auth.dto.AppleNotificationRequest;
 import com.tripfit.tripfit.auth.dto.LoginRequest;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.dto.LogoutRequest;
 import com.tripfit.tripfit.auth.dto.RefreshRequest;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;
+import com.tripfit.tripfit.auth.oauth.AppleNotificationEvent;
+import com.tripfit.tripfit.auth.oauth.AppleNotificationVerifier;
+import com.tripfit.tripfit.auth.service.AppleNotificationService;
 import com.tripfit.tripfit.auth.service.AuthService;
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.SuccessResponse;
@@ -34,8 +38,17 @@ public class AuthController {
 
   private final AuthService authService;
 
-  public AuthController(AuthService authService) {
+  private final AppleNotificationVerifier appleNotificationVerifier;
+
+  private final AppleNotificationService appleNotificationService;
+
+  public AuthController(
+      AuthService authService,
+      AppleNotificationVerifier appleNotificationVerifier,
+      AppleNotificationService appleNotificationService) {
     this.authService = authService;
+    this.appleNotificationVerifier = appleNotificationVerifier;
+    this.appleNotificationService = appleNotificationService;
   }
 
   @Operation(
@@ -205,5 +218,49 @@ public class AuthController {
   ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) {
     UserSummaryResponse response = authService.getCurrentUser(userId);
     return ResponseEntity.ok(SuccessResponse.of(response));
+  }
+
+  @Operation(
+      summary = "Apple 계정 변경 알림 수신",
+      description = """
+          목적: Apple이 push하는 계정 변경 이벤트(연동 해제·계정 삭제 등)를 수신해 TripFit user·refresh_token을 동기화한다.
+
+          호출 시점: Apple 서버가 계정 변경 시 직접 호출 — TripFit 클라이언트·로그인 흐름과 무관.
+
+          전제: Apple Developer Console에 이 엔드포인트가 Server-to-Server Notification Endpoint로 등록돼 있다.
+
+          결과: consent-revoked는 refresh_token만 폐기(계정 유지), account-delete는 user soft delete + refresh_token 폐기. email-enabled/email-disabled는 로그만(user.email 미보유). 존재하지 않는 sub·미인식 type도 200(no-op).
+
+          주요 에러: AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD — payload·events JSON 형식 오류·필수 필드 누락 · AUTH_APPLE_NOTIFICATION_ISSUER_INVALID — iss 불일치 · AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID — aud 불일치 · AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID — 서명 불일치·만료
+          """,
+      security = {})
+  @ApiResponses({
+      @ApiResponse(responseCode = "200",
+          description = "수신·처리 완료 — no-op(존재하지 않는 sub·미인식 type)도 포함"),
+      @ApiResponse(
+          responseCode = "400",
+          description = "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD — payload·events JSON 형식 오류·필수 필드 누락",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD", "message": "Apple 알림 payload 형식이 올바르지 않습니다."}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "AUTH_APPLE_NOTIFICATION_ISSUER_INVALID — iss 불일치 · AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID — aud 불일치 · AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID — 서명 불일치·만료",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID", "message": "Apple 알림 서명 검증에 실패했습니다."}
+                      """)))
+  })
+  @PostMapping("/apple/notifications")
+  ResponseEntity<Void> appleNotifications(
+      @Valid @RequestBody AppleNotificationRequest request) {
+    AppleNotificationEvent event = appleNotificationVerifier.verify(request.payload());
+    appleNotificationService.handle(event);
+    return ResponseEntity.ok().build();
   }
 }

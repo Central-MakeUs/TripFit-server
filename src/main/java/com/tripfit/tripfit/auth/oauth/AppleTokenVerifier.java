@@ -1,23 +1,13 @@
 package com.tripfit.tripfit.auth.oauth;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.BadJOSEException;
-import com.nimbusds.jose.proc.JWSKeySelector;
-import com.nimbusds.jose.proc.JWSVerificationKeySelector;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.BadJWTException;
-import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
-import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Locale;
@@ -30,20 +20,13 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
 
   private static final Logger log = LoggerFactory.getLogger(AppleTokenVerifier.class);
 
-  private static final URL APPLE_JWK_URL;
-
-  static {
-    try {
-      APPLE_JWK_URL = new URL("https://appleid.apple.com/auth/keys");
-    } catch (MalformedURLException exception) {
-      throw new IllegalStateException("Invalid Apple JWK URL", exception);
-    }
-  }
-
   private final OAuthProperties oAuthProperties;
 
-  public AppleTokenVerifier(OAuthProperties oAuthProperties) {
+  private final AppleJwkVerifier appleJwkVerifier;
+
+  public AppleTokenVerifier(OAuthProperties oAuthProperties, AppleJwkVerifier appleJwkVerifier) {
     this.oAuthProperties = oAuthProperties;
+    this.appleJwkVerifier = appleJwkVerifier;
   }
 
   @Override
@@ -108,13 +91,8 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
   }
 
   private JWTClaimsSet processToken(String token)
-      throws ParseException, JOSEException, BadJOSEException, java.net.MalformedURLException {
-    ConfigurableJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
-    JWKSource<SecurityContext> keySource = new RemoteJWKSet<>(APPLE_JWK_URL);
-    JWSKeySelector<SecurityContext> keySelector =
-        new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, keySource);
-    processor.setJWSKeySelector(keySelector);
-    return processor.process(token, null);
+      throws ParseException, JOSEException, BadJOSEException {
+    return appleJwkVerifier.verify(token);
   }
 
   private boolean hasValidAudience(JWTClaimsSet claims, String appleClientId)
