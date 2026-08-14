@@ -267,17 +267,21 @@ trip ||--o{ notification_history : relates_to
 
 ### `refresh_token`
 
-wave 1+. [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)
+wave 1+, RTR(rotate·reuse detection) 구현 완료. [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
 | id | char(36) | N | PK | UUID v4 |
 | user_id | char(36) | N | FK → users.id | |
 | token | varchar(255) | N | | UNIQUE |
-| family_id | char(36) | N | | UUID |
-| revoked_at | timestamptz | Y | | wave 4 RTR |
+| family_id | char(36) | N | | 로그인 체인 UUID. rotate돼도 유지, 재사용 탐지 시 이 값 기준으로 체인 전체 폐기 |
+| revoked_at | timestamptz | Y | | rotate 또는 재사용 탐지로 폐기된 시각 |
 | expires_at | timestamptz | N | | |
 | created_at | timestamptz | N | | |
+
+**인덱스:** `(family_id)`, `(user_id, revoked_at)` — 재사용 탐지 시 family 조회·조회 성능
+
+**Redis (`#4`):** access token(JWT) `jti` 블랙리스트 `auth:bl:{jti}` — logout·탈퇴 시 등록, TTL=토큰 잔여 수명. 별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)
 
 ### `regular_schedule` (정기 일정)
 

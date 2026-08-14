@@ -87,7 +87,7 @@ public class JwtService {
       if (subject == null || subject.isBlank()) {
         throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
       }
-      return new AccessTokenClaims(UUID.fromString(subject), jti);
+      return new AccessTokenClaims(UUID.fromString(subject), jti, expiration.toInstant());
     } catch (ParseException | JOSEException exception) {
       // 파싱·서명 실패는 클라이언트 토큰 오류와 구분하지 않고 AUTH_INVALID_TOKEN으로 통일
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);

@@ -11,8 +11,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.auth.jwt.AccessTokenClaims;
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
+import com.tripfit.tripfit.auth.oauth.RedisTokenRevocationChecker;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifier;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifierRegistry;
 import com.tripfit.tripfit.auth.domain.RefreshToken;
@@ -24,6 +26,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +69,9 @@ class AuthServiceTest {
 
   @Mock
   private GoogleLoginCredentialService googleLoginCredentialService;
+
+  @Mock
+  private RedisTokenRevocationChecker tokenRevocationChecker;
 
   @InjectMocks
   private AuthService authService;
@@ -264,12 +270,12 @@ class AuthServiceTest {
   }
 
   @Test
-  void refresh_returnsNewAccessToken() {
-    RefreshToken refreshToken =
+  void refresh_rotatesAndReturnsNewAccessAndRefreshToken() {
+    RefreshToken rotated =
         new RefreshToken(
-            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"), "refresh-token",
+            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"), "new-refresh-token",
             UUID.randomUUID().toString(), LocalDateTime.now().plusDays(30));
-    when(refreshTokenService.validate("refresh-token")).thenReturn(refreshToken);
+    when(refreshTokenService.rotate("refresh-token")).thenReturn(rotated);
     when(jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
         .thenReturn("new-access-jwt");
     when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
@@ -277,25 +283,50 @@ class AuthServiceTest {
     RefreshResponse response = authService.refresh("refresh-token");
 
     assertThat(response.accessToken()).isEqualTo("new-access-jwt");
+    assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
   }
 
   @Test
-  void refresh_invalidToken_throwsAndDeletesExpired() {
-    doThrow(new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH))
+  void refresh_reusedToken_propagatesReuseException() {
+    doThrow(new TripFitException(AuthErrorCode.AUTH_REFRESH_REUSE))
         .when(refreshTokenService)
-        .validate("expired-token");
+        .rotate("stolen-token");
 
-    assertThatThrownBy(() -> authService.refresh("expired-token"))
+    assertThatThrownBy(() -> authService.refresh("stolen-token"))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
-        .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
-
-    verify(refreshTokenService).deleteExpired("expired-token");
+        .isEqualTo(AuthErrorCode.AUTH_REFRESH_REUSE);
   }
 
   @Test
-  void logout_deletesRefreshToken() {
-    authService.logout("refresh-token");
+  void logout_withoutAccessToken_onlyDeletesRefreshToken() {
+    authService.logout("refresh-token", null);
+
     verify(refreshTokenService).delete("refresh-token");
+    verifyNoInteractions(tokenRevocationChecker);
+  }
+
+  @Test
+  void logout_withAccessToken_alsoBlacklistsJti() {
+    Instant expiresAt = Instant.now().plusSeconds(1800);
+    when(jwtService.parseAccessToken("current-access-jwt"))
+        .thenReturn(new AccessTokenClaims(USER_ID, "jti-123", expiresAt));
+
+    authService.logout("refresh-token", "current-access-jwt");
+
+    verify(refreshTokenService).delete("refresh-token");
+    verify(tokenRevocationChecker).revoke("jti-123", expiresAt);
+  }
+
+  // 이미 만료·위조된 access token — 블랙리스트 등록 없이 로그아웃 자체는 계속 성공해야 함
+  @Test
+  void logout_withExpiredAccessToken_skipsBlacklistWithoutFailing() {
+    when(jwtService.parseAccessToken("expired-access-jwt"))
+        .thenThrow(new TripFitException(AuthErrorCode.AUTH_EXPIRED));
+
+    authService.logout("refresh-token", "expired-access-jwt");
+
+    verify(refreshTokenService).delete("refresh-token");
+    verifyNoInteractions(tokenRevocationChecker);
   }
 }

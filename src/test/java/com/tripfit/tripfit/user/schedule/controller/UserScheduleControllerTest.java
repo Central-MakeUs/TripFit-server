@@ -19,6 +19,7 @@ import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse.PersonalSc
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -51,7 +52,9 @@ class UserScheduleControllerTest {
 
   @BeforeEach
   void setUp() {
-    SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(USER_ID));
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
     mockMvc =
         MockMvcBuilders.standaloneSetup(new UserScheduleController(scheduleService))
             .setCustomArgumentResolvers(new AuthorizedUserArgumentResolver())

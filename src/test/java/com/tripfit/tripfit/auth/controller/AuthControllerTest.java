@@ -74,9 +74,9 @@ class AuthControllerTest {
   }
 
   @Test
-  void refresh_returnsAccessToken() throws Exception {
+  void refresh_returnsRotatedAccessAndRefreshToken() throws Exception {
     when(authService.refresh("refresh-token"))
-        .thenReturn(new RefreshResponse("new-access-jwt", 7200L));
+        .thenReturn(new RefreshResponse("new-access-jwt", "new-refresh-token", 7200L));
 
     mockMvc
         .perform(
@@ -87,7 +87,26 @@ class AuthControllerTest {
                         {"refreshToken":"refresh-token"}
                         """))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"));
+        .andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"))
+        .andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"));
+  }
+
+  @Test
+  void refresh_reusedToken_returns401WithReuseCode() throws Exception {
+    doThrow(new TripFitException(AuthErrorCode.AUTH_REFRESH_REUSE))
+        .when(authService)
+        .refresh("stolen-token");
+
+    mockMvc
+        .perform(
+            post("/api/v1/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"refreshToken":"stolen-token"}
+                        """))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("AUTH_REFRESH_REUSE"));
   }
 
   @Test
@@ -101,6 +120,24 @@ class AuthControllerTest {
                         {"refreshToken":"refresh-token"}
                         """))
         .andExpect(status().isNoContent());
+
+    verify(authService).logout("refresh-token", null);
+  }
+
+  // 클라이언트가 accessToken을 같이 보내면 그대로 서비스에 전달돼야 함(즉시 블랙리스트 등록용)
+  @Test
+  void logout_withAccessToken_passesItToService() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"refreshToken":"refresh-token","accessToken":"current-access-jwt"}
+                        """))
+        .andExpect(status().isNoContent());
+
+    verify(authService).logout("refresh-token", "current-access-jwt");
   }
 
   @Test

@@ -62,7 +62,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         authErrorResponseWriter.write(response, AuthErrorCode.AUTH_INVALID_TOKEN);
         return;
       }
-      SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(claims.userId()));
+      SecurityContextHolder.getContext()
+          .setAuthentication(
+              new JwtAuthentication(claims.userId(), claims.jti(), claims.expiresAt()));
       filterChain.doFilter(request, response);
     } catch (TripFitException exception) {
       // JWT 파싱·검증 실패 — Filter 경로라 GlobalExceptionHandler 대신 Writer 사용

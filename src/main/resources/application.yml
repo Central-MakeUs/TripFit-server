@@ -26,6 +26,15 @@ spring:
       pool:
         # 3개 @Scheduled(GoogleCalendarSyncScheduler·ScheduleReminderBatch·TripHomeScheduler)가 기본 풀(size=1)을 공유하며 서로 지연시키는 것을 방지
         size: 3
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      # 액세스 토큰 블랙리스트는 fail-open(RedisTokenRevocationChecker)이 전제라, Redis 장애 시 매 요청이
+      # 기본 타임아웃(수십 초)만큼 멈추지 않도록 연결·명령 타임아웃을 짧게 고정
+      connect-timeout: 300ms
+      timeout: 300ms
 
 server:
   forward-headers-strategy: framework
