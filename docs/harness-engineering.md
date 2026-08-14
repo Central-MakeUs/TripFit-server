@@ -52,7 +52,7 @@ Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontma
 
 ## 4. 스킬 (`.claude/skills/`) — 승인 게이트가 있는 반복 워크플로
 
-"바로 구현"을 막고 **문서 → 승인 → 코드 → 기계적 검증** 순서를 강제하는 4개 스킬입니다.
+"바로 구현"을 막고 **문서 → 승인 → 코드 → 기계적 검증** 순서를 강제하는 4개 스킬입니다(승인 게이트가 없는 절차형 스킬 `debug-bug`는 아래 별도 서술).
 
 | 스킬 | 강제하는 것 | 트리거 | 산출물 |
 |------|-------------|--------|--------|
@@ -62,6 +62,8 @@ Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontma
 | **defer-followup** | 범위 미룰 때도 이슈만 던지지 않고 문서까지 같은 턴에 | 「다른 이슈로 빼」·「wave 밖」 지시 | Draft 스펙 + Approved 스펙 amend + (확인 후) GitHub 이슈 |
 
 **공통 설계 원칙:** 세 스킬(`specify`/`refactor-audit`/`verify`) 모두 "LLM의 자기 보고를 신뢰하지 않는다"가 핵심입니다 — `refactor-audit`은 "안 바꿨다"는 말 대신 `oasdiff` diff가 정말 0인지, `verify`는 "테스트 통과했다"는 말 대신 `./gradlew test`를 실제로 돌린 결과를 요구합니다.
+
+**5번째 스킬 — 절차형, 승인 게이트 없음:** `debug-bug`(버그 재현·원인 분리, 로컬 + 프로덕션 EC2 조사 절차)는 위 4개와 달리 "문서 승인"을 강제하지 않는 반복 조사 절차 캡슐화라 표에서 분리했습니다. 2026-08-11에 `workflow-tools.md`(always-load 규칙 파일) 안에 있던 프로즈 절차를 이 스킬로 옮겼습니다 — 그 내용은 "어떤 파일을 건드리는가"가 아니라 "버그 리포트를 받았는가"라는 상황 트리거라 `paths:` 스코프(파일 경로 기반)로는 옮길 수 없었고, 스킬(이름+한 줄 설명만 항상 노출되다가 필요할 때 전체 내용을 불러오는 방식)로 옮기는 게 always-load 규칙 파일의 토큰 크기를 줄이면서도 트리거 신뢰성을 유지하는 방법이었습니다.
 
 ### 실제 적용 사례 — `auth` 도메인 리팩터 감사 (2026-08-04)
 
@@ -140,14 +142,14 @@ push/PR → OpenApiSpecExportTest → oasdiff breaking (스키마 diff)
 
 ## 12. 외부 도구 채택 기준 — 안 쓰기로 한 것도 기록
 
-Superpowers 같은 서드파티 플러그인(`brainstorming`, `writing-plans`, `systematic-debugging` 등)을 도입할지 2026-07-23에 감사했습니다. 결론은 **미채택** — Claude Code 기본 기능(Plan Mode, `Agent` 서브에이전트, `code-review`/`simplify` 스킬)으로 이미 충분히 대체되고, 유일한 gap이었던 `systematic-debugging`도 3줄짜리 prose 절차(§6 첫 행과 동일 계열)로 충분해 플러그인 설치 비용을 정당화하지 못했습니다. "기능이 있다는 이유만으로 쓴다"를 명시적 배제 조건으로 못 박아 둔 게 핵심 — 도구 자체보다 **도구를 안 쓰기로 한 판단 근거를 기록**하는 게 이 저장소의 스타일입니다. SSOT: [`.claude/rules/workflow-tools.md`](../.claude/rules/workflow-tools.md).
+Superpowers 같은 서드파티 플러그인(`brainstorming`, `writing-plans`, `systematic-debugging` 등)을 도입할지 2026-07-23에 감사했습니다. 결론은 **미채택** — Claude Code 기본 기능(Plan Mode, `Agent` 서브에이전트, `code-review`/`simplify` 스킬)으로 이미 충분히 대체되고, 유일한 gap이었던 `systematic-debugging`도 자체 `debug-bug` 스킬로 충분해 플러그인 설치 비용을 정당화하지 못했습니다. "기능이 있다는 이유만으로 쓴다"를 명시적 배제 조건으로 못 박아 둔 게 핵심 — 도구 자체보다 **도구를 안 쓰기로 한 판단 근거를 기록**하는 게 이 저장소의 스타일입니다. SSOT: [`.claude/rules/workflow-tools.md`](../.claude/rules/workflow-tools.md).
 
 ## 13. 숫자로 보는 활용도
 
 2026-08-05 기준 `git log` 측정:
 
 - 전체 커밋 383개 중 **155개**가 `Co-Authored-By: Claude` 트레일러 포함 (`git log --grep "Co-Authored-By: Claude" --oneline | wc -l`)
-- 스펙 문서 42개(`docs/specs/` 전 도메인 합계), ADR 9개, always-load 규칙 5개 + path-scoped 규칙 6개, 스킬 4개, 훅 4개
+- 스펙 문서 42개(`docs/specs/` 전 도메인 합계), ADR 9개, always-load 규칙 5개 + path-scoped 규칙 7개, 스킬 5개, 훅 4개
 
 이 수치는 "AI가 얼마나 많이 타이핑했는가"가 아니라 — 위 §1~§12의 장치들이 실제로 매 세션 반복 적용됐다는 근거로 읽는 게 맞습니다. 코드 자체뿐 아니라 이 문서를 포함한 스펙·ADR·규칙 문서 대부분도 AI가 초안을 작성하고 사람이 승인·확정하는 방식으로 만들어졌습니다.
 

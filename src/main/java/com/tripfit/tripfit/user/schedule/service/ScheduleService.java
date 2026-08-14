@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.schedule.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
@@ -44,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 // hasPreSchedule은 본 Service 응답에 없음 — row INSERT/DELETE 후 UserSummaryService EXISTS → GET /auth/me 등
 // 재조회
 @Service
+@RequiredArgsConstructor
 public class ScheduleService {
 
   // 마이페이지 달력 조회 가능 기간(년) — today ~ today+2년−1
@@ -60,21 +62,6 @@ public class ScheduleService {
   private final GoogleCalendarService googleCalendarService;
 
   private final TripMemberRepository tripMemberRepository;
-
-  public ScheduleService(
-      RegularScheduleRepository regularScheduleRepository,
-      PersonalScheduleRepository personalScheduleRepository,
-      UserLookupService userLookupService,
-      UserSummaryService userSummaryService,
-      GoogleCalendarService googleCalendarService,
-      TripMemberRepository tripMemberRepository) {
-    this.regularScheduleRepository = regularScheduleRepository;
-    this.personalScheduleRepository = personalScheduleRepository;
-    this.userLookupService = userLookupService;
-    this.userSummaryService = userSummaryService;
-    this.googleCalendarService = googleCalendarService;
-    this.tripMemberRepository = tripMemberRepository;
-  }
 
   // 정기 일정 목록 조회 — 생성 시각 오름차순
   @Transactional(readOnly = true)

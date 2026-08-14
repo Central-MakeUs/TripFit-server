@@ -20,7 +20,6 @@ import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
@@ -37,6 +36,7 @@ public class User extends SoftDeleteEntity {
   @UuidGenerator
   @JdbcTypeCode(SqlTypes.CHAR)
   @Column(length = 36, nullable = false, updatable = false)
+  @Setter
   private UUID id;
 
   @Schema(description = "소셜 제공자 고유 사용자 ID (Google/Apple `sub`, Kakao `id`)", example = "1234567890")
@@ -129,8 +129,57 @@ public class User extends SoftDeleteEntity {
   // 탈퇴 시 초기화된 채로 남아 재온보딩이 필요함(신규 가입과 동일한 경험)
   public void reviveIfWithdrawn() {
     if (getDeletedAt() != null) {
-      setDeletedAt(null);
-      setAllFree(false);
+      clearDeleted();
+      applyAllFree(false);
     }
+  }
+
+  // 재로그인 시 소셜에서 온 값만 갱신 — 공백·null은 무시(기존 값 유지)
+  public void applySocialProfile(String email, String nickname, String profileImageUrl) {
+    if (email != null && !email.isBlank()) {
+      this.email = email;
+    }
+    if (nickname != null && !nickname.isBlank()) {
+      this.nickname = nickname;
+    }
+    if (profileImageUrl != null && !profileImageUrl.isBlank()) {
+      this.profileImageUrl = profileImageUrl;
+    }
+  }
+
+  // 프로필 부분 수정 — null인 파라미터는 미변경(onboarding은 firstName·lastName만, PATCH profile은 D8 부분 업데이트)
+  public void applyProfilePatch(String firstName, String lastName, Boolean notificationEnabled) {
+    if (firstName != null) {
+      this.firstName = firstName;
+    }
+    if (lastName != null) {
+      this.lastName = lastName;
+    }
+    if (notificationEnabled != null) {
+      this.notificationEnabled = notificationEnabled;
+    }
+  }
+
+  public void connectGoogleCalendar() {
+    this.isGoogleCalendarConnected = true;
+  }
+
+  public void disconnectGoogleCalendar() {
+    this.isGoogleCalendarConnected = false;
+  }
+
+  public void applyAllFree(boolean allFree) {
+    this.isAllFree = allFree;
+  }
+
+  // 탈퇴 확정 — soft delete + PII 스크럽. socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지
+  public void scrubPiiForWithdrawal() {
+    markDeleted();
+    this.email = null;
+    this.firstName = null;
+    this.lastName = null;
+    this.nickname = null;
+    this.profileImageUrl = null;
+    disconnectGoogleCalendar();
   }
 }

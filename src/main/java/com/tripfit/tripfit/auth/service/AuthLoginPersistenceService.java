@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
 import com.tripfit.tripfit.user.domain.User;
@@ -12,17 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 // provider 검증·authorizationCode 교환 같은 외부 HTTP 호출을 이 트랜잭션 밖에서 먼저 끝내도록 분리한 것.
 // AuthService의 private 메서드로 두면 self-invocation 때문에 @Transactional 프록시가 안 걸려 별도 빈으로 둔다
 @Service
+@RequiredArgsConstructor
 public class AuthLoginPersistenceService {
 
   private final UserRepository userRepository;
 
   private final RefreshTokenService refreshTokenService;
-
-  public AuthLoginPersistenceService(
-      UserRepository userRepository, RefreshTokenService refreshTokenService) {
-    this.userRepository = userRepository;
-    this.refreshTokenService = refreshTokenService;
-  }
 
   @Transactional
   public Result persist(OAuthProfile profile) {
@@ -58,15 +54,7 @@ public class AuthLoginPersistenceService {
   // 재로그인 시 소셜에서 온 이메일·닉네임·프로필 이미지만 갱신 — 성·이름은 PATCH profile 전용
   // profileImageUrl: 현재는 provider URL 그대로. S3 미러는 추후
   private User updateFromProfile(User user, OAuthProfile profile) {
-    if (profile.email() != null && !profile.email().isBlank()) {
-      user.setEmail(profile.email());
-    }
-    if (profile.nickname() != null && !profile.nickname().isBlank()) {
-      user.setNickname(profile.nickname());
-    }
-    if (profile.profileImageUrl() != null && !profile.profileImageUrl().isBlank()) {
-      user.setProfileImageUrl(profile.profileImageUrl());
-    }
+    user.applySocialProfile(profile.email(), profile.nickname(), profile.profileImageUrl());
     return user;
   }
 

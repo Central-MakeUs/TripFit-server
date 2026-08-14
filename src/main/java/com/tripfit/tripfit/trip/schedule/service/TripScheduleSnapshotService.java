@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.schedule.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 확정·종료 시 희망 기간의 멤버 정기+개별 합친 일정을 스냅샷으로 고정한다 (이후 읽기 전용). */
 @Service
+@RequiredArgsConstructor
 public class TripScheduleSnapshotService {
 
   private final TripMemberScheduleSnapshotRepository snapshotRepository;
@@ -29,17 +31,6 @@ public class TripScheduleSnapshotService {
   private final GoogleCalendarPort googleCalendarPort;
 
   private final TripServiceSupport support;
-
-  public TripScheduleSnapshotService(
-      TripMemberScheduleSnapshotRepository snapshotRepository,
-      SchedulePort schedulePort,
-      GoogleCalendarPort googleCalendarPort,
-      TripServiceSupport support) {
-    this.snapshotRepository = snapshotRepository;
-    this.schedulePort = schedulePort;
-    this.googleCalendarPort = googleCalendarPort;
-    this.support = support;
-  }
 
   // CONFIRMED|EXPIRED 전환과 같은 TX에서 호출 — 이미 freeze된 방은 no-op(idempotent)
   @Transactional

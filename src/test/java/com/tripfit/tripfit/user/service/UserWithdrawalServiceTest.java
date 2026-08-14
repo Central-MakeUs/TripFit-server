@@ -16,7 +16,6 @@ import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -101,7 +100,7 @@ class UserWithdrawalServiceTest {
   @Test
   void withdraw_whenAlreadyWithdrawn_stillBlacklistsAccessToken() {
     User user = user();
-    user.setDeletedAt(LocalDateTime.now().minusDays(1));
+    user.markDeleted();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     Instant expiresAt = Instant.now().plusSeconds(3600);
 
@@ -214,7 +213,7 @@ class UserWithdrawalServiceTest {
   @Test
   void withdraw_whenAlreadyWithdrawn_isIdempotentNoOp() {
     User user = user();
-    user.setDeletedAt(LocalDateTime.now().minusDays(1));
+    user.markDeleted();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
@@ -233,9 +232,8 @@ class UserWithdrawalServiceTest {
             "닉네임",
             "https://example.com/profile.png");
     user.setId(USER_ID);
-    user.setFirstName("길동");
-    user.setLastName("홍");
-    user.setGoogleCalendarConnected(true);
+    user.applyProfilePatch("길동", "홍", null);
+    user.connectGoogleCalendar();
     return user;
   }
 

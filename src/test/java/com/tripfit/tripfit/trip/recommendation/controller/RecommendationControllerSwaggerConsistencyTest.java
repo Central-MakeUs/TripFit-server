@@ -76,10 +76,10 @@ class RecommendationControllerSwaggerConsistencyTest {
             "owner@example.com",
             "방장",
             null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
-    owner.setAllFree(true); // canEnterRoom(GET /trips/{tripId}) 전제 — 일정 없어도 입장 가능해야 unconfirm 후 재조회
-                            // 가능
+    owner.applyProfilePatch("길동", "홍", null);
+    owner.applyAllFree(true); // canEnterRoom(GET /trips/{tripId}) 전제 — 일정 없어도 입장 가능해야 unconfirm 후
+                              // 재조회
+    // 가능
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
 
@@ -185,15 +185,13 @@ class RecommendationControllerSwaggerConsistencyTest {
         new User(
             "recommendation-owner-" + UUID.randomUUID(), SocialProvider.GOOGLE, "o@example.com",
             "방장", null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
+    owner.applyProfilePatch("길동", "홍", null);
     owner = userRepository.save(owner);
     User participant =
         new User(
             "recommendation-participant-" + UUID.randomUUID(), SocialProvider.GOOGLE,
             "p@example.com", "참여자", null);
-    participant.setFirstName("철수");
-    participant.setLastName("김");
+    participant.applyProfilePatch("철수", "김", null);
     participant = userRepository.save(participant);
     String participantToken = jwtService.createAccessToken(participant.getId());
 
@@ -225,15 +223,13 @@ class RecommendationControllerSwaggerConsistencyTest {
         new User(
             "recommendation-owner-" + UUID.randomUUID(), SocialProvider.GOOGLE, "o5@example.com",
             "방장", null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
+    owner.applyProfilePatch("길동", "홍", null);
     owner = userRepository.save(owner);
     User participant =
         new User(
             "recommendation-participant-" + UUID.randomUUID(), SocialProvider.GOOGLE,
             "p5@example.com", "참여자", null);
-    participant.setFirstName("철수");
-    participant.setLastName("김");
+    participant.applyProfilePatch("철수", "김", null);
     participant = userRepository.save(participant);
     String ownerToken = jwtService.createAccessToken(owner.getId());
     String participantToken = jwtService.createAccessToken(participant.getId());
@@ -286,15 +282,13 @@ class RecommendationControllerSwaggerConsistencyTest {
         new User(
             "recommendation-owner-" + UUID.randomUUID(), SocialProvider.GOOGLE, "o2@example.com",
             "방장", null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
+    owner.applyProfilePatch("길동", "홍", null);
     owner = userRepository.save(owner);
     User participant =
         new User(
             "recommendation-participant-" + UUID.randomUUID(), SocialProvider.GOOGLE,
             "p2@example.com", "참여자", null);
-    participant.setFirstName("철수");
-    participant.setLastName("김");
+    participant.applyProfilePatch("철수", "김", null);
     participant = userRepository.save(participant);
     String participantToken = jwtService.createAccessToken(participant.getId());
 
@@ -337,8 +331,7 @@ class RecommendationControllerSwaggerConsistencyTest {
         new User(
             "recommendation-owner-" + UUID.randomUUID(), SocialProvider.GOOGLE, "o3@example.com",
             "방장", null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
+    owner.applyProfilePatch("길동", "홍", null);
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
 
@@ -377,8 +370,7 @@ class RecommendationControllerSwaggerConsistencyTest {
         new User(
             "recommendation-owner-" + UUID.randomUUID(), SocialProvider.GOOGLE, "o4@example.com",
             "방장", null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
+    owner.applyProfilePatch("길동", "홍", null);
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
 

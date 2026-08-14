@@ -25,7 +25,7 @@ if echo "$command" | grep -q 'Breaking-Change-Reason:'; then
 fi
 
 staged=$(git diff --cached --name-only 2>/dev/null)
-matched=$(echo "$staged" | grep -E '(/dto/.*\.java$|ErrorCode\.java$|Controller\.java$)')
+matched=$(echo "$staged" | grep -E '(/dto/.*\.java$|/domain/.*\.java$|ErrorCode\.java$|Controller\.java$)')
 if [ -n "$matched" ]; then
   echo "⚠️  DTO/ErrorCode/Controller 변경이 스테이징된 커밋에 'Breaking-Change-Reason:' 트레일러가 없습니다. 변경된 파일:" >&2
   echo "$matched" | sed 's/^/  /' >&2

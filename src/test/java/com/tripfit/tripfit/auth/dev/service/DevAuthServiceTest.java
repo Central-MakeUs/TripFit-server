@@ -147,8 +147,8 @@ class DevAuthServiceTest {
         new User(
             "dev-test-user-soeun", SocialProvider.KAKAO, "dev-test-soeun@tripfit.online", "소은",
             null);
-    withdrawn.setDeletedAt(LocalDateTime.now());
-    withdrawn.setAllFree(true);
+    withdrawn.markDeleted();
+    withdrawn.applyAllFree(true);
     when(userRepository.findByProviderAndSocialId(SocialProvider.KAKAO, "dev-test-user-soeun"))
         .thenReturn(Optional.of(withdrawn));
     when(jwtService.createAccessToken(any())).thenReturn("access-jwt");

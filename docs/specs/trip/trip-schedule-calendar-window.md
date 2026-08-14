@@ -68,7 +68,7 @@
 ### Must Have
 
 - [x] C1: calendar 검증 = 요청 구간 ⊆ `[today, today+2y−1]` · today 이전 포함 시 400 (#17 A1 amend)
-- [ ] C1 상한 확장 (R4): 요청 구간 ⊆ `[today, max(today+2y−1, 사용자 ONGOING endRange 최댓값)]` — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53)
+- [x] C1 상한 확장 (R4): 요청 구간 ⊆ `[today, max(today+2y−1, 사용자 ONGOING endRange 최댓값)]` — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53) (Closed)
 - [x] C1 칩: `scope=ongoing` 문서·OpenAPI에 마이페이지 인덱싱 용도 명시 (신설 API 없음)
 - [x] C2: live · 희망 기간 (현행 유지)
 - [ ] C3: snapshot — **#38**
@@ -106,7 +106,7 @@
 - [x] 제품·잔여 **Approved**
 - [x] 코드·테스트 · #17 A1 amend (#37 범위 · C3 snapshot은 #38)
 - [ ] #38 Implemented와 C3 연동
-- [ ] R4 구현 · `./gradlew test` — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53)
+- [x] R4 구현 · `./gradlew test` — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53)
 
 ## 변경 이력
 

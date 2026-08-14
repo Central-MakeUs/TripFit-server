@@ -72,8 +72,7 @@ class TripFullLifecycleIntegrationTest {
         new User(
             "lifecycle-owner-" + UUID.randomUUID(), SocialProvider.GOOGLE, "lo@example.com",
             "방장", null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
+    owner.applyProfilePatch("길동", "홍", null);
     owner = userRepository.save(owner);
     String ownerToken = jwtService.createAccessToken(owner.getId());
 
@@ -81,8 +80,7 @@ class TripFullLifecycleIntegrationTest {
         new User(
             "lifecycle-member-" + UUID.randomUUID(), SocialProvider.GOOGLE, "lm@example.com",
             "참여자", null);
-    member.setFirstName("철수");
-    member.setLastName("김");
+    member.applyProfilePatch("철수", "김", null);
     member = userRepository.save(member);
     String memberToken = jwtService.createAccessToken(member.getId());
 
@@ -90,8 +88,7 @@ class TripFullLifecycleIntegrationTest {
         new User(
             "lifecycle-third-" + UUID.randomUUID(), SocialProvider.GOOGLE, "lt@example.com",
             "제3자", null);
-    thirdUser.setFirstName("영희");
-    thirdUser.setLastName("박");
+    thirdUser.applyProfilePatch("영희", "박", null);
     thirdUser = userRepository.save(thirdUser);
     String thirdToken = jwtService.createAccessToken(thirdUser.getId());
 

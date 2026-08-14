@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class ScheduleCalendarResolverTest {
 
@@ -161,7 +162,7 @@ class ScheduleCalendarResolverTest {
     LocalDate thursday = LocalDate.of(2026, 8, 6);
     PersonalSchedule personal =
         PersonalSchedule.create(user, thursday, null, null, null, true);
-    personal.setSlotStatuses(null);
+    ReflectionTestUtils.setField(personal, "slotStatuses", null);
 
     List<CalendarDayResponse> days =
         ScheduleCalendarResolver.resolve(List.of(work), List.of(personal), thursday, thursday);

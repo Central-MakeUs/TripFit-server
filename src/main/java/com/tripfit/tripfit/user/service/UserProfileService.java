@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 // 성·이름 PATCH 및 trip 핵심 API 진입 전 이름 완료 검증 — UserSummary는 UserSummaryService에 위임
 public class UserProfileService {
 
@@ -19,18 +21,11 @@ public class UserProfileService {
 
   private final UserSummaryService userSummaryService;
 
-  public UserProfileService(
-      UserLookupService userLookupService, UserSummaryService userSummaryService) {
-    this.userLookupService = userLookupService;
-    this.userSummaryService = userSummaryService;
-  }
-
   // 온보딩 최초 성·이름 등록
   @Transactional
   public UserSummaryResponse registerOnboardingName(UUID userId, OnboardingNameRequest request) {
     User user = userLookupService.requireUser(userId);
-    user.setFirstName(request.firstName().trim());
-    user.setLastName(request.lastName().trim());
+    user.applyProfilePatch(request.firstName().trim(), request.lastName().trim(), null);
     // hasPreSchedule은 userSummaryService가 일정 테이블 EXISTS로 매번 파생
     return userSummaryService.toSummary(user);
   }
@@ -45,15 +40,10 @@ public class UserProfileService {
     }
 
     User user = userLookupService.requireUser(userId);
-    if (request.firstName() != null) {
-      user.setFirstName(requireNonBlank(request.firstName()));
-    }
-    if (request.lastName() != null) {
-      user.setLastName(requireNonBlank(request.lastName()));
-    }
-    if (request.notificationEnabled() != null) {
-      user.setNotificationEnabled(request.notificationEnabled());
-    }
+    user.applyProfilePatch(
+        request.firstName() != null ? requireNonBlank(request.firstName()) : null,
+        request.lastName() != null ? requireNonBlank(request.lastName()) : null,
+        request.notificationEnabled());
     return userSummaryService.toSummary(user);
   }
 

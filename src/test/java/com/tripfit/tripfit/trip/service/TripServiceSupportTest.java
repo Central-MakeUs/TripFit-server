@@ -132,8 +132,7 @@ class TripServiceSupportTest {
     User u =
         new User("sub-" + UUID.randomUUID(), SocialProvider.GOOGLE, "u@example.com", null, null);
     u.setId(UUID.randomUUID());
-    u.setLastName(lastName);
-    u.setFirstName(firstName);
+    u.applyProfilePatch(firstName, lastName, null);
     return u;
   }
 

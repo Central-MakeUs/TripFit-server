@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.googlecalendar.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.common.logging.PiiMasker;
 import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class GoogleCalendarService {
 
   private static final Logger log = LoggerFactory.getLogger(GoogleCalendarService.class);
@@ -62,25 +64,6 @@ public class GoogleCalendarService {
   private final TripMemberRepository tripMemberRepository;
 
   private final GoogleCalendarSyncPersistenceService persistenceService;
-
-  public GoogleCalendarService(
-      GoogleCalendarOAuthClient googleCalendarOAuthClient,
-      SocialTokenCrypto tokenCrypto,
-      GoogleCalendarCredentialRepository credentialRepository,
-      GoogleCalendarBusyDayRepository busyDayRepository,
-      UserLookupService userLookupService,
-      UserSummaryService userSummaryService,
-      TripMemberRepository tripMemberRepository,
-      GoogleCalendarSyncPersistenceService persistenceService) {
-    this.googleCalendarOAuthClient = googleCalendarOAuthClient;
-    this.tokenCrypto = tokenCrypto;
-    this.credentialRepository = credentialRepository;
-    this.busyDayRepository = busyDayRepository;
-    this.userLookupService = userLookupService;
-    this.userSummaryService = userSummaryService;
-    this.tripMemberRepository = tripMemberRepository;
-    this.persistenceService = persistenceService;
-  }
 
   // authorization code로 연동 — Google 서버와의 통신(코드 교환·freeBusy 조회)을 먼저 끝내고, DB 쓰기(credential
   // 저장·flag=true)는 persistenceService의 짧은 트랜잭션에 위임한다 (auth 도메인 AuthService 패턴과 동일 —

@@ -56,6 +56,6 @@ Wave = **도메인/기술 축**: 1 소셜 로그인 · 2 MVP 로직(trip·recomm
 |------|------|------|
 | **희망 기간** | `trip.startRange`~`endRange` | 추천·조율 탐색 범위 |
 | **조회 윈도우** | 여행방 일정 calendar 조회 가능 구간 (#37) | 희망 기간과 **별 축** · C1=`today~+2y` · C2/C3=`startRange~endRange` |
-| **C1 윈도우 (#37)** | 본인 `users/schedule/calendar` 조회·수정 가능 구간 | **today ~ today+2년−1** · 구 A1(730일 길이) 대체 |
+| **C1 윈도우 (#37)** | 본인 `users/schedule/calendar` 조회·수정 가능 구간 | **today ~ max(today+2년−1, 참여 중 ONGOING 여행 endRange 최댓값)**(#53 R4) · 구 A1(730일 길이) 대체 |
 
 상세: [`docs/product/development-wave.md`](../../docs/product/development-wave.md) · [`docs/product/glossary.md`](../../docs/product/glossary.md)

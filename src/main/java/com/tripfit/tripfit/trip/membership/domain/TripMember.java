@@ -25,7 +25,6 @@ import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 // active UNIQUE(trip_id,user_id)는 app 강제 — soft-deleted row 재가입 허용 (MySQL partial unique 미지원)
@@ -41,6 +40,7 @@ public class TripMember extends SoftDeleteEntity {
   @UuidGenerator
   @JdbcTypeCode(SqlTypes.CHAR)
   @Column(length = 36, nullable = false, updatable = false)
+  @Setter
   private UUID id;
 
   @Schema(description = "소속 여행방")

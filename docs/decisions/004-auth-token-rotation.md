@@ -61,5 +61,5 @@ wave 1(MVP)은 `POST /auth/login`, `/refresh`, `/logout`과 DB 기반 opaque ref
 
 - [x] Redis access 전략(blacklist vs whitelist) 팀 합의 → 본 decisions amend (2026-08-08, Blacklist 확정)
 - [x] Redis 인프라 배치 합의 → [`010-redis-infra.md`](010-redis-infra.md) (2026-08-08, EC2 D 확정)
-- [ ] [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) Draft → Approved
-- [ ] wave 1 구현 완료 후 wave 4 착수 (JwtFilter + Redis + RTR)
+- [x] [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) Draft → Approved (2026-08-10)
+- [x] wave 1 구현 완료 후 wave 4 착수 (JwtFilter + Redis + RTR) — 코드·테스트 완료, 배포 검증 대기

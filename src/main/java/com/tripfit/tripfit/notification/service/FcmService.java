@@ -30,6 +30,8 @@ public class FcmService {
 
   private final UserDeviceTokenRepository userDeviceTokenRepository;
 
+  // @Lazy는 생성자 파라미터에 있어야 Spring이 지연 프록시로 주입함(필드 애너테이션은 복사되지 않음) — Lombok
+  // @RequiredArgsConstructor 대상에서 제외
   public FcmService(
       @Lazy FirebaseMessaging firebaseMessaging,
       UserDeviceTokenRepository userDeviceTokenRepository) {

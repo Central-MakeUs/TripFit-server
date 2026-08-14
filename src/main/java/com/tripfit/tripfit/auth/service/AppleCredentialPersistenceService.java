@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.domain.AppleCredential;
 import com.tripfit.tripfit.auth.repository.AppleCredentialRepository;
 import com.tripfit.tripfit.user.domain.User;
@@ -12,13 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 // HTTP 호출(교환·revoke)을 이 트랜잭션 밖에서 먼저 끝내도록 분리한 것(AuthLoginPersistenceService와 동일 패턴).
 // AppleCredentialService의 private 메서드로 두면 self-invocation 때문에 @Transactional 프록시가 안 걸려 별도 빈으로 둔다
 @Service
+@RequiredArgsConstructor
 public class AppleCredentialPersistenceService {
 
   private final AppleCredentialRepository appleCredentialRepository;
-
-  public AppleCredentialPersistenceService(AppleCredentialRepository appleCredentialRepository) {
-    this.appleCredentialRepository = appleCredentialRepository;
-  }
 
   @Transactional(readOnly = true)
   public Optional<AppleCredential> findByUserId(UUID userId) {

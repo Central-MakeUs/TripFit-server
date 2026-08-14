@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 // login · GET /auth/me · PATCH profile 응답용 UserSummary + 방 입장 조건 검사
 @Service
+@RequiredArgsConstructor
 public class UserSummaryService {
 
   private final RegularScheduleRepository regularScheduleRepository;
@@ -19,15 +21,6 @@ public class UserSummaryService {
   private final PersonalScheduleRepository personalScheduleRepository;
 
   private final UserLookupService userLookupService;
-
-  public UserSummaryService(
-      RegularScheduleRepository regularScheduleRepository,
-      PersonalScheduleRepository personalScheduleRepository,
-      UserLookupService userLookupService) {
-    this.regularScheduleRepository = regularScheduleRepository;
-    this.personalScheduleRepository = personalScheduleRepository;
-    this.userLookupService = userLookupService;
-  }
 
   // User → UserSummary DTO. hasPreSchedule은 정기/개인 일정 EXISTS로 매번 계산
   @Transactional(readOnly = true)
@@ -74,14 +67,14 @@ public class UserSummaryService {
   // Skip+0행 / create·join / 일정 CLEAR 후 — 일정이 없으면 is_all_free=true (이미 일정이면 유지)
   public void markAllFreeIfNoSchedules(User user) {
     if (!hasPreSchedule(user.getId())) {
-      user.setAllFree(true);
+      user.applyAllFree(true);
     }
   }
 
   // 일정이 한 건이라도 생기면 전부 free 선언을 해제한다
   public void clearAllFreeOnScheduleAdded(User user) {
     if (user.isAllFree()) {
-      user.setAllFree(false);
+      user.applyAllFree(false);
     }
   }
 }

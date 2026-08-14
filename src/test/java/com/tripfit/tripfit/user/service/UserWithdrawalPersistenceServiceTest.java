@@ -14,7 +14,6 @@ import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayR
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,9 +64,8 @@ class UserWithdrawalPersistenceServiceTest {
             "닉네임",
             "https://example.com/profile.png");
     user.setId(USER_ID);
-    user.setFirstName("길동");
-    user.setLastName("홍");
-    user.setGoogleCalendarConnected(true);
+    user.applyProfilePatch("길동", "홍", null);
+    user.connectGoogleCalendar();
   }
 
   @Test
@@ -112,7 +110,7 @@ class UserWithdrawalPersistenceServiceTest {
 
   @Test
   void finalizeWithdrawal_whenAlreadyWithdrawn_isIdempotentNoOp() {
-    user.setDeletedAt(LocalDateTime.now().minusDays(1));
+    user.markDeleted();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     persistenceService.finalizeWithdrawal(USER_ID);
