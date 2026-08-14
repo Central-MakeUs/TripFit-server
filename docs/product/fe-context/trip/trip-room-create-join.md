@@ -50,20 +50,28 @@ STEP 3 구현 시 아래를 지켜라:
 STEP 1. 초대 링크(…/room/{inviteCode}) 진입 → 로그인 + 이름 입력
   → 로그인·이름 완료 전에는 다음 단계로 넘어가지 못하게 막아라 (미완료 상태로 join 시도 시 403 PROFILE_NAME_REQUIRED)
 
-STEP 2. 정기 일정 입력 → 개별 일정 입력
-  → 방장과 동일한 화면·API를 재사용하라
+STEP 2. POST /api/v1/trips/join/hold { "inviteCode": "A2B3C4" }
+  → 방 미리보기 정보를 받으면서 동시에 10분짜리 "정원 hold"를 선점한다고 가정하라
+  → 정원이 이미 가득 찼으면 이 시점에 409 TRIP_MEMBER_FULL이 온다 — 일정 입력 화면으로 넘어가지 말고 여기서 바로 안내하라
+  → 같은 사용자가 이 API를 재호출해도(예: 앱 재시작) hold TTL만 갱신되고 자리를 중복 소비하지 않는다고 가정하라
 
-STEP 3. POST /api/v1/trips/join { "inviteCode": "A2B3C4" }
+STEP 3. 정기 일정 입력 → 개별 일정 입력
+  → 방장과 동일한 화면·API를 재사용하라
+  → 이 플로우의 **첫 화면**(정기 일정 입력)에서 뒤로가기로 플로우 자체를 이탈하면 DELETE /api/v1/trips/{tripId}/join/hold를 호출해 hold를 즉시 반환하라 — 정기→개별 화면 사이를 오가는 뒤로가기는 호출하지 마라(hold 유지)
+  → 이 호출을 놓쳐도 10분 뒤 서버가 자동으로 hold를 반환하므로 앱 강제종료 등에서는 치명적이지 않지만, 정상 종료 경로에서는 반드시 구현하라(다른 사용자가 더 빨리 자리를 받게 하기 위함)
+
+STEP 4. POST /api/v1/trips/join { "inviteCode": "A2B3C4" }
   → 이 한 번의 호출로 멤버 row가 role=MEMBER, status=ACTIVE로 바로 생성된다고 가정하라
+  → STEP 2의 hold를 아직 갖고 있으면 정원 재확인 없이 확정된다 — hold가 만료됐거나 STEP 2를 건너뛰었어도 이 API 자체는 그대로 동작한다(그 시점 정원을 다시 확인할 뿐)
   → 일정이 0건이면 서버가 isAllFree=true로 자동 처리하므로, 프론트에서 별도로 값을 채워 보낼 필요 없다
 
-STEP 4. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 페이지를 렌더링하라
+STEP 5. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 페이지를 렌더링하라
 ```
 
 멤버 이탈 처리 시 다음을 지켜라:
 
-- STEP 2까지만 하고 STEP 3(`POST /trips/join`) 전에 이탈한 경우, DB에 멤버 row가 없다고 가정하라 — "이어하기" 상태를 복구하려는 로직을 만들지 마라. 재진입 시 무조건 STEP 1(초대 링크)부터 다시 시작하도록 라우팅하라.
-- 이미 `ACTIVE`인 멤버가 같은 초대 링크를 다시 열었을 때는 `join`을 그대로 호출해도 된다 — 에러 없이 상세가 오므로(idempotent), "이미 참여한 방인지" 사전 체크 로직을 따로 만들지 마라.
+- STEP 3까지만 하고 STEP 4(`POST /trips/join`) 전에 이탈한 경우, DB에 멤버 row가 없다고 가정하라 — "이어하기" 상태를 복구하려는 로직을 만들지 마라. 재진입 시 무조건 STEP 1(초대 링크)부터 다시 시작하도록 라우팅하라. hold는 최대 10분 후 자동으로 풀리므로 별도 정리가 필요 없다.
+- 이미 `ACTIVE`인 멤버가 같은 초대 링크를 다시 열었을 때는 `join`을 그대로 호출해도 된다 — 에러 없이 상세가 오므로(idempotent), "이미 참여한 방인지" 사전 체크 로직을 따로 만들지 마라. `POST .../join/hold`도 이미 `ACTIVE`인 멤버가 호출하면 hold 없이 동일 미리보기 정보만 반환한다.
 
 ## 규칙 4 — 관련 API는 아래 표만 사용하라
 
@@ -71,7 +79,9 @@ STEP 4. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 |---|---|---|---|
 | `POST` | `/api/v1/trips` | JWT | 방 생성. 방장을 `SCHEDULE_PENDING`로 즉시 등록 |
 | `POST` | `/api/v1/trips/{tripId}/activate` | JWT + 해당 방 멤버 | 방장의 일정 확인 완료. `SCHEDULE_PENDING` → `ACTIVE` |
-| `POST` | `/api/v1/trips/join` | JWT | body `{ "inviteCode": string }` — 멤버 참여. 즉시 `ACTIVE` |
+| `POST` | `/api/v1/trips/join/hold` | JWT | body `{ "inviteCode": string }` — 방 미리보기 + 10분 정원 hold 생성 |
+| `DELETE` | `/api/v1/trips/{tripId}/join/hold` | JWT | 플로우 첫 화면 이탈 시 hold 즉시 반환. 존재하지 않는 hold를 호출해도 204(안전) |
+| `POST` | `/api/v1/trips/join` | JWT | body `{ "inviteCode": string }` — 멤버 참여. 즉시 `ACTIVE`. STEP 2 hold를 갖고 있으면 그대로 소비 |
 | `GET` | `/api/v1/trips/{tripId}` | JWT + 멤버 **ACTIVE** | 방 상세. `inviteCode` 포함 |
 | `GET` | `/api/v1/trips` | JWT | 홈 목록 카드. `myMemberStatus`로 `SCHEDULE_PENDING`/`ACTIVE` 분기하라. `inviteCode` 없음 |
 | `GET/POST/PATCH/DELETE` | `/api/v1/users/schedule/regular` | JWT | 정기 일정 CRUD (User 전역, 방과 무관) |
@@ -114,7 +124,7 @@ STEP 4. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 | 403 | `SCHEDULE_ACTIVATION_REQUIRED` | 방장이 `SCHEDULE_PENDING` 상태로 상세·방 안 API 호출 → 일정 입력 화면으로 라우팅하라 |
 | 403 | `SCHEDULE_ENTRY_REQUIRED` | 방 입장 조건 미충족 — **`activate`/`join` 자체에서는 나오지 않는다**(서버가 호출 시점에 조건을 항상 채움). 상세·멤버 등 "방 안" API에서만 이론상 가능한 방어용 케이스 |
 | 404 | `INVITE_CODE_NOT_FOUND` | 잘못된 초대 코드 — 재입력 유도 |
-| 409 | `TRIP_MEMBER_FULL` | 정원 초과 — 참여 불가 안내 |
+| 409 | `TRIP_MEMBER_FULL` | 정원 초과 — `join/hold`(선점 시점) 또는 `join`(hold 없이·만료 후 직접 호출 시) 둘 다에서 올 수 있다. 참여 불가 안내 |
 | 409 | `TRIP_ALREADY_CONFIRMED` / `TRIP_EXPIRED` | 확정·종료된 방에 신규 참여 시도 (기존 멤버 재접속은 막지 마라) |
 
 ## 규칙 5 — 요약 비교표를 코드 리뷰 체크리스트로 사용하라

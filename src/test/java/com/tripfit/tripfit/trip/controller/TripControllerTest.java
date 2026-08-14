@@ -2,6 +2,7 @@ package com.tripfit.tripfit.trip.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -21,6 +22,7 @@ import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
+import com.tripfit.tripfit.trip.membership.dto.TripJoinPreviewResponse;
 import com.tripfit.tripfit.trip.service.TripService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -144,6 +146,29 @@ class TripControllerTest {
   }
 
   @Test
+  void previewAndHold_ok() throws Exception {
+    when(tripService.previewAndHold(eq(USER_ID), any())).thenReturn(samplePreview());
+
+    mockMvc
+        .perform(
+            post("/api/v1/trips/join/hold")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"inviteCode\":\"ABC234\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.tripId").value(TRIP_ID.toString()))
+        .andExpect(jsonPath("$.data.memberCount").value(6));
+  }
+
+  @Test
+  void releaseJoinHold_noContent() throws Exception {
+    mockMvc
+        .perform(delete("/api/v1/trips/" + TRIP_ID + "/join/hold"))
+        .andExpect(status().isNoContent());
+
+    verify(tripService).releaseJoinHold(TRIP_ID, USER_ID);
+  }
+
+  @Test
   void updatePin_ok() throws Exception {
     when(tripService.updatePin(eq(TRIP_ID), eq(USER_ID), any())).thenReturn(sampleDetail(true));
 
@@ -182,6 +207,20 @@ class TripControllerTest {
         1.0 / 6.0,
         List.of(),
         0);
+  }
+
+  private static TripJoinPreviewResponse samplePreview() {
+    return new TripJoinPreviewResponse(
+        TRIP_ID,
+        "제주",
+        "제주",
+        LocalDate.of(2026, 8, 1),
+        LocalDate.of(2026, 8, 10),
+        4,
+        3,
+        6,
+        0,
+        TripStatus.ONGOING);
   }
 
   private static TripDetailResponse sampleDetail(boolean pinned) {

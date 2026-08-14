@@ -13,6 +13,7 @@ import com.tripfit.tripfit.trip.dto.PatchTripRequest;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
+import com.tripfit.tripfit.trip.membership.dto.TripJoinPreviewResponse;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.service.TripService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -293,9 +294,99 @@ public class TripController {
   }
 
   /**
+   * 초대코드로 여행방을 미리보기하며 10분 hold를 생성한다. 정원(확정 멤버 수 + 활성 hold 수)이 가득 찼으면 hold 없이 409로 실패한다. 같은 사용자가
+   * 재호출하면 기존 hold의 TTL만 10분으로 갱신되고 자리를 중복으로 소비하지 않는다. 이미 ACTIVE 멤버면 hold 없이 동일 정보를 반환하고,
+   * SCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다.
+   */
+  @Operation(summary = "초대코드 미리보기 + 정원 hold 생성")
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "미리보기·hold 성공",
+          useReturnTypeSchema = true,
+          content = @Content(
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "activeMemberCount": 3, "status": "ONGOING"}}
+                      """))),
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "inviteCode", "message": "초대 코드는 필수입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "403",
+          description = "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ACTIVATION_REQUIRED — 방장이 호출 시도",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "PROFILE_NAME_REQUIRED", "message": "성·이름 입력이 필요합니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "404",
+          description = "INVITE_CODE_NOT_FOUND — 초대 코드 없음",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "INVITE_CODE_NOT_FOUND", "message": "초대 코드를 찾을 수 없습니다."}
+                  """))),
+      @ApiResponse(
+          responseCode = "409",
+          description = "TRIP_MEMBER_FULL — 정원(hold 포함) 초과 · TRIP_ALREADY_CONFIRMED — 확정된 방 · TRIP_EXPIRED — 종료된 방",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "TRIP_MEMBER_FULL", "message": "참여 인원이 가득 찼습니다."}
+                  """)))
+  })
+  @PostMapping("/join/hold")
+  ResponseEntity<SuccessResponse<TripJoinPreviewResponse>> previewAndHold(
+      @AuthorizedUser UUID userId,
+      @Valid @RequestBody JoinTripRequest request) {
+    return ResponseEntity.ok(SuccessResponse.of(tripService.previewAndHold(userId, request)));
+  }
+
+  /**
+   * 참여 플로우 첫 화면(정기 일정 입력)에서 뒤로가기로 플로우를 이탈할 때 hold를 즉시 반환한다. 개별 일정 화면에서 정기 일정 화면으로 되돌아가는 것처럼 플로우 안에서
+   * 이동하는 뒤로가기는 호출 대상이 아니다(hold 유지). 이미 만료됐거나 join으로 소비된 hold를 호출해도 안전하다(idempotent) — 항상 204.
+   */
+  @Operation(summary = "정원 hold 해제")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "해제 성공(존재하지 않던 hold 포함)"),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
+  @DeleteMapping("/{tripId}/join/hold")
+  ResponseEntity<Void> releaseJoinHold(
+      @PathVariable UUID tripId,
+      @AuthorizedUser UUID userId) {
+    tripService.releaseJoinHold(tripId, userId);
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
    * 초대 코드로 여행방에 참여한다. 멤버는 SCHEDULE_PENDING 없이 join 한 번으로 바로 ACTIVE가 된다(방장의 create 직후
    * SCHEDULE_PENDING은 이 API가 아니라 activate로 처리). 이미 ACTIVE인 멤버가 다시 호출하면 변경 없이 동일 응답을
-   * 반환한다(idempotent).
+   * 반환한다(idempotent). 직전에 정원 hold를 발급받았다면 그 hold를 소비해 확정하고, hold가 없거나 만료됐다면 그 시점의 정원(확정 멤버 수 + 다른
+   * 사용자의 활성 hold 수)을 다시 확인한다.
    */
   @Operation(summary = "초대 링크로 참여")
   @ApiResponses({
