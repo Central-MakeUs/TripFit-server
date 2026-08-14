@@ -279,16 +279,70 @@ public class UserScheduleController {
                       {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
                       """),
               @ExampleObject(
-                  name = "불확실 여부만 변경",
+                  name = "하루 종일 불가능으로 전체 오버라이드",
+                  summary = "3슬롯 모두 IMPOSSIBLE. 정기 일정이 해당 슬롯을 가능으로 계산해도 개별 오버라이드가 항상 이김",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-06", "slots": {"morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "IMPOSSIBLE"}}]}
+                      """),
+              @ExampleObject(
+                  name = "불확실 여부만 변경(ON)",
                   summary = "slots 필드 자체를 생략 → 슬롯 오버라이드는 그대로 두고 uncertain만 갱신",
                   value = """
                       {"items": [{"scheduleDate": "2026-08-03", "uncertain": true}]}
+                      """),
+              @ExampleObject(
+                  name = "불확실 여부 해제(OFF)",
+                  summary = "slots 생략, uncertain만 false로 되돌림 → 켜져 있던 동안 저장해둔 슬롯 오버라이드가 그대로 복귀",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-06", "uncertain": false}]}
                       """),
               @ExampleObject(
                   name = "슬롯·불확실 동시 변경",
                   summary = "한 항목에 slots와 uncertain을 같이 담아 한 번에 반영",
                   value = """
                       {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}, "uncertain": false}]}
+                      """),
+              @ExampleObject(
+                  name = "구글 캘린더 신호를 덮어쓰는 개별 오버라이드",
+                  summary = "정기 일정 없는 날짜라 구글 연동 신호로 오후만 불가능하게 계산됐지만, 개별 오버라이드로 하루 종일 가능 선언 — 구글보다 개별이 항상 우선",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-08", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
+                      """),
+              @ExampleObject(
+                  name = "하루 종일 가능 재선언",
+                  summary = "이미 오버라이드된 날짜에 3슬롯 모두 POSSIBLE + uncertain false로 다시 저장 — 이 값 조합이어도 오버라이드가 삭제되는 경로는 없음, 그대로 새 값으로 저장됨",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}, "uncertain": false}]}
+                      """),
+              @ExampleObject(
+                  name = "정기·구글 신호 없는 날짜에 개별 일정 단독 등록",
+                  summary = "정기 일정이 하나도 없는 날짜(예: 주말)에도 개별 오버라이드만 단독으로 등록 가능 — 등록 즉시 캘린더 조회에 나타나고 더 이상 생략되지 않음",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-01", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "IMPOSSIBLE"}}]}
+                      """),
+              @ExampleObject(
+                  name = "❌ 같은 날짜를 아이템 두 개로 분리 → 400",
+                  summary = "같은 scheduleDate가 배열에 두 번 오면 400(INVALID_INPUT) — slots·uncertain은 한 아이템에 같이 담을 수 있으므로 나눠 보낼 필요가 없음",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-03", "uncertain": true}, {"scheduleDate": "2026-08-03", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
+                      """),
+              @ExampleObject(
+                  name = "❌ slots·uncertain 둘 다 없음 → 400",
+                  summary = "무엇을 바꾸라는 요청인지 알 수 없어 400(INVALID_INPUT)",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-03"}]}
+                      """),
+              @ExampleObject(
+                  name = "❌ slots 슬롯 일부 누락 → 400",
+                  summary = "slots 필드를 보내는 순간 아침·오후·저녁 3개 전부 필수 — 일부만 보내면 400(INVALID_INPUT)",
+                  value = """
+                      {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE"}}]}
+                      """),
+              @ExampleObject(
+                  name = "❌ items 빈 배열 → 400",
+                  summary = "items가 비어 있으면 400(INVALID_INPUT)",
+                  value = """
+                      {"items": []}
                       """)
           }))
   @PatchMapping("/personal")
