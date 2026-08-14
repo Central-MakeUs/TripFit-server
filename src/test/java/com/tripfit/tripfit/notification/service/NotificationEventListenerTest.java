@@ -129,7 +129,7 @@ class NotificationEventListenerTest {
 
   @Test
   void onTripJoinCompleted_ownerNotificationDisabled_skipsDispatch() {
-    owner.setNotificationEnabled(false);
+    owner.applyProfilePatch(null, null, false);
     User joinedMember = user("member-sub", "김", "철수");
     when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
     when(userRepository.findById(joinedMember.getId())).thenReturn(Optional.of(joinedMember));
@@ -228,8 +228,7 @@ class NotificationEventListenerTest {
   private static User user(String socialId, String lastName, String firstName) {
     User u = new User(socialId, SocialProvider.GOOGLE, socialId + "@example.com", "nick", null);
     u.setId(UUID.randomUUID());
-    u.setLastName(lastName);
-    u.setFirstName(firstName);
+    u.applyProfilePatch(firstName, lastName, null);
     return u;
   }
 }

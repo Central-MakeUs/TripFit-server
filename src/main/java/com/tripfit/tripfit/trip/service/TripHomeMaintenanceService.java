@@ -1,8 +1,8 @@
 package com.tripfit.tripfit.trip.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.schedule.service.TripScheduleSnapshotService;
 import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import java.time.LocalDate;
@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 홈 유지보수 배치 — 희망 기간이 지난 조율 중 방을 EXPIRED로 전환하고, 만료 Pin을 해제한다. */
 @Service
+@RequiredArgsConstructor
 public class TripHomeMaintenanceService {
 
   private final TripRepository tripRepository;
@@ -20,15 +21,6 @@ public class TripHomeMaintenanceService {
 
   private final TripScheduleSnapshotService tripScheduleSnapshotService;
 
-  TripHomeMaintenanceService(
-      TripRepository tripRepository,
-      TripMemberRepository tripMemberRepository,
-      TripScheduleSnapshotService tripScheduleSnapshotService) {
-    this.tripRepository = tripRepository;
-    this.tripMemberRepository = tripMemberRepository;
-    this.tripScheduleSnapshotService = tripScheduleSnapshotService;
-  }
-
   // 일 배치: endRange 지난 ONGOING을 스냅샷 고정 후 EXPIRED로 바꾸고, 만료 Pin을 해제한다
   @Transactional
   public void runForDate(LocalDate today) {
@@ -36,7 +28,7 @@ public class TripHomeMaintenanceService {
     List<Trip> expired = tripRepository.findExpiredOngoing(today);
     for (Trip trip : expired) {
       tripScheduleSnapshotService.freezeTrip(trip);
-      trip.setStatus(TripStatus.EXPIRED);
+      trip.expire();
     }
     // 2. Pin 해제 (soft-deleted trip·member 제외)
     tripMemberRepository.clearExpiredPins(today);

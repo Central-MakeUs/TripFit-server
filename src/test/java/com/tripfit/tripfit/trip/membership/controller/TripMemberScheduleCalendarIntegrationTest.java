@@ -82,8 +82,7 @@ class TripMemberScheduleCalendarIntegrationTest {
       throws Exception {
     User owner =
         new User("trip-member-sub", SocialProvider.GOOGLE, "owner@example.com", "방장", null);
-    owner.setFirstName("길동");
-    owner.setLastName("홍");
+    owner.applyProfilePatch("길동", "홍", null);
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
 

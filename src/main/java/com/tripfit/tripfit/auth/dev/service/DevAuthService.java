@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.dev.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.jwt.JwtService;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Profile({"local", "dev"})
+@RequiredArgsConstructor
 public class DevAuthService {
 
   private static final SocialProvider DEV_PROVIDER = SocialProvider.KAKAO;
@@ -61,17 +63,6 @@ public class DevAuthService {
 
   private final UserSummaryService userSummaryService;
 
-  public DevAuthService(
-      UserRepository userRepository,
-      JwtService jwtService,
-      RefreshTokenService refreshTokenService,
-      UserSummaryService userSummaryService) {
-    this.userRepository = userRepository;
-    this.jwtService = jwtService;
-    this.refreshTokenService = refreshTokenService;
-    this.userSummaryService = userSummaryService;
-  }
-
   // 소셜 검증 없이 식별자별 테스트 계정으로 access·refresh를 발급함 — dev가 실제 배포 환경이라 배포 서버에서도 동작함(#52에서 제거 예정)
   @Transactional
   public LoginResponse devLogin(String testUserId) {
@@ -105,8 +96,7 @@ public class DevAuthService {
             null);
     TestIdentityName name = KNOWN_TEST_USER_NAMES.get(key);
     if (name != null) {
-      user.setLastName(name.lastName());
-      user.setFirstName(name.firstName());
+      user.applyProfilePatch(name.firstName(), name.lastName(), null);
     }
     return user;
   }

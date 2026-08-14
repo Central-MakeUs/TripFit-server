@@ -20,8 +20,11 @@ import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.recommendation.dto.UnconfirmTripRequest;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
 // trip API facade — Command / Query / MemberQuery / Recommendation에 위임
 public class TripService {
@@ -33,17 +36,6 @@ public class TripService {
   private final TripMemberQueryService tripMemberQueryService;
 
   private final TripRecommendationService tripRecommendationService;
-
-  public TripService(
-      TripCommandService tripCommandService,
-      TripQueryService tripQueryService,
-      TripMemberQueryService tripMemberQueryService,
-      TripRecommendationService tripRecommendationService) {
-    this.tripCommandService = tripCommandService;
-    this.tripQueryService = tripQueryService;
-    this.tripMemberQueryService = tripMemberQueryService;
-    this.tripRecommendationService = tripRecommendationService;
-  }
 
   // facade: 여행방 생성 → TripCommandService
   public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {

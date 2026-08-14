@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.membership.service.TripJoinService;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
 import com.tripfit.tripfit.trip.recommendation.service.TripRecommendationService;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 // 여행방 생성·참여·멤버십 activate·메타 수정·삭제·Pin·내보내기 등 쓰기 유스케이스
 class TripCommandService {
   private final TripRepository tripRepository;
@@ -50,25 +52,6 @@ class TripCommandService {
   private final UserDirectoryPort userDirectoryPort;
 
   private final ApplicationEventPublisher applicationEventPublisher;
-
-  TripCommandService(
-      TripRepository tripRepository,
-      TripMemberRepository tripMemberRepository,
-      TripServiceSupport support,
-      TripJoinService tripJoinService,
-      TripRecommendationService tripRecommendationService,
-      TripMemberQueryService tripMemberQueryService,
-      UserDirectoryPort userDirectoryPort,
-      ApplicationEventPublisher applicationEventPublisher) {
-    this.tripRepository = tripRepository;
-    this.tripMemberRepository = tripMemberRepository;
-    this.support = support;
-    this.tripJoinService = tripJoinService;
-    this.tripRecommendationService = tripRecommendationService;
-    this.tripMemberQueryService = tripMemberQueryService;
-    this.userDirectoryPort = userDirectoryPort;
-    this.applicationEventPublisher = applicationEventPublisher;
-  }
 
   // 여행방 생성 — 방장은 SCHEDULE_PENDING(일정 확인 전). activate 전에는 ACTIVE가 아님
   @Transactional
@@ -96,7 +79,7 @@ class TripCommandService {
             request.memberCount(),
             support.generateUniqueInviteCode(),
             TripStatus.ONGOING);
-    trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
+    trip.applyDestination(TripServiceSupport.normalizeDestination(request.destination()));
     tripRepository.save(trip);
     // create 직후는 SCHEDULE_PENDING — 일정 activate 후에 ACTIVE. 전부 free 처리는 activate/join에서.
     TripMember ownerMember =
@@ -150,11 +133,12 @@ class TripCommandService {
             || recommendationInputsChanged
             || !Objects.equals(trip.getMemberCount(), request.memberCount())
             || !Objects.equals(trip.getDestination(), normalizedDestination);
-    trip.setName(request.name().trim());
-    trip.setDurationNights(request.durationNights());
-    trip.setDurationDays(durationDays);
-    trip.setMemberCount(request.memberCount());
-    trip.setDestination(normalizedDestination);
+    trip.applyPatch(
+        request.name().trim(),
+        normalizedDestination,
+        request.durationNights(),
+        durationDays,
+        request.memberCount());
     if (recommendationInputsChanged) {
       tripRecommendationService.deleteRecommendationsForTrip(tripId);
     }
@@ -169,10 +153,9 @@ class TripCommandService {
   @Transactional
   public void deleteTrip(UUID tripId, UUID userId) {
     Trip trip = support.requireOwnedTrip(tripId, userId);
-    LocalDateTime now = LocalDateTime.now();
-    trip.setDeletedAt(now);
+    trip.markDeleted();
     for (TripMember member : tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId)) {
-      member.setDeletedAt(now);
+      member.markDeleted();
     }
   }
 
@@ -237,7 +220,7 @@ class TripCommandService {
     if (target.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.CANNOT_REMOVE_OWNER);
     }
-    target.setDeletedAt(LocalDateTime.now());
+    target.markDeleted();
     return tripMemberQueryService.listMembers(tripId, ownerId);
   }
 
@@ -250,6 +233,6 @@ class TripCommandService {
     if (membership.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);
     }
-    membership.setDeletedAt(LocalDateTime.now());
+    membership.markDeleted();
   }
 }

@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.recommendation.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.schedule.service.TripScheduleSnapshotService;
 import com.tripfit.tripfit.trip.service.TripDisplayNameHelper;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
@@ -48,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 추천 후보 생성·조회·피드백·여행 날짜 확정/취소. 확정 시 멤버 일정 스냅샷도 같은 TX에서 고정한다. */
 @Service
+@RequiredArgsConstructor
 public class TripRecommendationService {
 
   private final TripServiceSupport support;
@@ -63,23 +65,6 @@ public class TripRecommendationService {
   private final RecommendationEngine recommendationEngine;
 
   private final ApplicationEventPublisher applicationEventPublisher;
-
-  public TripRecommendationService(
-      TripServiceSupport support,
-      TripScheduleSnapshotService tripScheduleSnapshotService,
-      TripMemberScheduleSnapshotRepository tripMemberScheduleSnapshotRepository,
-      RecommendationRepository recommendationRepository,
-      RecommendationFeedbackRepository recommendationFeedbackRepository,
-      RecommendationEngine recommendationEngine,
-      ApplicationEventPublisher applicationEventPublisher) {
-    this.support = support;
-    this.tripScheduleSnapshotService = tripScheduleSnapshotService;
-    this.tripMemberScheduleSnapshotRepository = tripMemberScheduleSnapshotRepository;
-    this.recommendationRepository = recommendationRepository;
-    this.recommendationFeedbackRepository = recommendationFeedbackRepository;
-    this.recommendationEngine = recommendationEngine;
-    this.applicationEventPublisher = applicationEventPublisher;
-  }
 
   // 방장이 추천 모드로 TOP3 후보를 재계산 — 기존 후보 hard DELETE 후 새로 저장, lastRecommendationMode 갱신
   @Transactional
@@ -111,7 +96,7 @@ public class TripRecommendationService {
               candidate.score()));
     }
     recommendationRepository.saveAll(rows);
-    trip.setLastRecommendationMode(mode);
+    trip.applyLastRecommendationMode(mode);
 
     return toListResponse(mode, rows);
   }
@@ -226,12 +211,12 @@ public class TripRecommendationService {
     int uncertainMemberCount =
         (int) details.stream().filter(detail -> detail.uncertainDays() > 0).count();
 
-    trip.setStatus(TripStatus.CONFIRMED);
-    trip.setConfirmedStartDate(confirmedStartDate);
-    trip.setConfirmedEndDate(confirmedEndDate);
-    trip.setConfirmedAttendCount(attendCount);
-    trip.setConfirmedVacationMemberCount(vacationMemberCount);
-    trip.setConfirmedUncertainCount(uncertainMemberCount);
+    trip.confirm(
+        confirmedStartDate,
+        confirmedEndDate,
+        attendCount,
+        vacationMemberCount,
+        uncertainMemberCount);
 
     tripScheduleSnapshotService.freezeTrip(trip);
     applicationEventPublisher.publishEvent(new TripConfirmedEvent(tripId));
@@ -250,15 +235,7 @@ public class TripRecommendationService {
     }
     requireValidUnconfirmReason(request);
 
-    trip.setUnconfirmReason(request.reason());
-    trip.setUnconfirmReasonDetail(
-        request.reason() == UnconfirmReason.OTHER ? request.reasonDetail() : null);
-    trip.setStatus(TripStatus.ONGOING);
-    trip.setConfirmedStartDate(null);
-    trip.setConfirmedEndDate(null);
-    trip.setConfirmedAttendCount(null);
-    trip.setConfirmedVacationMemberCount(null);
-    trip.setConfirmedUncertainCount(null);
+    trip.unconfirm(request.reason(), request.reasonDetail());
 
     recommendationRepository.deleteByTripId(tripId);
     tripMemberScheduleSnapshotRepository.deleteByTripId(tripId);

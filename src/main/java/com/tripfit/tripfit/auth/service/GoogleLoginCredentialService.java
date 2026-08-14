@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.domain.GoogleLoginCredential;
 import com.tripfit.tripfit.auth.oauth.GoogleOAuthClient;
 import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 // 저장·탈퇴 시점에 소비하는 credential 유스케이스(Apple 패턴과 동일 구조) — Google 토큰 엔드포인트 HTTP 호출은 여기서
 // 트랜잭션 밖에서 수행하고, DB 조회·저장·삭제는 짧은 트랜잭션을 가진 GoogleLoginCredentialPersistenceService에 위임한다
 @Service
+@RequiredArgsConstructor
 public class GoogleLoginCredentialService {
 
   private static final Logger log = LoggerFactory.getLogger(GoogleLoginCredentialService.class);
@@ -26,15 +28,6 @@ public class GoogleLoginCredentialService {
   private final SocialTokenCrypto tokenCrypto;
 
   private final GoogleLoginCredentialPersistenceService persistenceService;
-
-  public GoogleLoginCredentialService(
-      GoogleOAuthClient googleOAuthClient,
-      SocialTokenCrypto tokenCrypto,
-      GoogleLoginCredentialPersistenceService persistenceService) {
-    this.googleOAuthClient = googleOAuthClient;
-    this.tokenCrypto = tokenCrypto;
-    this.persistenceService = persistenceService;
-  }
 
   // authorizationCode를 refresh token으로 교환해 암호화 저장 — refresh_token이 없는 응답(재로그인 등 정상 케이스)은
   // 조용히 스킵하고 기존 credential을 그대로 둠. 교환 자체가 실패해도 로그인은 계속 진행(best-effort). redirectUri는

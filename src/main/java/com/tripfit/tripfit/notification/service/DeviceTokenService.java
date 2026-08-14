@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.notification.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.notification.domain.UserDeviceToken;
 import com.tripfit.tripfit.notification.dto.DeviceTokenRegisterRequest;
@@ -13,18 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 // 디바이스 토큰 등록·해제 — 재로그인 시 소유자 재할당(D7)
 public class DeviceTokenService {
 
   private final UserDeviceTokenRepository userDeviceTokenRepository;
 
   private final UserLookupService userLookupService;
-
-  public DeviceTokenService(
-      UserDeviceTokenRepository userDeviceTokenRepository, UserLookupService userLookupService) {
-    this.userDeviceTokenRepository = userDeviceTokenRepository;
-    this.userLookupService = userLookupService;
-  }
 
   // 토큰을 등록한다 — 기존 토큰이 다른 유저 소유면 재할당, 없으면 신규 저장(D7)
   @Transactional

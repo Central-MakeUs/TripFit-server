@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.membership.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.service.TripDisplayNameHelper;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import com.tripfit.tripfit.trip.schedule.domain.SlotStatuses;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 // 여행방 멤버 목록·멤버별 일정 달력 조회
 public class TripMemberQueryService {
 
@@ -40,17 +42,6 @@ public class TripMemberQueryService {
   private final SchedulePort schedulePort;
 
   private final GoogleCalendarPort googleCalendarPort;
-
-  public TripMemberQueryService(
-      TripMemberScheduleSnapshotRepository snapshotRepository,
-      TripServiceSupport support,
-      SchedulePort schedulePort,
-      GoogleCalendarPort googleCalendarPort) {
-    this.snapshotRepository = snapshotRepository;
-    this.support = support;
-    this.schedulePort = schedulePort;
-    this.googleCalendarPort = googleCalendarPort;
-  }
 
   // 멤버 목록 조회 — 모집률·동명이인 displayName 포함
   @Transactional(readOnly = true)

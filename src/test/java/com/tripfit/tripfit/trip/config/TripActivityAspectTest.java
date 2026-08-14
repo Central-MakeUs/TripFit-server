@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class TripActivityAspectTest {
@@ -45,7 +46,7 @@ class TripActivityAspectTest {
   void setUp() {
     aspect = new TripActivityAspect(tripRepository);
     trip = sampleTrip();
-    trip.setLastActivityAt(LocalDateTime.of(2026, 1, 1, 0, 0));
+    ReflectionTestUtils.setField(trip, "lastActivityAt", LocalDateTime.of(2026, 1, 1, 0, 0));
   }
 
   @Test

@@ -89,8 +89,7 @@ class TripScheduleSnapshotServiceTest {
             support);
     user = new User("sub", SocialProvider.GOOGLE, "a@b.c", "nick", null);
     user.setId(USER_ID);
-    user.setLastName("홍");
-    user.setFirstName("길동");
+    user.applyProfilePatch("길동", "홍", null);
     trip =
         new Trip(
             user,

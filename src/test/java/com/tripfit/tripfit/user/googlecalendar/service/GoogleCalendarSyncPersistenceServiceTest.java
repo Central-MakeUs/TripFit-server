@@ -190,7 +190,7 @@ class GoogleCalendarSyncPersistenceServiceTest {
 
   @Test
   void disconnectGoogleCalendar_deletesGoogleLayerAndClearsFlag() {
-    user.setGoogleCalendarConnected(true);
+    user.connectGoogleCalendar();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     persistenceService.disconnectGoogleCalendar(USER_ID);
@@ -202,7 +202,7 @@ class GoogleCalendarSyncPersistenceServiceTest {
 
   @Test
   void clearConnectedFlag_setsFalseWithoutDeleting() {
-    user.setGoogleCalendarConnected(true);
+    user.connectGoogleCalendar();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     persistenceService.clearConnectedFlag(USER_ID);

@@ -71,8 +71,7 @@ class UserProfileServiceTest {
 
   @Test
   void updateProfile_savesFirstAndLastName() {
-    user.setFirstName("길동");
-    user.setLastName("홍");
+    user.applyProfilePatch("길동", "홍", null);
     when(userLookupService.requireUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
         .thenReturn(user);
     when(userSummaryService.toSummary(user))
@@ -102,8 +101,7 @@ class UserProfileServiceTest {
 
   @Test
   void updateProfile_onlyNotificationEnabled_keepsNameUnchanged() {
-    user.setFirstName("길동");
-    user.setLastName("홍");
+    user.applyProfilePatch("길동", "홍", null);
     when(userLookupService.requireUser(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
         .thenReturn(user);
     when(userSummaryService.toSummary(user)).thenReturn(null);
@@ -150,8 +148,7 @@ class UserProfileServiceTest {
 
   @Test
   void requireProfileNameComplete_whenPresent_passes() {
-    user.setFirstName("길동");
-    user.setLastName("홍");
+    user.applyProfilePatch("길동", "홍", null);
 
     userProfileService.requireProfileNameComplete(user);
   }

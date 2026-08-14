@@ -75,8 +75,7 @@ class ScheduleServiceTest {
   void setUp() {
     user = new User("google-sub", SocialProvider.GOOGLE, "user@example.com", "홍길동", null);
     user.setId(USER_ID);
-    user.setFirstName("길동");
-    user.setLastName("홍");
+    user.applyProfilePatch("길동", "홍", null);
   }
 
   @Test

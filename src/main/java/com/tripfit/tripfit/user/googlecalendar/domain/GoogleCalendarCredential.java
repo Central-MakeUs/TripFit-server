@@ -16,13 +16,11 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "google_calendar_credential")
@@ -110,6 +108,11 @@ public class GoogleCalendarCredential extends BaseTimeEntity {
   public void updateAccessTokenCache(String accessTokenCiphertext, Instant accessTokenExpiresAt) {
     this.accessTokenCiphertext = accessTokenCiphertext;
     this.accessTokenExpiresAt = accessTokenExpiresAt;
+  }
+
+  // access token 재발급 응답에 회전된(rotated) refresh token이 함께 온 경우에만 갱신
+  public void applyRotatedRefreshToken(String refreshTokenCiphertext) {
+    this.refreshTokenCiphertext = refreshTokenCiphertext;
   }
 
   public void markSynced() {

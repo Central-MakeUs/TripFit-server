@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.auth.service;
 
 import com.tripfit.tripfit.auth.jwt.AccessTokenClaims;
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
 import com.tripfit.tripfit.auth.oauth.RedisTokenRevocationChecker;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
   private final SocialTokenVerifierRegistry verifierRegistry;
@@ -40,27 +42,6 @@ public class AuthService {
   private final GoogleLoginCredentialService googleLoginCredentialService;
 
   private final RedisTokenRevocationChecker tokenRevocationChecker;
-
-  public AuthService(
-      SocialTokenVerifierRegistry verifierRegistry,
-      AuthLoginPersistenceService authLoginPersistenceService,
-      JwtService jwtService,
-      RefreshTokenService refreshTokenService,
-      UserSummaryService userSummaryService,
-      UserLookupService userLookupService,
-      AppleCredentialService appleCredentialService,
-      GoogleLoginCredentialService googleLoginCredentialService,
-      RedisTokenRevocationChecker tokenRevocationChecker) {
-    this.verifierRegistry = verifierRegistry;
-    this.authLoginPersistenceService = authLoginPersistenceService;
-    this.jwtService = jwtService;
-    this.refreshTokenService = refreshTokenService;
-    this.userSummaryService = userSummaryService;
-    this.userLookupService = userLookupService;
-    this.appleCredentialService = appleCredentialService;
-    this.googleLoginCredentialService = googleLoginCredentialService;
-    this.tokenRevocationChecker = tokenRevocationChecker;
-  }
 
   // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함 — 소셜 provider HTTP 호출(토큰 검증·authorizationCode
   // 교환)은 DB 쓰기 트랜잭션 밖에서 먼저 끝내, provider 장애·지연이 DB 커넥션 풀을 붙잡지 않게 함

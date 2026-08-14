@@ -312,7 +312,10 @@ ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID use
 ## Style
 
 - Java 21 (records, pattern matching) 사용 가능
-- Lombok — Entity(JPA)·`@ConfigurationProperties` 클래스만 사용(`@Getter`/`@Setter`/`@NoArgsConstructor`/`@Data` 등). Service/Controller/DTO(record)는 미사용. `@Data`/`@EqualsAndHashCode`/`@ToString`은 Entity에 금지(JPA 프록시·지연로딩 함정) — Entity는 `@Getter`(+`@Setter`)만
+- Lombok — Entity(JPA)·`@ConfigurationProperties` 클래스·**Service**만 사용. Controller/DTO(record)는 미사용(2026-08-14 개정 — 이전엔 Service도 미사용이었으나 생성자 보일러플레이트 제거를 위해 허용으로 변경).
+  - Entity: `@Getter`(+`@Setter`)만. `@Data`/`@EqualsAndHashCode`/`@ToString`은 Entity에 금지(JPA 프록시·지연로딩 함정)
+  - Service: 생성자 주입 필드는 `@RequiredArgsConstructor` + `private final` — 수동 생성자 작성 금지(ArchitectureTest가 필드 주입 금지는 이미 검증, 생성자 스타일은 리뷰로 확인)
+    - **예외 — 수동 생성자 유지:** 생성자 바디에 필드 대입 외 로직(검증·파생값 계산 — `JwtService`의 secret 길이 검증 등)이 있거나, `@Lazy`처럼 **생성자 파라미터에만** 걸려야 의미가 살아나는 스프링 애너테이션이 있는 경우(필드에 붙이면 Lombok이 생성자로 복사하지 않음 — `FcmService`의 `@Lazy FirebaseMessaging` 사고 사례, 2026-08-14). 이런 경우 수동 생성자를 유지하고 이유를 `//` 한 줄로 남긴다
   - 단일 필드 `@ConfigurationProperties`(`FcmProperties`, `SocialTokenCryptoProperties`)는 예외적으로 수동 getter/setter 유지 — 유출 위험 없음, `cross-cutting/audit.md` C에서 검토 후 유지 결정
 - 공통 설정: `common/config/`, 도메인 전용: `{domain}/config/`
 

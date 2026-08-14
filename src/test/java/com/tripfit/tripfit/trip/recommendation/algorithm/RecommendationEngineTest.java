@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class RecommendationEngineTest {
@@ -194,7 +195,9 @@ class RecommendationEngineTest {
             null,
             null,
             null);
-    work.setSlotStatuses(
+    ReflectionTestUtils.setField(
+        work,
+        "slotStatuses",
         new SlotStatuses(ScheduleStatus.IMPOSSIBLE, ScheduleStatus.IMPOSSIBLE,
             ScheduleStatus.POSSIBLE));
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
@@ -232,7 +235,9 @@ class RecommendationEngineTest {
             null,
             null,
             null);
-    alwaysBusy.setSlotStatuses(
+    ReflectionTestUtils.setField(
+        alwaysBusy,
+        "slotStatuses",
         new SlotStatuses(ScheduleStatus.IMPOSSIBLE, ScheduleStatus.IMPOSSIBLE,
             ScheduleStatus.IMPOSSIBLE));
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(alwaysBusy));
@@ -298,7 +303,7 @@ class RecommendationEngineTest {
         new Trip(
             user("owner"), "테스트", start, end, durationDays - 1, durationDays, 6, "ABC123",
             TripStatus.ONGOING);
-    trip.setLastRecommendationMode(mode);
+    ReflectionTestUtils.setField(trip, "lastRecommendationMode", mode);
     return trip;
   }
 

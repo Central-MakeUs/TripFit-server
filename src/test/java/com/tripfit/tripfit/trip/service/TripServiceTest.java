@@ -63,6 +63,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -129,9 +130,9 @@ class TripServiceTest {
   @BeforeEach
   void setUp() {
     owner = user(OWNER_ID, "홍", "길동");
-    owner.setAllFree(true);
+    owner.applyAllFree(true);
     member = user(MEMBER_ID, "김", "철수");
-    member.setAllFree(true);
+    member.applyAllFree(true);
     trip = ongoingTrip();
 
     UserLookupService userLookupService = new UserLookupService(userRepository);
@@ -274,7 +275,7 @@ class TripServiceTest {
 
   @Test
   void createTrip_doesNotMarkAllFree() {
-    owner.setAllFree(false);
+    owner.applyAllFree(false);
     when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
     when(tripRepository.existsByInviteCode(any())).thenReturn(false);
     when(tripRepository.save(any(Trip.class)))
@@ -302,7 +303,7 @@ class TripServiceTest {
 
   @Test
   void activateMembership_pendingToActive_andMarksAllFree() {
-    owner.setAllFree(false);
+    owner.applyAllFree(false);
     TripMember joined =
         new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
@@ -397,7 +398,7 @@ class TripServiceTest {
 
   @Test
   void joinTrip_newMember_touchesLastActivity() {
-    trip.setLastActivityAt(LocalDateTime.of(2026, 1, 1, 0, 0));
+    ReflectionTestUtils.setField(trip, "lastActivityAt", LocalDateTime.of(2026, 1, 1, 0, 0));
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
         .thenReturn(Optional.of(trip));
@@ -451,7 +452,7 @@ class TripServiceTest {
 
   @Test
   void joinTrip_setsAllFreeWhenNoSchedules() {
-    member.setAllFree(false);
+    member.applyAllFree(false);
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
         .thenReturn(Optional.of(trip));
@@ -469,7 +470,7 @@ class TripServiceTest {
 
   @Test
   void joinTrip_idempotentForExistingMemberOnConfirmedTrip() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
     TripMember existing = tripMember(member, TripMemberRole.MEMBER);
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
@@ -485,7 +486,7 @@ class TripServiceTest {
 
   @Test
   void joinTrip_rejectsNewMemberOnConfirmedTrip() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
         .thenReturn(Optional.of(trip));
@@ -529,7 +530,7 @@ class TripServiceTest {
 
   @Test
   void patchTrip_rejectsWhenNotOngoing() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
 
     assertThatThrownBy(
@@ -544,7 +545,7 @@ class TripServiceTest {
 
   @Test
   void patchTrip_deletesRecommendationsWhenDurationChanges() {
-    trip.setLastActivityAt(LocalDateTime.of(2026, 1, 1, 0, 0));
+    ReflectionTestUtils.setField(trip, "lastActivityAt", LocalDateTime.of(2026, 1, 1, 0, 0));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     TripMember ownerMember = tripMember(owner, TripMemberRole.OWNER);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
@@ -738,10 +739,10 @@ class TripServiceTest {
   void listMembers_assignsDuplicateDisplayNames() {
     User dup1 = user(UUID.fromString("550e8400-e29b-41d4-a716-446655440003"), "홍", "길동");
     User dup2 = user(UUID.fromString("550e8400-e29b-41d4-a716-446655440004"), "홍", "길동");
-    TripMember m1 = tripMember(dup1, TripMemberRole.MEMBER);
-    TripMember m2 = tripMember(dup2, TripMemberRole.MEMBER);
-    m1.setJoinedAt(LocalDateTime.of(2026, 7, 1, 10, 0));
-    m2.setJoinedAt(LocalDateTime.of(2026, 7, 2, 10, 0));
+    TripMember m1 =
+        tripMember(dup1, TripMemberRole.MEMBER, LocalDateTime.of(2026, 7, 1, 10, 0));
+    TripMember m2 =
+        tripMember(dup2, TripMemberRole.MEMBER, LocalDateTime.of(2026, 7, 2, 10, 0));
 
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(tripMember(owner, TripMemberRole.OWNER)));
@@ -802,7 +803,7 @@ class TripServiceTest {
 
   @Test
   void removeMember_whenTripNotOngoing_throwsConflict() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
 
     assertThatThrownBy(() -> tripService.removeMember(TRIP_ID, OWNER_ID, MEMBER_ID))
@@ -813,7 +814,7 @@ class TripServiceTest {
 
   @Test
   void leaveTrip_softDeletesMembership_touchesLastActivity() {
-    trip.setLastActivityAt(LocalDateTime.of(2026, 1, 1, 0, 0));
+    ReflectionTestUtils.setField(trip, "lastActivityAt", LocalDateTime.of(2026, 1, 1, 0, 0));
     TripMember target = tripMember(member, TripMemberRole.MEMBER);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
@@ -827,7 +828,7 @@ class TripServiceTest {
 
   @Test
   void leaveTrip_whenTripConfirmedOrTerminated_stillSucceeds() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
     TripMember target = tripMember(member, TripMemberRole.MEMBER);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
@@ -937,7 +938,7 @@ class TripServiceTest {
 
   @Test
   void getMemberScheduleCalendar_whenExpired_readsSnapshots() {
-    trip.setStatus(TripStatus.EXPIRED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.EXPIRED);
     TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
@@ -1009,16 +1010,17 @@ class TripServiceTest {
   }
 
   private TripMember tripMember(User user, TripMemberRole role) {
-    TripMember tm =
-        new TripMember(trip, user, role, TripMemberStatus.ACTIVE, LocalDateTime.now());
-    return tm;
+    return tripMember(user, role, LocalDateTime.now());
+  }
+
+  private TripMember tripMember(User user, TripMemberRole role, LocalDateTime joinedAt) {
+    return new TripMember(trip, user, role, TripMemberStatus.ACTIVE, joinedAt);
   }
 
   private static User user(UUID id, String lastName, String firstName) {
     User u = new User("sub-" + id, SocialProvider.GOOGLE, "u@example.com", "nick", null);
     u.setId(id);
-    u.setLastName(lastName);
-    u.setFirstName(firstName);
+    u.applyProfilePatch(firstName, lastName, null);
     return u;
   }
 }
