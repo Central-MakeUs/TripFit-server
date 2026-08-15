@@ -31,9 +31,12 @@ public class SecurityConfig {
   }
 
   @Bean
-  // login/refresh/logout/dev-login/apple-notifications·actuator·swagger는 공개. logout은 만료·폐기 토큰도
+  // login/refresh/logout/dev-login/apple-notifications/error·actuator·swagger는 공개. logout은 만료·폐기
+  // 토큰도
   // body로 처리하기 위해 permitAll.
   // dev-login은 local/dev 프로필에서만 빈 존재. apple/notifications는 Apple 서버가 직접 호출 — signed JWT 자체 검증으로 보호
+  // /error: authenticated 상태였던 요청도 예외 처리 중 SecurityContext가 비워진 채 내부 forward되므로, permitAll이 아니면
+  // 원래 500이어야 할 응답이 401 AUTH_INVALID_TOKEN으로 오인 마스킹됨
   CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOrigins(
@@ -67,6 +70,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/dev-login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/apple/notifications").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                 .permitAll()
