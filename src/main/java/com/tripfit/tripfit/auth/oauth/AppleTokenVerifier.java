@@ -35,6 +35,8 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
   }
 
   // 애플 ID 토큰의 서명과 audience를 검증해 사용자 프로필을 추출함
+  // TODO: iss(https://appleid.apple.com) 명시 검증 추가 — JWKS 소스가 애플 전용이라 실질 위험은 낮지만,
+  // AppleNotificationVerifier처럼 iss까지 명시 검증하는 편이 일관적
   @Override
   public OAuthProfile verify(String token) {
     // 1. 애플 서비스 ID가 설정돼 있는지 확인함

@@ -52,6 +52,8 @@ public class GoogleTokenVerifier implements SocialTokenVerifier {
   }
 
   // 구글 ID 토큰의 서명과 audience를 검증해 사용자 프로필을 추출함
+  // TODO: iss(https://accounts.google.com | accounts.google.com) 명시 검증 추가 — JWKS 소스가 구글 전용이라
+  // 실질 위험은 낮지만, AppleNotificationVerifier처럼 iss까지 명시 검증하는 편이 일관적
   @Override
   public OAuthProfile verify(String token) {
     // 1. 허용된 구글 클라이언트 ID 목록이 설정돼 있는지 확인함

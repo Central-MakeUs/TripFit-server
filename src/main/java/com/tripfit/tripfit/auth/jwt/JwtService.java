@@ -20,12 +20,22 @@ public class JwtService {
 
   private final JwtProperties jwtProperties;
 
+  private static final int MIN_SECRET_BYTES = 32;
+
   private final byte[] secretBytes;
 
+  // HS256(RFC 7518)은 최소 256비트(32바이트) 키를 요구함 — 짧은 secret은 첫 로그인 시점이 아니라 부팅 시점에 즉시 실패시킴
   public JwtService(JwtProperties jwtProperties) {
     this.jwtProperties = jwtProperties;
     this.secretBytes = jwtProperties.getSecret().getBytes();
-    // TODO: secret 최소 32바이트 검증을 부팅 시 강제 — 현재는 env 누락 시 런타임 서명 실패에 의존
+    if (secretBytes.length < MIN_SECRET_BYTES) {
+      throw new IllegalStateException(
+          "tripfit.jwt.secret must be at least "
+              + MIN_SECRET_BYTES
+              + " bytes for HS256 (was "
+              + secretBytes.length
+              + ")");
+    }
   }
 
   // 사용자 ID를 기반으로 서명된 JWT 액세스 토큰을 생성함
