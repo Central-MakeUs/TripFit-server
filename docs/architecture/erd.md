@@ -1,7 +1,7 @@
 # TripFit ERD
 
 > NotebookLM 03 + 2026-07-08 확정 병합. 비즈니스 규칙: `docs/product/business-rules/`.
-> **구현 상태:** wave 1 UUID PK 전환 완료. wave 2 `#11` — **정기/개별 2테이블** (`regular_schedule` · `personal_schedule`). A안 단일 `schedule` 폐기. 여행방 CRUD·추천은 후속 이슈.
+> **구현 상태:** wave 1 UUID PK 전환 완료. wave 2 `#11` — **정기/개별 2테이블** (`regular_schedule` · `personal_schedule`). A안 단일 `schedule` 폐기. 여행방 CRUD(`#12`)·추천 4모드·확정·확정취소(`#13`·`#50`) 구현 완료.
 
 ## 1. 개요
 
@@ -25,6 +25,7 @@ users ||--o{ trip_member : participates
 users ||--o{ trip : owns
 trip ||--o{ trip_member : has
 trip ||--o{ recommendation : generates
+trip ||--o{ recommendation_feedback : receives
 trip ||--o{ trip_member_schedule_snapshot : freezes
 users ||--o{ trip_member_schedule_snapshot : snapshotted
 users ||--o{ user_device_token : registers
@@ -128,6 +129,9 @@ trip ||--o{ notification_history : relates_to
         string unconfirm_reason_detail "기타 사유"
         date confirmed_start_date "확정 시작일"
         date confirmed_end_date "확정 종료일"
+        int confirmed_attend_count "확정 시점 참석 인원수"
+        int confirmed_vacation_member_count "확정 시점 연차 필요 인원수"
+        int confirmed_uncertain_count "확정 시점 불확실 인원수"
         datetime last_activity_at "마지막 활동"
         datetime created_at "생성일"
         datetime updated_at "수정일"
@@ -168,10 +172,27 @@ trip ||--o{ notification_history : relates_to
         int recommendation_rank "1~3"
         date start_date "추천 시작일"
         date end_date "추천 종료일"
-        text reason "추천 이유"
-        text risk_note "주의 사항"
-        float score "추천 점수"
+        int attend_rate "참석률(%)"
+        int partial_attend_count "부분 참석 인원수"
+        int uncertain_count "불확실 인원수"
+        float total_vacation_days "총 연차 일수"
+        float score "추천 점수(내부용)"
         datetime created_at "생성일"
+    }
+
+    recommendation_feedback {
+        uuid id PK "피드백 UUID"
+        uuid trip_id FK "여행방"
+        uuid recommendation_id "대상 recommendation(FK 아님, soft reference)"
+        string mode "피드백 시점 모드 스냅샷"
+        int recommendation_rank "피드백 시점 순위 스냅샷"
+        date start_date "피드백 시점 시작일 스냅샷"
+        date end_date "피드백 시점 종료일 스냅샷"
+        string status "HELPFUL NOT_HELPFUL"
+        string reason "도움 안 된 이유"
+        text reason_detail "기타 사유"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
     }
 
     user_device_token {
@@ -344,6 +365,9 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | unconfirm_reason_detail | varchar | Y | | `unconfirm_reason=OTHER`일 때만 직접 입력 텍스트 |
 | confirmed_start_date | date | Y | | |
 | confirmed_end_date | date | Y | | |
+| confirmed_attend_count | int | Y | | 확정 시점 참석 인원수(전체+부분참석), 1회 계산 후 고정. unconfirm 시 null |
+| confirmed_vacation_member_count | int | Y | | 확정 시점 연차 필요 인원수. unconfirm 시 null |
+| confirmed_uncertain_count | int | Y | | 확정 시점 불확실 일정 인원수. unconfirm 시 null |
 | last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·**confirm**·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip-room-api.md) D5 · #39) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
@@ -413,12 +437,35 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | recommendation_rank | int | N | | 1, 2, 3 (`rank` 예약어 회피) |
 | start_date | date | N | | |
 | end_date | date | N | | |
-| reason | text | Y | | 추천 근거 |
-| risk_note | text | Y | | |
-| score | float | Y | | #13 순위·동점 비교 ([`trip-recommendation.md`](../specs/trip-recommendation.md)) |
+| attend_rate | int | N | | 참석률(%) — (전체참석+부분참석)/응답 참여자 수 |
+| partial_attend_count | int | N | | 부분 참석 인원 수 |
+| uncertain_count | int | N | | 불확실 일정이 있는 인원 수 |
+| total_vacation_days | float | N | | 총 연차 일수(반차=0.5) |
+| score | float | N | | 순위·동점 비교(내부용, 응답 미노출) ([`trip-recommendation.md`](../specs/trip-recommendation.md)) |
 | created_at | timestamptz | N | | |
 
 **정책:** 모드 변경·trip 기간/일수 변경·trip soft delete → 해당 trip `recommendation` **hard DELETE**. `trip.last_recommendation_mode` 갱신.
+
+**2026-07-30 amend:** "추천 근거"·"확정 완료" 화면 반영 — 자연어 `reason`/`risk_note`(미사용 Nice to Have) 컬럼을 삭제하고 카드 UI가 실제로 쓰는 `attend_rate`/`partial_attend_count`/`uncertain_count`/`total_vacation_days`로 교체.
+
+### `recommendation_feedback` (2026-07-30 신규, "추천 근거" 화면)
+
+방장이 추천 후보에 남기는 "도움이 되었나요" 피드백. 후보(`recommendation`)당 최대 1건, 방장 전용(조회·저장 모두 owner 게이트).
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| trip_id | char(36) | N | FK → trip.id | |
+| recommendation_id | char(36) | N | **FK 아님(soft reference)** | `recommendation` hard DELETE 이후에도 피드백은 살아남아야 해서 실제 FK 제약을 걸지 않음 |
+| mode | varchar | N | | 피드백 시점 추천 모드 스냅샷 |
+| recommendation_rank | int | N | | 피드백 시점 순위(1~3) 스냅샷 |
+| start_date / end_date | date | N | | 피드백 시점 추천 기간 스냅샷 |
+| status | varchar | N | | `HELPFUL` `NOT_HELPFUL` |
+| reason | varchar | Y | | `status=NOT_HELPFUL`일 때만 |
+| reason_detail | text | Y | | `reason=OTHER`일 때만 |
+| created_at / updated_at | timestamptz | N | | upsert이므로 `updated_at` 필요 |
+
+**UNIQUE:** `(recommendation_id)` — 방장 전용이라 후보 1건당 피드백은 항상 1건.
 
 ### `user_device_token` (`#21` 알림)
 
@@ -471,6 +518,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/EXPIRED 정기+개별 합친 값 freeze |
 | users | trip_member_schedule_snapshot | 1:N | |
 | trip | recommendation | 1:N | 최대 3 (현재 모드) |
+| trip | recommendation_feedback | 1:N | 후보(recommendation)당 최대 1건, 방장 전용(2026-07-30 신규) |
 | users | user_device_token | 1:N | 기기별 FCM 토큰(`#21`) |
 | users | notification_history | 1:N | 수신자(`#21`) |
 | trip | notification_history | 1:N | 여행방 무관 알림(리마인드)은 trip_id null(`#21`) |
@@ -482,7 +530,7 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | 소셜 로그인·프로필 | `users`, `refresh_token` |
 | 정기·개별 일정 | `regular_schedule`, `personal_schedule` |
 | 여행방·초대·여행지 | `trip`, `trip_member` |
-| 추천 4모드·TOP3·확정 | `recommendation`, `trip.last_recommendation_mode`, `trip.confirmed_*` |
+| 추천 4모드·TOP3·확정 | `recommendation`, `recommendation_feedback`, `trip.last_recommendation_mode`, `trip.confirmed_*` |
 | 알림·알림센터(`#21`) | `user_device_token`, `notification_history`, `users.notification_enabled` |
 
 **Out of Scope (향후)**
@@ -494,7 +542,8 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | 대상 | 정책 |
 |------|------|
 | `trip` soft delete | `trip_member` **연쇄 soft delete**. 정기·개별 일정·User 데이터 **유지** |
-| `recommendation` | 옵션/기간 변경·모드 변경·trip delete → **hard DELETE** |
+| `recommendation` | 옵션/기간 변경·모드 변경·trip delete·unconfirm → **hard DELETE** |
+| `recommendation_feedback` | `recommendation`이 hard DELETE돼도 **삭제되지 않음**(soft reference + 스냅샷 필드로 독립 보존, 추천 품질 분석용) |
 | `regular_schedule` · `personal_schedule` | User 소유 — trip 삭제와 **무관** |
 | 전역 연동 | 개별·정기 변경 → 모든 참여 trip의 추천 입력 즉시 반영 (재계산은 BR-TRIP-010) |
 
@@ -507,8 +556,8 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 | 항목 | 내용 |
 |------|------|
-| `[미정]` | BR-TRIP-005 가중치 · BR-TRIP-012 동점 · EXPIRED **전환 시점**(lazy vs 배치) |
-| wave 2 잔여 | `#12` trip CRUD · members schedule-calendar · `#13` 추천 |
+| `[미정]` | EXPIRED **전환 시점**(lazy vs 배치) · `attendRate`(카드 참석률 %) 계산식 최종 확정(현재 화면 역산 추론값) |
+| wave 2 | **완료** — `#12` trip CRUD·members schedule-calendar, `#13`·`#50` 추천 4모드·확정·확정취소(BR-TRIP-005 가중치·BR-TRIP-012 동점 포함) 전부 구현 |
 | wave 4 | 여행방 **삭제** 시 VOC 사유 API·UI (unconfirm 사유와 별개) |
 
 ## 기획 메모 (NotebookLM + 확정)

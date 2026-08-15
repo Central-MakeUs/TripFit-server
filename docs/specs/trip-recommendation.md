@@ -86,24 +86,24 @@
 
 ### Must Have
 
-- [ ] `RecommendationMode` enum (4값 + `trip.last_recommendation_mode`)
-- [ ] `POST /api/v1/trips/{tripId}/recommendations` — `{ mode }` → **계산은 `#50`(`RecommendationEngine`)에 위임** → 기존 rows **hard DELETE** → 결과 TOP 3 INSERT. `#50` 완료 전까지는 플레이스홀더 결과로 계약만 검증
-- [ ] `GET /api/v1/trips/{tripId}/recommendations` — 현재 저장된 TOP 3 (+ `mode`, `generatedAt` `[제안]`)
-- [ ] `POST /api/v1/trips/{tripId}/confirm` — 방장만 (BR-TRIP-007): `{ recommendationRank }` 또는 `{ startDate, endDate }`
-- [ ] confirm → `status=CONFIRMED`, `confirmedStartDate`/`confirmedEndDate` 설정
-- [ ] confirm 시 `#50`의 `classifyMembers(confirmedStartDate, confirmedEndDate, activeMembers)`를 호출해 **`Trip.confirmedAttendCount`(전체+부분참석 인원수)·`confirmedVacationMemberCount`(연차 필요 인원수)·`confirmedUncertainCount`(불확실 일정 인원수)를 그 시점 값으로 저장** — "여행 일정이 확정됐어요" 화면용(방장·참여자 모두 조회, `GET /trips/{tripId}`에 노출 — `trip-room-api.md` amend). unconfirm 시 셋 다 `null`로 초기화
-- [ ] `POST /api/v1/trips/{tripId}/unconfirm`("확정 취소") — 방장만, `status=CONFIRMED`일 때만 호출 가능 (아니면 409 `TRIP_NOT_CONFIRMED`) → `status=ONGOING`으로 되돌리고 `confirmedStartDate`/`confirmedEndDate`를 `null`로 초기화. **새 `TripStatus` 값을 추가하지 않음** — 기존 `ONGOING`으로 단순 복귀(2026-07-24 확정, 근거: `src/new_decision.md` Q1)
-- [ ] unconfirm 요청 body에 **사유 필수** — `reason`(enum `UnconfirmReason`) + `reason=OTHER`면 `reasonDetail`(string) 필수 (아니면 400 `INVALID_UNCONFIRM_REASON`). `Trip.unconfirmReason`/`unconfirmReasonDetail`에 최신값 덮어쓰기 (2026-07-24 확정, 기획자 답변)
-- [ ] unconfirm 시 `#38` 확정 스냅샷(freeze 결과)을 폐기하고 `ONGOING` 라이브 조회로 되돌림 — 이후 재확정 전까지는 스냅샷 없이 라이브 데이터 사용
-- [ ] unconfirm 시 기존 `recommendation` TOP 3 hard DELETE (BR-TRIP-010과 동일 정책 — 재확정하려면 추천을 다시 계산해야 함)
-- [ ] `POST .../recommendations` · confirm — **`status=ONGOING`만** (D4 → 409 `TRIP_NOT_ONGOING`)
-- [ ] confirm 성공 시 **일정 snapshot** (#38 R-freeze — 동일 TX). 추천 재실행은 CONFIRMED/EXPIRED에서 불가(X8)
-- [ ] trip PATCH(기간·일수) / DELETE / mode POST 시 recommendation hard DELETE (BR-TRIP-010)
-- [ ] **`GET /api/v1/trips/{tripId}/recommendations`·`GET .../recommendations/{rank}`는 방장만** (2026-07-30 기획 개정 — 구 "JWT + member" 폐기). 참여자는 후보·추천 근거를 볼 수 없고 **확정된 일정만**(`Trip.confirmedStartDate`/`confirmedEndDate`, 기존 `GET /trips/{tripId}`) 조회 가능 → 참여자 호출 시 403 `TRIP_FORBIDDEN`
-- [ ] `GET /api/v1/trips/{tripId}/recommendations/{rank}` — 특정 후보 상세: 참석률·4개 통계 + **참여자별 브레이크다운**(이름·`FULL_ATTEND`/`PARTIAL_ATTEND`/`NON_ATTEND`·불확실 일수·필요 연차일수) + 방장이 남긴 `feedback`(없으면 null). 참여자별 브레이크다운은 **저장하지 않고** 그때그때 `#50`의 참여자 분류 로직을 해당 rank의 `startDate`~`endDate`로 재실행해 계산(라이브 재계산 — 카드 목록의 무거운 페이로드 방지)
-- [ ] `PUT /api/v1/trips/{tripId}/recommendations/{rank}/feedback` — **방장만**(2026-07-30 기획 개정 — 조회 자체가 방장 전용이라 피드백도 방장만 남길 수 있음). `{ status: "HELPFUL"|"NOT_HELPFUL", reason?, reasonDetail? }`. `status=NOT_HELPFUL`이면 `reason`(enum `RecommendationFeedbackReason`) 필수, `reason=OTHER`면 `reasonDetail` 필수(아니면 400 `INVALID_RECOMMENDATION_FEEDBACK`). unique(recommendation_id) — 방장이 같은 후보를 다시 보면 이전 선택을 덮어씀
-- [ ] 피드백은 **모드 변경 hard DELETE에도 살아남는다** — `recommendation_id`는 FK 제약 없는 참조값으로만 저장하고 `mode`/`rank`/`startDate`/`endDate`를 피드백 행에 스냅샷으로 같이 저장(추천 품질 분석 목적, `recommendation` 테이블과 생명주기 분리)
-- [ ] `./gradlew test` — 상태 전이·hard DELETE 트리거·피드백 upsert·유효성 검증 단위 테스트 (모드별 rank·동점·참여자 분류 테스트는 `#50` 소관)
+- [x] `RecommendationMode` enum (4값 + `trip.last_recommendation_mode`)
+- [x] `POST /api/v1/trips/{tripId}/recommendations` — `{ mode }` → **계산은 `#50`(`RecommendationEngine`)에 위임** → 기존 rows **hard DELETE** → 결과 TOP 3 INSERT. `#50` 완료 전까지는 플레이스홀더 결과로 계약만 검증
+- [x] `GET /api/v1/trips/{tripId}/recommendations` — 현재 저장된 TOP 3 (+ `mode`, `generatedAt` `[제안]`)
+- [x] `POST /api/v1/trips/{tripId}/confirm` — 방장만 (BR-TRIP-007): `{ recommendationRank }` 또는 `{ startDate, endDate }`
+- [x] confirm → `status=CONFIRMED`, `confirmedStartDate`/`confirmedEndDate` 설정
+- [x] confirm 시 `#50`의 `classifyMembers(confirmedStartDate, confirmedEndDate, activeMembers)`를 호출해 **`Trip.confirmedAttendCount`(전체+부분참석 인원수)·`confirmedVacationMemberCount`(연차 필요 인원수)·`confirmedUncertainCount`(불확실 일정 인원수)를 그 시점 값으로 저장** — "여행 일정이 확정됐어요" 화면용(방장·참여자 모두 조회, `GET /trips/{tripId}`에 노출 — `trip-room-api.md` amend). unconfirm 시 셋 다 `null`로 초기화
+- [x] `POST /api/v1/trips/{tripId}/unconfirm`("확정 취소") — 방장만, `status=CONFIRMED`일 때만 호출 가능 (아니면 409 `TRIP_NOT_CONFIRMED`) → `status=ONGOING`으로 되돌리고 `confirmedStartDate`/`confirmedEndDate`를 `null`로 초기화. **새 `TripStatus` 값을 추가하지 않음** — 기존 `ONGOING`으로 단순 복귀(2026-07-24 확정, 근거: `src/new_decision.md` Q1)
+- [x] unconfirm 요청 body에 **사유 필수** — `reason`(enum `UnconfirmReason`) + `reason=OTHER`면 `reasonDetail`(string) 필수 (아니면 400 `INVALID_UNCONFIRM_REASON`). `Trip.unconfirmReason`/`unconfirmReasonDetail`에 최신값 덮어쓰기 (2026-07-24 확정, 기획자 답변)
+- [x] unconfirm 시 `#38` 확정 스냅샷(freeze 결과)을 폐기하고 `ONGOING` 라이브 조회로 되돌림 — 이후 재확정 전까지는 스냅샷 없이 라이브 데이터 사용
+- [x] unconfirm 시 기존 `recommendation` TOP 3 hard DELETE (BR-TRIP-010과 동일 정책 — 재확정하려면 추천을 다시 계산해야 함)
+- [x] `POST .../recommendations` · confirm — **`status=ONGOING`만** (D4 → 409 `TRIP_NOT_ONGOING`)
+- [x] confirm 성공 시 **일정 snapshot** (#38 R-freeze — 동일 TX). 추천 재실행은 CONFIRMED/EXPIRED에서 불가(X8)
+- [x] trip PATCH(기간·일수) / DELETE / mode POST 시 recommendation hard DELETE (BR-TRIP-010)
+- [x] **`GET /api/v1/trips/{tripId}/recommendations`·`GET .../recommendations/{rank}`는 방장만** (2026-07-30 기획 개정 — 구 "JWT + member" 폐기). 참여자는 후보·추천 근거를 볼 수 없고 **확정된 일정만**(`Trip.confirmedStartDate`/`confirmedEndDate`, 기존 `GET /trips/{tripId}`) 조회 가능 → 참여자 호출 시 403 `TRIP_FORBIDDEN`
+- [x] `GET /api/v1/trips/{tripId}/recommendations/{rank}` — 특정 후보 상세: 참석률·4개 통계 + **참여자별 브레이크다운**(이름·`FULL_ATTEND`/`PARTIAL_ATTEND`/`NON_ATTEND`·불확실 일수·필요 연차일수) + 방장이 남긴 `feedback`(없으면 null). 참여자별 브레이크다운은 **저장하지 않고** 그때그때 `#50`의 참여자 분류 로직을 해당 rank의 `startDate`~`endDate`로 재실행해 계산(라이브 재계산 — 카드 목록의 무거운 페이로드 방지)
+- [x] `PUT /api/v1/trips/{tripId}/recommendations/{rank}/feedback` — **방장만**(2026-07-30 기획 개정 — 조회 자체가 방장 전용이라 피드백도 방장만 남길 수 있음). `{ status: "HELPFUL"|"NOT_HELPFUL", reason?, reasonDetail? }`. `status=NOT_HELPFUL`이면 `reason`(enum `RecommendationFeedbackReason`) 필수, `reason=OTHER`면 `reasonDetail` 필수(아니면 400 `INVALID_RECOMMENDATION_FEEDBACK`). unique(recommendation_id) — 방장이 같은 후보를 다시 보면 이전 선택을 덮어씀
+- [x] 피드백은 **모드 변경 hard DELETE에도 살아남는다** — `recommendation_id`는 FK 제약 없는 참조값으로만 저장하고 `mode`/`rank`/`startDate`/`endDate`를 피드백 행에 스냅샷으로 같이 저장(추천 품질 분석 목적, `recommendation` 테이블과 생명주기 분리)
+- [x] `./gradlew test` — 상태 전이·hard DELETE 트리거·피드백 upsert·유효성 검증 단위 테스트 (모드별 rank·동점·참여자 분류 테스트는 `#50` 소관)
 
 ### Nice to Have
 
@@ -261,14 +261,16 @@
 
 | HTTP | code | 조건 |
 |------|------|------|
-| 400 | `INVALID_RECOMMENDATION_MODE` | enum 밖 |
-| 403 | `TRIP_FORBIDDEN` | 방장 아님 |
-| 409 | `TRIP_ALREADY_CONFIRMED` | 중복 confirm |
-| 409 | `TRIP_NOT_ONGOING` | recommendations/confirm 호출 시 상태가 ONGOING이 아님(CONFIRMED/EXPIRED) |
-| 409 | `TRIP_NOT_CONFIRMED` (신규) | unconfirm 호출 시 상태가 CONFIRMED가 아님 |
-| 400 | `INVALID_UNCONFIRM_REASON` (신규) | `reason` enum 밖 또는 `OTHER`인데 `reasonDetail` 없음 |
-| 400 | `INVALID_RECOMMENDATION_FEEDBACK` (신규) | `status=NOT_HELPFUL`인데 `reason` 없음, 또는 `reason=OTHER`인데 `reasonDetail` 없음 |
-| 404 | `RECOMMENDATION_NOT_FOUND` | rank 없음 |
+| 400 | `INVALID_INPUT` | `mode`가 enum 밖(요청 JSON 파싱 단계에서 걸러짐 — **2026-07-30 구현 확정**: 전용 `INVALID_RECOMMENDATION_MODE`을 신설하는 대신 `mode`를 계속 정식 enum 타입으로 유지해 Swagger에 값 목록이 그대로 노출되게 하고, 파싱 실패는 공용 `HttpMessageNotReadableException` 핸들러가 `INVALID_INPUT`으로 통일 처리) · 추천 생성 시 여행 일수(`durationDays`) 미정 |
+| 403 | `TRIP_FORBIDDEN` | 방장 아님(모든 엔드포인트 공통 — `TripAuthorizationInterceptor`) |
+| 409 | `TRIP_NOT_ONGOING` | recommendations/confirm 호출 시 상태가 ONGOING이 아님(CONFIRMED/EXPIRED) — 이미 CONFIRMED인 방에 confirm 재호출도 동일 코드 |
+| 409 | `TRIP_NOT_CONFIRMED` | unconfirm 호출 시 상태가 CONFIRMED가 아님 |
+| 400 | `INVALID_UNCONFIRM_REASON` | `reason` enum 밖 또는 `OTHER`인데 `reasonDetail` 없음 |
+| 400 | `INVALID_RECOMMENDATION_FEEDBACK` | `status=NOT_HELPFUL`인데 `reason` 없음, 또는 `reason=OTHER`인데 `reasonDetail` 없음 |
+| 400 | `INVALID_CONFIRM_REQUEST` (신규) | confirm 요청에 `recommendationRank`·직접 날짜(`startDate`+`endDate`)가 둘 다 없거나 둘 다 있음 |
+| 400 | `CONFIRM_DURATION_MISMATCH` (신규) | confirm 직접 입력 날짜의 일수가 `trip.durationDays`와 다름 |
+| 404 | `RECOMMENDATION_NOT_FOUND` | rank 없음(GET 상세·PUT 피드백·confirm rank 선택 공통) |
+| 404 | `TRIP_NOT_FOUND` | 여행방 없음·soft deleted(모든 엔드포인트 공통) |
 
 ## 데이터 모델
 
@@ -316,43 +318,43 @@
 
 ### 정상
 
-- [ ] POST(플레이스홀더 or `#50` 연결 후 실값) → 3 rows, GET 동일
-- [ ] mode 변경 POST → 이전 rows 삭제됨(hard DELETE)
-- [ ] confirm rank 1 → CONFIRMED + dates
-- [ ] confirm custom dates → CONFIRMED
-- [ ] confirm → `confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount`가 그 시점 `classifyMembers` 결과로 채워짐, `GET /trips/{tripId}`에서 방장·참여자 모두 동일 값 조회
-- [ ] unconfirm → ONGOING, `confirmedStartDate`/`confirmedEndDate`·`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 전부 null, 기존 recommendation hard DELETE, snapshot 폐기
-- [ ] `GET .../recommendations/{rank}` → 참여자별 브레이크다운 + `feedback=null`(최초 조회)
-- [ ] `PUT .../feedback` `HELPFUL` → 204, 이후 `GET .../recommendations/{rank}`의 `feedback.status=HELPFUL`
-- [ ] `PUT .../feedback` 같은 rank 재호출(다른 상태) → upsert로 덮어써짐(행 1개 유지)
-- [ ] mode 변경으로 recommendation hard DELETE 후에도 이전 `recommendation_feedback` 행은 남아있음(스냅샷 필드로 조회 가능)
+- [x] POST(플레이스홀더 or `#50` 연결 후 실값) → 3 rows, GET 동일
+- [x] mode 변경 POST → 이전 rows 삭제됨(hard DELETE)
+- [x] confirm rank 1 → CONFIRMED + dates
+- [x] confirm custom dates → CONFIRMED
+- [x] confirm → `confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount`가 그 시점 `classifyMembers` 결과로 채워짐, `GET /trips/{tripId}`에서 방장·참여자 모두 동일 값 조회
+- [x] unconfirm → ONGOING, `confirmedStartDate`/`confirmedEndDate`·`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 전부 null, 기존 recommendation hard DELETE, snapshot 폐기
+- [x] `GET .../recommendations/{rank}` → 참여자별 브레이크다운 + `feedback=null`(최초 조회)
+- [x] `PUT .../feedback` `HELPFUL` → 204, 이후 `GET .../recommendations/{rank}`의 `feedback.status=HELPFUL`
+- [x] `PUT .../feedback` 같은 rank 재호출(다른 상태) → upsert로 덮어써짐(행 1개 유지)
+- [x] mode 변경으로 recommendation hard DELETE 후에도 이전 `recommendation_feedback` 행은 남아있음(스냅샷 필드로 조회 가능)
 
 ### 엣지 · 실패
 
-- [ ] 참여자 confirm → 403
-- [ ] 참여자가 `GET .../recommendations`·`GET .../recommendations/{rank}`·`PUT .../feedback` 호출 → 403 `TRIP_FORBIDDEN`
-- [ ] PATCH trip endRange → GET recommendations empty
-- [ ] unconfirm 호출 시 상태가 CONFIRMED 아님 → 409 `TRIP_NOT_CONFIRMED`
-- [ ] 참여자가 unconfirm 호출 → 403 `TRIP_FORBIDDEN`
-- [ ] unconfirm `reason` 누락 → 400 `INVALID_UNCONFIRM_REASON`
-- [ ] unconfirm `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_UNCONFIRM_REASON`
-- [ ] `PUT .../feedback` `status=NOT_HELPFUL`인데 `reason` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
-- [ ] `PUT .../feedback` `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
-- [ ] 존재하지 않는 rank로 `GET`/`PUT .../feedback` → 404 `RECOMMENDATION_NOT_FOUND`
+- [x] 참여자 confirm → 403
+- [x] 참여자가 `GET .../recommendations`·`GET .../recommendations/{rank}`·`PUT .../feedback` 호출 → 403 `TRIP_FORBIDDEN`
+- [x] PATCH trip endRange → GET recommendations empty
+- [x] unconfirm 호출 시 상태가 CONFIRMED 아님 → 409 `TRIP_NOT_CONFIRMED`
+- [x] 참여자가 unconfirm 호출 → 403 `TRIP_FORBIDDEN`
+- [x] unconfirm `reason` 누락 → 400 `INVALID_UNCONFIRM_REASON`
+- [x] unconfirm `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_UNCONFIRM_REASON`
+- [x] `PUT .../feedback` `status=NOT_HELPFUL`인데 `reason` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
+- [x] `PUT .../feedback` `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
+- [x] 존재하지 않는 rank로 `GET`/`PUT .../feedback` → 404 `RECOMMENDATION_NOT_FOUND`
 
 ### 단위 테스트 (필수, 이 스펙 범위)
 
-- [ ] hard DELETE 후 count=0
-- [ ] confirm/unconfirm 상태 전이(`ONGOING`↔`CONFIRMED`)
-- [ ] 피드백 upsert(같은 recommendation_id 재호출 시 행 1개 유지, 값만 갱신)
-- [ ] 피드백이 recommendation hard DELETE 이후에도 스냅샷 필드로 조회 가능한지
+- [x] hard DELETE 후 count=0
+- [x] confirm/unconfirm 상태 전이(`ONGOING`↔`CONFIRMED`)
+- [x] 피드백 upsert(같은 recommendation_id 재호출 시 행 1개 유지, 값만 갱신)
+- [x] 피드백이 recommendation hard DELETE 이후에도 스냅샷 필드로 조회 가능한지
 - [ ] (모드별 rank·동점 comparator·참여자별 분류(`attendance`/`uncertainDays`/`vacationDaysNeeded`) 단위 테스트는 `#50` 소관)
 
 ## 완료 기준
 
-- [ ] `./gradlew test` 통과 (RecommendationServiceTest 등)
-- [ ] OpenAPI 반영
-- [ ] `#50` 연결 완료 시점에 wave 2 MVP 완료 기준(방장이 4모드 중 하나로 **실제 계산된** TOP 3 확인 후 확정) 충족 — 이 스펙만으로는 API 계약까지만 검증
+- [x] `./gradlew test` 통과 (RecommendationServiceTest 등)
+- [x] OpenAPI 반영
+- [x] `#50` 연결 완료 시점에 wave 2 MVP 완료 기준(방장이 4모드 중 하나로 **실제 계산된** TOP 3 확인 후 확정) 충족 — 이 스펙만으로는 API 계약까지만 검증
 
 ## 리스크·미결정
 

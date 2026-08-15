@@ -23,27 +23,27 @@
 
 ### Must Have
 
-- [ ] **후보 윈도우 생성:** `[trip.startRange, trip.endRange]` 내에서 길이 = `trip.durationDays`인 모든 연속 `[startDate, endDate]`를 하루씩 슬라이딩하며 생성. `durationDays`가 null이면 계산 자체 불가(호출 측 `#13`이 사전 검증, 이 스펙은 non-null 전제)
-- [ ] **입력 resolve 재사용:** `ScheduleCalendarResolver.resolve(...)`(`#17`, static utility)를 그대로 호출해 멤버×날짜×슬롯(오전/오후/저녁) effective(가능/불가) + 날짜 단위 `uncertain`을 산출 — 별도 병합 로직 신설 금지(C1)
-- [ ] **응답 참여자 판정:** 후보 윈도우 전체 날짜에 대해 `resolve` 결과가 완전히 비어 있는(정기·개별 일정 신호가 전혀 없는) ACTIVE 멤버는 **미응답**으로 분류해 아래 모든 계산에서 제외. 방장은 일정 확인(`schedule/confirm`) 완료가 ACTIVE 전제이므로 항상 응답자로 카운트됨 — 응답 참여자 0명은 발생하지 않음
-- [ ] **참여자 3분류** (후보 윈도우 기준, 응답 참여자만 대상):
+- [x] **후보 윈도우 생성:** `[trip.startRange, trip.endRange]` 내에서 길이 = `trip.durationDays`인 모든 연속 `[startDate, endDate]`를 하루씩 슬라이딩하며 생성. `durationDays`가 null이면 계산 자체 불가(호출 측 `#13`이 사전 검증, 이 스펙은 non-null 전제)
+- [x] **입력 resolve 재사용:** `ScheduleCalendarResolver.resolve(...)`(`#17`, static utility)를 그대로 호출해 멤버×날짜×슬롯(오전/오후/저녁) effective(가능/불가) + 날짜 단위 `uncertain`을 산출 — 별도 병합 로직 신설 금지(C1)
+- [x] **응답 참여자 판정(2026-07-30 구현 확정 — 최초 초안에서 정정):** **이 방의 ACTIVE 멤버 전원**이 응답 참여자다. 별도의 "resolve 결과가 비어 있으면 미응답 제외" 필터는 두지 않는다 — activate/join 시점에 일정을 하나도 입력하지 않은 멤버는 `User.isAllFree=true`로 명시적으로 "전부 가능"이 확정된 상태(`markAllFreeIfNoSchedules`)라, resolve 결과가 비어 있는 것과 "미응답"은 다른 의미이기 때문. 이 방식이면 응답 참여자 0명은 자연히 발생하지 않는다(방장은 항상 ACTIVE 상태로만 추천을 생성할 수 있음)
+- [x] **참여자 3분류** (후보 윈도우 기준, 응답 참여자만 대상):
   - 전체 참석: 후보 윈도우의 모든 슬롯이 가능(POSSIBLE)
   - 부분 참석: 전체 슬롯 수(`durationDays × 3`)의 **⌈50%⌉ 이상**을 **하나의 연속된 구간**으로 참석 가능(늦참·조기귀가만 인정 — 중간 이탈 후 재합류는 불인정)
   - 불참: 위 두 조건을 만족하지 못하는 나머지
-- [ ] **불확실 인원:** 후보 윈도우 내 하루 이상 `personal_schedule.uncertain=true`인 응답 참여자 수(1인당 최대 1로 카운트, 여러 날짜 선택해도 1명) — 부분 참석과 독립 집계(중복 카운트 가능)
-- [ ] **연차 계산:** 완전 불참자 제외. 반차(오전/오후)=0.5일, 종일=1일로 환산해 `totalVacationDays`(총 연차 일수)·`vacationMemberCount`(연차 계산 대상 인원 수) 산출
-- [ ] **평가 항목 4종 패널티** (아래 "패널티 구간표" 절 수치 그대로):
+- [x] **불확실 인원:** 후보 윈도우 내 하루 이상 `personal_schedule.uncertain=true`인 응답 참여자 수(1인당 최대 1로 카운트, 여러 날짜 선택해도 1명) — 부분 참석과 독립 집계(중복 카운트 가능)
+- [x] **연차 계산:** 완전 불참자 제외. 참석 구간 내에서 "정기 근무(오전/오후)만으로는 불가능(IMPOSSIBLE)"했던 슬롯을 개별 일정으로 덮어써 참석 가능하게 만든 날만 집계 — 오전·오후 중 하나만 해당하면 반차 0.5일, 둘 다 해당하면 종일 1일로 환산. **저녁 슬롯은 연차 개념에서 제외**(2026-07-30 구현 확정 — `scoring_draft.md`의 "오전 반차·오후 반차·종일 연차" 정의에 저녁이 없어, 저녁 override는 연차 계산에 포함하지 않음). `totalVacationDays`(총 연차 일수)·`vacationMemberCount`(연차 계산 대상 인원 수) 산출
+- [x] **평가 항목 4종 패널티** (아래 "패널티 구간표" 절 수치 그대로):
   1. 불참률 = 불참 인원 / 응답 참여자 수
   2. 부분 참석률 = 부분 참석 인원 / 응답 참여자 수
   3. 불확실 인원 비율 = 불확실 인원 / 응답 참여자 수
   4. 1인당 평균 연차 일수 = `totalVacationDays` / `vacationMemberCount` (`vacationMemberCount=0`이면 0일로 취급)
-- [ ] **모드별 가중치 적용** (아래 "모드별 가중치" 절 수치 그대로) → **최종점수 = 100 - Σ(패널티×가중치)**
-- [ ] **`ALL_ATTEND`는 하드 필터가 아니다** — 목표 인원 미달 후보를 제외하지 않는다. 불참률·부분 참석 인원 비율 가중치를 크게(5.0/3.0) 둬 점수로만 반영한다(BR-TRIP-011 개정)
-- [ ] **동점 comparator** (BR-TRIP-012 개정): 1) 불확실 일정 수 적은 순 2) 시작일 빠른 순 (구 기준 "연차→기간→주말·공휴일"은 폐기)
-- [ ] **Best 3 정렬:** 최종점수 내림차순 → 동점 comparator → 상위 3개
-- [ ] 계산 결과(TOP 3, 각 `rank`/`startDate`/`endDate`/`attendRate`/`partialAttendCount`/`uncertainCount`/`totalVacationDays`/`score`)를 `#13`의 `RecommendationEngine` 인터페이스로 반환 — 저장(hard DELETE + INSERT)은 `#13` 책임
-- [ ] **참여자 분류를 참여자별로도 재사용 가능하게 노출** (2026-07-30 "추천 근거" 상세 화면 확인) — `#13`의 `GET .../recommendations/{rank}` 상세 API는 이 스펙의 참여자 3분류 로직을 특정 `[startDate, endDate]` 구간 하나에 대해 **다시 호출**해 참여자별 `attendance`(`FULL_ATTEND`/`PARTIAL_ATTEND`/`NON_ATTEND`)·`uncertainDays`(해당 구간 내 불확실 날짜 수)·`vacationDaysNeeded`(해당 참여자의 필요 연차일수)를 받는다. 이 결과는 저장하지 않고 상세 조회 시 라이브 재계산(카드 목록 응답을 무겁게 만들지 않기 위함) — 계산 자체는 모드에 의존하지 않으므로(모드는 가중치에만 영향) 참여자 3분류·불확실·연차 로직을 모드 파라미터 없이 별도로 호출 가능한 형태로 분리해 둘 것
-- [ ] `./gradlew test` — 고정 fixture(멤버·`regular_schedule`/`personal_schedule`)로 모드별 rank 1 기대값, 부분 참석 경계값(⌈50%⌉ 올림), 패널티 구간 경계값, 동점 comparator 순서 단위 테스트
+- [x] **모드별 가중치 적용** (아래 "모드별 가중치" 절 수치 그대로) → **최종점수 = 100 - Σ(패널티×가중치)**
+- [x] **`ALL_ATTEND`는 하드 필터가 아니다** — 목표 인원 미달 후보를 제외하지 않는다. 불참률·부분 참석 인원 비율 가중치를 크게(5.0/3.0) 둬 점수로만 반영한다(BR-TRIP-011 개정)
+- [x] **동점 comparator** (BR-TRIP-012 개정): 1) 불확실 일정 수 적은 순 2) 시작일 빠른 순 (구 기준 "연차→기간→주말·공휴일"은 폐기)
+- [x] **Best 3 정렬:** 최종점수 내림차순 → 동점 comparator → 상위 3개
+- [x] 계산 결과(TOP 3, 각 `rank`/`startDate`/`endDate`/`attendRate`/`partialAttendCount`/`uncertainCount`/`totalVacationDays`/`score`)를 `#13`의 `RecommendationEngine` 인터페이스로 반환 — 저장(hard DELETE + INSERT)은 `#13` 책임
+- [x] **참여자 분류를 참여자별로도 재사용 가능하게 노출** (2026-07-30 "추천 근거" 상세 화면 확인) — `#13`의 `GET .../recommendations/{rank}` 상세 API는 이 스펙의 참여자 3분류 로직을 특정 `[startDate, endDate]` 구간 하나에 대해 **다시 호출**해 참여자별 `attendance`(`FULL_ATTEND`/`PARTIAL_ATTEND`/`NON_ATTEND`)·`uncertainDays`(해당 구간 내 불확실 날짜 수)·`vacationDaysNeeded`(해당 참여자의 필요 연차일수)를 받는다. 이 결과는 저장하지 않고 상세 조회 시 라이브 재계산(카드 목록 응답을 무겁게 만들지 않기 위함) — 계산 자체는 모드에 의존하지 않으므로(모드는 가중치에만 영향) 참여자 3분류·불확실·연차 로직을 모드 파라미터 없이 별도로 호출 가능한 형태로 분리해 둘 것
+- [x] `./gradlew test` — `RecommendationEngineTest`: `scoring_draft.md` 부분참석/불참 경계 예시(윤지·은서) 고정 fixture, 전체참석·불확실·연차(반차) 계산, `ALL_ATTEND` 무필터, 동점 comparator 순서. (모드 4개 각각의 rank 1 기대값·패널티 4종 전 구간 경계값 개별 테스트는 후속 보강 여지 있음)
 
 ### Out of Scope
 
@@ -122,11 +122,11 @@
 
 | # | 규칙 |
 | --- | --- |
-| 1 | **미응답 참여자** — 응답 참여자 수·불참률·부분 참석 비율·불확실 인원 비율·연차 계산 전부에서 제외 |
+| 1 | **미응답 참여자** — `scoring_draft.md` 원칙상 계산에서 제외 대상이나, 이 구현에서는 ACTIVE 멤버 전원이 곧 응답 참여자라 실제로 발생하지 않는 케이스(위 "응답 참여자 판정" 참고) |
 | 2 | **완전 불참자** — 연차 계산(`totalVacationDays`·`vacationMemberCount`)에서만 제외(응답 참여자 수에는 포함) |
 | 3 | **부분 참석과 불확실은 독립** — 동일 참여자가 둘 다 만족하면 양쪽 항목에 모두 포함(중복 계산 가능) |
 | 4 | **불확실 일정 처리** — 날짜 단위 판정. 후보 윈도우 내 하루 이상 불확실 선택 시 그 참여자를 불확실 인원 1명으로 카운트(여러 날짜 선택해도 1명). 불확실 **일정 수**(날짜 개수 합)는 동점 처리에만 사용 |
-| 5 | **반차** — 오전 반차 0.5일, 오후 반차 0.5일, 종일 연차 1일 |
+| 5 | **반차** — 오전 반차 0.5일, 오후 반차 0.5일, 종일 연차(오전+오후) 1일. **저녁은 연차 계산 대상 아님**(2026-07-30 구현 확정) |
 | 6 | **동점 처리** — 1) 불확실 일정 수 적은 순 2) 날짜(시작일) 빠른 순 |
 
 ## 카드 표시 지표 (`#13` 응답 DTO에 실릴 값)
@@ -172,22 +172,22 @@ interface RecommendationEngine {
 
 ## 검증 시나리오
 
-- [ ] `BASIC` 모드 — 고정 fixture로 rank 1~3 기대값 일치
-- [ ] `ALL_ATTEND` — 목표 인원 미달 후보도 **제외되지 않고** 낮은 점수로 포함되는지 확인(하드 필터 없음)
-- [ ] `SAVE_VACATION`/`CERTAIN` — 가중치 반영한 정렬 확인
-- [ ] 부분 참석 경계값 — ⌈50%⌉ 올림 계산(예: 2박 3일 9개 중 5개 연속 = 부분 참석, 4개 = 불참)
-- [ ] 패널티 구간 경계값 — 불참률 정확히 15%/30% 등 각 표의 이하/초과/미만 경계
-- [ ] 동점 fixture — comparator 순서(불확실 일정 수 → 시작일) 확인
-- [ ] 완전 불참자가 연차 계산에서 제외되는지 확인
-- [ ] 미응답 참여자가 모든 계산에서 제외되고, 방장은 항상 응답자로 카운트되는지 확인
-- [ ] `classifyMembers(...)`가 모드와 무관하게 동일한 참여자별 `attendance`/`uncertainDays`/`vacationDaysNeeded`를 반환하는지(모드는 점수 가중치에만 영향)
-- [ ] resolve 결과가 `#17`과 동일한 합친 값을 사용하는지(별도 병합 로직 없음) 확인
+- [ ] `BASIC` 모드 — 고정 fixture로 rank 1~3 기대값 일치 (`[제안]` 후속 — 지금은 tie-break·ALL_ATTEND 시나리오만 커버)
+- [x] `ALL_ATTEND` — 목표 인원 미달 후보도 **제외되지 않고** 낮은 점수로 포함되는지 확인(하드 필터 없음)
+- [ ] `SAVE_VACATION`/`CERTAIN` — 가중치 반영한 정렬 확인 (`[제안]` 후속)
+- [x] 부분 참석 경계값 — `scoring_draft.md` 윤지(6/9=부분참석)·은서(4/9=불참) 예시 그대로 재현
+- [ ] 패널티 구간 경계값 — 불참률 정확히 15%/30% 등 각 표의 이하/초과/미만 경계 전부 (`[제안]` 후속 — 지금은 코드 리뷰로만 확인)
+- [x] 동점 fixture — comparator 순서(불확실 일정 수 → 시작일) 확인
+- [x] 완전 불참자가 연차 계산에서 제외되는지 확인
+- [x] 미응답 참여자 처리 — ACTIVE 멤버 전원이 응답 참여자로 카운트되어 별도 제외 케이스가 없음을 확인(구조상 자명 · 위 "응답 참여자 판정" 참고)
+- [ ] `classifyMembers(...)`가 모드와 무관하게 동일한 결과를 반환하는지 별도 assertion (`[제안]` 후속 — 현재는 시그니처에 mode 파라미터가 아예 없어 구조적으로 보장됨)
+- [x] resolve 결과가 `#17`과 동일한 합친 값을 사용하는지 확인 (`ScheduleCalendarResolver.resolve(...)` 직접 재사용, 별도 병합 로직 없음)
 
 ## 완료 기준
 
-- [ ] `./gradlew test` 통과 (RecommendationEngine 관련 단위 테스트)
-- [ ] `#13`의 `RecommendationService`에서 플레이스홀더 대신 이 로직 호출로 교체
-- [ ] Wave 2 MVP 완료 기준: 방장이 4모드 중 하나로 실제 계산된 TOP 3를 확인 가능
+- [x] `./gradlew test` 통과 (`RecommendationEngineTest`)
+- [x] `#13`의 `TripRecommendationService`에서 플레이스홀더 대신 이 로직 호출로 교체
+- [x] Wave 2 MVP 완료 기준: 방장이 4모드 중 하나로 실제 계산된 TOP 3를 확인 가능
 
 ## 리스크·미결정
 
