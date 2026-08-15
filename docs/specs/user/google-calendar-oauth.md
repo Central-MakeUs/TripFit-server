@@ -87,9 +87,9 @@
 
 | 항목 | 값 |
 |------|-----|
-| **주기** | **30분** |
+| **주기** | **30분** — 연동 유저 전원 매 사이클 동기화(구 유저별 그룹 순번 분산 방식 폐지, `#86`) |
 | **대상** | `is_google_calendar_connected=true` 유저만 |
-| **부가** | 유저별 **지터** · freeBusy 윈도우 = C1 |
+| **부가** | freeBusy 윈도우 = C1 |
 
 ### freeBusy 조회 윈도우 (확정)
 
@@ -101,7 +101,7 @@
 | **과거** | 미조회 |
 | **매 sync** | 슬라이딩 · 윈도우 밖 Google busy 행 **삭제** |
 
-**부하 완화:** freeBusy만 · busy 있는 날짜만 sparse upsert · 연동 유저만 · 지터.
+**부하 완화:** freeBusy만 · busy 있는 날짜만 sparse upsert · 연동 유저만. (2026-08-15: 유저별 그룹 순번 분산은 폐지 — 최대 3시간까지 벌어지던 유저별 동기화 지연을 없애기 위해, API 호출량 증가를 감수하고 전원 30분마다 동기화하기로 결정, `#86`)
 
 ## 슬롯 변환 (확정)
 
@@ -217,3 +217,4 @@ Approved 시 `erd.md` 반영.
 | 2026-08-08 | **관측성 보강 (2)** — `GoogleCalendarService.syncUserInternal()`(연동 직후 1회 sync + 30분 폴링 공용 경로)의 `catch (Exception exception)` 분기가 `credential.markSyncError(...)`만 하고 로그를 전혀 안 남기고 있었음 — freeBusy 403/429/5xx·네트워크·파싱 오류 등 일시적 실패가 재현 없이는 Grafana에서도 전혀 안 보였음. `log.warn`에 `userId` 포함해 남기도록 보강(credential 보존·30분 재시도 흡수 동작 자체는 변경 없음) — 스펙 값 변경 없음, `./gradlew test` 통과 |
 | 2026-08-08 | **원인 확정** — 위 "관측성 보강" 항목의 가설을 실제 프로덕션 재현으로 확인. 같은 Google 계정을 다른 TripFit 유저로 재연동 시도 → 로그에 `userId`·`hasRedirectUri=false`가 예측한 그대로 찍힘(네이티브 경로만 재현, 브라우저 경로는 항상 `prompt=consent`를 써서 재현 안 됨). FE가 Android에 `GoogleSignin.requestServerAuthCode(webClientId, forceCodeForRefreshToken=true)`를 적용한 빌드로 재테스트해 동일 계정 재연동 성공을 백엔드 로그·DB로 교차 확인. **iOS는 아직 동등 옵션이 없어 같은 증상이 재현될 수 있음** — 스토어 심사 이후 네이티브 SDK 방식을 웹과 동일한 redirectUri 리다이렉트 방식으로 통합 리팩토링 예정(클라이언트 저장소 [TripFit-client#97](https://github.com/Central-MakeUs/TripFit-client/pull/97)). 백엔드 코드 변경 없음(원인이 클라이언트 SDK 설정에 있어 대응도 클라이언트 전용) |
 | 2026-08-06 | **버그 수정** — freeBusy sync가 매번(재현율 100%) `freeBusy request failed`로 실패하던 건 별개 원인으로 확인·수정. `GoogleCalendarOAuthClient.queryFreeBusy()`가 C1 윈도우(최대 today+2년) 전체를 Google `freeBusy.query` 한 번 호출에 넣고 있었는데, Google이 이 범위를 미문서화된 제한으로 거부(`400 BAD_REQUEST`, `reason: timeRangeTooLong`, `"The requested time range is too long."`) — 계정·권한 문제가 아니라 순수 요청 범위 버그였음. Google 공식 문서·커뮤니티 어디에도 정확한 상한 일수가 없어(2026-08-06 검색 확인), 정확한 임계값에 의존하지 않도록 90일 단위로 청크 분할해 여러 번 호출 후 병합하도록 수정(`queryFreeBusyChunk`) — 기존 "2년 전체 동기화" 범위·의미는 그대로 유지. 프로덕션 재현으로 수정 확인(`last_synced_at` 최초로 채워짐). `./gradlew test` 통과 |
+| 2026-08-15 | **정책 변경** — `GoogleCalendarSyncScheduler`가 유저를 `userId.hashCode() % 6` 기준 6개 그룹으로 나눠 30분마다 그중 한 그룹만 동기화하던 방식(그룹 순번 분산) 폐지. 스케줄러 실행 주기는 30분이었지만 유저 한 명 기준 실제 동기화 주기는 3시간(30분×6그룹)이었고, 이 지연이 트립 매칭·추천 정확도에 영향을 줄 수 있다고 판단해 모든 연동 유저를 매 30분 사이클마다 동기화하도록 변경. Google API 호출량은 최대 6배 증가하는 트레이드오프를 감수(`#86`). `shouldSkipThisCycle`(그룹 순번 로직) 제거, 유저 사이 짧은 sleep(`sleepBetweenUsers`)만 유지해 호출이 순간적으로 몰리지 않게 함. `./gradlew test` 통과 |
