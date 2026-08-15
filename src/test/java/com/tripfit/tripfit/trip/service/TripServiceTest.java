@@ -25,6 +25,7 @@ import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListScope;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
+import com.tripfit.tripfit.trip.repository.RecommendationFeedbackRepository;
 import com.tripfit.tripfit.trip.repository.RecommendationRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
@@ -83,6 +84,9 @@ class TripServiceTest {
 
   @Mock
   private RecommendationRepository recommendationRepository;
+
+  @Mock
+  private RecommendationFeedbackRepository recommendationFeedbackRepository;
 
   @Mock
   private TripMemberScheduleSnapshotRepository snapshotRepository;
@@ -146,8 +150,35 @@ class TripServiceTest {
     AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
     commandProxyFactory.addAspect(tripActivityAspect);
     TripCommandService tripCommandService = commandProxyFactory.getProxy();
+
+    TripScheduleSnapshotService tripScheduleSnapshotService =
+        new TripScheduleSnapshotService(
+            snapshotRepository,
+            regularScheduleRepository,
+            personalScheduleRepository,
+            googleCalendarService,
+            support);
+    RecommendationEngine recommendationEngine =
+        new RecommendationEngine(
+            regularScheduleRepository, personalScheduleRepository, googleCalendarService);
+    TripRecommendationService tripRecommendationServiceRaw =
+        new TripRecommendationService(
+            support,
+            tripScheduleSnapshotService,
+            snapshotRepository,
+            recommendationRepository,
+            recommendationFeedbackRepository,
+            recommendationEngine,
+            applicationEventPublisher);
+    AspectJProxyFactory recommendationProxyFactory =
+        new AspectJProxyFactory(tripRecommendationServiceRaw);
+    recommendationProxyFactory.addAspect(tripActivityAspect);
+    TripRecommendationService tripRecommendationService = recommendationProxyFactory.getProxy();
+
     tripService =
-        new TripService(tripCommandService, tripQueryService, tripMemberQueryService);
+        new TripService(
+            tripCommandService, tripQueryService, tripMemberQueryService,
+            tripRecommendationService);
   }
 
   @Test
