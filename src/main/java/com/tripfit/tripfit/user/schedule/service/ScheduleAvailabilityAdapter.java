@@ -45,6 +45,18 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
         .collect(Collectors.groupingBy(regular -> regular.getUser().getId()));
   }
 
+  // userId 목록·기간으로 개별 일정을 한 번에 조회한 뒤 userId별로 묶어서 반환한다(N+1 방지).
+  // resolveMergedSchedules도 내부에서 이 메서드를 재사용한다.
+  @Override
+  public Map<UUID, List<PersonalSchedule>> findPersonalSchedulesByUserIds(
+      List<UUID> userIds,
+      LocalDate startDate,
+      LocalDate endDate) {
+    return personalScheduleRepository
+        .findByUserIdInAndScheduleDateBetween(userIds, startDate, endDate).stream()
+        .collect(Collectors.groupingBy(personal -> personal.getUser().getId()));
+  }
+
   // 정기+개별 일정을 로드해 합친 달력으로 만든다 — live 조회·snapshot freeze·추천 후보 계산 공용. 멤버 목록을 배치
   // 조회해 멤버 수만큼 반복 쿼리하지 않게 함(N+1 방지)
   @Override
@@ -55,9 +67,7 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
       Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser) {
     Map<UUID, List<RegularSchedule>> regularsByUser = findRegularSchedulesByUserIds(userIds);
     Map<UUID, List<PersonalSchedule>> personalsByUser =
-        personalScheduleRepository
-            .findByUserIdInAndScheduleDateBetween(userIds, startDate, endDate).stream()
-            .collect(Collectors.groupingBy(personal -> personal.getUser().getId()));
+        findPersonalSchedulesByUserIds(userIds, startDate, endDate);
 
     Map<UUID, List<CalendarDayResponse>> byUser = new HashMap<>();
     for (UUID userId : userIds) {
