@@ -55,6 +55,21 @@ public record TripDetailResponse(
     @Schema(description = "확정 종료일. CONFIRMED/EXPIRED에서만 값 있음", nullable = true)
     LocalDate confirmedEndDate,
 
+    @Schema(
+        description = "확정 시점 참석 인원 수(전체+부분참석). CONFIRMED/EXPIRED에서만 값 있음, 그 외 null",
+        nullable = true)
+    Integer confirmedAttendCount,
+
+    @Schema(
+        description = "확정 시점 연차가 필요한 인원 수. CONFIRMED/EXPIRED에서만 값 있음, 그 외 null",
+        nullable = true)
+    Integer confirmedVacationMemberCount,
+
+    @Schema(
+        description = "확정 시점 불확실 일정이 있던 인원 수. CONFIRMED/EXPIRED에서만 값 있음, 그 외 null",
+        nullable = true)
+    Integer confirmedUncertainCount,
+
     @Schema(description = "마지막 추천 모드. 아직 추천 전이면 null", nullable = true)
     RecommendationMode lastRecommendationMode,
 

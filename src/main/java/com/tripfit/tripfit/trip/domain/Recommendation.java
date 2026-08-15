@@ -29,7 +29,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "recommendation")
 @EntityListeners(AuditingEntityListener.class)
-@Schema(description = "여행방 추천 일정 후보 (순위·기간·사유)")
+@Schema(description = "여행방 추천 일정 후보 (순위·기간·참여자 통계)")
 public class Recommendation {
 
   @Schema(
@@ -59,18 +59,26 @@ public class Recommendation {
   @Column(nullable = false)
   private LocalDate endDate;
 
-  @Schema(description = "추천 사유 설명", nullable = true)
-  @Column(columnDefinition = "TEXT")
-  private String reason;
+  @Schema(description = "참석률(%) — (전체참석+부분참석 인원)/응답 참여자 수", example = "80")
+  @Column(name = "attend_rate", nullable = false)
+  private int attendRate;
 
-  @Schema(description = "리스크·주의 사항", nullable = true)
-  @Column(columnDefinition = "TEXT")
-  private String riskNote;
+  @Schema(description = "부분 참석 인원 수", example = "1")
+  @Column(name = "partial_attend_count", nullable = false)
+  private int partialAttendCount;
 
-  // 추천 순위·동점 비교용 점수
-  @Schema(description = "추천 점수 (순위·동점 비교)", nullable = true, example = "0.92")
-  @Column
-  private Double score;
+  @Schema(description = "불확실 일정이 있는 인원 수", example = "1")
+  @Column(name = "uncertain_count", nullable = false)
+  private int uncertainCount;
+
+  @Schema(description = "총 연차 일수 (반차=0.5일 환산 합계)", example = "2.0")
+  @Column(name = "total_vacation_days", nullable = false)
+  private double totalVacationDays;
+
+  // 추천 순위·동점 비교용 점수 — 응답에는 노출하지 않음(내부 정렬 전용)
+  @Schema(description = "추천 점수 (100 - Σ패널티×가중치, 순위·동점 비교용)", example = "91.5")
+  @Column(nullable = false)
+  private double score;
 
   @Schema(description = "추천 생성 시각", example = "2026-07-07T12:00:00")
   @CreatedDate
@@ -82,15 +90,19 @@ public class Recommendation {
       Integer rank,
       LocalDate startDate,
       LocalDate endDate,
-      String reason,
-      String riskNote,
-      Double score) {
+      int attendRate,
+      int partialAttendCount,
+      int uncertainCount,
+      double totalVacationDays,
+      double score) {
     this.trip = trip;
     this.rank = rank;
     this.startDate = startDate;
     this.endDate = endDate;
-    this.reason = reason;
-    this.riskNote = riskNote;
+    this.attendRate = attendRate;
+    this.partialAttendCount = partialAttendCount;
+    this.uncertainCount = uncertainCount;
+    this.totalVacationDays = totalVacationDays;
     this.score = score;
   }
 }

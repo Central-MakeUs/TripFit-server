@@ -103,6 +103,36 @@ public class Trip extends SoftDeleteEntity {
   @Column(name = "cancel_reason")
   private String cancelReason;
 
+  @Schema(description = "확정 취소(unconfirm) 사유. 최신값만 저장(덮어쓰기, 이력 아님)", nullable = true)
+  @Enumerated(EnumType.STRING)
+  @Column(name = "unconfirm_reason")
+  private UnconfirmReason unconfirmReason;
+
+  @Schema(description = "unconfirmReason=OTHER일 때 직접 입력 텍스트", nullable = true)
+  @Column(name = "unconfirm_reason_detail", columnDefinition = "TEXT")
+  private String unconfirmReasonDetail;
+
+  @Schema(
+      description = "확정 시점 참석 인원 수(전체+부분참석). status=CONFIRMED일 때만 값 있음, unconfirm 시 null",
+      nullable = true,
+      example = "5")
+  @Column(name = "confirmed_attend_count")
+  private Integer confirmedAttendCount;
+
+  @Schema(
+      description = "확정 시점 연차가 필요한 인원 수. status=CONFIRMED일 때만 값 있음, unconfirm 시 null",
+      nullable = true,
+      example = "1")
+  @Column(name = "confirmed_vacation_member_count")
+  private Integer confirmedVacationMemberCount;
+
+  @Schema(
+      description = "확정 시점 불확실 일정이 있던 인원 수. status=CONFIRMED일 때만 값 있음, unconfirm 시 null",
+      nullable = true,
+      example = "0")
+  @Column(name = "confirmed_uncertain_count")
+  private Integer confirmedUncertainCount;
+
   @Schema(
       description = "마지막으로 사용한 추천 모드. 추천 생성 API 저장 시 갱신",
       nullable = true,
