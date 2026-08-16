@@ -75,7 +75,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`trip-schedule-calendar-window.md`](trip/trip-schedule-calendar-window.md) | 2 | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · ONGOING 칩 | #17 · #12 |
 | [`trip-schedule-snapshot.md`](trip/trip-schedule-snapshot.md) | 2 | **Approved** (#38) · **구현 중** · Wave 2 Must | CONFIRMED/EXPIRED snapshot · R-model A | #27 · #17 · #37 |
 | [`trip-recommendation.md`](trip/trip-recommendation.md) | 2 | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
-| [`trip-recommendation-algorithm.md`](trip/trip-recommendation-algorithm.md) | 2 | Draft (#50) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 | #13 · #17 |
+| [`trip-recommendation-algorithm.md`](trip/trip-recommendation-algorithm.md) | 2 | **Approved** (#50 Closed) · **2026-08-15 연차/반차 자동 반영 amend Implemented**(#105) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 · 연차/반차 자동 전환 시뮬레이션 | #13 · #17 |
 | [`trip-recommendation-scoring-source.md`](trip/trip-recommendation-scoring-source.md) | 2 | 확정 (기획자 승인) | 추천 스코어링 원본 자료 — `trip-recommendation-algorithm`이 구현하는 패널티 구간표·가중치·동점 기준의 원본 출처(참고 자료, SSOT 아님) | trip-recommendation-algorithm |
 | [`trip-join-capacity-hold.md`](trip/trip-join-capacity-hold.md) | 4 | **Implemented** (#35, Open — 미머지) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
 | [`package-structure-refactor.md`](trip/package-structure-refactor.md) | 4 | Draft (설계 확정, 구현 착수 전 이슈·decision 003 amend 필요) | trip 도메인 패키지 포트/어댑터 재설계 — flat 구조 재검토 | decision 003 amend |
@@ -108,7 +108,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | #17 | schedule-calendar-resolve (본인 calendar) | Closed |
 | #12 | trip-room-api | Closed / Implemented |
 | #13 | trip-recommendation (API 껍데기·DTO·ERD) | Open |
-| **#50** | trip-recommendation-algorithm (계산 로직) | Open |
+| **#50** | trip-recommendation-algorithm (계산 로직) | Closed (PR #72) |
 | **#19** | kakao-invite-share | **Approved** · Wave 3 Must · create inviteCode 미노출 Implemented |
 | #20 | trip-member-remove | Implemented · **Wave 2 Nice** |
 | **#21** | notification | Open · **Wave 3 Must** · 구현 중 |
@@ -122,7 +122,9 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#44** | google-calendar-oauth | Open · **Wave 3 Must**(2026-08-03 Wave 4→3 이동, 구 Swagger chore 폐기) |
 | **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
 | **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |
-| **#52** | auth-dev-stub-verifier (`dev-mock-login` 후속, wave 4) — 착수 전 폐기, dev-login 자체를 삭제하는 쪽으로 결정 | **Closed**(2026-08-15) |
+| **#52** | 연차·반차·공휴일 휴무 설정을 `RegularSchedule`→`User`로 이동(스키마 리팩토링, wave 4) — `#105` 임시 우회("가장 먼저 등록된 행 기준")의 근본 수정. **이슈 번호 재사용**(구 "auth-dev-stub-verifier"는 `dev-login` 삭제로 폐기, 이 chore가 대체) | Open |
+| **#105** | trip-recommendation-algorithm 연차/반차 자동 반영 amend | Implemented(PR #108) · 실 계정 수동 검증만 별도 완료 기준으로 남아 Open |
+| **#107** | 대한민국 공휴일·대체공휴일 근무일 판정 반영(`holidayRest`) — 데이터 소스 결정 대기(`#2`) | Open |
 | **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT · Google 부분은 `google-login-revoke` | **Closed** · 구 Release Gate(2026-08-03 완료 확인) |
 | **#65** | social-integration-structured-logging — 과거 Release Gate 메타 트래커(전부 Closed)를 이 스펙 이슈로 재사용(2026-08-03) | Open |
 | **#77** | google-login-native-sdk-decision (Resolved, 결정 불필요로 정정) | Open — 클로즈 검토 필요 |

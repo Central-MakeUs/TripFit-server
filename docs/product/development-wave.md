@@ -65,6 +65,8 @@
 
 > **용어:** 이슈 본문 `## Must Have` = **그 이슈** 완료 체크리스트. **Wave Must** = 이 표 · Backlog Issue Must 섹션. `MVP: In scope` ≠ Wave Must. **Nice와 Out 혼용 금지.**
 
+> **⚠️ 미분류 (2026-08-16 발견):** Backlog `#30`은 2026-08-11에 DoD 완료로 이미 Closed됐는데, `#105`(연차/반차 자동 반영 — Implemented, PR #108)·`#107`(공휴일 반영, Open)이 그 이후 8/15에 새로 생겨 위 Must/Nice 어디에도 없다. `harness-wave.md`상 에이전트가 스스로 Must/Nice/Out을 단정할 수 없어 분류는 비워둠 — 이미 Closed된 Backlog에 소급 추가할지, 별도 트래킹으로 둘지 **사용자 확인 필요**.
+
 ---
 
 ### Wave 3 — 외부 API 연동 (`Wave 3 — 외부 API 연동`)

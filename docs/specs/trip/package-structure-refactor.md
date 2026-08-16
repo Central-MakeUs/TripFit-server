@@ -1,6 +1,6 @@
 # 패키지 구조 리팩터 — trip 도메인 포트/어댑터 재설계
 
-> 상태: Implemented (2026-08-06, `refactor/100-trip-port-adapter` 브랜치, `#100`. `./gradlew build` 그린, `oasdiff breaking`/`diff` 0건, dev-login 기반 API 스모크 테스트(생성~참여~추천~피드백~확정) 실통과로 검증. 아직 커밋·PR은 하지 않음 — 사용자 확인 후 진행)
+> 상태: Implemented (2026-08-06 구현, `#100` → PR #101로 2026-08-08 `main` merge 완료. `./gradlew build` 그린, `oasdiff breaking`/`diff` 0건, dev-login 기반 API 스모크 테스트(생성~참여~추천~피드백~확정) 실통과로 검증)
 > 유형: 구조+의존성 리팩터 (API 응답·엔드포인트·DB 스키마 변경 없음. 단, **패키지·클래스 내부 의존 관계는 변경** — 순수 이동 리팩터 아님)
 > 관련 BR: N/A
 > 관련 결정: [`docs/decisions/003-architecture-guide.md`](../../decisions/003-architecture-guide.md) (확정 — "풀 DDD 미적용·단일 모듈"). 이 스펙이 채택한 설계는 003의 일부 문구와 다르다 — **구현 착수 전 003을 amend하는 후속 커밋이 필요** (사실 확인, 아래 "다음 절차" 참고).
@@ -39,11 +39,11 @@ trip/service/TripServiceSupport           → user.service.UserLookupService, us
                                              user.googlecalendar.domain.GoogleCalendarBusyDay                    (6개+, 6개 서비스가 공유하는 커널)
 ```
 
-(`Trip`/`TripMember`/`TripMemberScheduleSnapshot` 엔티티의 `User` 연관관계, `TripDisplayNameHelper`의 `User` 참조는 JPA FK 레벨이라 포트 대상 아님 — 2026-08-22 재확인 시점에 `TripDisplayNameHelper`는 `user.schedule.service.ScheduleService` 의존이 이미 제거돼 있어 변환 대상에서 빠짐.)
+(`Trip`/`TripMember`/`TripMemberScheduleSnapshot` 엔티티의 `User` 연관관계, `TripDisplayNameHelper`의 `User` 참조는 JPA FK 레벨이라 포트 대상 아님 — 2026-08-02 재확인 시점에 `TripDisplayNameHelper`는 `user.schedule.service.ScheduleService` 의존이 이미 제거돼 있어 변환 대상에서 빠짐.)
 
 즉 §4는 `RecommendationEngine` 하나의 문제가 아니라 **`trip/service/`·`trip/config/`의 7개 클래스**가 `user.schedule`·`user.googlecalendar`·`user.service`를 직접 참조하는, 도메인 전체에 걸친 문제다. 1차 재검토가 "대안 B는 `RecommendationEngine`만 겨냥한다"고 좁게 잡았던 건 재조사 결과 **과소평가**였다 — 이번 결정에서 범위를 전체로 넓힌다.
 
-**참고 (2026-08-22 재확인):** `TripServiceSupport`는 최근 `refactor-audit round2` 커밋에서 이미 배치 조회 메서드(`resolveMergedSchedules(List<UUID>, ...)`, `GoogleCalendarService.findBusyDaysByUserIds(...)`)를 갖추게 됐다 — 포트 인터페이스 설계 시 이 배치 시그니처를 그대로 채택하고, 단건 버전을 새로 포트에 노출하지 않는다.
+**참고 (2026-08-02 재확인):** `TripServiceSupport`는 최근 `refactor-audit round2` 커밋에서 이미 배치 조회 메서드(`resolveMergedSchedules(List<UUID>, ...)`, `GoogleCalendarService.findBusyDaysByUserIds(...)`)를 갖추게 됐다 — 포트 인터페이스 설계 시 이 배치 시그니처를 그대로 채택하고, 단건 버전을 새로 포트에 노출하지 않는다.
 
 **추가로 발견한 문제 (§5, 이번 재조사에서 새로 확인):** 트립이 발행하는 이벤트(`TripInfoChangedEvent`, `AllMembersSubmittedEvent`, `TripJoinCompletedEvent`, `TripConfirmedEvent`, `TripConfirmCanceledEvent`)의 **클래스 정의가 발행 주체가 아닌 `notification/event/`에 있다.** `trip/service/TripCommandService`·`TripRecommendationService`가 자신이 발행하는 이벤트 타입을 얻으려고 `notification.event.*`를 import하는, 의존 방향이 뒤집힌 상태 — 이벤트는 그걸 일으키는 도메인(`trip`)이 정의하고, 소비자(`notification`)가 그걸 import하는 게 맞다.
 
