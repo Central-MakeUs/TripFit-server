@@ -18,6 +18,7 @@ import com.tripfit.tripfit.trip.repository.projection.TripMemberPreviewProjectio
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
@@ -30,6 +31,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,13 +58,17 @@ public class TripServiceSupport {
 
   private final UserLookupService userLookupService;
 
+  private final UserRepository userRepository;
+
   public TripServiceSupport(
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
-      UserLookupService userLookupService) {
+      UserLookupService userLookupService,
+      UserRepository userRepository) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
     this.userLookupService = userLookupService;
+    this.userRepository = userRepository;
   }
 
   // 홈 카드 DTO — 미리보기는 최대 4명, overflow = 참여 수 − 4
@@ -147,19 +153,38 @@ public class TripServiceSupport {
         .collect(Collectors.toMap(TripMemberCountProjection::getTripId, c -> c));
   }
 
-  // N+1 방지 — 미리보기 row를 tripId별 리스트로 묶음 (상한은 Repository 쿼리)
+  // N+1 방지 — 미리보기 row를 tripId별 리스트로 묶고, User는 한 번에 배치 조회해 방별 동명이인 displayName을 매김
   Map<UUID, List<MemberPreviewResponse>> loadMemberPreviewsByTripIds(List<UUID> tripIds) {
     List<TripMemberPreviewProjection> rows =
         tripMemberRepository.findMemberPreviewsByTripIds(tripIds);
-    Map<UUID, List<MemberPreviewResponse>> byTrip = new HashMap<>();
+
+    List<UUID> previewUserIds = rows.stream().map(TripMemberPreviewProjection::getUserId).toList();
+    Map<UUID, User> usersById =
+        userRepository.findAllById(previewUserIds).stream()
+            .collect(Collectors.toMap(User::getId, user -> user));
+
+    Map<UUID, List<TripMemberPreviewProjection>> rowsByTrip = new LinkedHashMap<>();
     for (TripMemberPreviewProjection row : rows) {
-      byTrip
-          .computeIfAbsent(row.getTripId(), ignored -> new ArrayList<>())
-          .add(
-              new MemberPreviewResponse(
-                  row.getUserId(),
-                  row.getProfileImageUrl(),
-                  TripMemberRole.valueOf(row.getRole())));
+      rowsByTrip.computeIfAbsent(row.getTripId(), ignored -> new ArrayList<>()).add(row);
+    }
+
+    Map<UUID, List<MemberPreviewResponse>> byTrip = new HashMap<>();
+    for (Map.Entry<UUID, List<TripMemberPreviewProjection>> entry : rowsByTrip.entrySet()) {
+      List<TripMemberPreviewProjection> tripRows = entry.getValue();
+      // 동명이인 접미사는 방 단위로만 부여 — 다른 방 참여자와는 섞이지 않도록 방별로 재계산
+      List<User> usersInOrder =
+          tripRows.stream().map(row -> usersById.get(row.getUserId())).toList();
+      Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
+      List<MemberPreviewResponse> previews =
+          tripRows.stream()
+              .map(
+                  row -> new MemberPreviewResponse(
+                      row.getUserId(),
+                      displayNames.get(row.getUserId()),
+                      row.getProfileImageUrl(),
+                      TripMemberRole.valueOf(row.getRole())))
+              .toList();
+      byTrip.put(entry.getKey(), previews);
     }
     return byTrip;
   }

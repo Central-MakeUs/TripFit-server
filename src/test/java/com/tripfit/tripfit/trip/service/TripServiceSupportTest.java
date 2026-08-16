@@ -2,9 +2,23 @@ package com.tripfit.tripfit.trip.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.trip.dto.MemberPreviewResponse;
+import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.repository.TripRepository;
+import com.tripfit.tripfit.trip.repository.projection.TripMemberPreviewProjection;
+import com.tripfit.tripfit.user.domain.SocialProvider;
+import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.repository.UserRepository;
+import com.tripfit.tripfit.user.service.UserLookupService;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class TripServiceSupportTest {
@@ -56,5 +70,68 @@ class TripServiceSupportTest {
   void resolveDurationDays_negativeNights_throwsInvalidInput() {
     assertThatThrownBy(() -> TripServiceSupport.resolveDurationDays(-1, 1))
         .isInstanceOf(TripFitException.class);
+  }
+
+  @Test
+  void loadMemberPreviewsByTripIds_assignsDedupedDisplayNamePerTrip() {
+    TripRepository tripRepository = mock(TripRepository.class);
+    TripMemberRepository tripMemberRepository = mock(TripMemberRepository.class);
+    UserLookupService userLookupService = mock(UserLookupService.class);
+    UserRepository userRepository = mock(UserRepository.class);
+    TripServiceSupport support =
+        new TripServiceSupport(
+            tripRepository, tripMemberRepository, userLookupService, userRepository);
+
+    UUID tripId = UUID.randomUUID();
+    User owner = user("민서", null);
+    User duplicateNameMember = user("민서", null);
+
+    when(tripMemberRepository.findMemberPreviewsByTripIds(List.of(tripId)))
+        .thenReturn(
+            List.of(
+                previewProjection(tripId, owner.getId(), "OWNER"),
+                previewProjection(tripId, duplicateNameMember.getId(), "MEMBER")));
+    when(userRepository.findAllById(any())).thenReturn(List.of(owner, duplicateNameMember));
+
+    Map<UUID, List<MemberPreviewResponse>> result =
+        support.loadMemberPreviewsByTripIds(List.of(tripId));
+
+    assertThat(result.get(tripId))
+        .extracting(MemberPreviewResponse::displayName)
+        .containsExactly("민서", "민서(2)");
+  }
+
+  private static User user(String nickname, String profileImageUrl) {
+    User u = new User("sub-" + UUID.randomUUID(), SocialProvider.GOOGLE, "u@example.com", nickname,
+        profileImageUrl);
+    u.setId(UUID.randomUUID());
+    return u;
+  }
+
+  private static TripMemberPreviewProjection previewProjection(
+      UUID tripId,
+      UUID userId,
+      String role) {
+    return new TripMemberPreviewProjection() {
+      @Override
+      public UUID getTripId() {
+        return tripId;
+      }
+
+      @Override
+      public UUID getUserId() {
+        return userId;
+      }
+
+      @Override
+      public String getProfileImageUrl() {
+        return null;
+      }
+
+      @Override
+      public String getRole() {
+        return role;
+      }
+    };
   }
 }

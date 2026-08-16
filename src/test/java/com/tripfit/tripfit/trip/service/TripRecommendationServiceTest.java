@@ -37,6 +37,7 @@ import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,6 +66,9 @@ class TripRecommendationServiceTest {
 
   @Mock
   private UserLookupService userLookupService;
+
+  @Mock
+  private UserRepository userRepository;
 
   @Mock
   private TripScheduleSnapshotService tripScheduleSnapshotService;
@@ -103,7 +107,8 @@ class TripRecommendationServiceTest {
             LocalDateTime.now());
 
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userLookupService);
+        new TripServiceSupport(
+            tripRepository, tripMemberRepository, userLookupService, userRepository);
     service =
         new TripRecommendationService(
             support,

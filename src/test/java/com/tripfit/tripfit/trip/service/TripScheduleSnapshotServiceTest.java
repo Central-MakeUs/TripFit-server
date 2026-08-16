@@ -21,6 +21,7 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import java.time.LocalDate;
@@ -63,6 +64,9 @@ class TripScheduleSnapshotServiceTest {
   @Mock
   private UserLookupService userLookupService;
 
+  @Mock
+  private UserRepository userRepository;
+
   private TripScheduleSnapshotService snapshotService;
 
   private User user;
@@ -72,7 +76,8 @@ class TripScheduleSnapshotServiceTest {
   @BeforeEach
   void setUp() {
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userLookupService);
+        new TripServiceSupport(
+            tripRepository, tripMemberRepository, userLookupService, userRepository);
     snapshotService =
         new TripScheduleSnapshotService(
             snapshotRepository,

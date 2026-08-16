@@ -265,6 +265,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "membersPreview": [
     {
       "userId": "...",
+      "displayName": "홍길동",
       "profileImageUrl": "https://...",
       "role": "OWNER"
     }
@@ -275,7 +276,9 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 
 **`membersPreview` 정렬:** 방장(OWNER) 먼저 → 나머지 `joined_at` **내림차순**. 최대 **4**명. 초과 시 `membersPreviewOverflow = 총 참여 인원 - 4`(참여 인원 자체는 API 미노출, 내부 count로만 계산).
 
-**조회 구현 (#12):** trip id 목록 기준 **배치 native query** (`ROW_NUMBER` — trip당 4명, OWNER 우선·`joined_at DESC`). N+1 금지.
+**`displayName`:** `TripMembersResponse`/`MemberScheduleCalendarResponse`와 동일한 동명이인 접미사 규칙(`TripDisplayNameHelper`) — 단, 동명이인 판정은 **방 단위**로만 계산되고 다른 방 참여자와는 섞이지 않는다.
+
+**조회 구현 (#12):** trip id 목록 기준 **배치 native query** (`ROW_NUMBER` — trip당 4명, OWNER 우선·`joined_at DESC`) + userId 배치 `User` 조회(`displayName` 계산용). N+1 금지.
 
 **`memberFillRate`(응답률) 공식 (2026-07-28 amend, #60):** `activeMemberCount ÷ memberCount` — 구 공식(`joinedMemberCount ÷ memberCount`)에서 전환, `joinedMemberCount` 자체는 API 미노출. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md)
 
@@ -310,6 +313,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
   "membersPreview": [
     {
       "userId": "...",
+      "displayName": "홍길동",
       "profileImageUrl": "https://...",
       "role": "OWNER"
     }
@@ -467,6 +471,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-30 | **Amend** — `MemberPreviewResponse`(`TripHomeCardResponse`/`TripDetailResponse` 공용 `membersPreview`)에 `displayName` 추가. 홈 캐러셀·전체 목록에서 참여자 이름·"OOO 외 N명" 표시가 API로 불가능했던 gap 해소 — `TripMembersResponse`/`MemberScheduleCalendarResponse`와 동일한 동명이인 접미사 규칙(방 단위) 적용 |
 | 2026-07-30 | **Amend** — `TripDetailResponse`에 `confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 추가("일정이 확정됐어요" 화면). `status=CONFIRMED`에서만 값 있음(그 외 null), 방장·참여자 모두 조회 가능. 계산·set/clear 시점은 [`trip-recommendation.md`](trip-recommendation.md)(#13) confirm/unconfirm 플로우 소관 |
 | 2026-07-28 | **Amend** — `POST .../schedule/confirm` → `POST .../activate`로 rename (`TripStatus.CONFIRMED`/`confirmedStartDate` 등 "일정 확정" 개념과의 이름 혼동 해소). `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. join·activate 자체에 문서화돼 있던 `SCHEDULE_ENTRY_REQUIRED`는 두 API 모두 논리적으로 도달 불가능함을 확인해 제거(canEnterRoom을 항상 충족시키는 `markAllFreeIfNoSchedules`가 선행 호출됨) — `@TripMemberOnly` 게이트("방 안 API")에서의 `SCHEDULE_ENTRY_REQUIRED`는 그대로 유지 |
 | 2026-07-28 | **Amend (#60)** — `memberFillRate` 공식 `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출, `TripDetailResponse`에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md)) |

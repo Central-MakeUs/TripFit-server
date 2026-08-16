@@ -120,7 +120,8 @@ class TripServiceTest {
             personalScheduleRepository,
             userLookupService);
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userLookupService);
+        new TripServiceSupport(
+            tripRepository, tripMemberRepository, userLookupService, userRepository);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
     TripMemberQueryService tripMemberQueryService =
         new TripMemberQueryService(

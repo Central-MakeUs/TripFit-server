@@ -65,7 +65,10 @@ class TripAuthorizationInterceptorTest {
   void setUp() {
     TripServiceSupport support =
         new TripServiceSupport(
-            tripRepository, tripMemberRepository, new UserLookupService(userRepository));
+            tripRepository,
+            tripMemberRepository,
+            new UserLookupService(userRepository),
+            userRepository);
     interceptor =
         new TripAuthorizationInterceptor(tripRepository, support, userSummaryService);
     SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(USER_ID));
