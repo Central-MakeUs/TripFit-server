@@ -4,7 +4,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -165,7 +164,7 @@ class TripFullLifecycleIntegrationTest {
     // 7. 피드백 저장 후 확정 — status CONFIRMED, 확정 통계 2명
     mockMvc
         .perform(
-            put("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
+            patch("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"HELPFUL\"}"))

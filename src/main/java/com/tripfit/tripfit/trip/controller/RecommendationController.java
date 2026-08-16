@@ -25,9 +25,9 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -284,7 +284,7 @@ public class RecommendationController {
                   {"code": "RECOMMENDATION_NOT_FOUND", "message": "추천 후보를 찾을 수 없습니다."}
                   """)))
   })
-  @PutMapping("/recommendations/{rank}/feedback")
+  @PatchMapping("/recommendations/{rank}/feedback")
   ResponseEntity<Void> saveRecommendationFeedback(
       @PathVariable UUID tripId,
       @AuthorizedUser UUID userId,

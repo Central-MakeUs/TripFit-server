@@ -6,7 +6,7 @@
 > 상태: **Approved** (2026-07-30 — 화면 확인·권한 정리 반영 후 확정)
 > 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (ACTIVE·sparse·submit)
 > **2026-07-30 화면 확인:** 추천 결과 카드 UI 반영 — 아래 "요구사항"·"API / 인터페이스"·"데이터 모델" 절 참고. `ALL_ATTEND` 하드 필터·`NO_RECOMMENDATION_CANDIDATES` 에러는 [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) 2026-07-30 개정으로 폐기됨 — 이 스펙도 동기화
-> **2026-07-30 기획 개정(추가):** 추천 후보(TOP 3 카드)·추천 근거 상세는 **방장만** 볼 수 있음. 참여자는 후보를 전혀 볼 수 없고 **확정된 일정만**(기존 `Trip.confirmedStartDate`/`confirmedEndDate`) 볼 수 있다 — `GET .../recommendations`·`GET .../recommendations/{rank}`·`PUT .../recommendations/{rank}/feedback` 전부 `JWT + owner`로 개정(구 "JWT + member" 폐기)
+> **2026-07-30 기획 개정(추가):** 추천 후보(TOP 3 카드)·추천 근거 상세는 **방장만** 볼 수 있음. 참여자는 후보를 전혀 볼 수 없고 **확정된 일정만**(기존 `Trip.confirmedStartDate`/`confirmedEndDate`) 볼 수 있다 — `GET .../recommendations`·`GET .../recommendations/{rank}`·`PATCH .../recommendations/{rank}/feedback` 전부 `JWT + owner`로 개정(구 "JWT + member" 폐기)
 
 ## 목표
 
@@ -60,7 +60,7 @@
 2. 서버가 해당 모드의 TOP 3를 계산·저장(hard DELETE + INSERT). 카드 목록 화면은 카드 3장을 캐러셀로 노출 — 각 카드: 순위(왕관 아이콘), 기간(`startDate`~`endDate`), `참석률 N%`, `불확실 일정 N명`, `부분 참여 N명`, `연차 일수 N일`
 3. **각 카드마다** 「일정 확인하기」 버튼으로 그 카드(rank)의 **추천 근거 상세** 화면으로 진입(`GET .../recommendations/{rank}`) — 참석률 진행바, 4개 통계, 그리고 **참여자별 브레이크다운**: "주의가 필요한 인원"(불참·부분참석·불확실 일정 있음) / "참석 가능한 인원"(전체참석 & 불확실 없음, 연차 필요 여부는 별도 표시) 그룹으로 이름·상태·불확실 일수·필요 연차일수 노출
 4. 카드 목록·추천 근거 상세 어느 화면에서든 「일정 확정하기」 — 그 카드의 `rank`로 `POST .../confirm`(`{ recommendationRank }`) 호출 → `status: ONGOING → CONFIRMED`. 확정 취소 시 `POST .../unconfirm` → 다시 `ONGOING`(신규 `TripStatus` 없음, 기존 값 그대로)
-5. 추천 근거 상세 화면의 「이 추천이 도움이 되었나요?」 — 👍/👎 중 하나만 선택 가능한 **upsert**(`PUT .../recommendations/{rank}/feedback`, **방장만**). 👍는 사유 없이 저장, 👎는 사유(enum, `기타`면 서술형 필수) 입력 후 저장. 방장이 이 화면을 다시 열면 이전에 남긴 선택 상태를 그대로 보여준다(`GET .../recommendations/{rank}`의 `feedback`)
+5. 추천 근거 상세 화면의 「이 추천이 도움이 되었나요?」 — 👍/👎 중 하나만 선택 가능한 **upsert**(`PATCH .../recommendations/{rank}/feedback`, **방장만**). 👍는 사유 없이 저장, 👎는 사유(enum, `기타`면 서술형 필수) 입력 후 저장. 방장이 이 화면을 다시 열면 이전에 남긴 선택 상태를 그대로 보여준다(`GET .../recommendations/{rank}`의 `feedback`)
 6. 「다시 추천받기」 — **모드 선택 화면으로 돌아간다**(2026-07-30 확정). 신규 API 없음 — 사용자가 모드를 다시 고르면 동일한 `POST .../recommendations`를 그 모드로 재호출
 7. 카카오톡 공유 버튼 — 서버 신규 API 없음. `kakao-invite-share.md`와 동일하게 프론트가 이미 조회한 `GET .../recommendations` 응답 값으로 템플릿을 조립해 카카오 SDK로 공유(위 Nice to Have 참고)
 8. **확정 완료 화면("여행 일정이 확정됐어요!")** — `confirm` 성공 직후(및 이후 재방문 시에도) **방장·참여자 모두** 볼 수 있는 화면. `참석 N명`·`연차 사용 N명`·`불확실 일정 N명` + `confirmedStartDate`~`confirmedEndDate`. **신규 API를 만들지 않고 기존 `GET /trips/{tripId}`(`TripDetailResponse`)에 필드 3개를 추가**하는 쪽으로 결정했다(아래 "데이터 모델" 절) — 이 화면은 FE가 이미 방 상세를 들고 있는 시점(confirm 응답 또는 상세 재조회)에 뜨고, 별도 조회 API를 새로 추가하면 confirm 흐름에서 호출이 하나 더 늘 뿐이라 실익이 없다고 판단
@@ -75,7 +75,7 @@
 | `POST .../recommendations` | ✅ | ❌ 403 `TRIP_FORBIDDEN` | `ONGOING`만 | 409 `TRIP_NOT_ONGOING` |
 | `GET .../recommendations` | ✅ | ❌ 403 `TRIP_FORBIDDEN` | 제한 없음(아직 생성 전이면 빈 목록) | — |
 | `GET .../recommendations/{rank}` | ✅ | ❌ 403 `TRIP_FORBIDDEN` | 제한 없음 | 404 `RECOMMENDATION_NOT_FOUND`(없는 rank) |
-| `PUT .../recommendations/{rank}/feedback` | ✅ | ❌ 403 `TRIP_FORBIDDEN` | 제한 없음 | 400 `INVALID_RECOMMENDATION_FEEDBACK` · 404 `RECOMMENDATION_NOT_FOUND` |
+| `PATCH .../recommendations/{rank}/feedback` | ✅ | ❌ 403 `TRIP_FORBIDDEN` | 제한 없음 | 400 `INVALID_RECOMMENDATION_FEEDBACK` · 404 `RECOMMENDATION_NOT_FOUND` |
 | `POST .../confirm` | ✅ | ❌ 403 `TRIP_FORBIDDEN` | `ONGOING`만 | 409 `TRIP_NOT_ONGOING` |
 | `POST .../unconfirm` | ✅ | ❌ 403 `TRIP_FORBIDDEN` | `CONFIRMED`만 | 409 `TRIP_NOT_CONFIRMED` · 400 `INVALID_UNCONFIRM_REASON`(사유 누락/`OTHER`인데 상세 없음) |
 | `GET /trips/{tripId}` (`confirmedStartDate`/`confirmedEndDate`/`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount`) | ✅ | **✅** (유일하게 참여자도 접근) | `CONFIRMED`일 때만 값 존재, 그 외 전부 `null` | — |
@@ -101,7 +101,7 @@
 - [x] trip PATCH(기간·일수) / DELETE / mode POST 시 recommendation hard DELETE (BR-TRIP-010)
 - [x] **`GET /api/v1/trips/{tripId}/recommendations`·`GET .../recommendations/{rank}`는 방장만** (2026-07-30 기획 개정 — 구 "JWT + member" 폐기). 참여자는 후보·추천 근거를 볼 수 없고 **확정된 일정만**(`Trip.confirmedStartDate`/`confirmedEndDate`, 기존 `GET /trips/{tripId}`) 조회 가능 → 참여자 호출 시 403 `TRIP_FORBIDDEN`
 - [x] `GET /api/v1/trips/{tripId}/recommendations/{rank}` — 특정 후보 상세: 참석률·4개 통계 + **참여자별 브레이크다운**(이름·`FULL_ATTEND`/`PARTIAL_ATTEND`/`NON_ATTEND`·불확실 일수·필요 연차일수) + 방장이 남긴 `feedback`(없으면 null). 참여자별 브레이크다운은 **저장하지 않고** 그때그때 `#50`의 참여자 분류 로직을 해당 rank의 `startDate`~`endDate`로 재실행해 계산(라이브 재계산 — 카드 목록의 무거운 페이로드 방지)
-- [x] `PUT /api/v1/trips/{tripId}/recommendations/{rank}/feedback` — **방장만**(2026-07-30 기획 개정 — 조회 자체가 방장 전용이라 피드백도 방장만 남길 수 있음). `{ status: "HELPFUL"|"NOT_HELPFUL", reason?, reasonDetail? }`. `status=NOT_HELPFUL`이면 `reason`(enum `RecommendationFeedbackReason`) 필수, `reason=OTHER`면 `reasonDetail` 필수(아니면 400 `INVALID_RECOMMENDATION_FEEDBACK`). unique(recommendation_id) — 방장이 같은 후보를 다시 보면 이전 선택을 덮어씀
+- [x] `PATCH /api/v1/trips/{tripId}/recommendations/{rank}/feedback` — **방장만**(2026-07-30 기획 개정 — 조회 자체가 방장 전용이라 피드백도 방장만 남길 수 있음). `{ status: "HELPFUL"|"NOT_HELPFUL", reason?, reasonDetail? }`. `status=NOT_HELPFUL`이면 `reason`(enum `RecommendationFeedbackReason`) 필수, `reason=OTHER`면 `reasonDetail` 필수(아니면 400 `INVALID_RECOMMENDATION_FEEDBACK`). unique(recommendation_id) — 방장이 같은 후보를 다시 보면 이전 선택을 덮어씀
 - [x] 피드백은 **모드 변경 hard DELETE에도 살아남는다** — `recommendation_id`는 FK 제약 없는 참조값으로만 저장하고 `mode`/`rank`/`startDate`/`endDate`를 피드백 행에 스냅샷으로 같이 저장(추천 품질 분석 목적, `recommendation` 테이블과 생명주기 분리)
 - [x] `./gradlew test` — 상태 전이·hard DELETE 트리거·피드백 upsert·유효성 검증 단위 테스트 (모드별 rank·동점·참여자 분류 테스트는 `#50` 소관)
 
@@ -128,7 +128,7 @@
 | POST | `/api/v1/trips/{tripId}/confirm` | JWT + owner | 일정 확정 |
 | POST | `/api/v1/trips/{tripId}/unconfirm` | JWT + owner | 확정 취소 (CONFIRMED→ONGOING) |
 | GET | `/api/v1/trips/{tripId}/recommendations/{rank}` | JWT + owner | 후보 1건 상세 — 참여자별 브레이크다운 + 피드백 |
-| PUT | `/api/v1/trips/{tripId}/recommendations/{rank}/feedback` | JWT + owner | "도움이 되었나요" 피드백 upsert |
+| PATCH | `/api/v1/trips/{tripId}/recommendations/{rank}/feedback` | JWT + owner | "도움이 되었나요" 피드백 upsert |
 
 ### `POST .../recommendations` 요청
 
@@ -188,7 +188,7 @@
 
 `members`는 응답 참여자 전원(미응답 제외) 나열 — **"주의가 필요한 인원"/"참석 가능한 인원" 그룹핑은 FE가 `attendance != FULL_ATTEND || uncertainDays > 0` 여부로 계산**(서버가 별도 그룹 필드를 만들지 않음). `feedback`은 방장이 이 후보에 이전에 남긴 피드백이 있으면 `{ "status": "NOT_HELPFUL", "reason": "TOO_FEW_ATTENDEES", "reasonDetail": null }` 형태, 없으면 `null`. (이 API 자체가 방장 전용이라 "누구의 피드백인지" 구분이 불필요 — `myFeedback`이 아니라 `feedback` 하나로 단순화)
 
-### `PUT .../recommendations/{rank}/feedback` 요청 (신규)
+### `PATCH .../recommendations/{rank}/feedback` 요청 (신규)
 
 ```json
 {
@@ -269,7 +269,7 @@
 | 400 | `INVALID_RECOMMENDATION_FEEDBACK` | `status=NOT_HELPFUL`인데 `reason` 없음, 또는 `reason=OTHER`인데 `reasonDetail` 없음 |
 | 400 | `INVALID_CONFIRM_REQUEST` (신규) | confirm 요청에 `recommendationRank`·직접 날짜(`startDate`+`endDate`)가 둘 다 없거나 둘 다 있음 |
 | 400 | `CONFIRM_DURATION_MISMATCH` (신규) | confirm 직접 입력 날짜의 일수가 `trip.durationDays`와 다름 |
-| 404 | `RECOMMENDATION_NOT_FOUND` | rank 없음(GET 상세·PUT 피드백·confirm rank 선택 공통) |
+| 404 | `RECOMMENDATION_NOT_FOUND` | rank 없음(GET 상세·PATCH 피드백·confirm rank 선택 공통) |
 | 404 | `TRIP_NOT_FOUND` | 여행방 없음·soft deleted(모든 엔드포인트 공통) |
 
 ## 데이터 모델
@@ -325,22 +325,22 @@
 - [x] confirm → `confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount`가 그 시점 `classifyMembers` 결과로 채워짐, `GET /trips/{tripId}`에서 방장·참여자 모두 동일 값 조회
 - [x] unconfirm → ONGOING, `confirmedStartDate`/`confirmedEndDate`·`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 전부 null, 기존 recommendation hard DELETE, snapshot 폐기
 - [x] `GET .../recommendations/{rank}` → 참여자별 브레이크다운 + `feedback=null`(최초 조회)
-- [x] `PUT .../feedback` `HELPFUL` → 204, 이후 `GET .../recommendations/{rank}`의 `feedback.status=HELPFUL`
-- [x] `PUT .../feedback` 같은 rank 재호출(다른 상태) → upsert로 덮어써짐(행 1개 유지)
+- [x] `PATCH .../feedback` `HELPFUL` → 204, 이후 `GET .../recommendations/{rank}`의 `feedback.status=HELPFUL`
+- [x] `PATCH .../feedback` 같은 rank 재호출(다른 상태) → upsert로 덮어써짐(행 1개 유지)
 - [x] mode 변경으로 recommendation hard DELETE 후에도 이전 `recommendation_feedback` 행은 남아있음(스냅샷 필드로 조회 가능)
 
 ### 엣지 · 실패
 
 - [x] 참여자 confirm → 403
-- [x] 참여자가 `GET .../recommendations`·`GET .../recommendations/{rank}`·`PUT .../feedback` 호출 → 403 `TRIP_FORBIDDEN`
+- [x] 참여자가 `GET .../recommendations`·`GET .../recommendations/{rank}`·`PATCH .../feedback` 호출 → 403 `TRIP_FORBIDDEN`
 - [x] PATCH trip endRange → GET recommendations empty
 - [x] unconfirm 호출 시 상태가 CONFIRMED 아님 → 409 `TRIP_NOT_CONFIRMED`
 - [x] 참여자가 unconfirm 호출 → 403 `TRIP_FORBIDDEN`
 - [x] unconfirm `reason` 누락 → 400 `INVALID_UNCONFIRM_REASON`
 - [x] unconfirm `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_UNCONFIRM_REASON`
-- [x] `PUT .../feedback` `status=NOT_HELPFUL`인데 `reason` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
-- [x] `PUT .../feedback` `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
-- [x] 존재하지 않는 rank로 `GET`/`PUT .../feedback` → 404 `RECOMMENDATION_NOT_FOUND`
+- [x] `PATCH .../feedback` `status=NOT_HELPFUL`인데 `reason` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
+- [x] `PATCH .../feedback` `reason=OTHER`인데 `reasonDetail` 없음 → 400 `INVALID_RECOMMENDATION_FEEDBACK`
+- [x] 존재하지 않는 rank로 `GET`/`PATCH .../feedback` → 404 `RECOMMENDATION_NOT_FOUND`
 
 ### 단위 테스트 (필수, 이 스펙 범위)
 
@@ -374,11 +374,12 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-07-30 | **HTTP method 정정** — `.../recommendations/{rank}/feedback`을 `PUT`에서 `PATCH`로 변경. 이 요청은 리소스 전체를 대체하는 게 아니라 `status`/`reason`/`reasonDetail` 필드를 upsert하는 부분 갱신이라 `PATCH`가 맞는 의미론(컨트롤러·테스트·fe-context 동기화, Breaking-Change-Reason 대상) |
 | 2026-07-30 | **Approved** — 화면 확인(카드·추천 근거·확정 완료·취소 사유)·권한 정리까지 반영 완료, 구현 착수 |
 | 2026-07-30 | **권한 정리(Authorization Matrix)** 절 추가 — 역할 게이트(방장/참여자)와 상태 전제(ONGOING/CONFIRMED)를 표 하나로 정리, GitHub `#13`에도 동일 표 코멘트로 기록 |
 | 2026-07-30 | "확정 완료" 화면 확인 반영 — `Trip.confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 신규 컬럼(confirm 시 `#50` `classifyMembers`로 1회 계산, unconfirm 시 null). 신규 API 대신 기존 `GET /trips/{tripId}`(`TripDetailResponse`, `trip-room-api.md`)에 필드만 추가 — 방장·참여자 모두 조회 가능(확정 후 공개 정보이므로 후보/근거와 달리 owner 게이트 없음). 확정 취소(unconfirm) 사유 입력 폼은 화면으로 재확인만, 기존 `UnconfirmReason` 스펙과 동일해 변경 없음 |
-| 2026-07-30 | 기획 개정 — 추천 후보·추천 근거는 **방장만** 조회 가능(참여자는 확정 일정만). `GET .../recommendations`·`GET .../recommendations/{rank}`·`PUT .../recommendations/{rank}/feedback` 전부 `JWT + member` → `JWT + owner`로 변경, 피드백 엔티티도 참여자별(unique(recommendation_id, user_id))에서 **방장 단일**(unique(recommendation_id), `user_id` 컬럼 제거)로 단순화, 응답 필드 `myFeedback` → `feedback` 개명 |
-| 2026-07-30 | "추천 근거" 상세 화면 확인 반영 — `GET .../recommendations/{rank}`(참여자별 브레이크다운) · `PUT .../recommendations/{rank}/feedback`(도움 여부 upsert) 신규 API, `RecommendationFeedback` 엔티티(+ `RecommendationFeedbackStatus`/`RecommendationFeedbackReason` enum) 신규 추가 |
+| 2026-07-30 | 기획 개정 — 추천 후보·추천 근거는 **방장만** 조회 가능(참여자는 확정 일정만). `GET .../recommendations`·`GET .../recommendations/{rank}`·`PATCH .../recommendations/{rank}/feedback` 전부 `JWT + member` → `JWT + owner`로 변경, 피드백 엔티티도 참여자별(unique(recommendation_id, user_id))에서 **방장 단일**(unique(recommendation_id), `user_id` 컬럼 제거)로 단순화, 응답 필드 `myFeedback` → `feedback` 개명 |
+| 2026-07-30 | "추천 근거" 상세 화면 확인 반영 — `GET .../recommendations/{rank}`(참여자별 브레이크다운) · `PATCH .../recommendations/{rank}/feedback`(도움 여부 upsert) 신규 API, `RecommendationFeedback` 엔티티(+ `RecommendationFeedbackStatus`/`RecommendationFeedbackReason` enum) 신규 추가 |
 | 2026-07-30 | 카드 UI 확인 반영 — 응답 DTO 필드 개정(`reason`/`riskNote`/`score` 제거, `attendRate`/`partialAttendCount`/`uncertainCount`/`totalVacationDays` 추가), `NO_RECOMMENDATION_CANDIDATES` 에러·`ALL_ATTEND` 하드 필터 문구 삭제(`#50` 2026-07-30 개정과 동기화), UX 흐름(모드 선택→카드→확정/재추천/공유) 절 추가 |
 | 2026-07-24 | 사용자 요청으로 범위 분리 — 이 스펙은 API 설계·DTO·ERD·상태 전이·hard DELETE 트리거만, **추천 계산 로직 전체는 `#50`([`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md))로 이동** |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조도 `EXPIRED`로 동기화 |

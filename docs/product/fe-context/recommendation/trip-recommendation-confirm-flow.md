@@ -21,7 +21,7 @@
 | 1 | `POST /api/v1/trips/{tripId}/recommendations` `{ mode }` | 기존 추천 hard DELETE 후 TOP 3 계산·저장. `status=ONGOING`이어야 함(아니면 409 `TRIP_NOT_ONGOING`) |
 | 2 | `GET /api/v1/trips/{tripId}/recommendations` | 카드 3장(`rank`·기간·참석률·부분참여·불확실·연차일수) |
 | 3 | `GET /api/v1/trips/{tripId}/recommendations/{rank}` | 카드 하나 선택 시 상세 — 참여자별 브레이크다운(`attendance`/`uncertainDays`/`vacationDaysNeeded`) + 이전에 남긴 `feedback` |
-| 4 | *(선택)* `PUT /api/v1/trips/{tripId}/recommendations/{rank}/feedback` `{ status, reason?, reasonDetail? }` | "도움이 됐어요/안 됐어요" upsert. `NOT_HELPFUL`이면 `reason` 필수, `OTHER`면 `reasonDetail` 필수 |
+| 4 | *(선택)* `PATCH /api/v1/trips/{tripId}/recommendations/{rank}/feedback` `{ status, reason?, reasonDetail? }` | "도움이 됐어요/안 됐어요" upsert. `NOT_HELPFUL`이면 `reason` 필수, `OTHER`면 `reasonDetail` 필수 |
 | 5-A | 마음에 안 들면: 「다시 추천받기」 → 모드 선택 화면으로 복귀 → 1번부터 반복 | 새 모드로 재호출하면 이전 추천 hard DELETE(이전 근거는 다시 못 봄) — 단 그때 남긴 피드백은 스냅샷으로 계속 보존됨 |
 | 5-B | 마음에 들면: `POST /api/v1/trips/{tripId}/confirm` `{ recommendationRank }` 또는 `{ startDate, endDate }` | `status: ONGOING → CONFIRMED`. `confirmedStartDate`/`confirmedEndDate`와 확정 시점 통계(`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount`)를 함께 저장, 멤버 일정 스냅샷 freeze(#38), `TripConfirmedEvent` 발행 |
 | 6 | `GET /api/v1/trips/{tripId}` | "일정이 확정됐어요" 화면 — **방장·참여자 모두** 동일 데이터로 조회 |
@@ -33,7 +33,7 @@
 | --- | --- |
 | 후보 카드 목록(`GET .../recommendations`) | ❌ 403 `TRIP_FORBIDDEN` |
 | 추천 근거 상세(`GET .../recommendations/{rank}`) | ❌ 403 `TRIP_FORBIDDEN` |
-| 피드백 저장(`PUT .../feedback`) | ❌ 403 `TRIP_FORBIDDEN` |
+| 피드백 저장(`PATCH .../feedback`) | ❌ 403 `TRIP_FORBIDDEN` |
 | 확정된 일정(`GET /trips/{tripId}`의 `confirmed*` 필드) | ✅ (`CONFIRMED`일 때만 값 있음, 그 외 `null`) |
 
 ## 핵심 포인트
@@ -54,7 +54,7 @@
 | POST | `/api/v1/trips/{tripId}/recommendations` | 방장(`@TripOwnerOnly`) | 모드별 TOP3 재계산·저장 |
 | GET | `/api/v1/trips/{tripId}/recommendations` | 방장 | 저장된 TOP3 카드 목록 |
 | GET | `/api/v1/trips/{tripId}/recommendations/{rank}` | 방장 | 후보 1건 상세(참여자별 브레이크다운 + 내 피드백) |
-| PUT | `/api/v1/trips/{tripId}/recommendations/{rank}/feedback` | 방장 | 도움 여부 피드백 upsert |
+| PATCH | `/api/v1/trips/{tripId}/recommendations/{rank}/feedback` | 방장 | 도움 여부 피드백 upsert |
 | POST | `/api/v1/trips/{tripId}/confirm` | 방장 | 일정 확정 |
 | POST | `/api/v1/trips/{tripId}/unconfirm` | 방장 | 확정 취소 |
 
@@ -121,7 +121,7 @@
 
 **에러**: 404 `RECOMMENDATION_NOT_FOUND`(해당 rank 없음 — 재추천 필요)
 
-## 4) `PUT /recommendations/{rank}/feedback` — 피드백 upsert
+## 4) `PATCH /recommendations/{rank}/feedback` — 피드백 upsert
 
 **요청** — `SaveRecommendationFeedbackRequest`
 
@@ -223,11 +223,11 @@
 
 | HTTP | code | 발생 API | 조건 |
 | --- | --- | --- | --- |
-| 400 | `INVALID_RECOMMENDATION_FEEDBACK` | PUT feedback | `NOT_HELPFUL`인데 `reason` 없음 · `OTHER`인데 `reasonDetail` 없음 |
+| 400 | `INVALID_RECOMMENDATION_FEEDBACK` | PATCH feedback | `NOT_HELPFUL`인데 `reason` 없음 · `OTHER`인데 `reasonDetail` 없음 |
 | 400 | `INVALID_CONFIRM_REQUEST` | POST confirm | `recommendationRank`·직접 날짜 둘 다 없거나 둘 다 있음 |
 | 400 | `CONFIRM_DURATION_MISMATCH` | POST confirm | 직접 입력 일수 ≠ `trip.durationDays` |
 | 400 | `INVALID_UNCONFIRM_REASON` | POST unconfirm | `reason` 없음 · `OTHER`인데 `reasonDetail` 없음 |
-| 404 | `RECOMMENDATION_NOT_FOUND` | GET detail·PUT feedback·POST confirm(rank) | 존재하지 않는 rank |
+| 404 | `RECOMMENDATION_NOT_FOUND` | GET detail·PATCH feedback·POST confirm(rank) | 존재하지 않는 rank |
 | 409 | `TRIP_NOT_CONFIRMED` | POST unconfirm | 방이 `CONFIRMED`가 아님 |
 
 (`TRIP_NOT_FOUND`/`TRIP_FORBIDDEN`/`TRIP_NOT_ONGOING`은 기존 공통 코드 재사용 — 여기 표엔 신규분만.)

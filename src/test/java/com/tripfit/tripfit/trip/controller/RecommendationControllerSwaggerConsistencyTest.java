@@ -3,7 +3,6 @@ package com.tripfit.tripfit.trip.controller;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -133,7 +132,7 @@ class RecommendationControllerSwaggerConsistencyTest {
     // 4. 피드백 저장(upsert) 후 상세 재조회에 반영되는지
     mockMvc
         .perform(
-            put("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
+            patch("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"HELPFUL\"}"))
@@ -270,7 +269,7 @@ class RecommendationControllerSwaggerConsistencyTest {
 
     mockMvc
         .perform(
-            put("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
+            patch("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + participantToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"HELPFUL\"}"))
@@ -361,7 +360,7 @@ class RecommendationControllerSwaggerConsistencyTest {
 
     mockMvc
         .perform(
-            put("/api/v1/trips/" + tripId + "/recommendations/99/feedback")
+            patch("/api/v1/trips/" + tripId + "/recommendations/99/feedback")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"HELPFUL\"}"))
