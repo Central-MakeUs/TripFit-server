@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.recommendation.domain.AttendanceType;
 import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
@@ -30,7 +31,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +45,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class RecommendationEngineTest {
+
+  // 공휴일 반영 테스트만 이 집합에 날짜를 넣는다 — 비워두면 기존 시나리오는 공휴일 없는 상태로 동작
+  private final Set<LocalDate> holidays = new HashSet<>();
+
+  private final HolidayProvider holidayProvider = (start, end) -> holidays;
 
   @Mock
   private RegularScheduleRepository regularScheduleRepository;
@@ -61,9 +69,10 @@ class RecommendationEngineTest {
   @BeforeEach
   void setUp() {
     SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(regularScheduleRepository, personalScheduleRepository);
+        new ScheduleAvailabilityAdapter(
+            regularScheduleRepository, personalScheduleRepository, holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
-    engine = new RecommendationEngine(schedulePort, googleCalendarPort);
+    engine = new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
     yoonji = user("yoonji");
     eunseo = user("eunseo");
     when(googleCalendarService.findBusyDaysByUserIds(any(), any(), any())).thenReturn(Map.of());
@@ -961,5 +970,86 @@ class RecommendationEngineTest {
       ScheduleStatus evening,
       boolean uncertain) {
     return PersonalSchedule.create(user, date, morning, afternoon, evening, uncertain);
+  }
+
+  // 공휴일에 쉬는 사용자(holidayRest=true)는 그날 근무가 없는 것으로 봐야 한다 — 연차를 쓰지 않고 전체 참석
+  @Test
+  void classifyMembers_holidayRestUser_holidayNeedsNoVacation() {
+    LocalDate holiday = LocalDate.now().plusDays(9);
+    holidays.add(holiday);
+    RegularSchedule work =
+        RegularSchedule.create(
+            yoonji,
+            "출근",
+            allDaysOfWeek(),
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
+    ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
+    when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
+    when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
+        .thenReturn(List.of());
+
+    List<MemberAttendanceDetail> details =
+        engine.classifyMembers(holiday, holiday, List.of(member(yoonji)));
+
+    assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.FULL_ATTEND);
+    assertThat(details.get(0).vacationDays()).isEqualTo(0);
+  }
+
+  // 같은 근무라도 공휴일이 아니면 종전대로 연차가 필요하다 — 위 테스트의 회귀 방지 짝
+  @Test
+  void classifyMembers_holidayRestUser_nonHolidayStillNeedsVacation() {
+    LocalDate workday = LocalDate.now().plusDays(9);
+    RegularSchedule work =
+        RegularSchedule.create(
+            yoonji,
+            "출근",
+            allDaysOfWeek(),
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
+    ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
+    when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
+    when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
+        .thenReturn(List.of());
+
+    List<MemberAttendanceDetail> details =
+        engine.classifyMembers(workday, workday, List.of(member(yoonji)));
+
+    assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
+  }
+
+  // 공휴일에 일하는 사용자(holidayRest=false)는 공휴일에도 종전대로 연차가 필요하다
+  @Test
+  void classifyMembers_holidayRestFalseUser_holidayStillNeedsVacation() {
+    LocalDate holiday = LocalDate.now().plusDays(9);
+    holidays.add(holiday);
+    RegularSchedule work =
+        RegularSchedule.create(
+            yoonji,
+            "출근",
+            allDaysOfWeek(),
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            false);
+    ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
+    when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
+    when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
+        .thenReturn(List.of());
+
+    List<MemberAttendanceDetail> details =
+        engine.classifyMembers(holiday, holiday, List.of(member(yoonji)));
+
+    assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 }

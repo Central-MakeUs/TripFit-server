@@ -102,6 +102,7 @@ services:
       APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
       KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY:-}
       FIREBASE_CREDENTIALS_BASE64: ${FIREBASE_CREDENTIALS_BASE64:-}
+      HOLIDAY_API_SERVICE_KEY: ${HOLIDAY_API_SERVICE_KEY:-}
       TZ: Asia/Seoul
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]

@@ -61,6 +61,7 @@
 | [`008-trip-authorization-guard.md`](008-trip-authorization-guard.md) | `@TripMemberOnly` / `@TripOwnerOnly` |
 | [`009-observability-logging.md`](009-observability-logging.md) | 로깅·모니터링 인프라 (Loki + Grafana) |
 | [`010-redis-infra.md`](010-redis-infra.md) | Redis 인프라 (신규 EC2 D) |
+| [`011-holiday-data-source.md`](011-holiday-data-source.md) | 공휴일 데이터 소스 (공공데이터포털 특일정보 API) |
 
 기능 스펙 인덱스: [`../specs/README.md`](../specs/README.md)
 

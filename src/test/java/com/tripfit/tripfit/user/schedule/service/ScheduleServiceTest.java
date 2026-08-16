@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
@@ -65,6 +66,9 @@ class ScheduleServiceTest {
 
   @Mock
   private TripMemberRepository tripMemberRepository;
+
+  @Mock
+  private HolidayProvider holidayProvider;
 
   @InjectMocks
   private ScheduleService scheduleService;

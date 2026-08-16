@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 // "운영자용 정답" 참여자별 분류를 그대로 재현하는지 확인한다(#105 저녁 자동 해제 회귀 방지).
 @ExtendWith(MockitoExtension.class)
 class RecommendationEngineTestSetScenarioTest {
+
+  // 2026년 10월 관공서 공휴일 — 개천절(10/3 토)과 그 대체공휴일(10/5 월), 한글날(10/9 금).
+  // test_set.md가 "주요 비교 후보"로 든 10/3~10/5(연휴)·10/9~10/11(한글날)이 이 날짜들 위에 서 있어,
+  // 빈 집합으로 두면 문서가 의도한 공휴일 비교 자체가 재현되지 않는다
+  private static final Set<LocalDate> OCTOBER_2026_HOLIDAYS =
+      Set.of(LocalDate.of(2026, 10, 3), LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 9));
+
+  private final HolidayProvider holidayProvider =
+      (start, end) -> OCTOBER_2026_HOLIDAYS.stream()
+          .filter(date -> !date.isBefore(start) && !date.isAfter(end))
+          .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
   @Mock
   private RegularScheduleRepository regularScheduleRepository;
@@ -55,9 +68,10 @@ class RecommendationEngineTestSetScenarioTest {
   @BeforeEach
   void setUp() {
     SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(regularScheduleRepository, personalScheduleRepository);
+        new ScheduleAvailabilityAdapter(
+            regularScheduleRepository, personalScheduleRepository, holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
-    engine = new RecommendationEngine(schedulePort, googleCalendarPort);
+    engine = new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
     when(googleCalendarService.findBusyDaysByUserIds(any(), any(), any())).thenReturn(Map.of());
   }
 
@@ -70,10 +84,11 @@ class RecommendationEngineTestSetScenarioTest {
     User chaeyeon = user("chaeyeon"); // E - 프리랜서
 
     List<RegularSchedule> regulars = new ArrayList<>();
-    regulars.add(regularSchedule(yoonji, "MON,TUE,WED,THU,FRI", 9, 18, 2, true));
-    regulars.add(regularSchedule(eunseo, "MON,TUE,WED,THU,FRI", 10, 19, 1, false));
-    regulars.add(regularSchedule(giyeon, "THU,FRI,SAT,SUN", 9, 18, 2, true));
-    regulars.add(regularSchedule(soeun, "TUE,WED,THU,FRI,SAT", 12, 20, 1, true));
+    regulars.add(regularSchedule(yoonji, "MON,TUE,WED,THU,FRI", 9, 18, 2, true, true));
+    regulars.add(regularSchedule(eunseo, "MON,TUE,WED,THU,FRI", 10, 19, 1, false, true));
+    regulars.add(regularSchedule(giyeon, "THU,FRI,SAT,SUN", 9, 18, 2, true, true));
+    // D(소은)만 "공휴일에도 정상 출근" — 같은 공휴일이 사람마다 다르게 적용되는지 확인하는 축
+    regulars.add(regularSchedule(soeun, "TUE,WED,THU,FRI,SAT", 12, 20, 1, true, false));
     // chaeyeon(E)은 고정 근무 없음 — regular 없음
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(regulars);
 
@@ -185,7 +200,8 @@ class RecommendationEngineTestSetScenarioTest {
       int startHour,
       int endHour,
       int maxVacationDays,
-      boolean halfVacationAvailable) {
+      boolean halfVacationAvailable,
+      boolean holidayRest) {
     RegularSchedule schedule =
         RegularSchedule.create(
             user,
@@ -196,7 +212,7 @@ class RecommendationEngineTestSetScenarioTest {
             maxVacationDays,
             null,
             halfVacationAvailable,
-            null);
+            holidayRest);
     ReflectionTestUtils.setField(schedule, "createdAt", LocalDateTime.now());
     return schedule;
   }

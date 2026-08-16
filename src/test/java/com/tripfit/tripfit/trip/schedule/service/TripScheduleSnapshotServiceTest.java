@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
@@ -32,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TripScheduleSnapshotServiceTest {
+
+  private final HolidayProvider holidayProvider = (start, end) -> Set.of();
 
   private static final UUID TRIP_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440010");
 
@@ -79,7 +83,8 @@ class TripScheduleSnapshotServiceTest {
     TripServiceSupport support =
         new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
     SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(regularScheduleRepository, personalScheduleRepository);
+        new ScheduleAvailabilityAdapter(
+            regularScheduleRepository, personalScheduleRepository, holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     snapshotService =
         new TripScheduleSnapshotService(

@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.schedule.service;
 
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
@@ -30,11 +32,15 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
 
   private final PersonalScheduleRepository personalScheduleRepository;
 
+  private final HolidayProvider holidayProvider;
+
   public ScheduleAvailabilityAdapter(
       RegularScheduleRepository regularScheduleRepository,
-      PersonalScheduleRepository personalScheduleRepository) {
+      PersonalScheduleRepository personalScheduleRepository,
+      HolidayProvider holidayProvider) {
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
+    this.holidayProvider = holidayProvider;
   }
 
   // userId 목록으로 정기 일정을 한 번에 조회한 뒤 userId별로 묶어서 반환한다(N+1 방지 — 사용자 수만큼
@@ -68,6 +74,8 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
     Map<UUID, List<RegularSchedule>> regularsByUser = findRegularSchedulesByUserIds(userIds);
     Map<UUID, List<PersonalSchedule>> personalsByUser =
         findPersonalSchedulesByUserIds(userIds, startDate, endDate);
+    // 공휴일은 전 사용자 공통이라 멤버 수와 무관하게 한 번만 조회
+    Set<LocalDate> holidays = holidayProvider.findHolidaysBetween(startDate, endDate);
 
     Map<UUID, List<CalendarDayResponse>> byUser = new HashMap<>();
     for (UUID userId : userIds) {
@@ -78,7 +86,8 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
               personalsByUser.getOrDefault(userId, List.of()),
               startDate,
               endDate,
-              googleBusyByUser.getOrDefault(userId, Map.of())));
+              googleBusyByUser.getOrDefault(userId, Map.of()),
+              holidays));
     }
     return byUser;
   }

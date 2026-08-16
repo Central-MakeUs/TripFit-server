@@ -10,9 +10,11 @@ import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -41,7 +43,9 @@ class ScheduleCalendarResolverTest {
             List.of(work),
             List.of(),
             LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 7));
+            LocalDate.of(2026, 8, 7),
+            Map.of(),
+            Set.of());
 
     Map<LocalDate, CalendarDayResponse> byDate =
         days.stream().collect(Collectors.toMap(CalendarDayResponse::date, Function.identity()));
@@ -82,7 +86,9 @@ class ScheduleCalendarResolverTest {
             List.of(work),
             List.of(personal),
             tuesday,
-            tuesday);
+            tuesday,
+            Map.of(),
+            Set.of());
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
@@ -108,7 +114,8 @@ class ScheduleCalendarResolverTest {
         PersonalSchedule.create(user, thursday, null, ScheduleStatus.POSSIBLE, null, false);
 
     List<CalendarDayResponse> days =
-        ScheduleCalendarResolver.resolve(List.of(work), List.of(personal), thursday, thursday);
+        ScheduleCalendarResolver
+            .resolve(List.of(work), List.of(personal), thursday, thursday, Map.of(), Set.of());
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -134,7 +141,8 @@ class ScheduleCalendarResolverTest {
         PersonalSchedule.create(user, thursday, null, null, null, true);
 
     List<CalendarDayResponse> days =
-        ScheduleCalendarResolver.resolve(List.of(work), List.of(personal), thursday, thursday);
+        ScheduleCalendarResolver
+            .resolve(List.of(work), List.of(personal), thursday, thursday, Map.of(), Set.of());
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -165,7 +173,8 @@ class ScheduleCalendarResolverTest {
     ReflectionTestUtils.setField(personal, "slotStatuses", null);
 
     List<CalendarDayResponse> days =
-        ScheduleCalendarResolver.resolve(List.of(work), List.of(personal), thursday, thursday);
+        ScheduleCalendarResolver
+            .resolve(List.of(work), List.of(personal), thursday, thursday, Map.of(), Set.of());
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -203,7 +212,13 @@ class ScheduleCalendarResolverTest {
     assertThat(wed.getDayOfWeek()).isEqualTo(DayOfWeek.WEDNESDAY);
 
     List<CalendarDayResponse> days =
-        ScheduleCalendarResolver.resolve(List.of(work, classAtNight), List.of(), wed, wed);
+        ScheduleCalendarResolver.resolve(
+            List.of(work, classAtNight),
+            List.of(),
+            wed,
+            wed,
+            Map.of(),
+            Set.of());
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -234,7 +249,8 @@ class ScheduleCalendarResolverTest {
             List.of(),
             date,
             date,
-            Map.of(date, googleBusy));
+            Map.of(date, googleBusy),
+            Set.of());
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -258,7 +274,8 @@ class ScheduleCalendarResolverTest {
             List.of(),
             date,
             date,
-            Map.of(date, googleBusy));
+            Map.of(date, googleBusy),
+            Set.of());
 
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
     assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -284,7 +301,8 @@ class ScheduleCalendarResolverTest {
             List.of(personal),
             date,
             date,
-            Map.of(date, googleBusy));
+            Map.of(date, googleBusy),
+            Set.of());
 
     assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
   }
@@ -305,8 +323,191 @@ class ScheduleCalendarResolverTest {
             true);
 
     List<CalendarDayResponse> days =
-        ScheduleCalendarResolver.resolve(List.of(work), List.of(), saturday, saturday);
+        ScheduleCalendarResolver
+            .resolve(List.of(work), List.of(), saturday, saturday, Map.of(), Set.of());
 
     assertThat(days).isEmpty();
+  }
+
+  @Test
+  void resolve_holidayRestUser_holidayDropsRegularAndOmitsDay() {
+    LocalDate holiday = LocalDate.of(2026, 8, 17);
+    assertThat(holiday.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(weekdayWork(true)),
+            List.of(),
+            holiday,
+            holiday,
+            Map.of(),
+            Set.of(holiday));
+
+    // 정기가 빠지고 개별·구글 신호도 없으면 제약 없는 날 = sparse omit
+    assertThat(days).isEmpty();
+  }
+
+  @Test
+  void resolve_holidayRestUser_nonHolidayWeekdayKeepsRegular() {
+    LocalDate weekday = LocalDate.of(2026, 8, 18);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(weekdayWork(true)),
+            List.of(),
+            weekday,
+            weekday,
+            Map.of(),
+            Set.of(LocalDate.of(2026, 8, 17)));
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+  }
+
+  @Test
+  void resolve_holidayRestFalseUser_holidayKeepsRegular() {
+    LocalDate holiday = LocalDate.of(2026, 8, 17);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(weekdayWork(false)),
+            List.of(),
+            holiday,
+            holiday,
+            Map.of(),
+            Set.of(holiday));
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+  }
+
+  @Test
+  void resolve_holidayRestIsPerUser_bothRegularsDroppedOnHoliday() {
+    LocalDate holiday = LocalDate.of(2026, 8, 17);
+    // 대표 행(먼저 등록된 회사)이 holidayRest=true면 알바 행 값과 무관하게 사람 단위로 전부 빠진다
+    RegularSchedule company = weekdayWork(true);
+    ReflectionTestUtils.setField(company, "createdAt", LocalDateTime.now().minusDays(1));
+    RegularSchedule partTime =
+        RegularSchedule.create(
+            user,
+            "알바",
+            "MON,TUE,WED,THU,FRI",
+            LocalTime.of(19, 0),
+            LocalTime.of(23, 0),
+            2,
+            null,
+            false,
+            false);
+    ReflectionTestUtils.setField(partTime, "createdAt", LocalDateTime.now());
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(company, partTime),
+            List.of(),
+            holiday,
+            holiday,
+            Map.of(),
+            Set.of(holiday));
+
+    assertThat(days).isEmpty();
+  }
+
+  @Test
+  void resolve_holidayRestUser_representativeRowGovernsEvenIfUnmatchedThatDay() {
+    // 대표 행(평일 근무)은 토요일에 매칭되지 않지만, 공휴일 휴무 판정은 여전히 대표 행 기준이어야 한다
+    LocalDate saturdayHoliday = LocalDate.of(2026, 8, 15);
+    assertThat(saturdayHoliday.getDayOfWeek()).isEqualTo(DayOfWeek.SATURDAY);
+
+    RegularSchedule weekdayCompany = weekdayWork(true);
+    ReflectionTestUtils.setField(weekdayCompany, "createdAt", LocalDateTime.now().minusDays(1));
+    RegularSchedule saturdayShift =
+        RegularSchedule.create(
+            user,
+            "주말 알바",
+            "SAT",
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            false);
+    ReflectionTestUtils.setField(saturdayShift, "createdAt", LocalDateTime.now());
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(weekdayCompany, saturdayShift),
+            List.of(),
+            saturdayHoliday,
+            saturdayHoliday,
+            Map.of(),
+            Set.of(saturdayHoliday));
+
+    assertThat(days).isEmpty();
+  }
+
+  @Test
+  void resolve_holidayRestUser_personalOverrideStillWinsOnHoliday() {
+    LocalDate holiday = LocalDate.of(2026, 8, 17);
+    PersonalSchedule personal =
+        PersonalSchedule.create(
+            user,
+            holiday,
+            ScheduleStatus.IMPOSSIBLE,
+            ScheduleStatus.IMPOSSIBLE,
+            ScheduleStatus.IMPOSSIBLE,
+            false);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(weekdayWork(true)),
+            List.of(personal),
+            holiday,
+            holiday,
+            Map.of(),
+            Set.of(holiday));
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().eveningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+  }
+
+  @Test
+  void resolve_holidayRestUser_googleBusyStillBlocksOnHoliday() {
+    LocalDate holiday = LocalDate.of(2026, 8, 17);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(
+            List.of(weekdayWork(true)),
+            List.of(),
+            holiday,
+            holiday,
+            Map.of(
+                holiday,
+                com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay.create(
+                    user,
+                    holiday,
+                    true,
+                    false,
+                    false)),
+            Set.of(holiday));
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+  }
+
+  private RegularSchedule weekdayWork(boolean holidayRest) {
+    return RegularSchedule.create(
+        user,
+        "출근",
+        "MON,TUE,WED,THU,FRI",
+        LocalTime.of(9, 0),
+        LocalTime.of(18, 0),
+        2,
+        null,
+        false,
+        holidayRest);
   }
 }
