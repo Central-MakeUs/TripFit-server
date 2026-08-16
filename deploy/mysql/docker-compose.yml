@@ -1,5 +1,9 @@
 # EC2 B — MySQL 전용 서버
 # 사용: cp .env.example .env → 값 설정 → docker compose up -d
+#
+# 로그: Loki docker logging driver로 EC2 C(deploy/monitoring/)에 전송한다.
+# 최초 1회 필요: docker plugin install grafana/loki-docker-driver:latest \
+#   --alias loki --grant-all-permissions
 services:
   mysql:
     image: mysql:8.0
@@ -27,10 +31,11 @@ services:
       retries: 10
       start_period: 30s
     logging:
-      driver: json-file
+      driver: loki
       options:
-        max-size: "10m"
-        max-file: "3"
+        loki-url: "http://${LOKI_HOST:-172.31.38.217}:3100/loki/api/v1/push"
+        loki-retries: "3"
+        loki-batch-size: "400"
 
 volumes:
   mysql_data:

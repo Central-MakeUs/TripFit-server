@@ -6,6 +6,8 @@
 > 현재: EC2 1대에서 Spring Boot + MySQL (Docker Compose)  
 > 목표: EC2 A (App) + EC2 B (MySQL), 원격 JDBC 연결
 
+> **EC2 C(모니터링, Loki+Grafana) 추가됨** — A/B와 같은 VPC·서브넷·키페어를 재사용하는 세 번째 인스턴스. 이 문서가 다루는 App/MySQL 분리 이후에 별도로 추가된 것이라 아래 다이어그램·표에는 포함하지 않았다. 상세: [`docs/decisions/009-observability-logging.md`](../docs/decisions/009-observability-logging.md), 배포 절차: [`deploy/README.md`](README.md#ec2-c--모니터링-loki--grafana)
+
 ## 1. 목표 아키텍처
 
 ```mermaid

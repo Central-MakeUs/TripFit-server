@@ -1,6 +1,6 @@
 # 기술 결정 메모 (`docs/decisions/`)
 
-되돌리기 어렵거나 팀 합의가 필요한 **아키텍처·인프라 선택**만 짧게 남깁니다.  
+되돌리기 어렵거나 팀 합의가 필요한 **아키텍처·인프라 선택**만 짧게 남깁니다.
 기능 단위 설계는 `docs/specs/`, 제품 요구는 `docs/product/`를 씁니다.
 
 ## 언제 쓰나
@@ -41,10 +41,10 @@
 | | | |
 
 ## 트레이드오프 · 후속 리스크
-- 
+-
 
 ## 후속 작업
-- [ ] 
+- [ ]
 ```
 
 ## 현재 결정 목록
@@ -59,6 +59,7 @@
 | [`006-profile-image-url-storage.md`](006-profile-image-url-storage.md) | 프로필 이미지 URL 저장 |
 | [`007-user-profile-onboarding.md`](007-user-profile-onboarding.md) | 온보딩·이름 |
 | [`008-trip-authorization-guard.md`](008-trip-authorization-guard.md) | `@TripMemberOnly` / `@TripOwnerOnly` |
+| [`009-observability-logging.md`](009-observability-logging.md) | 로깅·모니터링 인프라 (Loki + Grafana) |
 
 기능 스펙 인덱스: [`../specs/README.md`](../specs/README.md)
 

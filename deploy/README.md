@@ -38,6 +38,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 | [`app/`](app/) | EC2 A | Nginx(:80/443) + Certbot + Spring Boot API |
 | [`nginx/`](nginx/) | EC2 A | `api.tripfit.online` 리버스 프록시 |
 | [`mysql/`](mysql/) | EC2 B | MySQL 8.0 전용 |
+| [`monitoring/`](monitoring/) | EC2 C | Loki(:3100) + Grafana(:3000) — A/B 컨테이너 로그 수집·조회 |
 | [`../docker-compose.yml`](../docker-compose.yml) | 로컬 | App build + MySQL (`--profile edge` 시 API Nginx) |
 
 상세 네트워크·SG: [`ec2-split-deployment.md`](ec2-split-deployment.md)
@@ -118,6 +119,26 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 ../../scripts/setup-api-https.sh --skip-tls
 ```
 
+### EC2 C — 모니터링 (Loki + Grafana)
+
+결정 근거: [`docs/decisions/009-observability-logging.md`](../docs/decisions/009-observability-logging.md) (Issue #77). A/B와 같은 VPC·서브넷·키페어 재사용, 별도 t3.micro.
+
+```bash
+cd deploy/monitoring
+cp .env.example .env   # GRAFANA_ADMIN_PASSWORD 채우기
+docker compose up -d
+```
+
+- Grafana `:3000` (기본 admin 계정 — 최초 로그인 후 비밀번호 변경 확인), Loki `:3100`(A/B가 push, 직접 조회 대상 아님).
+- **A/B 쪽 최초 1회 필수 작업** — Loki가 뜨기 전에 A·B에서 각각 실행해야 `docker compose up -d`가 `driver: loki`로 성공한다:
+  ```bash
+  docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+  ```
+  (이미 `deploy/app/docker-compose.yml`, `deploy/mysql/docker-compose.yml` 상단 주석에도 동일 안내가 있음.)
+- 로그 보존: `deploy/monitoring/loki-config.yaml`의 `retention_period`(잠정 7일) + compactor가 자동 삭제 — 별도 cron 불필요.
+- 프론트 공유용 접근 방법(계정 발급 vs IP 제한)·Grafana 대시보드 구성은 아직 미확정 — 009 "후속 작업" 참고.
+- **CI/CD 대상 아님** — `main` push 자동 배포는 EC2 A(app)만 다룬다. EC2 C는 위 명령으로 수동 배포·갱신.
+
 ## 환경 변수
 
 ### GitHub Actions Secrets (전체 — push 시 자동 주입, EC2 SSH·`.env` 수정 불필요)
@@ -136,6 +157,7 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 | `APP_PORT` | | Spring 컨테이너 바인딩 포트, 기본 8080 |
 | `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | | 기본 80 / 443 |
 | `CERTBOT_DOMAIN` | | 기본 `api.tripfit.online` |
+| `LOKI_HOST` | | EC2 C(모니터링) private IP — 기본 `172.31.38.217`. 미등록이어도 `docker-compose.yml`의 동일 기본값으로 fail-safe(로깅 미동작 대신 컨테이너는 정상 기동) |
 | `JWT_SECRET` | ✅ | Access JWT 서명 키 (256bit+ random) |
 | `JWT_ACCESS_EXPIRATION` | | 기본 7200초(2h) |
 | `JWT_REFRESH_EXPIRATION_DAYS` | | 기본 30일 |
@@ -153,6 +175,8 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 | `APPLE_PRIVATE_KEY` | ✅ (Apple 로그인 시) | 위 `.p8` 키 원문 — client_secret JWT ES256 서명 |
 | `KAKAO_ADMIN_KEY` | ✅ (Kakao 로그인 시) | Kakao Developers 앱 Admin Key — 탈퇴 시 unlink 호출 전용(로그인 검증 자체에는 불필요) |
 | `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
+
+**`LOKI_HOST`**: EC2 A는 위 Secret으로 관리(값 `172.31.38.217` — TP-monitoring private IP). EC2 C를 재생성해 private IP가 바뀌면 **이 Secret만 갱신**하면 된다. `deploy/app/docker-compose.yml`·`deploy/mysql/docker-compose.yml`의 `${LOKI_HOST:-172.31.38.217}` 기본값은 Secret 미설정 시에도 컨테이너가 죽지 않게 하는 fail-safe 용도로 남겨뒀다 — IP가 실제로 바뀌면 이 기본값도 함께 갱신해 두 값이 계속 일치하도록 한다. **EC2 B(MySQL)는 CI/CD 대상이 아니라 이 Secret이 적용되지 않음** — B의 `deploy/mysql/.env`에 `LOKI_HOST`를 직접 수정해야 한다.
 
 등록 위치: GitHub repo → **Settings → Secrets and variables → Actions**
 
@@ -219,6 +243,7 @@ keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore -
 
 `.github/workflows/ci-cd.yml` — `main` push → GHCR push → EC2 A deploy (app + nginx + certbot)
 deploy 시 **위 GitHub Secrets 전부가 app 컨테이너에 자동 주입**된다 — EC2 쪽 `.env` 유무와 무관하게 동작한다.
+**EC2 B(MySQL)·EC2 C(모니터링)는 이 파이프라인 밖** — 최초 설정·재배포 모두 수동(`deploy/mysql/`, `deploy/monitoring/` 절 참고).
 
 ## 검증 스크립트
 
