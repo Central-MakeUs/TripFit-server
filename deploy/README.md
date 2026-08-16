@@ -17,11 +17,13 @@ Docker Compose 기반 배포 설정. **배포 운영 SSOT** — 절차·환경�
 |--------|--------|---------|
 | `tripfit.online` | **Vercel** (React/Next.js) | 프론트 저장소 — EC2에 frontend 컨테이너 **없음** |
 | `api.tripfit.online` | **EC2 A** (Nginx + Spring Boot) | `deploy/app/`, `deploy/nginx/` |
+| `grafana.tripfit.online` | **EC2 C** (Nginx + Grafana) | `deploy/monitoring/` — 운영용, 클라이언트 앱과 무관 |
 
 **Route 53**
 
 - `tripfit.online` → Vercel DNS (CNAME/A, Vercel 대시보드 안내 따름)
 - `api.tripfit.online` → EC2 A Elastic IP (A 레코드)
+- `grafana.tripfit.online` → EC2 C Elastic IP (A 레코드)
 
 **프론트 환경 변수 (Vercel)**
 
@@ -119,9 +121,9 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 ../../scripts/setup-api-https.sh --skip-tls
 ```
 
-### EC2 C — 모니터링 (Loki + Grafana)
+### EC2 C — 모니터링 (Loki + Grafana, `https://grafana.tripfit.online`)
 
-결정 근거: [`docs/decisions/009-observability-logging.md`](../docs/decisions/009-observability-logging.md) (Issue #77). A/B와 같은 VPC·서브넷·키페어 재사용, 별도 t3.micro.
+결정 근거: [`docs/decisions/009-observability-logging.md`](../docs/decisions/009-observability-logging.md) (Issue #77). A/B와 같은 VPC·서브넷·키페어 재사용, 별도 t3.micro. Elastic IP 보유(EC2 A와 동일 이유 — Grafana URL·SSH가 인스턴스 재시작에 흔들리지 않도록).
 
 ```bash
 cd deploy/monitoring
@@ -129,15 +131,37 @@ cp .env.example .env   # GRAFANA_ADMIN_PASSWORD 채우기
 docker compose up -d
 ```
 
-- Grafana `:3000` (기본 admin 계정 — 최초 로그인 후 비밀번호 변경 확인), Loki `:3100`(A/B가 push, 직접 조회 대상 아님).
+**HTTPS (EC2 A `deploy/app`와 동일 패턴 — nginx+certbot, Let's Encrypt)**
+
+```bash
+export DEPLOY_DIR=$(pwd)/deploy/monitoring
+export CERTBOT_DOMAIN=grafana.tripfit.online
+../../scripts/ensure-ssl-certs.sh   # 임시 self-signed (nginx 443 기동용)
+docker compose up -d
+CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
+```
+
+- **스택**: `nginx`(:80/:443) → `grafana`(내부 `127.0.0.1:3000`만 바인딩, 공개 노출 없음), `certbot`(발급·갱신), `loki`(:3100, A/B가 push하는 대상 — 직접 브라우저 조회 대상 아님).
+- Route 53: `grafana.tripfit.online` A → EC2 C Elastic IP. SG는 22/80/443만 공개, 3100은 A/B SG로만 제한.
+- cron 갱신(A와 동일 스크립트, 도메인만 다름): `0 3 * * * DEPLOY_DIR=/home/ubuntu/monitoring CERTBOT_DOMAIN=grafana.tripfit.online /home/ubuntu/scripts/renew-letsencrypt.sh`
 - **A/B 쪽 최초 1회 필수 작업** — Loki가 뜨기 전에 A·B에서 각각 실행해야 `docker compose up -d`가 `driver: loki`로 성공한다:
   ```bash
   docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
   ```
   (이미 `deploy/app/docker-compose.yml`, `deploy/mysql/docker-compose.yml` 상단 주석에도 동일 안내가 있음.)
 - 로그 보존: `deploy/monitoring/loki-config.yaml`의 `retention_period`(잠정 7일) + compactor가 자동 삭제 — 별도 cron 불필요.
-- 프론트 공유용 접근 방법(계정 발급 vs IP 제한)·Grafana 대시보드 구성은 아직 미확정 — 009 "후속 작업" 참고.
+- **프론트 공유 계정**: IP 제한 대신 Grafana Viewer role 읽기 전용 계정을 발급했다(재택·카페 등 IP가 매번 바뀌는 프론트 환경에 IP 화이트리스트는 맞지 않음). 계정 추가 발급은 admin으로 로그인 후 **Administration → Users** 또는:
+  ```bash
+  curl -u admin:$GRAFANA_ADMIN_PASSWORD -X POST https://grafana.tripfit.online/api/admin/users \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"<이름>","login":"<아이디>","email":"<아이디>@tripfit.local","password":"<비밀번호>"}'
+  # 기본 org role이 Viewer라 별도 설정 없이도 읽기 전용이지만, 명시적으로 확인하려면:
+  curl -u admin:$GRAFANA_ADMIN_PASSWORD -X PATCH https://grafana.tripfit.online/api/org/users/<id> \
+    -H 'Content-Type: application/json' -d '{"role":"Viewer"}'
+  ```
+- Grafana 기본 대시보드 구성은 아직 없음 — Explore 탭에서 Loki datasource로 직접 LogQL 조회.
 - **CI/CD 대상 아님** — `main` push 자동 배포는 EC2 A(app)만 다룬다. EC2 C는 위 명령으로 수동 배포·갱신.
+- 이 서버는 A/B와 달리 git 체크아웃이 아니라 `~/monitoring`·`~/scripts`에 파일을 직접 올린 상태 — 향후 git 체크아웃으로 전환 권장(009 후속 작업).
 
 ## 환경 변수
 

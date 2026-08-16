@@ -6,6 +6,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEPLOY_DIR="${DEPLOY_DIR:-$ROOT_DIR/deploy/app}"
+PRIMARY_DOMAIN="${CERTBOT_DOMAIN:-api.tripfit.online}"
 
 log() {
   printf '[renew-letsencrypt] %s\n' "$*"
@@ -13,11 +14,11 @@ log() {
 
 cd "$DEPLOY_DIR"
 
-before="$(docker compose run --rm --entrypoint cat certbot /etc/letsencrypt/live/api.tripfit.online/fullchain.pem 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null || true)"
+before="$(docker compose run --rm --entrypoint cat certbot "/etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null || true)"
 
 if docker compose run --rm --entrypoint certbot certbot renew \
   --webroot -w /var/www/certbot --quiet; then
-  after="$(docker compose run --rm --entrypoint cat certbot /etc/letsencrypt/live/api.tripfit.online/fullchain.pem 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null || true)"
+  after="$(docker compose run --rm --entrypoint cat certbot "/etc/letsencrypt/live/${PRIMARY_DOMAIN}/fullchain.pem" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null || true)"
   if [[ "$before" != "$after" ]]; then
     log "certificate renewed — reloading nginx"
     docker exec tripfit-nginx nginx -s reload

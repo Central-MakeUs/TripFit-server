@@ -46,9 +46,11 @@
 - [x] `docker-compose.yml`(`deploy/monitoring/`)에 `loki`, `grafana` 서비스 추가
 - [x] A/B 각 컨테이너의 docker logging driver를 Loki로 전환
 - [ ] Grafana 기본 대시보드 구성 (앱 로그 검색용) — 현재는 Loki datasource만 프로비저닝, 대시보드 없음
-- [ ] 프론트 공유용 접근 방법 결정 (읽기 전용 계정 vs IP 제한 등)
+- [x] 프론트 공유용 접근 방법 결정 — 읽기 전용(Viewer) 계정 채택(IP 제한 대신). 이유: 프론트 인원이 고정 IP 없이 다양한 환경(집·카페·모바일)에서 접속하므로 IP 화이트리스트는 접속할 때마다 갱신이 필요해 "백엔드 개발자 없이도 확인 가능"이라는 목표에 안 맞음. `frontend` 계정(Viewer role) 2026-08-01 생성
 - [ ] 로그 보존 기간 정책 확정 (`loki-config.yaml` 현재 잠정 7일)
 - [x] `deploy/README.md`·`deploy/ec2-split-deployment.md`에 EC2 C 및 운영 절차 반영
+- [x] EC2 C Elastic IP — `54.116.62.227` 할당(2026-08-01), `grafana.tripfit.online` A 레코드 연결
+- [x] EC2 C HTTPS — nginx+certbot 추가(EC2 A와 동일 패턴), Let's Encrypt 발급 완료. Grafana는 `127.0.0.1:3000`만 바인딩, 공개 3000 포트는 닫음
 - [ ] (후속, 이번 범위 아님) Grafana Alerting → Discord 웹훅 실시간 에러 알림
-- [ ] (후속, 이번 범위 아님) 호스트 리소스(RAM/디스크/swap) 지표 수집 — Loki는 로그 전용이라 `docker logs`에 안 찍히는 OOM·swap 상황은 별도 파이프라인(Prometheus+node_exporter 또는 dmesg/journalctl용 Promtail) 필요
-- [ ] (후속, 이번 범위 아님) EC2 C Elastic IP — 현재 A만 EIP 보유, C는 동적 public IP(SSH·Grafana 접근용). private IP(Loki push 경로)는 이미 고정이라 기능상 필수는 아니지만, 인스턴스 stop/start 시 public IP가 바뀔 수 있어 프론트에 Grafana URL을 공유하기 전 검토 권장
+- [ ] (후속, 이번 범위 아님) 호스트 리소스(RAM/디스크/swap) 지표 수집 — Loki는 로그 전용이라 `docker logs`에 안 찍히는 OOM·swap 상황은 별도 파이프라인(Prometheus+node_exporter 또는 dmesg/journalctl용 Promtail) 필요. C에 1GB swap은 2026-08-01 우선 추가함(안전망)
+- [ ] (후속, 이번 범위 아님) EC2 C를 A/B처럼 git 체크아웃 기반으로 전환 — 현재 `~/monitoring`·`~/scripts`에 파일을 직접 scp한 상태

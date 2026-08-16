@@ -34,9 +34,12 @@ if [[ -f .env ]]; then
   set +a
 fi
 
-: "${SPRING_DATASOURCE_USERNAME:?SPRING_DATASOURCE_USERNAME is required (export before running)}"
-: "${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required (export before running)}"
-export SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
+# app(EC2 A) 스택만 Spring DB 접속정보가 필요 — 다른 스택(예: deploy/monitoring)엔 무관
+if [[ "$DEPLOY_DIR" == "$ROOT_DIR/deploy/app" ]]; then
+  : "${SPRING_DATASOURCE_USERNAME:?SPRING_DATASOURCE_USERNAME is required (export before running)}"
+  : "${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required (export before running)}"
+  export SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
+fi
 
 if [[ "$STAGING" != "0" ]]; then
   STAGING_ARG="--staging"

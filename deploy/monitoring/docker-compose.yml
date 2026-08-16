@@ -4,12 +4,67 @@
 # 결정 근거·대안 비교: docs/decisions/009-observability-logging.md (Issue #77)
 # EC2 A/B의 컨테이너 로그를 Loki(docker logging driver)로 전송받아,
 # Grafana에서 SSH 없이 검색·조회한다.
+# nginx(:80/:443) → grafana:3000. HTTPS는 grafana.tripfit.online — TLS 최초 발급은
+# deploy/app과 동일 스크립트 재사용:
+#   ../../scripts/ensure-ssl-certs.sh (DEPLOY_DIR=deploy/monitoring CERTBOT_DOMAIN=grafana.tripfit.online)
+#   docker compose up -d
+#   CERTBOT_EMAIL=... ../../scripts/init-letsencrypt.sh (DEPLOY_DIR=deploy/monitoring CERTBOT_DOMAIN=grafana.tripfit.online)
 #
 # 최초 설정:
 #   cp .env.example .env   # GRAFANA_ADMIN_PASSWORD 채우기
-#   docker compose up -d
 # =============================================================================
 services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: tripfit-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    depends_on:
+      grafana:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  certbot:
+    image: certbot/certbot:v3.0.1
+    container_name: tripfit-certbot
+    restart: unless-stopped
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        trap exit TERM
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet \
+            --deploy-hook "echo renew-ok-$(date -Iseconds) > /etc/letsencrypt/last-renew"
+          sleep 12h & wait $$!
+        done
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   loki:
     image: grafana/loki:2.9.4
     container_name: tripfit-loki
@@ -37,10 +92,12 @@ services:
     container_name: tripfit-grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_DOMAIN: grafana.tripfit.online
+      GF_SERVER_ROOT_URL: https://grafana.tripfit.online/
       TZ: Asia/Seoul
     volumes:
       - grafana_data:/var/lib/grafana
@@ -63,3 +120,5 @@ services:
 volumes:
   loki_data:
   grafana_data:
+  certbot_www:
+  certbot_conf:
