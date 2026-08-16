@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "여행방 멤버 전원의 정기+개별 일정을 합친 달력. GET /trips/{tripId}/members/schedule/calendar")
+@Schema(description = "여행방 멤버 전원의 정기+개별 일정을 합친 달력. GET /trips/{tripId}/members/schedule-calendar")
 public record MemberScheduleCalendarResponse(
     @Schema(description = "조회 시작 날짜 (여행방 희망 기간 startRange)") LocalDate startDate,
     @Schema(description = "조회 종료 날짜 (여행방 희망 기간 endRange)") LocalDate endDate,
