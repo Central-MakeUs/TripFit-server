@@ -59,13 +59,11 @@
 
 | 분류 | 이슈 |
 |------|------|
-| **Must** | #11(일정 API) · #12(여행방 API) · #13(추천 API 껍데기) · #17(calendar resolve) · #22(참여·submit·sparse 재설계) · #24(권한 가드) · #37(조회 윈도우 +2년) · #38(EXPIRED snapshot) · #39(JOINED→confirm→RESPONDED) · #47(나가기·내보내기·삭제 정합성) · #48(TripStatus 정리) · #50(추천 계산 로직) · #53(마이페이지 달력 C1 상한) · #54(TripMember 상태 파생) · #60(TripDetailResponse 필드) · #67(슬롯 오버라이드) |
+| **Must** | #11(일정 API) · #12(여행방 API) · #13(추천 API 껍데기) · #17(calendar resolve) · #22(참여·submit·sparse 재설계) · #24(권한 가드) · #37(조회 윈도우 +2년) · #38(EXPIRED snapshot) · #39(JOINED→confirm→RESPONDED) · #47(나가기·내보내기·삭제 정합성) · #48(TripStatus 정리) · #50(추천 계산 로직) · #53(마이페이지 달력 C1 상한) · #54(TripMember 상태 파생) · #60(TripDetailResponse 필드) · #67(슬롯 오버라이드) · #105(연차/반차 자동 반영 — #50 amend, 2026-08-16 소급 추가) |
 | **Nice** (DoD 불필요) | #20(참여자 내보내기) · #26(`last_activity_at` hook) · #27(EXPIRED·Pin 스케줄러) |
-| **포함 안 됨** | Google Calendar·FCM·카카오(→ Wave 3) · Redis·RTR·S3·계정연결(→ Wave 4) |
+| **포함 안 됨** | Google Calendar·FCM·카카오(→ Wave 3) · Redis·RTR·S3·계정연결(→ Wave 4) · #107(공휴일 반영 — Wave 2 안이지만 DoD 불필요, `schedule-calendar-resolve.md` A4에 이미 "wave 2 Out"으로 명시돼 있던 항목, 2026-08-16 소급 추가) |
 
 > **용어:** 이슈 본문 `## Must Have` = **그 이슈** 완료 체크리스트. **Wave Must** = 이 표 · Backlog Issue Must 섹션. `MVP: In scope` ≠ Wave Must. **Nice와 Out 혼용 금지.**
-
-> **⚠️ 미분류 (2026-08-16 발견):** Backlog `#30`은 2026-08-11에 DoD 완료로 이미 Closed됐는데, `#105`(연차/반차 자동 반영 — Implemented, PR #108)·`#107`(공휴일 반영, Open)이 그 이후 8/15에 새로 생겨 위 Must/Nice 어디에도 없다. `harness-wave.md`상 에이전트가 스스로 Must/Nice/Out을 단정할 수 없어 분류는 비워둠 — 이미 Closed된 Backlog에 소급 추가할지, 별도 트래킹으로 둘지 **사용자 확인 필요**.
 
 ---
 
