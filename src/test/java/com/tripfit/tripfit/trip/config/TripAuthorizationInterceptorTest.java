@@ -178,6 +178,40 @@ class TripAuthorizationInterceptorTest {
   }
 
   @Test
+  void preHandle_tripMembershipOnly_scheduledPendingMember_passesWithoutEntryGate()
+      throws Exception {
+    when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
+        .thenReturn(Optional.of(membership(TripMemberStatus.SCHEDULE_PENDING)));
+
+    boolean allowed =
+        interceptor.preHandle(
+            requestWithTripId(TRIP_ID),
+            new MockHttpServletResponse(),
+            handlerMethod("membershipOnly", UUID.class));
+
+    assertThat(allowed).isTrue();
+    verify(userSummaryService, never()).requireCanEnterRoom(USER_ID);
+  }
+
+  @Test
+  void preHandle_tripMembershipOnly_notMember_throwsAccessDenied() throws Exception {
+    when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
+        .thenReturn(Optional.empty());
+
+    assertThatThrownBy(
+        () -> interceptor.preHandle(
+            requestWithTripId(TRIP_ID),
+            new MockHttpServletResponse(),
+            handlerMethod("membershipOnly", UUID.class)))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_ACCESS_DENIED);
+    verify(userSummaryService, never()).requireCanEnterRoom(USER_ID);
+  }
+
+  @Test
   void preHandle_entryGateFails_throwsScheduleEntryRequired() throws Exception {
     when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
@@ -265,6 +299,9 @@ class TripAuthorizationInterceptorTest {
 
     @TripOwnerOnly
     void ownerOnly(@PathVariable UUID tripId) {}
+
+    @TripMembershipOnly
+    void membershipOnly(@PathVariable UUID tripId) {}
 
     void unannotated(@PathVariable UUID tripId) {}
   }

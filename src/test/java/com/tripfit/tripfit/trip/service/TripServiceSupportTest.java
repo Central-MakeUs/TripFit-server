@@ -101,10 +101,44 @@ class TripServiceSupportTest {
         .containsExactly("민서", "민서(2)");
   }
 
+  @Test
+  void loadMemberPreviewsByTripIds_usesFirstNameOnly_whenProfileNameComplete() {
+    TripRepository tripRepository = mock(TripRepository.class);
+    TripMemberRepository tripMemberRepository = mock(TripMemberRepository.class);
+    UserLookupService userLookupService = mock(UserLookupService.class);
+    UserRepository userRepository = mock(UserRepository.class);
+    TripServiceSupport support =
+        new TripServiceSupport(
+            tripRepository, tripMemberRepository, userLookupService, userRepository);
+
+    UUID tripId = UUID.randomUUID();
+    User owner = userWithFullName("홍", "길동");
+
+    when(tripMemberRepository.findMemberPreviewsByTripIds(List.of(tripId)))
+        .thenReturn(List.of(previewProjection(tripId, owner.getId(), "OWNER")));
+    when(userRepository.findAllById(any())).thenReturn(List.of(owner));
+
+    Map<UUID, List<MemberPreviewResponse>> result =
+        support.loadMemberPreviewsByTripIds(List.of(tripId));
+
+    assertThat(result.get(tripId))
+        .extracting(MemberPreviewResponse::displayName)
+        .containsExactly("길동");
+  }
+
   private static User user(String nickname, String profileImageUrl) {
     User u = new User("sub-" + UUID.randomUUID(), SocialProvider.GOOGLE, "u@example.com", nickname,
         profileImageUrl);
     u.setId(UUID.randomUUID());
+    return u;
+  }
+
+  private static User userWithFullName(String lastName, String firstName) {
+    User u =
+        new User("sub-" + UUID.randomUUID(), SocialProvider.GOOGLE, "u@example.com", null, null);
+    u.setId(UUID.randomUUID());
+    u.setLastName(lastName);
+    u.setFirstName(firstName);
     return u;
   }
 
