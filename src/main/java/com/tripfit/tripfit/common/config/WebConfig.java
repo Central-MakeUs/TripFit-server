@@ -15,7 +15,8 @@ public class WebConfig implements WebMvcConfigurer {
         .allowedOrigins(
             "https://tripfit.online",
             "https://www.tripfit.online",
-            "http://localhost:3000")
+            "http://localhost:3000",
+            "http://192.168.25.7:3000")
         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         .allowedHeaders("*")
         .allowCredentials(true);
