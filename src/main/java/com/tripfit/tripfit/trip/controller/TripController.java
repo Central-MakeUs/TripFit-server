@@ -4,6 +4,7 @@ import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.trip.config.TripMemberOnly;
+import com.tripfit.tripfit.trip.config.TripMembershipOnly;
 import com.tripfit.tripfit.trip.config.TripOwnerOnly;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
@@ -459,7 +460,7 @@ public class TripController {
     return ResponseEntity.ok(SuccessResponse.of(tripService.activateMembership(tripId, userId)));
   }
 
-  @TripMemberOnly
+  @TripMembershipOnly
   @Operation(
       summary = "Pin 토글",
       description = """
@@ -467,7 +468,7 @@ public class TripController {
 
           호출 시점: 카드 Pin 버튼.
 
-          전제: 멤버이며 방 입장 가능(ACTIVE + 입장 조건).
+          전제: 멤버(SCHEDULE_PENDING 방장 포함). 방 입장(ACTIVE + 입장 조건)은 필요 없다.
 
           결과: 본인 isPinned·pinnedAt이 반영된 TripDetail.
           """)
@@ -491,7 +492,7 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """

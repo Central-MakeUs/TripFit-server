@@ -8,7 +8,9 @@ import java.util.UUID;
 public record MemberPreviewResponse(
     @Schema(description = "사용자 ID") UUID userId,
 
-    @Schema(description = "표시 이름 (동명이인 시 접미사)", example = "홍길동(2)") String displayName,
+    @Schema(
+        description = "미리보기용 이름. 성 없이 이름만(닉네임 폴백 시 닉네임 그대로), 동명이인 시 접미사",
+        example = "길동(2)") String displayName,
 
     @Schema(description = "프로필 이미지 URL. 미제공 시 null", nullable = true) String profileImageUrl,
 

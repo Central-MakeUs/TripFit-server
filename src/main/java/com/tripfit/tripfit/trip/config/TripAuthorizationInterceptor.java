@@ -21,6 +21,8 @@ import org.springframework.web.servlet.HandlerMapping;
 // @TripMemberOnly: 멤버 + ACTIVE + canEnterRoom (방 입장·상세·공유 데이터)
 // @TripOwnerOnly: 방장만 (SCHEDULE_PENDING 허용 · ACTIVE/canEnterRoom 면제 — PATCH/DELETE 메타만.
 // 초대 공유는 방 입장 후 → 상세 inviteCode · SCHEDULE_PENDING create 응답에 inviteCode 없음)
+// @TripMembershipOnly: 멤버(역할 무관) + SCHEDULE_PENDING 허용 · ACTIVE/canEnterRoom 면제 (Pin 등 방 입장과 무관한 개인
+// 설정)
 @Component
 public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
@@ -39,7 +41,8 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     this.userSummaryService = userSummaryService;
   }
 
-  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly 권한 검사 — SCHEDULE_PENDING 방장은 메타 API만 면제
+  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly/@TripMembershipOnly 권한 검사 — SCHEDULE_PENDING 방장은
+  // 메타·Pin API만 면제
   @Override
   public boolean preHandle(
       HttpServletRequest request,
@@ -53,7 +56,9 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
         handlerMethod.getMethodAnnotation(TripOwnerOnly.class) != null;
     boolean memberOnly =
         handlerMethod.getMethodAnnotation(TripMemberOnly.class) != null;
-    if (!ownerOnly && !memberOnly) {
+    boolean membershipOnly =
+        handlerMethod.getMethodAnnotation(TripMembershipOnly.class) != null;
+    if (!ownerOnly && !memberOnly && !membershipOnly) {
       return true;
     }
 
@@ -72,6 +77,12 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
         throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
       }
       // SCHEDULE_PENDING 방장도 PATCH/DELETE(메타)는 허용 — ACTIVE·입장 조건 검사 생략
+      return true;
+    }
+
+    if (membershipOnly) {
+      // 역할 무관 멤버십만 확인 — SCHEDULE_PENDING도 허용, ACTIVE·canEnterRoom 검사 생략(Pin 등)
+      support.requireActiveMember(tripId, userId);
       return true;
     }
 

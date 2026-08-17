@@ -174,7 +174,8 @@ public class TripServiceSupport {
       // 동명이인 접미사는 방 단위로만 부여 — 다른 방 참여자와는 섞이지 않도록 방별로 재계산
       List<User> usersInOrder =
           tripRows.stream().map(row -> usersById.get(row.getUserId())).toList();
-      Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
+      Map<UUID, String> displayNames =
+          TripDisplayNameHelper.assignPreviewDisplayNames(usersInOrder);
       List<MemberPreviewResponse> previews =
           tripRows.stream()
               .map(
