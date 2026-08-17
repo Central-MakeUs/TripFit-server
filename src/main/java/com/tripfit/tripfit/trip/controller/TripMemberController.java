@@ -173,7 +173,7 @@ public class TripMemberController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"memberCount": 6, "activeMemberCount": 2, "memberFillRate": 0.33, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
+                      {"data": {"memberCount": 6, "activeMemberCount": 2, "memberFillRate": 0.3333333333333333, "members": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "홍길동", "role": "OWNER", "memberStatus": "ACTIVE", "pinned": true}]}}
                       """))),
       @ApiResponse(
           responseCode = "400",
