@@ -30,11 +30,11 @@ trap 'rm -f "$BREAKING_JSON" "$ADDITIONS_JSON"' EXIT
 
 oasdiff breaking "$BASE_SPEC" "$REVISED_SPEC" --format json > "$BREAKING_JSON"
 
-# non-breaking이지만 프론트가 알아야 하는 요청 필드 추가 — oasdiff changelog(INFO 레벨)에서
-# new-optional-request-property(optional 요청 속성 추가)만 골라낸다. breaking 쪽과 중복되지 않음
-# (필수화·제거는 이미 breaking 목록에 잡힘).
+# non-breaking이지만 프론트가 알아야 하는 필드 추가 — oasdiff changelog(INFO 레벨)에서
+# new-optional-request-property(optional 요청 속성 추가) · response-optional-property-added
+# (optional 응답 속성 추가) 둘 다 골라낸다. breaking 쪽과 중복되지 않음(필수화·제거는 이미 breaking 목록에 잡힘).
 oasdiff changelog "$BASE_SPEC" "$REVISED_SPEC" --format json --level INFO \
-  | jq '[.[] | select(.id == "new-optional-request-property")]' > "$ADDITIONS_JSON"
+  | jq '[.[] | select(.id == "new-optional-request-property" or .id == "response-optional-property-added")]' > "$ADDITIONS_JSON"
 
 BREAKING_COUNT="$(jq 'length' "$BREAKING_JSON")"
 ADDITIONS_COUNT="$(jq 'length' "$ADDITIONS_JSON")"
@@ -189,16 +189,19 @@ if [[ "$ADDITIONS_COUNT" -gt 0 ]]; then
   # 필드명만으로는 "왜"가 안 보임(#64 사고) — 같은 필드의 @Schema(description)를 REVISED_SPEC에서
   # 찾아 그대로 붙인다. oasdiff는 중첩 경로를 "items/items/slots"처럼 슬래시로 이어붙이는데, 배열
   # 프로퍼티 이름이 우연히 "items"이면 실제 프로퍼티명과 배열 순회 마커를 문자열만으론 구분 못 한다
-  # (schema.type이 array인지로 구분). requestBody가 $ref면 컴포넌트까지 따라가며 각 단계
-  # properties[token].description을 조회 — description이 없으면(작성 규칙 위반) 안내 문구로 대체.
+  # (schema.type이 array인지로 구분). requestBody·response 스키마가 $ref면 컴포넌트까지 따라가며
+  # 각 단계 properties[token].description을 조회 — description이 없으면(작성 규칙 위반) 안내 문구로
+  # 대체. 요청 속성(new-optional-request-property)과 응답 속성(response-optional-property-added)은
+  # oasdiff 문구 패턴·스키마 진입점(requestBody vs responses[code])이 달라 id별로 분기한다.
+  # 응답 쪽 content-type 키는 요청과 달리 springdoc이 produces를 명시하지 않아 "*/*"로 나오므로
+  # "application/json"을 하드코딩하지 않고 첫 content-type 항목을 그대로 쓴다.
   TRANSLATED_ADDITIONS_JSON="$(jq --slurpfile spec "$REVISED_SPEC" '
     def resolve_ref:
       if type == "object" and has("$ref") then
         $spec[0].components.schemas[(.["$ref"] | sub("#/components/schemas/"; ""))]
       else . end;
-    def schema_desc(path; op; propPath):
-      ($spec[0].paths[path][(op | ascii_downcase)].requestBody.content["application/json"].schema | resolve_ref) as $root
-      | (propPath | split("/")) as $tokens
+    def schema_desc(propPath; $root):
+      (propPath | split("/")) as $tokens
       | reduce $tokens[] as $tok
           ({schema: $root, desc: null};
             if (.schema.type // "") == "array" then
@@ -210,11 +213,23 @@ if [[ "$ADDITIONS_COUNT" -gt 0 ]]; then
           )
       | .desc;
     def translate:
-      (.text | capture("request property `(?<p>[^`]+)`")) as $c
-      | (schema_desc(.path; .operation; $c.p)) as $d
-      | "요청 속성 `" + $c.p + "` 추가됨(optional) — "
-        + ( $d // "⚠️ @Schema(description) 없음 — 왜 추가했는지 필드에 적어주세요" )
-        + " (안 보내도 기존 동작 그대로)";
+      if .id == "response-optional-property-added" then
+        (.text | capture("property `(?<p>[^`]+)` to the response with the `(?<code>[^`]+)` status")) as $c
+        | ($spec[0].paths[.path][(.operation | ascii_downcase)].responses[$c.code].content
+            | to_entries[0].value.schema | resolve_ref) as $root
+        | (schema_desc($c.p; $root)) as $d
+        | "응답 속성 `" + $c.p + "` 추가됨(optional) — "
+          + ( $d // "⚠️ @Schema(description) 없음 — 왜 추가했는지 필드에 적어주세요" )
+          + " (기존 클라이언트는 무시하면 됨)"
+      else
+        (.text | capture("request property `(?<p>[^`]+)`")) as $c
+        | ($spec[0].paths[.path][(.operation | ascii_downcase)].requestBody.content["application/json"].schema
+            | resolve_ref) as $root
+        | (schema_desc($c.p; $root)) as $d
+        | "요청 속성 `" + $c.p + "` 추가됨(optional) — "
+          + ( $d // "⚠️ @Schema(description) 없음 — 왜 추가했는지 필드에 적어주세요" )
+          + " (안 보내도 기존 동작 그대로)"
+      end;
     map(.text = translate)
   ' "$ADDITIONS_JSON")"
 
