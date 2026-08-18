@@ -123,7 +123,6 @@ public class NotificationEventListener {
         LandingType.TRAVEL_ROOM_DETAIL);
   }
 
-  // #13 취소 API 미구현으로 아직 어디서도 발행되지 않음 — 구현 완료 후 확정 취소 서비스에서 이벤트 발행 지점 연결 예정
   @Async
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)

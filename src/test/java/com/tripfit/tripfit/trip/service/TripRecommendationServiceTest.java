@@ -25,6 +25,7 @@ import com.tripfit.tripfit.trip.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.domain.UnconfirmReason;
 import com.tripfit.tripfit.trip.dto.ConfirmTripRequest;
+import com.tripfit.tripfit.trip.dto.RecommendationDetailResponse;
 import com.tripfit.tripfit.trip.dto.RecommendationListResponse;
 import com.tripfit.tripfit.trip.dto.SaveRecommendationFeedbackRequest;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
@@ -164,6 +165,95 @@ class TripRecommendationServiceTest {
         .isInstanceOfSatisfying(
             TripFitException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(TripErrorCode.TRIP_NOT_ONGOING));
+  }
+
+  @Test
+  void getRecommendationDetail_returnsMemberBreakdownAndNullFeedbackWhenNoneSaved() {
+    Recommendation recommendation =
+        new Recommendation(
+            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+    when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
+        .thenReturn(Optional.of(recommendation));
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
+        .thenReturn(List.of(ownerMembership));
+    UUID memberUserId = ownerMembership.getUser().getId();
+    when(
+        recommendationEngine.classifyMembers(
+            eq(LocalDate.of(2026, 8, 3)),
+            eq(LocalDate.of(2026, 8, 5)),
+            any()))
+        .thenReturn(
+            List.of(
+                new MemberAttendanceDetail(memberUserId, AttendanceType.PARTIAL_ATTEND, 2, 1.5)));
+    when(recommendationFeedbackRepository.findByRecommendationId(recommendation.getId()))
+        .thenReturn(Optional.empty());
+
+    RecommendationDetailResponse response =
+        service.getRecommendationDetail(TRIP_ID, OWNER_ID, 1);
+
+    assertThat(response.rank()).isEqualTo(1);
+    assertThat(response.members()).hasSize(1);
+    assertThat(response.members().get(0).name()).isEqualTo("테스터");
+    assertThat(response.members().get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
+    assertThat(response.members().get(0).uncertainDays()).isEqualTo(2);
+    assertThat(response.members().get(0).vacationDaysNeeded()).isEqualTo(1.5);
+    assertThat(response.feedback()).isNull();
+  }
+
+  @Test
+  void getRecommendationDetail_returnsPreviouslySavedFeedback() {
+    Recommendation recommendation =
+        new Recommendation(
+            trip, 1, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 5), 80, 1, 1, 2.0, 91.5);
+    when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 1))
+        .thenReturn(Optional.of(recommendation));
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
+        .thenReturn(List.of(ownerMembership));
+    UUID memberUserId = ownerMembership.getUser().getId();
+    when(recommendationEngine.classifyMembers(any(), any(), any()))
+        .thenReturn(
+            List.of(new MemberAttendanceDetail(memberUserId, AttendanceType.FULL_ATTEND, 0, 0.0)));
+    RecommendationFeedback savedFeedback =
+        new RecommendationFeedback(
+            trip,
+            recommendation.getId(),
+            RecommendationMode.BASIC,
+            1,
+            LocalDate.of(2026, 8, 3),
+            LocalDate.of(2026, 8, 5),
+            RecommendationFeedbackStatus.NOT_HELPFUL,
+            RecommendationFeedbackReason.TOO_FEW_ATTENDEES,
+            null);
+    when(recommendationFeedbackRepository.findByRecommendationId(recommendation.getId()))
+        .thenReturn(Optional.of(savedFeedback));
+
+    RecommendationDetailResponse response =
+        service.getRecommendationDetail(TRIP_ID, OWNER_ID, 1);
+
+    assertThat(response.feedback()).isNotNull();
+    assertThat(response.feedback().status()).isEqualTo(RecommendationFeedbackStatus.NOT_HELPFUL);
+    assertThat(response.feedback().reason())
+        .isEqualTo(RecommendationFeedbackReason.TOO_FEW_ATTENDEES);
+  }
+
+  @Test
+  void getRecommendationDetail_notOwner_throwsForbidden() {
+    UUID stranger = UUID.randomUUID();
+
+    assertThatThrownBy(() -> service.getRecommendationDetail(TRIP_ID, stranger, 1))
+        .isInstanceOfSatisfying(
+            TripFitException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(TripErrorCode.TRIP_FORBIDDEN));
+  }
+
+  @Test
+  void getRecommendationDetail_rankNotFound_throwsRecommendationNotFound() {
+    when(recommendationRepository.findByTrip_IdAndRank(TRIP_ID, 99)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.getRecommendationDetail(TRIP_ID, OWNER_ID, 99))
+        .isInstanceOfSatisfying(
+            TripFitException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(TripErrorCode.RECOMMENDATION_NOT_FOUND));
   }
 
   @Test

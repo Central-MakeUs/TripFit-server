@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.notification.domain.LandingType;
 import com.tripfit.tripfit.notification.domain.NotificationHistory;
 import com.tripfit.tripfit.notification.event.AllMembersSubmittedEvent;
+import com.tripfit.tripfit.notification.event.TripConfirmCanceledEvent;
+import com.tripfit.tripfit.notification.event.TripConfirmedEvent;
 import com.tripfit.tripfit.notification.event.TripInfoChangedEvent;
 import com.tripfit.tripfit.notification.event.TripJoinCompletedEvent;
 import com.tripfit.tripfit.notification.repository.NotificationHistoryRepository;
@@ -157,6 +159,54 @@ class NotificationEventListenerTest {
     verify(notificationHistoryRepository).saveAll(captor.capture());
     assertThat(captor.getValue()).extracting(NotificationHistory::getUser)
         .containsExactlyInAnyOrder(memberA, memberB);
+  }
+
+  @Test
+  void onTripConfirmed_notifiesMembersExcludingOwner() {
+    User memberA = user("a-sub", "김", "철수");
+    User memberB = user("b-sub", "이", "영희");
+    TripMember ownerMembership =
+        new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.ACTIVE,
+            LocalDateTime.now());
+    TripMember memberAMembership =
+        new TripMember(trip, memberA, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
+            LocalDateTime.now());
+    TripMember memberBMembership =
+        new TripMember(trip, memberB, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
+            LocalDateTime.now());
+    when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
+        .thenReturn(List.of(ownerMembership, memberAMembership, memberBMembership));
+
+    listener.onTripConfirmed(new TripConfirmedEvent(TRIP_ID));
+
+    ArgumentCaptor<List<NotificationHistory>> captor = ArgumentCaptor.forClass(List.class);
+    verify(notificationHistoryRepository).saveAll(captor.capture());
+    assertThat(captor.getValue()).extracting(NotificationHistory::getUser)
+        .containsExactlyInAnyOrder(memberA, memberB);
+    assertThat(captor.getValue().get(0).getBody()).contains("여행 일정이 확정되었어요");
+  }
+
+  @Test
+  void onTripConfirmCanceled_notifiesMembersExcludingOwner() {
+    User memberA = user("a-sub", "김", "철수");
+    TripMember ownerMembership =
+        new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.ACTIVE,
+            LocalDateTime.now());
+    TripMember memberAMembership =
+        new TripMember(trip, memberA, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
+            LocalDateTime.now());
+    when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID))
+        .thenReturn(List.of(ownerMembership, memberAMembership));
+
+    listener.onTripConfirmCanceled(new TripConfirmCanceledEvent(TRIP_ID));
+
+    ArgumentCaptor<List<NotificationHistory>> captor = ArgumentCaptor.forClass(List.class);
+    verify(notificationHistoryRepository).saveAll(captor.capture());
+    assertThat(captor.getValue()).extracting(NotificationHistory::getUser)
+        .containsExactly(memberA);
+    assertThat(captor.getValue().get(0).getBody()).contains("확정된 여행 일정이 취소되었어요");
   }
 
   private static User user(String socialId, String lastName, String firstName) {
