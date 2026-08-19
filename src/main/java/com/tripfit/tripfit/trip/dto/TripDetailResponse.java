@@ -14,7 +14,7 @@ import java.util.UUID;
 @Schema(
     description = """
         여행방 상세. GET/join/activate/patch/pin 등.
-        호출 전제=ACTIVE+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.
+        호출 전제=이 방에서 ACTIVE. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.
         SCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED.
         """)
 // @formatter:off

@@ -26,8 +26,7 @@ public enum TripMemberStatus {
 
           언제: 방장=activate 후, 일반 멤버=POST /trips/join 시 즉시.
 
-          가능: 방 입장·방 안 API
-          (추가로 전역 일정≥1건 또는 전부 free 필요).
+          가능: 방 입장·방 안 API.
           초대 공유는 방장만, 그리고 이 상태 이후에만.
           """)
   ACTIVE

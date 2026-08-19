@@ -16,7 +16,7 @@
 
 - `#12` D3: `invite_code` 6자 · 공유 URL · `POST /trips/join`
 - **카카오 SDK·템플릿·제목·설명·발송은 프론트.** 서버는 공유용 **데이터만** (문구 저장·카카오 대행 없음)
-- 방 입장 게이트: **`ACTIVE` ∧ `canEnterRoom`** — SCHEDULE_PENDING(방장 confirm 전)는 상세·공유 불가
+- 방 입장 게이트: **`ACTIVE`** — SCHEDULE_PENDING(방장 activate 전)는 상세·공유 불가 (구 `∧ canEnterRoom` 전역 조건은 2026-08-18 `#113`으로 삭제)
 
 ## 역할 분담 (확정)
 

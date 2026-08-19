@@ -8,7 +8,7 @@
 
 현재 인증은 `JwtAuthenticationFilter`(JWT 검증 → `SecurityContext`에 `userId` 주입)만 있고,
 **"이 trip의 방장인가 / 참여자인가"** 도메인 권한은 `TripService` 안에서 매 메서드마다
-`requireActiveMember(tripId, userId)` · `requireOwner(trip, userId)`로 확인한다.
+`requireMembership(tripId, userId)` · `requireOwner(trip, userId)`로 확인한다.
 
 - 기능상 검증은 **모두 동작**한다 (403 `TRIP_ACCESS_DENIED` / `TRIP_FORBIDDEN`).
 - 그러나 Service마다 검증을 반복 호출해 **중복**이 있고, "이 API는 멤버/방장 전용"이 컨트롤러·OpenAPI·테스트에서 **선언적으로 드러나지 않는다**.
@@ -25,7 +25,7 @@ Spring에는 NestJS `Guard`(`CanActivate`)에 1:1 대응하는 개념이 없다.
 ## 결정
 
 `{tripId}` path variable을 쓰는 API에 붙이는 **메서드 어노테이션 2종**과, 이를 읽어 권한을 강제하는
-**단일 `HandlerInterceptor`**를 둔다. `TripService`의 `requireActiveMember`/`requireOwner`는
+**단일 `HandlerInterceptor`**를 둔다. `TripService`의 `requireMembership`/`requireOwner`는
 **얇은 도메인 헬퍼로 유지**하고(직접 서비스 호출 시 방어), 컨트롤러 진입 시점 검증은 인터셉터가 담당한다.
 
 ```java
@@ -48,10 +48,10 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 //   4) @PathVariable "tripId" 추출 (HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
 //   5) trip 존재·soft-delete 확인 → 없으면 404 TRIP_NOT_FOUND
 //   6) OwnerOnly → trip.owner == userId 아니면 403 TRIP_FORBIDDEN
-//      (#39: SCHEDULE_PENDING 방장 PATCH/DELETE 허용 — ACTIVE·canEnterRoom 면제)
+//      (#39: SCHEDULE_PENDING 방장 PATCH/DELETE 허용 — ACTIVE 면제)
 //   7) MemberOnly → membership 없으면 403 TRIP_ACCESS_DENIED
 //      status != ACTIVE → 403 SCHEDULE_ACTIVATION_REQUIRED (#39)
-//      canEnterRoom 불만족 → 403 SCHEDULE_ENTRY_REQUIRED (D-JOIN-ENTRY)
+//      (전역 입장 게이트 canEnterRoom → 2026-08-18 삭제, #113)
 ```
 
 - 등록: `WebMvcConfigurer.addInterceptors`에 `addPathPatterns("/api/v1/trips/**")`.
@@ -80,8 +80,8 @@ public @interface TripOwnerOnly {}    // 방장 아니면 403 TRIP_FORBIDDEN
 - [x] `TripMemberOnly` / `TripOwnerOnly` 어노테이션 추가
 - [x] `TripAuthorizationInterceptor` + `WebMvcConfigurer` 등록 (`/api/v1/trips/**`)
 - [x] `TripController`·`TripMemberController`에 어노테이션 부착 (get/patch/delete/pin/members/activate)
-- [x] Service `requireActiveMember`/`requireOwner`는 헬퍼로 유지 (중복 제거는 후속)
+- [x] Service `requireMembership`/`requireOwner`는 헬퍼로 유지 (중복 제거는 후속)
 - [x] 인터셉터 단위 테스트 (멤버/비멤버/방장/비방장/soft-delete/없는 tripId)
 - [x] `./gradlew test` · OpenAPI에는 영향 없음(어노테이션은 런타임 권한만)
-- [x] #22 canEnterRoom — `@TripMemberOnly` 게이트 (2026-07-21)
+- [x] ~~#22 canEnterRoom — `@TripMemberOnly` 게이트~~ (2026-07-21 추가 → **2026-08-18 삭제**, `#113` — 방 입장 판정은 `ACTIVE` 하나로 단일화)
 - [x] #39 ACTIVE 게이트 · OwnerOnly면제 (SCHEDULE_PENDING PATCH/DELETE)

@@ -43,7 +43,7 @@
   - [x] 개인 전용 데이터 **hard delete**: `PersonalSchedule`, `RegularSchedule`, `GoogleCalendarCredential`, `GoogleCalendarBusyDay`, `RefreshToken` (전부 `userId` 기준)
   - [x] `User` row **soft delete**(`deleted_at` set) + 개인정보 스크럽: `email`·`firstName`·`lastName`·`nickname`·`profileImageUrl` → `null`, `isGoogleCalendarConnected` → `false`
   - [x] `socialId`·`provider`·`id`는 그대로 유지 — FK 무결성(다른 사용자의 Trip/TripMember 참조) 및 재로그인 차단 판별에 필요
-- [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 그대로 **부활**시켜 로그인 진행 — `deletedAt=null`, `isAllFree=false`로 초기화 후 `updateFromProfile`로 email·nickname·profileImageUrl을 소셜 프로필값으로 갱신. `firstName`/`lastName`/`isGoogleCalendarConnected`는 탈퇴 시 초기화된 채로 유지되어 재로그인 후 온보딩·재연동이 필요함(신규 가입과 동일한 경험)
+- [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 그대로 **부활**시켜 로그인 진행 — `deletedAt=null`로 초기화 후 `updateFromProfile`로 email·nickname·profileImageUrl을 소셜 프로필값으로 갱신. `firstName`/`lastName`/`isGoogleCalendarConnected`는 탈퇴 시 초기화된 채로 유지되어 재로그인 후 온보딩·재연동이 필요함(신규 가입과 동일한 경험)
 - [x] `DevAuthService`(dev 전용 테스트 로그인)도 동일하게 부활 처리 — 프로덕션 로그인과 동작 일치
 - [x] 성공 시 `204 No Content`
 - [x] `./gradlew test` 통과, OpenAPI 반영

@@ -85,12 +85,6 @@ public class User extends SoftDeleteEntity {
   @Column(name = "is_google_calendar_connected", nullable = false)
   private boolean isGoogleCalendarConnected;
 
-  @Schema(
-      description = "전부 free 선언. default false=미입력. 일정 0행 CLEAR 또는 create/join Skip 시 true. row≥1이면 false",
-      example = "false")
-  @Column(name = "is_all_free", nullable = false)
-  private boolean isAllFree;
-
   @Schema(description = "알림 수신 여부(BR-USER-005). default true — false면 NOTI-001~005·009 전부 미발송",
       example = "true")
   @Column(name = "notification_enabled", nullable = false)
@@ -125,7 +119,6 @@ public class User extends SoftDeleteEntity {
     this.nickname = nickname;
     this.profileImageUrl = profileImageUrl;
     this.isGoogleCalendarConnected = false;
-    this.isAllFree = false;
     this.notificationEnabled = true;
   }
 
@@ -151,7 +144,6 @@ public class User extends SoftDeleteEntity {
   public void reviveIfWithdrawn() {
     if (getDeletedAt() != null) {
       clearDeleted();
-      applyAllFree(false);
     }
   }
 
@@ -187,10 +179,6 @@ public class User extends SoftDeleteEntity {
 
   public void disconnectGoogleCalendar() {
     this.isGoogleCalendarConnected = false;
-  }
-
-  public void applyAllFree(boolean allFree) {
-    this.isAllFree = allFree;
   }
 
   // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — null 필드는 RegularSchedule 시절과 동일한 기본값으로 대체

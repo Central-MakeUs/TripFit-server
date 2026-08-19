@@ -3,19 +3,29 @@
 > wave: **2** (2026-08-03 Wave 1→2 이동 — trip 참여 흐름, 도메인축 재분류)
 > implements: BR-USER-001(이름 게이트), BR-USER-006(부분), BR-USER-007(부분)
 > deferred: BR-NOTI-001/002(wave 3), **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)
-> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend** (방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`). submit 삭제 · `is_all_free` · canEnterRoom · hold→#35. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
+> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend**(방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`) + **`#113` amend(2026-08-18 — 전역 입장 게이트 `is_all_free`·`canEnterRoom` 폐지)**. submit 삭제 · hold→#35. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
 > GitHub: **#22** · amend **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)**
 > 선행: [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
 > 결정 amend: [`007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) (D-REENTRY-2)
+
+> ## ⚠️ 2026-08-18 amend (`#113`) — 전역 입장 게이트 폐지
+>
+> **방 입장 판정은 이제 방별 `trip_member.status = ACTIVE` 하나다.** 아래 본문의 "방 입장 3조건"·`canEnterRoom`·`user.is_all_free`·`SCHEDULE_ENTRY_REQUIRED` 서술은 **폐지된 계약**이며, 이력으로만 남긴다.
+>
+> **왜:** 전역 게이트는 `ACTIVE` 멤버에게 항상 참이라 실제로 아무것도 막지 못했다 — `activate`·`join`이 `markAllFreeIfNoSchedules`로 조건을 무조건 충족시키고, 정기 일정을 전부 지워도 `deleteRegular`가 다시 켰다. 그런데 `is_all_free`가 **서버에 의해 자동으로 켜지는** 값이라 두 번째 방 입장부터 프론트가 보는 값이 달라졌고, 프론트가 `hasPreSchedule || isAllFree`를 재구현하다 QA 이슈 1·2(P1)를 냈다. 같은 질문에 답하는 게이트를 둘로 두는 구조 자체를 없앤다.
+>
+> **동작 변화 없음:** 일정을 하나도 넣지 않은 사용자를 "전부 가능"으로 취급하는 계산은 그대로다(달력·추천에서 일정 row가 없으면 모든 슬롯 가능). 사라지는 것은 그 사실을 별도 컬럼에 기록하고 재검사하던 층뿐이다.
+>
+> SSOT: [`trip-join-schedule-gate.md`](trip-join-schedule-gate.md) J-7 · BR-USER-006·007 개정, BR-USER-011 삭제
 
 ## 목표
 
 다음이 **한 세트**로 엮여 있어, 개별 확정(D1 등)만으로는 제품·API가 모순된다. wave 1에서 **하나의 설계**로 재확정한다.
 
-1. **방 입장 3조건 (D-JOIN-ENTRY)** — 정기 OR 개별 OR **`is_all_free`**
+1. ~~**방 입장 3조건 (D-JOIN-ENTRY)** — 정기 OR 개별 OR **`is_all_free`**~~ → **`#113`(2026-08-18)으로 폐지.** 방 입장 판정 = 그 방의 `trip_member.status == ACTIVE`
 2. **신규 trip 확인 플로우** — 방장: create=`SCHEDULE_PENDING` → 일정 → **`POST .../activate`**=`ACTIVE`. 멤버: 일정 → **`POST /trips/join`**=`ACTIVE` (#39)
 3. **구 `schedule/submit` 삭제** · 멤버십 완료 API는 join + activate (방장)
-4. **omit ≠ is_all_free** (별개 유지) · Hidden **단계적** 공개
+4. ~~**omit ≠ is_all_free** (별개 유지)~~ (`is_all_free` 폐지로 무의미 — omit=POSSIBLE 해석은 유지) · Hidden **단계적** 공개
 
 ## 배경 — 왜 `[미정]`로 되돌렸는가
 
@@ -26,7 +36,7 @@
 | **온보딩 skip + BR-USER-006** | skip 후 `isScheduleRegistered=false`인데, trip 참여 시 regular 강제 → skip의 의미와 trip 게이트가 충돌 |
 | **ACTIVE 의미** | personal 수정 후에도 ACTIVE 유지 → “재제출”·응답률·알림(BR-NOTI-001/002) 정의 불명확 |
 | **구 D-JOIN-3 vs 신규 trip 확인** | “사전 일정 있으면 직행”은 **D-JOIN-TRIP-FLOW**(항상 정기→개별 확인)와 모순 → **구 D-JOIN-3 폐기** |
-| **row 0 = 전부 free?** | → **`user.is_all_free`** 로 구분 (default false=미입력). 스코프=User 전역 확정 |
+| **row 0 = 전부 free?** | ~~`user.is_all_free`로 구분~~ → **`#113`으로 폐지.** row 0은 그냥 "일정 없음"이고, 달력·추천에서 모든 슬롯 가능으로 계산된다 |
 | **전역 전부 free vs 신규 trip** | A방에서 전부 free여도 B방 join 시 **플로우 생략 금지** — UX=수정 기회 + Skip (D-JOIN-TRIP-FLOW) |
 
 ## OpenAPI 숨김 · 단계적 공개 (D-HIDDEN-7)
@@ -90,10 +100,13 @@
 | **3** | **전부 free** | 넣을 일정이 없어 **전부 가능** | **`user.is_all_free`** (boolean) |
 
 ```text
-canEnterRoom(user) =
-  EXISTS(regular_schedule)
-  OR EXISTS(personal_schedule)
-  OR user.is_all_free == true
+방 입장 판정 (2026-08-18 `#113` 이후 — 현행)
+  trip_member.status == ACTIVE          // 그 방의 일정 확인을 마쳤는가
+  ↳ 미충족: 403 SCHEDULE_ACTIVATION_REQUIRED
+
+구 전역 게이트 (폐지)
+  canEnterRoom(user) = EXISTS(regular) OR EXISTS(personal) OR user.is_all_free
+  ↳ 403 SCHEDULE_ENTRY_REQUIRED — 컬럼·메서드·ErrorCode 모두 삭제됨
 ```
 
 **`user.is_all_free` (확정):**
@@ -104,13 +117,15 @@ canEnterRoom(user) =
 | API | `UserSummaryResponse.isAllFree` — **login · `GET /auth/me`** (및 profile 등 동일 요약)에 포함 |
 | 의미 | `false` + row 0 = **미입력**(입장 불가). `true` = 전부 free **선언됨**(입장 가능) |
 
-- **셋 모두 불만족** → **방 입장 불가** (서버가 trip 멤버 API에서 `canEnterRoom` 검증).
-- `hasPreSchedule` (= regular OR personal ≥1)는 **데이터 존재 파생값**일 뿐, **단독 입장 게이트가 아님**.
+- ~~셋 모두 불만족 → 방 입장 불가~~ → **`#113`으로 폐지.** 방 안 API 차단은 `@TripMemberOnly`의 `ACTIVE` 검사 하나가 담당한다.
+- `hasPreSchedule` (= regular OR personal ≥1)는 **데이터 존재 파생값**이며 입장 게이트가 아니다(마이페이지 표시용). 정기 유무 판정은 `hasRegularSchedule`.
 - **전역 전부 free ≠ 신규 trip 프리패스** (D-JOIN-TRIP-FLOW).
 
 > **구 D-JOIN-3/4 폐기.** row 0만으로는 미입력과 전부 free 구분 불가 → `is_all_free` 필수.
 
-### D-JOIN-CLEAR · 전이: `is_all_free` ↔ 일정 row (확정)
+### D-JOIN-CLEAR · 전이: `is_all_free` ↔ 일정 row (~~확정~~ → **2026-08-18 `#113`으로 전체 폐지**)
+
+> 아래 표는 이력이다. `is_all_free` 컬럼과 자동 전이 로직(`markAllFreeIfNoSchedules`·`clearAllFreeOnScheduleAdded`)이 모두 삭제돼, 일정 CRUD는 더 이상 어떤 플래그도 건드리지 않는다.
 
 | 상황 | 서버 동작 |
 |------|-----------|
@@ -181,9 +196,9 @@ canEnterRoom(user) =
 
 **백엔드 가드 (프론트 “선언 버튼”과 분리):**
 
-1. **입장 게이트:** “방 안” 리소스는 `ACTIVE` ∧ `canEnterRoom` 불만족 시 **403**. UI 통과만으로 우회 불가.
-2. **방장 activate / 참여자 join:** row ≥1 → 유지 · row 0 → 서버가 `is_all_free=true` 후 `ACTIVE`. create는 `SCHEDULE_PENDING`만 (markAllFree 안 함).
-3. **금지:** row ≥1인 채 `is_all_free=true` PATCH — **거부**. “전부 free 선언 버튼” API 없음.
+1. **입장 게이트:** “방 안” 리소스는 `ACTIVE`가 아니면 **403 `SCHEDULE_ACTIVATION_REQUIRED`**. UI 통과만으로 우회 불가. (~~∧ `canEnterRoom`~~ — 2026-08-18 `#113`으로 삭제)
+2. **방장 activate / 참여자 join:** 일정 row 수와 무관하게 `ACTIVE`로 전환. create는 `SCHEDULE_PENDING` (~~row 0 → `is_all_free=true`~~ — `#113` 삭제)만 (markAllFree 안 함).
+3. ~~**금지:** row ≥1인 채 `is_all_free=true` PATCH — 거부~~ → 컬럼 자체가 없어져 해당 없음. “전부 free 선언 버튼” API 없음은 유지.
 4. **카피/버튼 문구**는 **프론트 책임**.
 
 | 항목 | 확정 |
@@ -221,7 +236,7 @@ canEnterRoom(user) =
 
 `joinedMemberCount`(참여 인원, `trip_member` 수)는 API 미노출로 전환 — 필요 시 `membersPreview.size() + membersPreviewOverflow`(또는 멤버 목록 `members` 배열 크기)로 유도. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md)
 
-### D-SPARSE vs `is_all_free` (확정 — A안)
+### D-SPARSE vs `is_all_free` (~~확정 — A안~~ → `is_all_free` 폐지, **omit=POSSIBLE 해석만 유효**)
 
 | | `is_all_free` | omit=POSSIBLE |
 |--|---------------|---------------|
@@ -382,7 +397,7 @@ canEnterRoom(user) =
 |------|-----------|
 | [`TripCommandService`](../../../src/main/java/com/tripfit/tripfit/trip/service/TripCommandService.java) / [`TripJoinService`](../../../src/main/java/com/tripfit/tripfit/trip/membership/service/TripJoinService.java) | create=`SCHEDULE_PENDING` · activate/join=`ACTIVE` (#39) · `is_all_free`는 activate/join |
 | [`TripMemberStatus.java`](../../../src/main/java/com/tripfit/tripfit/trip/membership/domain/TripMemberStatus.java) | `SCHEDULE_PENDING` · `ACTIVE` (#39). 멤버 INSERT는 ACTIVE만 |
-| [`User.java`](../../../src/main/java/com/tripfit/tripfit/user/domain/User.java) | `is_all_free` 컬럼 |
+| [`User.java`](../../../src/main/java/com/tripfit/tripfit/user/domain/User.java) | ~~`is_all_free` 컬럼~~ (`#113` 삭제) |
 | [`ScheduleService.java`](../../../src/main/java/com/tripfit/tripfit/user/schedule/service/ScheduleService.java) | CLEAR/추가 ↔ `is_all_free` 전이 |
 
 ### G. 테스트
@@ -390,7 +405,7 @@ canEnterRoom(user) =
 | 파일 | 조치 |
 |------|------|
 | `TripControllerTest` / `TripServiceTest` | submit 제거 · create=`SCHEDULE_PENDING` · activate (#39) |
-| `User*` / `Schedule*` | `is_all_free` · canEnterRoom |
+| `User*` / `Schedule*` | ~~`is_all_free` · canEnterRoom~~ (`#113` 삭제) |
 
 ### H. GitHub
 
@@ -446,6 +461,7 @@ canEnterRoom(user) =
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-18 | **`#113` amend — 전역 입장 게이트 폐지.** D-JOIN-ENTRY 3조건·`canEnterRoom`·`user.is_all_free`·`SCHEDULE_ENTRY_REQUIRED`·D-JOIN-CLEAR 전이 규칙을 모두 폐지하고, 방 입장 판정을 **방별 `trip_member.status = ACTIVE`** 하나로 단일화. BR-USER-006·007 개정 · BR-USER-011 삭제 동반. 동작 변화 없음(전역 게이트는 `ACTIVE` 멤버에게 항상 참이라 이미 아무것도 막지 못했음). SSOT: [`trip-join-schedule-gate.md`](trip-join-schedule-gate.md) J-7 |
 | 2026-08-17 | **D-BR006-C amend — `hasRegularSchedule` 필드 추가** — 요약 응답(login · `GET /auth/me` · profile PATCH)에 정기 일정 EXISTS만 반영하는 파생 boolean을 신설. 계기: 요약 응답에 정기 유무를 알려주는 값이 없어 프론트가 `hasPreSchedule`(정기 OR 개별)을 일정 확인 플로우 분기에 전용해, 개별 일정만 등록한 사용자가 빈 정기 화면에 갇히는 QA 이슈가 발생. D-JOIN-TRIP-FLOW 분기 판정 근거에 이 필드를 추가(기존 `GET /users/schedule/regular` 길이 판정도 계속 유효) |
 | 2026-08-16 | **D-JOIN-CLEAR stale 정정** — "Skip인데 이미 0행 → 방장 `POST /trips` 시 `is_all_free=true`"는 #39 amend(create는 markAllFree 안 함) 이후 갱신되지 않은 문구였다. 실제 구현은 `TripCommandService.activateMembership`이 설정하므로 **방장은 `activate` 시점**으로 정정 (같은 문서 D-JOIN-TRIP-FLOW 백엔드 가드 2·BR-USER-007과 이미 일치) |
 | 2026-08-16 | **D-JOIN-TRIP-FLOW amend (Figma Wireframe v1 대조)** — ① 방 입장 플로우는 **건너뛰기 버튼 없음**(회원가입 온보딩만 건너뛰기 가능), 구 "Skip" 표현은 "확인 후 변경 없이 통과"로 재정의 ② 정기 일정 **보유 여부 2분기**("사전 일정 입력이 필요해요" vs "입력하신 일정을 확인해주세요") 명문화 — "정기 일정이 있나요?"는 정기 0건인 사용자에게만 노출 ③ **분기 판정에 `hasPreSchedule` 사용 금지**(정기 OR 개별 파생값이라 개별만 있는 사용자를 오분기) → `GET /users/schedule/regular` 길이로 판정 ④ 연차는 정기 일정과 한 덩어리(정기 미입력 시 미노출) ⑤ 개별 일정 화면은 손댄 날짜만 PATCH(전 기간 재전송 시 정기 유래 값이 개별 오버라이드로 굳어 복구 불가) |

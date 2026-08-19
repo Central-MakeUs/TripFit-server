@@ -85,7 +85,7 @@ public class AuthController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"accessToken": "eyJhbG...", "expiresIn": 900, "user": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasRegularSchedule": false, "hasPreSchedule": false, "isAllFree": false, "notificationEnabled": true}}}
+                      {"data": {"accessToken": "eyJhbG...", "expiresIn": 900, "user": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasRegularSchedule": false, "hasPreSchedule": false, "notificationEnabled": true}}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -209,7 +209,7 @@ public class AuthController {
         .build();
   }
 
-  /** 로그인 사용자 요약을 조회한다. hasPreSchedule은 일정 row 존재 여부에서 파생된 값, isAllFree는 DB 컬럼이다. */
+  /** 로그인 사용자 요약을 조회한다. hasRegularSchedule·hasPreSchedule은 DB 컬럼이 아니라 일정 row 존재 여부에서 조회 시 파생된다. */
   @Operation(summary = "현재 사용자 조회")
   @ApiResponses({
       @ApiResponse(
@@ -219,7 +219,7 @@ public class AuthController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasRegularSchedule": false, "hasPreSchedule": false, "isAllFree": false, "notificationEnabled": true}}
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasRegularSchedule": false, "hasPreSchedule": false, "notificationEnabled": true}}
                       """))),
       @ApiResponse(
           responseCode = "401",

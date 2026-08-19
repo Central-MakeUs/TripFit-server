@@ -77,9 +77,6 @@ class RecommendationControllerSwaggerConsistencyTest {
             "방장",
             null);
     owner.applyProfilePatch("길동", "홍", null);
-    owner.applyAllFree(true); // canEnterRoom(GET /trips/{tripId}) 전제 — 일정 없어도 입장 가능해야 unconfirm 후
-                              // 재조회
-    // 가능
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
 

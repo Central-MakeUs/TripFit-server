@@ -38,7 +38,7 @@ public class TripMemberController {
   }
 
   /**
-   * 여행방 참여자 목록을 조회한다. 방 입장 가능(ACTIVE + 입장 조건) 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에
+   * 여행방 참여자 목록을 조회한다. 이 방에서 ACTIVE인 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에
    * {@code (2)}처럼 번호가 붙는다.
    */
   @TripMemberOnly
@@ -63,7 +63,7 @@ public class TripMemberController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(
@@ -200,7 +200,7 @@ public class TripMemberController {
     return ResponseEntity.ok(SuccessResponse.of(tripService.removeMember(tripId, ownerId, userId)));
   }
 
-  // 방 입장 조건(ACTIVE·canEnterRoom)과 무관하게 나갈 수 있어야 하므로 @TripMemberOnly 미부착 — 서비스에서 직접 멤버십 검증
+  // 이 방 일정 확인(ACTIVE) 여부와 무관하게 나갈 수 있어야 하므로 @TripMemberOnly 미부착 — 서비스에서 직접 멤버십 검증
   /**
    * 참여자(MEMBER)가 스스로 여행방에서 나간다. 방장은 사용할 수 없다(여행방 삭제를 대신 써야 함). 방 상태(ONGOING/CONFIRMED/EXPIRED)와
    * 무관하게 항상 허용되고, 나간 뒤 같은 초대 코드로 다시 참여할 수 있다.

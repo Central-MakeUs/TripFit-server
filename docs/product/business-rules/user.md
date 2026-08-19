@@ -9,12 +9,11 @@
 | **BR-USER-003** | 소셜 계정 연동 | 설정 | 카카오·구글 등 | wave 4 |
 | **BR-USER-004** | 회원 탈퇴 | 탈퇴 요청 | 확인 후 탈퇴 — 차단 없이 자동 cascade. 참여 중인 모든 방에서 자동 나가기(MEMBER) 또는 소유한 모든 방 자동 삭제(OWNER) 후 탈퇴 처리. 전 상태(`ONGOING`/`CONFIRMED`/`EXPIRED`) 적용 | [`user-account-withdrawal.md`](../../specs/user/user-account-withdrawal.md) · [`trip-member-leave.md`](../../specs/trip/trip-member-leave.md) · 정책 근거 `#47` |
 | **BR-USER-005** | 알림 허용 | 마이페이지 | `users.notification_enabled` on/off (default true), `PATCH /users/profile`(partial update)로 설정 | Off 시 BR-NOTI-001~005·009 **전체** 미발송(예외 없음) |
-| **BR-USER-006** | 방 입장 가능 조건 | D-JOIN-ENTRY | 정기≥1 OR 개별≥1 OR **`is_all_free`** | 불만족 시 차단 |
-| **BR-USER-007** | trip 일정 확인·가입 | **#39** | **방장:** `POST /trips`=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE`. **참여자:** 플로우 후 **`POST /trips/join`**=`ACTIVE`. 방 안=`ACTIVE`∧canEnterRoom | 정원 409 · `SCHEDULE_ACTIVATION_REQUIRED` · `SCHEDULE_ENTRY_REQUIRED` |
-| **BR-USER-008** | 전역 일정 | 일정·`is_all_free` 변경 | **ONGOING** 방 달력에만 동일(live). **CONFIRMED/EXPIRED**는 snapshot 고정·읽기 전용 — [`trip-schedule-snapshot.md`](../../specs/trip/trip-schedule-snapshot.md) (#38 **Approved**) | — |
+| **BR-USER-006** | 방 입장 가능 조건 | D-JOIN-ENTRY | **그 방의 일정 확인 완료**(`trip_member.status = ACTIVE`) — 사용자 전역 조건 없음 | 미완료 시 `SCHEDULE_ACTIVATION_REQUIRED` |
+| **BR-USER-007** | trip 일정 확인·가입 | **#39** | **방장:** `POST /trips`=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE`. **참여자:** 플로우 후 **`POST /trips/join`**=`ACTIVE`. 방 안=`ACTIVE`(전역 `canEnterRoom` 조건은 2026-08-18 `#113`으로 삭제) | 정원 409 · `SCHEDULE_ACTIVATION_REQUIRED` |
+| **BR-USER-008** | 전역 일정 | 일정 변경 | **ONGOING** 방 달력에만 동일(live). **CONFIRMED/EXPIRED**는 snapshot 고정·읽기 전용 — [`trip-schedule-snapshot.md`](../../specs/trip/trip-schedule-snapshot.md) (#38 **Approved**) | — |
 | **BR-USER-009** | 동일 이름 표시 | 목록 | `홍길동(2)` | — |
 | **BR-USER-010** | 재접속 | 이미 `trip_member` | 방 상세 직행 | 미가입 참여자 → 플로우 |
-| **BR-USER-011** | 일정↔전부 free | 0행 / 추가 | 0행→`is_all_free=true`. 추가→`false`. 선언 버튼 없음 | — |
 
 ### `[미정]`
 
@@ -22,19 +21,20 @@
 
 ### 확정 (2026-07-21 · #22)
 
-- Skip+0행 → **activate/join** 시 `is_all_free=true` · omit≠`is_all_free` · Hidden 단계적 · prefill=FE · `memberFillRate`
+- ~~Skip+0행 → **activate/join** 시 `is_all_free=true`~~ (**2026-08-18 폐기** — 전역 게이트 삭제, `#113`) · omit≠전부 가능 · Hidden 단계적 · prefill=FE · `memberFillRate`
 - 정기=CRUD · 개별=bulk upsert · 구 `schedule/submit` 삭제
 
 ### 확정 (2026-07-21 · #39 amend)
 
 - 방장=`POST /trips` SCHEDULE_PENDING → 일정 플로우 → `activate` ACTIVE
-- 멤버=일정 후 join ACTIVE · 방 안 API는 ACTIVE ∧ canEnterRoom
-- Skip+0행 → **activate/join** 시 `is_all_free=true` (create에서는 설정 안 함)
+- 멤버=일정 후 join ACTIVE · 방 안 API는 ACTIVE (전역 `canEnterRoom` 조건은 **2026-08-18 삭제**, `#113`)
+- ~~Skip+0행 → **activate/join** 시 `is_all_free=true`~~ (**2026-08-18 폐기** — `#113`)
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-18 | **BR-USER-006·007 개정 · BR-USER-011 삭제** (`#113`) — 방 입장 판정을 사용자 전역 조건(`정기≥1 OR 개별≥1 OR is_all_free`)에서 **방별 `trip_member.status = ACTIVE` 하나**로 단일화. `users.is_all_free` 컬럼·`canEnterRoom`·`SCHEDULE_ENTRY_REQUIRED` 삭제. **동작 변화 없음** — 전역 게이트는 `ACTIVE` 멤버에게 항상 참이라 이미 아무것도 막지 못했고(`activate`/`join`이 `markAllFreeIfNoSchedules`로 조건을 무조건 충족시킴), 일정 0건 사용자를 "전부 가능"으로 보는 계산은 그대로다. 프론트가 `hasPreSchedule \|\| isAllFree`를 재구현하다 QA 이슈 1·2를 낸 표면을 없애는 것이 목적 |
 | 2026-07-28 | BR-USER-001/007 표기 갱신 — `POST .../schedule/confirm` → `POST .../activate`, `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED` (rename 상세: `trip-room-api.md` 변경 이력) |
 | 2026-07-28 | BR-USER-005 표기 갱신 — API 경로 리네이밍(`PATCH /users/my-page` → `PATCH /users/profile`) 반영. 상세: `user-my-page.md` 변경 이력 |
 | 2026-07-27 | BR-USER-004 관련 `[미정]`(탈퇴 계정 재가입 정책) 해소 — **무조건 재가입 가능**으로 확정(사용자 결정). [`user-account-withdrawal.md`](../../specs/user/user-account-withdrawal.md) amend |

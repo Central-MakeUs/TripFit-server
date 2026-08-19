@@ -25,7 +25,7 @@ paths:
 - **repository**: `JpaRepository`만. Entity는 `domain/`에 둔다.
 - **client**: 외부 OAuth·HTTP 연동, 토큰 검증 adapter. service에서 호출.
 - 예외 → `GlobalExceptionHandler`가 `ErrorCode` 인터페이스로 envelope 변환. 공통은 `CommonErrorCode`, 도메인별은 `{domain}/exception/{Domain}ErrorCode`, feature별은 `{domain}/{feature}/exception/{Feature}ErrorCode` (예: `ScheduleErrorCode`).
-- **Support 헬퍼 재사용:** `{Domain}ServiceSupport`에 이미 있는 조회·검증(`requireActiveTrip`·`requireActiveMember`·`requireOwner` 등)을 다른 Service 메서드에서 `repository.findBy...().orElseThrow(...)`로 **인라인 재구현하지 않는다** — 같은 예외·조건이면 Support 메서드를 호출. 새 조회가 필요하면 Support에 메서드를 추가하고 호출부를 그쪽으로 통일.
+- **Support 헬퍼 재사용:** `{Domain}ServiceSupport`에 이미 있는 조회·검증(`requireActiveTrip`·`requireMembership`·`requireOwner` 등)을 다른 Service 메서드에서 `repository.findBy...().orElseThrow(...)`로 **인라인 재구현하지 않는다** — 같은 예외·조건이면 Support 메서드를 호출. 새 조회가 필요하면 Support에 메서드를 추가하고 호출부를 그쪽으로 통일.
 - **User 조회 SSOT:** `userId`로 `User`를 로드하고 없으면 `AUTH_FORBIDDEN`을 던지는 로직은 `user/service/UserLookupService.requireUser(userId)`가 SSOT다. `auth`·`user`·`user/schedule`·`user/googlecalendar` 등 다른 도메인 Service에서 `userRepository.findById(userId).orElseThrow(...)`를 각자 private 메서드로 재구현하지 않는다.
 
 ### ErrorCode enum
@@ -58,7 +58,7 @@ Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap
 | 메커니즘 | 어노테이션 | 역할 |
 |----------|------------|------|
 | Spring AOP | `@TripActivity` | L1 성공 후 `last_activity_at` touch (`TripActivityAspect`) |
-| Interceptor | `@TripMemberOnly` / `@TripOwnerOnly` | 멤버·방장·ACTIVE·`canEnterRoom` (`TripAuthorizationInterceptor`) |
+| Interceptor | `@TripMemberOnly` / `@TripOwnerOnly` | 멤버·방장·ACTIVE (`TripAuthorizationInterceptor`) |
 | ArgumentResolver | `@AuthorizedUser` | JWT → `UUID userId` |
 
 - L1 touch 대상 public 메서드에 `@TripActivity` — create는 엔티티 초기값. 수동 `touchLastActivity()` 호출 금지.
@@ -294,7 +294,7 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 				useReturnTypeSchema = true,
 				content = @Content(
 						examples = @ExampleObject(value = """
-								{"data": {"id": "3f2e2c1a-...", "name": "김트립", "hasPreSchedule": true, "isAllFree": false}}
+								{"data": {"id": "3f2e2c1a-...", "name": "김트립", "hasRegularSchedule": true, "hasPreSchedule": true}}
 								"""))),
 		@ApiResponse(
 				responseCode = "401",

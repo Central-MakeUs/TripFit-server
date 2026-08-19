@@ -221,7 +221,7 @@ public class TripRecommendationService {
     tripScheduleSnapshotService.freezeTrip(trip);
     applicationEventPublisher.publishEvent(new TripConfirmedEvent(tripId));
 
-    TripMember ownerMembership = support.requireActiveMember(tripId, ownerId);
+    TripMember ownerMembership = support.requireMembership(tripId, ownerId);
     return support.toDetail(trip, ownerMembership);
   }
 

@@ -63,16 +63,6 @@ public record UserSummaryResponse(
         example = "false") boolean hasPreSchedule,
 
     @Schema(
-        description = """
-            전부 free 선언 여부 (user.is_all_free 저장, 기본 false).
-            방 입장 조건: hasPreSchedule OR isAllFree.
-            true: 일정 없이 Skip+0행으로 create/join·activate 시 설정.
-            false: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.
-            일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
-            """,
-        example = "false") boolean isAllFree,
-
-    @Schema(
         description = "알림 수신 여부(BR-USER-005). default true. PATCH /users/profile로 변경",
         example = "true") boolean notificationEnabled
 ) {

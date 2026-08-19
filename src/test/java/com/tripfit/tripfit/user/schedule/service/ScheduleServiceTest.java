@@ -222,7 +222,7 @@ class ScheduleServiceTest {
   }
 
   @Test
-  void updateVacationPolicy_replacesAllFieldsOnUser_andDoesNotTouchIsAllFree() {
+  void updateVacationPolicy_replacesAllFieldsOnUser() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     VacationPolicyResponse response =
@@ -234,10 +234,6 @@ class ScheduleServiceTest {
     assertThat(response.vacationApplyPeriod()).isEqualTo(VacationApplyPeriod.TWO_WEEKS_BEFORE);
     assertThat(response.halfVacationAvailable()).isTrue();
     assertThat(response.holidayRest()).isFalse();
-    // 연차 설정 저장은 "일정 등록"이 아니므로 isAllFree(방 입장 조건)를 건드리면 안 된다 — 건드리면 이미
-    // 방에 있는 사용자가 일정만 수정해도 SCHEDULE_ENTRY_REQUIRED로 튕기는 회귀가 생긴다
-    verify(userSummaryService, never()).clearAllFreeOnScheduleAdded(any());
-    verify(userSummaryService, never()).markAllFreeIfNoSchedules(any());
   }
 
   @Test
@@ -305,7 +301,6 @@ class ScheduleServiceTest {
     assertThat(captor.getValue().isUncertain()).isFalse();
     assertThat(captor.getValue().getSlotStatuses().getMorningStatus())
         .isEqualTo(ScheduleStatus.IMPOSSIBLE);
-    verify(userSummaryService).clearAllFreeOnScheduleAdded(user);
   }
 
   @Test

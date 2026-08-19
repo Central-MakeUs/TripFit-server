@@ -161,7 +161,7 @@ switch (body.code) {
 |------|------|------------|
 | common | `CommonErrorCode` | `GlobalExceptionHandler` |
 | auth | `AuthErrorCode` | JWT Filter · `@AuthorizedUser` |
-| user | `UserErrorCode` | 온보딩·`canEnterRoom` · `@TripMemberOnly` 게이트 |
+| user | `UserErrorCode` | 온보딩 · 여행방 일정 확인(`@TripMemberOnly`) 게이트 |
 | user/schedule | `ScheduleErrorCode` | — |
 | trip | `TripErrorCode` | `@TripActivity` AOP · `@TripMemberOnly`/`@TripOwnerOnly` Interceptor |
 

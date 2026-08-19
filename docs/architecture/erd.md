@@ -43,7 +43,6 @@ trip ||--o{ notification_history : relates_to
         string nickname "닉네임"
         string profile_image_url "프로필 이미지 URL"
         boolean is_google_calendar_connected "Google Calendar 연동 여부"
-        boolean is_all_free "항상 가능 여부 default=false"
         boolean notification_enabled "알림 수신 여부 default=true BR-USER-005"
         int max_vacation_days "최대 연차 default=2, #52 regular_schedule에서 이동"
         string vacation_apply_period "연차 신청 시점, #52 regular_schedule에서 이동"
@@ -247,7 +246,6 @@ trip ||--o{ notification_history : relates_to
 | nickname | varchar | Y | | 소셜 prefill, fallback 없음 |
 | profile_image_url | varchar | Y | | wave 1 CDN / wave 4 S3 B안 |
 | is_google_calendar_connected | boolean | N | | default false |
-| is_all_free | boolean | N | | default false. 전부 free 선언. row≥1이면 false 강제 |
 | max_vacation_days | int | N | | default **2**, 허용 **0~10**. `#52`(2026-08-16) — `regular_schedule`에서 이동(사람 1명에게 붙는 값) |
 | vacation_apply_period | varchar | Y | | enum: `ANY` · `ONE_WEEK_BEFORE` · `TWO_WEEKS_BEFORE` · `ONE_MONTH_BEFORE`. default **null**. `#52` — `regular_schedule`에서 이동 |
 | is_half_vacation_available | boolean | N | | default **false** (N). `#52` — `regular_schedule`에서 이동 |
@@ -256,7 +254,7 @@ trip ||--o{ notification_history : relates_to
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
 
-**API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`users.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
+**API 파생·컬럼:** `hasRegularSchedule` = EXISTS(regular), `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) — **둘 다 컬럼 없이 조회 시 파생**. 방 입장 판정은 사용자 전역 조건이 아니라 **방별 `trip_member` 상태(`ACTIVE`)** 다 ([`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ · ~~`is_all_free`~~ **제거**(후자는 `#113`, 2026-08-18 — 전역 입장 게이트 폐지).
 
 **연차·반차·공휴일 휴무 4개 컬럼(`#52`, 2026-08-16):** 사람 1명에게 붙는 값이라 `regular_schedule`(user당 N행)에서 `users`(user당 1행)로 이동. 정기 일정 CRUD와 분리된 전용 `GET`/`PATCH /users/schedule/vacation-policy`로 조회·수정. 상세: [`vacation-policy-user-migration.md`](../specs/user-schedule/vacation-policy-user-migration.md).
 
@@ -418,7 +416,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |
-| activated_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **SCHEDULE_PENDING면 null**, confirm/join(ACTIVE) 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 전용(create 직후·confirm 전, 입장·공유 불가), `ACTIVE`=방장 confirm 후·멤버 join 시(입장 가능, `canEnterRoom`도 필요). 멤버는 중간 SCHEDULE_PENDING 없음 |
+| activated_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **SCHEDULE_PENDING면 null**, confirm/join(ACTIVE) 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 전용(create 직후·activate 전, 입장·공유 불가), `ACTIVE`=방장 activate 후·멤버 join 시(입장 가능 — **이 상태가 방 입장 판정의 SSOT**). 멤버는 중간 SCHEDULE_PENDING 없음 |
 | deleted_at | timestamptz | Y | | **trip soft delete 시 연쇄 soft** |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |

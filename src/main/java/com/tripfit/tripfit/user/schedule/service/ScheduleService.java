@@ -29,7 +29,6 @@ import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.service.UserLookupService;
-import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -59,8 +58,6 @@ public class ScheduleService {
   private final PersonalScheduleRepository personalScheduleRepository;
 
   private final UserLookupService userLookupService;
-
-  private final UserSummaryService userSummaryService;
 
   private final GoogleCalendarService googleCalendarService;
 
@@ -97,7 +94,6 @@ public class ScheduleService {
             request.startTime(),
             request.endTime());
     regularScheduleRepository.save(schedule);
-    userSummaryService.clearAllFreeOnScheduleAdded(user);
     return toRegularResponse(schedule);
   }
 
@@ -127,7 +123,7 @@ public class ScheduleService {
     return toVacationPolicyResponse(userLookupService.requireUser(userId));
   }
 
-  // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — isAllFree는 건드리지 않는다(일정 등록이 아님)
+  // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — 일정 등록이 아니므로 일정 파생값에 영향 없음
   @Transactional
   public VacationPolicyResponse updateVacationPolicy(
       UUID userId,
@@ -147,7 +143,6 @@ public class ScheduleService {
   public void deleteRegular(UUID userId, UUID regularId) {
     RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     regularScheduleRepository.delete(schedule);
-    userSummaryService.markAllFreeIfNoSchedules(userLookupService.requireUser(userId));
   }
 
   // 본인 소유 정기 일정 로드 — 없거나 타인 소유면 REGULAR_SCHEDULE_NOT_FOUND
@@ -214,8 +209,6 @@ public class ScheduleService {
       }
     }
 
-    // 3. 삭제 경로가 없어 upsert는 항상 일어남 — is_all_free를 false로 전이
-    userSummaryService.clearAllFreeOnScheduleAdded(user);
     return buildPersonalResponse(
         user,
         dates,

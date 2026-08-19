@@ -295,7 +295,6 @@ GOOGLE 로그인이 브라우저 전체 페이지 리다이렉트 경로(네이�
       "isGoogleCalendarConnected": false,
       "hasRegularSchedule": false,
       "hasPreSchedule": false,
-      "isAllFree": false,
       "notificationEnabled": true
     }
   }

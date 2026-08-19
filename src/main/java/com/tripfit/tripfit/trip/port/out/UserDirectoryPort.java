@@ -27,12 +27,4 @@ public interface UserDirectoryPort {
   // 여행방 생성·참여 진입 조건(BR) 검증용.
   void requireProfileNameComplete(User user);
 
-  // 이 사용자의 정기·개별 일정이 0건이면 전부 "free"로 표시한다(부수 효과 — DB에 반영됨). 일정이 1건이라도
-  // 있으면 아무 것도 하지 않는다(no-op). 여행방 activate·join 시 "일정 ≥1 또는 전부 free"라는 입장 조건을
-  // 항상 충족시키기 위해 호출한다.
-  void markAllFreeIfNoSchedules(User user);
-
-  // 여행방 전역 입장 조건(일정 ≥1건 또는 전부 free)을 검증한다 — 미충족이면 어댑터 내부(UserSummaryService)가
-  // SCHEDULE_ENTRY_REQUIRED류 예외를 던진다. TripAuthorizationInterceptor가 @TripMemberOnly 검사에서 호출.
-  void requireCanEnterRoom(UUID userId);
 }

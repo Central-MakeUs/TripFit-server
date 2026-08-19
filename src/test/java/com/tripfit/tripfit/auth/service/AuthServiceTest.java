@@ -95,7 +95,6 @@ class AuthServiceTest {
                   u.isGoogleCalendarConnected(),
                   false,
                   false,
-                  u.isAllFree(),
                   u.isNotificationEnabled());
             });
   }
