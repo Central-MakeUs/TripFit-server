@@ -21,6 +21,7 @@ users ||--o{ regular_schedule : owns
 users ||--o{ personal_schedule : owns
 users ||--|| google_calendar_credential : has
 users ||--o{ google_calendar_busy_day : caches
+users ||--|| apple_credential : has
 users ||--o{ trip_member : participates
 users ||--o{ trip : owns
 trip ||--o{ trip_member : has
@@ -98,6 +99,14 @@ trip ||--o{ notification_history : relates_to
         datetime access_token_expires_at "Access Token 만료"
         datetime last_synced_at "마지막 동기화"
         text last_sync_error "동기화 오류"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
+    }
+
+    apple_credential {
+        uuid id PK "credential UUID"
+        uuid user_id FK "사용자 UNIQUE"
+        text refresh_token_ciphertext "암호화 Refresh Token"
         datetime created_at "생성일"
         datetime updated_at "수정일"
     }
@@ -324,6 +333,18 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 | access_token_expires_at | timestamptz | Y | | access token 만료 시각 (UTC) |
 | last_synced_at | timestamptz | Y | | 마지막 freeBusy sync 시각 |
 | last_sync_error | text | Y | | 내부용 |
+| created_at | timestamptz | N | | |
+| updated_at | timestamptz | N | | |
+
+### `apple_credential` (Apple Sign In revoke용 refresh token)
+
+User당 **1행**. 탈퇴 시 `https://appleid.apple.com/auth/revoke` 호출 용도로만 보관 — Google Calendar처럼 주기적 동기화를 하지 않으므로 access token 캐시·동기화 시각·에러 필드는 두지 않는다. 로그인 시 `authorizationCode`를 교환할 때마다 최신 refresh token으로 덮어쓰고, 탈퇴 시 revoke 호출 후 row 자체를 삭제한다. [`user-account-withdrawal.md`](../specs/user-account-withdrawal.md)
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| user_id | char(36) | N | FK → users.id, **UNIQUE** | |
+| refresh_token_ciphertext | text | N | | AES-256-GCM 암호문 (Base64) — `GoogleCalendarTokenCrypto` 재사용, 별도 AES 키 없음 |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
