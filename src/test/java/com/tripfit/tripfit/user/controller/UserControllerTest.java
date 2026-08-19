@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.user.controller;
 
-import java.time.Instant;
 import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,16 +40,10 @@ class UserControllerTest {
 
   private MockMvc mockMvc;
 
-  private Instant accessTokenExpiresAt;
-
   @BeforeEach
   void setUp() {
-    accessTokenExpiresAt = Instant.now().plusSeconds(3600);
     SecurityContextHolder.getContext().setAuthentication(
-        new JwtAuthentication(
-            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-            "test-jti",
-            accessTokenExpiresAt));
+        new JwtAuthentication(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")));
     UserController userController = new UserController(userProfileService, userWithdrawalService);
     mockMvc =
         MockMvcBuilders.standaloneSetup(userController)
@@ -185,9 +178,6 @@ class UserControllerTest {
     mockMvc.perform(delete("/api/v1/users/me")).andExpect(status().isNoContent());
 
     verify(userWithdrawalService)
-        .withdraw(
-            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-            "test-jti",
-            accessTokenExpiresAt);
+        .withdraw(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"));
   }
 }

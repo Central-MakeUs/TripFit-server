@@ -4,17 +4,20 @@ import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
 import com.tripfit.tripfit.auth.dto.AppleNotificationRequest;
 import com.tripfit.tripfit.auth.dto.LoginRequest;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
-import com.tripfit.tripfit.auth.dto.LogoutRequest;
-import com.tripfit.tripfit.auth.dto.RefreshRequest;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;
+import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.oauth.AppleNotificationEvent;
 import com.tripfit.tripfit.auth.oauth.AppleNotificationVerifier;
+import com.tripfit.tripfit.auth.security.RefreshCookieFactory;
 import com.tripfit.tripfit.auth.service.AppleNotificationService;
 import com.tripfit.tripfit.auth.service.AuthService;
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.SuccessResponse;
+import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,8 +26,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,13 +48,17 @@ public class AuthController {
 
   private final AppleNotificationService appleNotificationService;
 
+  private final RefreshCookieFactory refreshCookieFactory;
+
   public AuthController(
       AuthService authService,
       AppleNotificationVerifier appleNotificationVerifier,
-      AppleNotificationService appleNotificationService) {
+      AppleNotificationService appleNotificationService,
+      RefreshCookieFactory refreshCookieFactory) {
     this.authService = authService;
     this.appleNotificationVerifier = appleNotificationVerifier;
     this.appleNotificationService = appleNotificationService;
+    this.refreshCookieFactory = refreshCookieFactory;
   }
 
   /**
@@ -61,17 +71,21 @@ public class AuthController {
    * APPLE·GOOGLE은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 provider revoke에 쓸
    * refresh token을 확보하기 위함. GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고(정상 동작), redirectUri가 실제 값과 다르면
    * 토큰 교환이 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).
+   *
+   * <p>
+   * refresh token은 응답 바디가 아니라 HttpOnly 쿠키({@code Set-Cookie: refreshToken=...})로 내려간다 — 클라이언트
+   * JavaScript가 값을 직접 다루지 않아도 되고(탈취 표면 축소), 이후 refresh·logout 요청 시 브라우저가 자동으로 실어 보낸다.
    */
   @Operation(summary = "소셜 로그인")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
-          description = "로그인 성공",
+          description = "로그인 성공 — Set-Cookie로 refreshToken 전달(HttpOnly)",
           useReturnTypeSchema = true,
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"accessToken": "eyJhbG...", "refreshToken": "550e8400-e29b-41d4-a716-446655440000", "expiresIn": 7200, "user": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false, "notificationEnabled": true}}}
+                      {"data": {"accessToken": "eyJhbG...", "expiresIn": 900, "user": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasPreSchedule": false, "isAllFree": false, "notificationEnabled": true}}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -122,43 +136,37 @@ public class AuthController {
   @PostMapping("/login")
   ResponseEntity<SuccessResponse<LoginResponse>> login(
       @Valid @RequestBody LoginRequest request) {
-    LoginResponse response =
+    AuthService.LoginResult result =
         authService.login(
             request.provider(),
             request.token(),
             request.authorizationCode(),
             request.redirectUri());
-    return ResponseEntity.ok(SuccessResponse.of(response));
+    ResponseCookie cookie = refreshCookieFactory.issue(result.refreshToken());
+    return ResponseEntity.ok()
+        .header(HttpHeaders.SET_COOKIE, cookie.toString())
+        .body(SuccessResponse.of(result.response()));
   }
 
   /**
-   * refresh token으로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되므로 응답의 새
-   * refreshToken으로 반드시 교체해야 한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를
+   * refresh token 쿠키로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되고 응답이 Set-Cookie로
+   * 내려주는 새 값으로 브라우저가 자동 교체한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를
    * 폐기한다(401 AUTH_REFRESH_REUSE).
    */
   @Operation(summary = "액세스·리프레시 토큰 재발급 (RTR)")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
-          description = "재발급 성공",
+          description = "재발급 성공 — Set-Cookie로 새 refreshToken 전달(HttpOnly)",
           useReturnTypeSchema = true,
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"accessToken": "eyJhbG...", "refreshToken": "550e8400-e29b-41d4-a716-446655440002", "expiresIn": 7200}}
-                      """))),
-      @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "refreshToken", "message": "필수 값입니다."}]}
+                      {"data": {"accessToken": "eyJhbG...", "expiresIn": 900}}
                       """))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_INVALID_REFRESH — refresh 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
+          description = "AUTH_INVALID_REFRESH — refresh 쿠키 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -167,33 +175,38 @@ public class AuthController {
   })
   @PostMapping("/refresh")
   ResponseEntity<SuccessResponse<RefreshResponse>> refresh(
-      @Valid @RequestBody RefreshRequest request) {
-    RefreshResponse response = authService.refresh(request.refreshToken());
-    return ResponseEntity.ok(SuccessResponse.of(response));
+      @Parameter(in = ParameterIn.COOKIE,
+          description = "login 또는 이전 refresh 응답이 내려준 refresh token 쿠키") @CookieValue(
+              value = "refreshToken", required = false) String refreshToken) {
+    if (refreshToken == null) {
+      throw new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH);
+    }
+    AuthService.RefreshResult result = authService.refresh(refreshToken);
+    ResponseCookie cookie = refreshCookieFactory.issue(result.refreshToken());
+    return ResponseEntity.ok()
+        .header(HttpHeaders.SET_COOKIE, cookie.toString())
+        .body(SuccessResponse.of(result.response()));
   }
 
   /**
-   * refresh token을 폐기해 재발급을 막는다. accessToken을 함께 보내면 자체 만료 시각 전이라도 즉시 무효화된다(블랙리스트) — 없거나 이미 만료·위조된
-   * 값이면 조용히 무시되고 로그아웃 자체는 계속 성공한다.
+   * refresh token 쿠키를 폐기해 재발급을 막고 브라우저에서도 쿠키를 지운다. 쿠키가 이미 없거나 만료됐어도 조용히 넘어가고 로그아웃 자체는 계속 성공한다. 액세스
+   * 토큰은 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 로그아웃 후에도 이미 발급된 액세스 토큰은 남은 수명 동안 유효할 수 있다.
    */
   @Operation(summary = "로그아웃")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "로그아웃 성공(No Content)"),
-      @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "refreshToken", "message": "필수 값입니다."}]}
-                      """)))
+      @ApiResponse(responseCode = "204",
+          description = "로그아웃 성공(No Content) — Set-Cookie로 refreshToken 쿠키 삭제")
   })
   @PostMapping("/logout")
   ResponseEntity<Void> logout(
-      @Valid @RequestBody LogoutRequest request) {
-    authService.logout(request.refreshToken(), request.accessToken());
-    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+      @Parameter(in = ParameterIn.COOKIE,
+          description = "폐기할 refresh token 쿠키. 없어도 로그아웃은 성공한다") @CookieValue(value = "refreshToken",
+              required = false) String refreshToken) {
+    authService.logout(refreshToken);
+    ResponseCookie cookie = refreshCookieFactory.clear();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT)
+        .header(HttpHeaders.SET_COOKIE, cookie.toString())
+        .build();
   }
 
   /** 로그인 사용자 요약을 조회한다. hasPreSchedule은 일정 row 존재 여부에서 파생된 값, isAllFree는 DB 컬럼이다. */
