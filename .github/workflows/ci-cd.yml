@@ -172,11 +172,12 @@ jobs:
           GOOGLE_CLIENT_ID_ANDROID: ${{ secrets.GOOGLE_CLIENT_ID_ANDROID }}
           GOOGLE_CALENDAR_TOKEN_AES_KEY: ${{ secrets.GOOGLE_CALENDAR_TOKEN_AES_KEY }}
           APPLE_CLIENT_ID: ${{ secrets.APPLE_CLIENT_ID }}
+          KAKAO_ADMIN_KEY: ${{ secrets.KAKAO_ADMIN_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GHCR_PAT,GHCR_IMAGE,GHCR_USERNAME,SPRING_PROFILES_ACTIVE,APP_PORT,NGINX_HTTP_PORT,NGINX_HTTPS_PORT,CERTBOT_DOMAIN,MYSQL_HOST,MYSQL_PORT,MYSQL_DATABASE,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,JWT_SECRET,JWT_ACCESS_EXPIRATION,JWT_REFRESH_EXPIRATION_DAYS,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_CLIENT_ID_IOS,GOOGLE_CLIENT_ID_ANDROID,GOOGLE_CALENDAR_TOKEN_AES_KEY,APPLE_CLIENT_ID
+          envs: GHCR_PAT,GHCR_IMAGE,GHCR_USERNAME,SPRING_PROFILES_ACTIVE,APP_PORT,NGINX_HTTP_PORT,NGINX_HTTPS_PORT,CERTBOT_DOMAIN,MYSQL_HOST,MYSQL_PORT,MYSQL_DATABASE,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,JWT_SECRET,JWT_ACCESS_EXPIRATION,JWT_REFRESH_EXPIRATION_DAYS,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_CLIENT_ID_IOS,GOOGLE_CLIENT_ID_ANDROID,GOOGLE_CALENDAR_TOKEN_AES_KEY,APPLE_CLIENT_ID,KAKAO_ADMIN_KEY
           script: |
             set -euo pipefail
             if [[ -z "${GHCR_PAT:-}" ]]; then
@@ -212,6 +213,7 @@ jobs:
             google_client_id_android="${GOOGLE_CLIENT_ID_ANDROID:-}"
             google_calendar_token_aes_key="${GOOGLE_CALENDAR_TOKEN_AES_KEY:-}"
             apple_client_id="${APPLE_CLIENT_ID:-}"
+            kakao_admin_key="${KAKAO_ADMIN_KEY:-}"
             if [[ -f .env ]]; then
               set -a
               # shellcheck disable=SC1091
@@ -238,6 +240,7 @@ jobs:
             export GOOGLE_CLIENT_ID_ANDROID="${google_client_id_android:-}"
             export GOOGLE_CALENDAR_TOKEN_AES_KEY="${google_calendar_token_aes_key:-}"
             export APPLE_CLIENT_ID="${apple_client_id:-}"
+            export KAKAO_ADMIN_KEY="${kakao_admin_key:-}"
             docker compose pull app
             # ec2-deploy-app.sh 와 동일: nginx 443 기동용 TLS material 보장
             ../../scripts/ensure-ssl-certs.sh
