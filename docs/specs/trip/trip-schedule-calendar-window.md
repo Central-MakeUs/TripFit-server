@@ -6,7 +6,7 @@
 > GitHub: **[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**  
 > 선행: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12)  
 > related: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (#38)  
-> deferred: **미가입 참여자의 R4 상한 공백** → [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110), Draft)  
+> deferred: 없음 — 구 **미가입 참여자의 R4 상한 공백**은 [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110), **Implemented** 2026-08-18)에서 해소  
 > 용어: [`glossary.md`](../../product/glossary.md)
 
 ## 목표
@@ -20,7 +20,7 @@
 | 항목 | 확정 |
 |------|------|
 | 데이터 | **본인 전역** 일정만 |
-| 조회·수정 가능 기간 | **`today` ~ `max(today+2년−1, 사용자 ONGOING 여행 endRange 최댓값)`** (R4) |
+| 조회·수정 가능 기간 | **`today` ~ `max(today+2년−1, 사용자 ONGOING 여행 endRange 최댓값)`** (R4) — **조회(`GET /calendar`)와 저장(`PATCH /personal`) 모두 이 구간** (2026-08-18 `#110`) |
 | today **이전** (R2) | 요청에 포함 시 **400 `INVALID_INPUT`**. FE가 clamp |
 | 여행 칩 | 참여 ∧ **`ONGOING`** 방 이름 |
 | 칩 데이터 (R3) | **`GET /trips?scope=ongoing` 재사용** (`tripId`, `name`, `startRange`) — 전용 API 없음 |
@@ -80,7 +80,7 @@
 ### Out of Scope
 
 - **미가입 참여자의 상한 확장** — [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110))
-- **`PATCH /users/schedule/personal`의 윈도우 검증** — 현재 `GET /calendar`에만 있고 `PATCH`에는 없다(저장은 되고 조회는 400인 비대칭). 해소 방향은 위 스펙에서 함께 결정
+- ~~**`PATCH /users/schedule/personal`의 윈도우 검증** — 현재 `GET /calendar`에만 있고 `PATCH`에는 없다(저장은 되고 조회는 400인 비대칭)~~ → **2026-08-18 `#110`으로 해소** — `upsertPersonal`이 조회와 같은 `validateCalendarDateRange`를 호출한다. 남은 한계(윈도우가 나중에 줄면 기존 저장분이 조회 밖으로 밀림)는 [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) 해결안 D에 명시
 - 칩 클릭 시 서버 재조회/구간 재단
 - 칩 전용 API · calendar 임베드 `ongoingTrips[]` (Nice 가능, Must 아님)
 - CANCELED snapshot
@@ -103,7 +103,7 @@
 | **R1** | CANCELED 달력 Out · 조회 거부 — **#48 Implemented**: enum 삭제로 해당 없음 |
 | **R2** | today 이전 → 400 |
 | **R3** | `scope=ongoing` 재사용 |
-| **R4** | ONGOING 여행 `endRange`가 `today+2년−1` 밖이면 그 최댓값까지 C1 상한 확장 (2026-07-27 Approved) — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53) |
+| **R4** | ONGOING 여행 `endRange`가 `today+2년−1` 밖이면 그 최댓값까지 C1 상한 확장 (2026-07-27 Approved) — [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53) · **저장(`PATCH /personal`)에도 같은 상한 적용** (2026-08-18 [#110](https://github.com/Central-MakeUs/TripFit-server/issues/110)) |
 
 ## 완료 기준
 

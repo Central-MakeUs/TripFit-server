@@ -284,7 +284,7 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
-**제약:** user당 **0..N행**. 1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY). soft delete 없음. 연차·반차·공휴일 휴무 설정은 `#52`(2026-08-16)로 `users`로 이동 — 위 `users` 절 참고.
+**제약:** user당 **0..N행**. soft delete 없음. ~~1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY)~~ — 2026-08-18 `#113`으로 전역 입장 게이트가 폐지돼 정기 일정 행 수는 방 입장 판정과 무관하다(판정은 방별 `trip_member.status = ACTIVE`). 연차·반차·공휴일 휴무 설정은 `#52`(2026-08-16)로 `users`로 이동 — 위 `users` 절 참고.
 
 ### `personal_schedule` (개인 일정 — 슬롯 단위 오버라이드, O1.4)
 
@@ -416,7 +416,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |
-| activated_at | timestamptz | Y | | 일정 확인·가입 완료 시각. **SCHEDULE_PENDING면 null**, confirm/join(ACTIVE) 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 전용(create 직후·activate 전, 입장·공유 불가), `ACTIVE`=방장 activate 후·멤버 join 시(입장 가능 — **이 상태가 방 입장 판정의 SSOT**). 멤버는 중간 SCHEDULE_PENDING 없음 |
+| activated_at | timestamptz | Y | | 일정 확인 완료 시각. **SCHEDULE_PENDING면 null**, activate 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 create 직후·참여자 join 직후(activate 전, 입장·공유 불가), `ACTIVE`=방장·참여자 모두 activate 후(입장 가능 — **이 상태가 방 입장 판정의 SSOT**). 참여자도 중간 SCHEDULE_PENDING을 거친다(2026-08-18 `#114`) |
 | deleted_at | timestamptz | Y | | **trip soft delete 시 연쇄 soft** |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |

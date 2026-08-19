@@ -29,10 +29,10 @@
 
 | 상태 | 누가 | 의미 |
 |------|------|------|
-| **`SCHEDULE_PENDING`** | **방장만** (create 직후) | confirm 전 · **방 입장·공유 불가** |
-| **`ACTIVE`** | 방장(confirm 후)·**멤버**(join 시 즉시) | 방 입장 가능 · **공유는 방장만** |
+| **`SCHEDULE_PENDING`** | 방장(create 직후)·**참여자**(join 직후) | `activate` 전 · **방 입장·공유 불가** |
+| **`ACTIVE`** | 방장·참여자 **모두** `activate` 후 | 방 입장 가능 · **공유는 방장만** |
 
-멤버는 중간 `SCHEDULE_PENDING` **없음**.
+참여자도 중간 `SCHEDULE_PENDING`을 **거친다** (2026-08-18 `#114`).
 
 ## 공통 UX (세 모드)
 
