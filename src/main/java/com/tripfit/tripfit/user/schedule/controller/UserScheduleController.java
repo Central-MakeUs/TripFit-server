@@ -10,6 +10,8 @@ import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse.RegularSche
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
+import com.tripfit.tripfit.user.schedule.dto.UpdateVacationPolicyRequest;
+import com.tripfit.tripfit.user.schedule.dto.VacationPolicyResponse;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -56,7 +58,7 @@ public class UserScheduleController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}]}}
+                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE"}]}}
                       """))),
       @ApiResponse(
           responseCode = "401",
@@ -86,7 +88,7 @@ public class UserScheduleController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE"}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -124,7 +126,7 @@ public class UserScheduleController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE"}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -188,6 +190,74 @@ public class UserScheduleController {
       @PathVariable UUID id) {
     scheduleService.deleteRegular(userId, id);
     return ResponseEntity.noContent().build();
+  }
+
+  /** 본인 연차·반차·공휴일 휴무 설정을 조회한다. 정기 일정과 별개로 사람 1명에게 하나만 존재한다. */
+  @Operation(summary = "연차·반차·공휴일 휴무 설정 조회")
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "조회 성공",
+          useReturnTypeSchema = true,
+          content = @Content(
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
+  @GetMapping("/vacation-policy")
+  ResponseEntity<SuccessResponse<VacationPolicyResponse>> getVacationPolicy(
+      @AuthorizedUser UUID userId) {
+    return ResponseEntity.ok(SuccessResponse.of(scheduleService.getVacationPolicy(userId)));
+  }
+
+  /**
+   * 본인 연차·반차·공휴일 휴무 설정을 전체 교체한다. 부분 수정이 아니라 4개 필드를 매번 전부 보내야 하며, 생략된 필드는 기본값(연차 2일·신청 시점 미설정·반차
+   * 불가·공휴일 휴무)으로 대체된다. 이 API는 정기 일정 행이 하나도 없어도 저장할 수 있고, 방 입장·전부 가능(isAllFree) 판정에는 영향을 주지 않는다.
+   */
+  @Operation(summary = "연차·반차·공휴일 휴무 설정 전체 교체")
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "저장 성공",
+          useReturnTypeSchema = true,
+          content = @Content(
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
+                      """))),
+      @ApiResponse(
+          responseCode = "400",
+          description = "요청 값 검증 실패 (INVALID_INPUT)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다."}
+                      """))),
+      @ApiResponse(
+          responseCode = "401",
+          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(value = """
+                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
+                  """)))
+  })
+  @PatchMapping("/vacation-policy")
+  ResponseEntity<SuccessResponse<VacationPolicyResponse>> updateVacationPolicy(
+      @AuthorizedUser UUID userId,
+      @Valid @RequestBody UpdateVacationPolicyRequest request) {
+    return ResponseEntity.ok(
+        SuccessResponse.of(scheduleService.updateVacationPolicy(userId, request)));
   }
 
   /**

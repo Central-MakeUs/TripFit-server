@@ -24,6 +24,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
@@ -72,6 +73,9 @@ class TripScheduleSnapshotServiceTest {
   @Mock
   private UserDirectoryPort userDirectoryPort;
 
+  @Mock
+  private UserRepository userRepository;
+
   private TripScheduleSnapshotService snapshotService;
 
   private User user;
@@ -84,7 +88,8 @@ class TripScheduleSnapshotServiceTest {
         new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
     SchedulePort schedulePort =
         new ScheduleAvailabilityAdapter(
-            regularScheduleRepository, personalScheduleRepository, holidayProvider);
+            regularScheduleRepository, personalScheduleRepository, userRepository,
+            holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     snapshotService =
         new TripScheduleSnapshotService(
@@ -116,19 +121,18 @@ class TripScheduleSnapshotServiceTest {
             LocalDateTime.now());
     when(snapshotRepository.existsByTrip_Id(TRIP_ID)).thenReturn(false);
     when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(List.of(member));
+    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    user.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
         RegularSchedule.create(
             user,
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            true);
+            LocalTime.of(18, 0));
     when(regularScheduleRepository.findByUserIdIn(List.of(USER_ID)))
         .thenReturn(List.of(work));
+    when(userRepository.findAllById(List.of(USER_ID))).thenReturn(List.of(user));
     when(
         personalScheduleRepository.findByUserIdInAndScheduleDateBetween(
             List.of(USER_ID),

@@ -17,7 +17,7 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDate;
@@ -63,8 +63,10 @@ class TripScheduleSnapshotServiceIntegrationTest {
   @Test
   void freezeTrip_persistsPartialOverride_slotByslot() {
     User owner =
-        userRepository.save(
-            new User("snapshot-sub", SocialProvider.GOOGLE, "snap@example.com", "방장", null));
+        new User("snapshot-sub", SocialProvider.GOOGLE, "snap@example.com", "방장", null);
+    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
+    owner = userRepository.save(owner);
 
     LocalDate startRange = LocalDate.now().plusDays(60);
     LocalDate endRange = startRange.plusDays(4);
@@ -77,11 +79,7 @@ class TripScheduleSnapshotServiceIntegrationTest {
             "출근",
             "MON,TUE,WED,THU,FRI,SAT,SUN",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            VacationApplyPeriod.ANY,
-            false,
-            true));
+            LocalTime.of(18, 0)));
     personalScheduleRepository.save(
         PersonalSchedule.create(
             owner,

@@ -327,7 +327,7 @@ if [[ "$BREAKING_COUNT" -gt 0 ]]; then
       url: $url,
       color: 15158332,
       fields: ([{ name: "영향 도메인", value: $domains, inline: false }] + $fields + [
-        { name: "왜 변경했는가", value: $reason, inline: false },
+        { name: "왜 변경했는가", value: $reason, inline: false }
       ]),
       footer: { text: $footer }
     }')"

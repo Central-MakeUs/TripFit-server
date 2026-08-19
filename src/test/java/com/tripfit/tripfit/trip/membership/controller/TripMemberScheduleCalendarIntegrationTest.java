@@ -17,7 +17,7 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
@@ -83,6 +83,8 @@ class TripMemberScheduleCalendarIntegrationTest {
     User owner =
         new User("trip-member-sub", SocialProvider.GOOGLE, "owner@example.com", "방장", null);
     owner.applyProfilePatch("길동", "홍", null);
+    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
 
@@ -97,11 +99,7 @@ class TripMemberScheduleCalendarIntegrationTest {
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            VacationApplyPeriod.ANY,
-            false,
-            true));
+            LocalTime.of(18, 0)));
     personalScheduleRepository.save(
         PersonalSchedule.create(
             owner,

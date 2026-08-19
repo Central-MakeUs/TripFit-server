@@ -2,8 +2,8 @@
 
 > wave: 2
 > implements: BR-TRIP-002, BR-TRIP-005, BR-USER-008
-> related: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) A4 · [`schedule-unified.md`](schedule-unified.md) · [`trip-recommendation-algorithm.md`](../trip/trip-recommendation-algorithm.md) · [`docs/decisions/011-holiday-data-source.md`](../../decisions/011-holiday-data-source.md) · `#105`(대표 행 규칙 선례) · `#52`(4개 필드 User 이동 — 본 스펙의 대표 행 조회도 함께 제거 대상)
-> 상태: **Implemented** (#107) — 2026-08-16 승인·구현 완료. 인증키 발급 후 실제 API 응답 대조만 남음
+> related: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) A4 · [`schedule-unified.md`](schedule-unified.md) · [`trip-recommendation-algorithm.md`](../trip/trip-recommendation-algorithm.md) · [`docs/decisions/011-holiday-data-source.md`](../../decisions/011-holiday-data-source.md) · [`vacation-policy-user-migration.md`](vacation-policy-user-migration.md)(`#52`, 4개 필드 User 이동 완료 — 본 스펙의 대표 행 조회 제거됨)
+> 상태: **Implemented** (#107) — 2026-08-16 승인·구현 완료. 인증키 발급 후 실제 API 응답 대조만 남음. `#52`(2026-08-16) 완료로 대표 행 우회 로직 삭제
 > MVP: In scope (달력·추천 정확도)
 
 ## 목표
@@ -45,7 +45,7 @@
 - [x] 공공데이터포털 특일 정보 `getRestDeInfo`(관공서 공휴일)로 공휴일·대체공휴일 조회
 - [x] 하루 1회 스케줄러가 **올해·내년·내후년 3개년**을 동기화해 Redis에 연도별 캐싱 (앱 기동 시 1회 즉시 동기화 포함)
 - [x] API 호출 실패 시 기존 캐시 유지(그날 갱신만 스킵), Redis 조회 실패 시 **fail-open**(공휴일 아님으로 간주)
-- [x] `holidayRest` 판정을 `#105`와 동일한 **대표 행 기준**(`RegularSchedule.policySource`)으로 읽기 — 행별 개별 판정 금지
+- [x] `holidayRest` 판정 — `#52`(2026-08-16) 완료 후 `User.holidayRest` 직접 읽기(사람당 하나, 대표 행 개념 없음)
 - [x] 공휴일에 쉬는 사용자 — 공휴일에는 **정기 일정 전체가 없는 것처럼** 처리 (달력에서 "여행 가능해요")
 - [x] 공휴일에 안 쉬는 사용자 — 공휴일에도 평소 근무 요일·시간 그대로 적용
 - [x] 개별 일정 오버라이드·구글 캘린더 busy는 공휴일 여부와 **무관하게** 그대로 유지
@@ -127,25 +127,20 @@ common/holiday/
 
 ### H1 — 공휴일에 적용되는 정기 일정 필터 (핵심)
 
-`holidayRest`는 **사람 단위 설정**이다. DB상으로는 `RegularSchedule` 각 행에 저장돼 있지만, 이는 스키마 배치 문제일 뿐 개념적으로는 `maxVacationDays`·`halfVacationAvailable`·`vacationApplyPeriod`와 함께 "사람 1명에게 붙는 값" 4종에 속한다(`#52`). 프론트도 저장 시 사용자의 **모든** 행에 같은 값을 써서 항상 일치시킨다.
-
-따라서 `#105`가 이미 확정·구현한 **대표 행 규칙**을 그대로 따른다 — 연차 예산·반차 가능 여부와 같은 기준(`RegularSchedule.policySource` = `createdAt` 오름차순 첫 행)에서 `holidayRest`를 읽는다. 같은 성격의 필드를 서로 다른 기준으로 읽으면 안 된다.
+`holidayRest`는 **사람 단위 설정**이다. `#52`(2026-08-16) 완료로 `User.holidayRest` 컬럼에 저장되며, `RegularSchedule`에는 이 필드가 없다.
 
 ```text
-restsOnHolidays(regulars) = RegularSchedule.policySource(regulars).holidayRest   // #105와 동일 기준
-
-regularsAppliedOn(matched, date, holidays):
+regularsAppliedOn(matched, date, holidays, holidayRest):
   if date not in holidays: return matched
-  if not restsOnHolidays(allRegularsOfUser): return matched
+  if not holidayRest: return matched
   return []      // 공휴일에 쉬는 사용자 → 그날 정기 일정 전체가 적용되지 않음
 ```
 
-- **사용자 단위 all-or-nothing이다.** 공휴일에 쉬는 사용자는 그날 **모든** 정기 일정이 빠지고, 안 쉬는 사용자는 **모두** 그대로 적용된다. 회사(`true`) + 알바(`false`)처럼 행마다 값이 갈리는 상황은 정상 앱 흐름에서 발생하지 않으며, 발생하더라도 대표 행 하나로 판정한다.
-- 판정 입력은 **그날 매칭된 행이 아니라 사용자의 전체 정기 일정 목록**이다 — 대표 행이 그날 요일에 매칭되지 않을 수 있기 때문이다(예: 평일 근무가 대표 행인데 공휴일이 토요일 알바와 겹치는 경우). `policySource`도 동일하게 전체 목록을 받는다.
+- **사용자 단위 all-or-nothing이다.** 공휴일에 쉬는 사용자는 그날 **모든** 정기 일정이 빠지고, 안 쉬는 사용자는 **모두** 그대로 적용된다. 회사·알바처럼 근무를 여러 개 등록해도 `holidayRest`는 사람에게 하나뿐이라 행마다 값이 갈리는 경우 자체가 없다.
 - `holidayRest`의 default는 `true`이므로, 별도 설정을 하지 않은 대다수 사용자는 자동으로 "공휴일에 쉼"으로 동작한다.
-- 정기 일정이 하나도 없는 사용자는 대표 행이 없으므로 판정 자체가 불필요하다(제외할 정기가 없음).
+- 정기 일정이 하나도 없는 사용자는 판정 자체가 불필요하다(제외할 정기가 없음).
 
-> **`#52` 완료 시 함께 정리:** 4개 필드가 `User`로 이동하면 이 대표 행 조회도 `user.isHolidayRest()` 직접 참조로 교체하고 우회 로직을 삭제한다 — `#52` 완료 기준의 "`RecommendationEngine`의 '첫 번째 행 기준' 우회 로직 제거" 항목에 본 스펙 몫도 포함된다.
+> **`#52` 완료 (2026-08-16):** 4개 필드가 `User`로 이동하면서 대표 행(`RegularSchedule.policySource`) 조회는 삭제됐다 — `ScheduleCalendarResolver.resolve(...)`·`RecommendationEngine`은 이제 `user.isHolidayRest()`를 파라미터로 직접 전달받는다. 아래 H4 절도 이 변경을 반영해 갱신됨.
 
 ### H2 — 우선순위 (기존 O1 규칙 유지)
 
@@ -175,7 +170,7 @@ regularsAppliedOn(matched, date, holidays):
 | `collectVacationOptions` | 공휴일 슬롯에 불필요한 연차 전환 후보가 생김 (실제로는 리졸버가 이미 열어둬 후보가 안 만들어지지만, 방어적으로 동일 필터 적용) |
 | `vacationDaysForSpan` | **공휴일에 쉬는 사람에게 연차를 청구** — 이 메서드는 `possible[]`을 보지 않고 근무의 `slotStatuses`만 보므로, 필터 없이는 공휴일에도 종일 연차 1.0일이 계산된다. `totalVacationDays` 과대 계산 → 추천 점수 왜곡 |
 
-대표 행을 고르는 로직 자체는 **동작이 바뀌지 않는다** — `RecommendationEngine`의 private 메서드였던 것을 `RegularSchedule.policySource`로 옮겨 달력·추천이 함께 쓰게 했을 뿐이고, H1은 이 메서드를 `holidayRest` 판정에 재사용한다. `#52`가 지울 지점도 이 한 곳으로 모였다.
+`#52`(2026-08-16) 완료로 대표 행 조회는 사라졌다 — `RecommendationEngine`의 `matchingRegulars`·`applyVacationSimulation`·`vacationDaysForSpan`은 이제 `User`(호출부가 이미 들고 있는 `TripMember.getUser()`, 추가 조회 없음)에서 `holidayRest`를 직접 읽는다.
 
 ### H5 — 조회 범위와 캐시 정합
 
@@ -197,8 +192,7 @@ regularsAppliedOn(matched, date, holidays):
 - [ ] 평일 9~18시 정기(`holidayRest=true`) 사용자 — 공휴일인 화요일이 omit되거나 3슬롯 `POSSIBLE`로 계산됨
 - [ ] 같은 사용자의 **공휴일이 아닌** 화요일 — 기존대로 `IMPOSSIBLE`/`IMPOSSIBLE`/`POSSIBLE` (회귀 방지)
 - [ ] `holidayRest=false` 사용자 — 공휴일에도 평소와 동일하게 `IMPOSSIBLE` 유지
-- [ ] 정기 2행(회사+알바) 사용자, 대표 행이 `holidayRest=true` — 공휴일에 **두 행 모두** 제외됨 (사람 단위 all-or-nothing)
-- [ ] 대표 행이 그날 요일에 매칭되지 않는 경우 — 그래도 대표 행의 `holidayRest`로 판정됨 (전체 목록에서 대표를 고르는지 확인)
+- [ ] 정기 2행(회사+알바) 사용자, `User.holidayRest=true` — 공휴일에 **두 행 모두** 제외됨 (사람 단위 all-or-nothing)
 - [ ] 공휴일에 개별 일정 오버라이드가 있으면 그 값이 그대로 최종값
 - [ ] 공휴일에 구글 busy가 있으면 `IMPOSSIBLE` 유지
 - [ ] 대체공휴일(예: 일요일과 겹친 공휴일의 다음 평일)도 동일하게 적용됨
@@ -239,7 +233,7 @@ regularsAppliedOn(matched, date, holidays):
 | API 응답 스키마 실측 | `[미정]` | 위 "외부 API" 절은 명세 기준 — 실제 응답과 다르면 스펙 먼저 amend |
 | 인증키 URL 인코딩 | 주의 | 공공데이터포털 인증키는 Encoding/Decoding 두 형태가 발급돼, 어느 쪽을 쓰느냐에 따라 401이 나는 흔한 함정. 구현 시 확인 |
 | 근무처별로 공휴일 휴무가 다른 경우 | **Out (의도적)** | 회사는 쉬고 알바는 나가는 상황은 현실에 있지만, `#52`가 `holidayRest`를 "사람 1명에게 붙는 값"으로 이미 규정했고 프론트도 전 행에 같은 값을 쓴다. 본 스펙은 그 규정을 따르며 **행별 판정을 도입하지 않는다** — 필요해지면 `#52` 처리 시 함께 재논의 |
-| `#52` 완료 시 동반 수정 | **의존** | 4개 필드가 `User`로 이동하면 본 스펙의 대표 행 조회도 같이 제거해야 함. `#52` 완료 기준에 반영 필요 |
+| `#52` 완료 시 동반 수정 | **완료 (2026-08-16)** | 4개 필드가 `User`로 이동, 본 스펙의 대표 행 조회 제거 완료 |
 | 공휴일 근무자의 대체휴무 | Out | "공휴일에 일하고 다른 날 쉰다"는 케이스는 모델링하지 않음 — 사용자가 개별 일정으로 직접 입력 |
 | 임시공휴일 반영 지연 | 허용 | 최대 1일(다음 동기화까지). `011` 결정에서 감수하기로 함 |
 

@@ -2,7 +2,9 @@ package com.tripfit.tripfit.user.schedule.service;
 
 import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.port.out.SchedulePort;
+import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
@@ -32,14 +35,18 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
 
   private final PersonalScheduleRepository personalScheduleRepository;
 
+  private final UserRepository userRepository;
+
   private final HolidayProvider holidayProvider;
 
   public ScheduleAvailabilityAdapter(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
+      UserRepository userRepository,
       HolidayProvider holidayProvider) {
     this.regularScheduleRepository = regularScheduleRepository;
     this.personalScheduleRepository = personalScheduleRepository;
+    this.userRepository = userRepository;
     this.holidayProvider = holidayProvider;
   }
 
@@ -74,11 +81,16 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
     Map<UUID, List<RegularSchedule>> regularsByUser = findRegularSchedulesByUserIds(userIds);
     Map<UUID, List<PersonalSchedule>> personalsByUser =
         findPersonalSchedulesByUserIds(userIds, startDate, endDate);
+    // 공휴일 휴무(User) 배치 조회 — 멤버 수만큼 반복 쿼리하지 않음(N+1 방지)
+    Map<UUID, User> usersByUser =
+        userRepository.findAllById(userIds).stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
     // 공휴일은 전 사용자 공통이라 멤버 수와 무관하게 한 번만 조회
     Set<LocalDate> holidays = holidayProvider.findHolidaysBetween(startDate, endDate);
 
     Map<UUID, List<CalendarDayResponse>> byUser = new HashMap<>();
     for (UUID userId : userIds) {
+      User user = usersByUser.get(userId);
       byUser.put(
           userId,
           ScheduleCalendarResolver.resolve(
@@ -87,7 +99,8 @@ public class ScheduleAvailabilityAdapter implements SchedulePort {
               startDate,
               endDate,
               googleBusyByUser.getOrDefault(userId, Map.of()),
-              holidays));
+              holidays,
+              user != null && user.isHolidayRest()));
     }
     return byUser;
   }

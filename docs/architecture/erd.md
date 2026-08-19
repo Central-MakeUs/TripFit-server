@@ -45,6 +45,10 @@ trip ||--o{ notification_history : relates_to
         boolean is_google_calendar_connected "Google Calendar 연동 여부"
         boolean is_all_free "항상 가능 여부 default=false"
         boolean notification_enabled "알림 수신 여부 default=true BR-USER-005"
+        int max_vacation_days "최대 연차 default=2, #52 regular_schedule에서 이동"
+        string vacation_apply_period "연차 신청 시점, #52 regular_schedule에서 이동"
+        boolean is_half_vacation_available "반차 가능 여부, #52 regular_schedule에서 이동"
+        boolean is_holiday_rest "공휴일 휴무 여부, #52 regular_schedule에서 이동"
         datetime created_at "생성일"
         datetime updated_at "수정일"
         datetime deleted_at "삭제일 Soft Delete"
@@ -60,10 +64,6 @@ trip ||--o{ notification_history : relates_to
         string morning_status "오전 상태"
         string afternoon_status "오후 상태"
         string evening_status "저녁 상태"
-        int max_vacation_days "최대 연차 default=2"
-        string vacation_apply_period "연차 신청 시점"
-        boolean is_half_vacation_available "반차 가능 여부"
-        boolean is_holiday_rest "공휴일 휴무 여부"
         datetime created_at "생성일"
         datetime updated_at "수정일"
     }
@@ -248,11 +248,17 @@ trip ||--o{ notification_history : relates_to
 | profile_image_url | varchar | Y | | wave 1 CDN / wave 4 S3 B안 |
 | is_google_calendar_connected | boolean | N | | default false |
 | is_all_free | boolean | N | | default false. 전부 free 선언. row≥1이면 false 강제 |
+| max_vacation_days | int | N | | default **2**, 허용 **0~10**. `#52`(2026-08-16) — `regular_schedule`에서 이동(사람 1명에게 붙는 값) |
+| vacation_apply_period | varchar | Y | | enum: `ANY` · `ONE_WEEK_BEFORE` · `TWO_WEEKS_BEFORE` · `ONE_MONTH_BEFORE`. default **null**. `#52` — `regular_schedule`에서 이동 |
+| is_half_vacation_available | boolean | N | | default **false** (N). `#52` — `regular_schedule`에서 이동 |
+| is_holiday_rest | boolean | N | | default **true** (Y). `#52` — `regular_schedule`에서 이동 |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
 
 **API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`users.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
+
+**연차·반차·공휴일 휴무 4개 컬럼(`#52`, 2026-08-16):** 사람 1명에게 붙는 값이라 `regular_schedule`(user당 N행)에서 `users`(user당 1행)로 이동. 정기 일정 CRUD와 분리된 전용 `GET`/`PATCH /users/schedule/vacation-policy`로 조회·수정. 상세: [`vacation-policy-user-migration.md`](../specs/user-schedule/vacation-policy-user-migration.md).
 
 ### `refresh_token` — MySQL 테이블 아님 (Redis 이관, 2026-09-15)
 
@@ -277,14 +283,10 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 | morning_status | varchar | Y | | 계산: MORNING 슬롯 POSSIBLE/IMPOSSIBLE |
 | afternoon_status | varchar | Y | | AFTERNOON |
 | evening_status | varchar | Y | | EVENING |
-| max_vacation_days | int | N | | default **2**, 허용 **0~10** |
-| vacation_apply_period | varchar | Y | | enum: `ANY` · `ONE_WEEK_BEFORE` · `TWO_WEEKS_BEFORE` · `ONE_MONTH_BEFORE`. default **null** |
-| is_half_vacation_available | boolean | N | | default **false** (N) |
-| is_holiday_rest | boolean | N | | default **true** (Y) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
-**제약:** user당 **0..N행**. 1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY). soft delete 없음.
+**제약:** user당 **0..N행**. 1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY). soft delete 없음. 연차·반차·공휴일 휴무 설정은 `#52`(2026-08-16)로 `users`로 이동 — 위 `users` 절 참고.
 
 ### `personal_schedule` (개인 일정 — 슬롯 단위 오버라이드, O1.4)
 

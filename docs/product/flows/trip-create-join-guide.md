@@ -14,7 +14,7 @@
 
 1. 홈에서 「여행방 신규 생성하기」→ 방 생성 폼(이름·기간·일수·인원·선택 여행지)
 2. `POST /trips` → OWNER **`SCHEDULE_PENDING`**. DB에 invite_code 발급하나 **응답에 inviteCode 없음**
-3. **정기→개별** 일정 확인(수정/Skip) — `canEnterRoom`이어도 강제
+3. **정기→개별** 일정 확인 — `canEnterRoom`이어도 강제 · **건너뛰기 없음**
 4. `POST /trips/{tripId}/activate` → **`ACTIVE`**
 5. 방 상세(`inviteCode`) · **초대 공유** (방장·ACTIVE 이후만)
 
@@ -22,7 +22,7 @@
 
 **참여자(멤버):**
 
-1. 초대 링크 → (미멤버) **정기→개별** (수정/Skip)
+1. 초대 링크 → (미멤버) **정기→개별** (건너뛰기 없음)
 2. `POST /api/v1/trips/join` `{ inviteCode }` → INSERT **`ACTIVE` 즉시** (+ row0이면 `is_all_free`)
 3. **중간 `SCHEDULE_PENDING` 없음** — "일정 넣고 join = ACTIVE 한 방"
 4. 정원 full → 409 · 이미 ACTIVE → idempotent. 방장(SCHEDULE_PENDING)이 join으로 우회 → `SCHEDULE_ACTIVATION_REQUIRED` → `activate` 사용
@@ -76,7 +76,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
   → [방 생성 폼] 이름·기간·일수·인원·(선택)여행지
   → POST /api/v1/trips
        → trip + OWNER + SCHEDULE_PENDING + inviteCode
-  → [정기 일정] → [개별 일정]  (수정하면 patch / Skip 가능)
+  → [정기 일정(+연차)] → [개별 일정]  (수정하면 patch · 건너뛰기 버튼 없음)
        ※ canEnterRoom이어도 이 플로우를 보여 줌 (강제)
   → POST /api/v1/trips/{tripId}/activate
        → SCHEDULE_PENDING → ACTIVE (+ row0이면 is_all_free)
@@ -89,7 +89,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | `POST /trips` | `trip`(`ONGOING`) + owner **`SCHEDULE_PENDING`** + DB에 6자 `invite_code` 발급. **응답에 inviteCode 미포함**(입장 전). **아직 방 안 입장·공유 아님** |
 | 정기→개별 | **이 방용 확인 플로우**. 전역 일정이 있어도 **매번** 노출 |
 | 수정 | 정기 CRUD / 개별 bulk upsert — User 전역 |
-| Skip | row≥1 유지 · 둘 다 0행이면 activate 시 서버가 `is_all_free=true` |
+| 변경 없이 통과 | row≥1 유지 · 둘 다 0행이면 activate 시 서버가 `is_all_free=true` |
 | `activate` | `ACTIVE` 전환 · 이후 상세·멤버·달력 API 허용 |
 
 ### 이탈·재진입 (방장)
@@ -124,7 +124,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 ```text
 초대 링크 (…/room/{inviteCode})
   → (미로그인) 로그인·이름
-  → [정기] → [개별]  (수정/Skip)
+  → [정기(+연차)] → [개별]  (건너뛰기 없음)
   → POST /api/v1/trips/join { "inviteCode": "A2B3C4" }
   → MEMBER + ACTIVE
   → 방 상세
@@ -135,7 +135,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 일정 미완료·이탈 | **멤버 row 없음** — 방에 등록되지 않음. 재진입 시 일정 플로우부터 |
 | 처음 join 성공 | INSERT `ACTIVE` · `last_activity_at` 갱신 |
 | 이미 `ACTIVE` 멤버 | idempotent — 방 상세 직행 (BR-USER-010) |
-| Skip + row 0 | join 시 서버가 `is_all_free=true` 후 INSERT |
+| 변경 없이 통과 + row 0 | join 시 서버가 `is_all_free=true` 후 INSERT |
 
 멤버에게는 중간 `SCHEDULE_PENDING`를 두지 않는다. 정원 hold는 #35 후속.
 
@@ -262,7 +262,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 1. A방 참여로 전역 일정·`is_all_free` 충족
 2. B방 `POST /trips` → `SCHEDULE_PENDING`
 3. **그래도** 정기→개별 플로우 표시 (프리패스 없음)
-4. Skip만 해도 activate → `ACTIVE` (row≥1이면 데이터 유지)
+4. 아무것도 안 바꿔도 activate → `ACTIVE` (row≥1이면 데이터 유지)
 
 ### 시나리오 4 — 지아가 링크로 처음 참여 (정상 · 멤버)
 

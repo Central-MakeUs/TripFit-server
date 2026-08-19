@@ -9,6 +9,7 @@ import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
 import com.tripfit.tripfit.trip.port.out.SchedulePort;
+import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
@@ -103,7 +104,8 @@ public class RecommendationEngine {
               context.personalsByUser.getOrDefault(userId, List.of()),
               context.googleBusyByUser.getOrDefault(userId, Map.of()),
               context.resolvedByUser.getOrDefault(userId, Map.of()),
-              context.holidays()));
+              context.holidays(),
+              context.usersByUser.get(userId)));
     }
     return details;
   }
@@ -136,7 +138,8 @@ public class RecommendationEngine {
               context.personalsByUser.getOrDefault(userId, List.of()),
               context.googleBusyByUser.getOrDefault(userId, Map.of()),
               context.resolvedByUser.getOrDefault(userId, Map.of()),
-              context.holidays());
+              context.holidays(),
+              context.usersByUser.get(userId));
 
       switch (detail.attendance()) {
         case FULL_ATTEND -> fullAttend++;
@@ -183,7 +186,8 @@ public class RecommendationEngine {
       List<PersonalSchedule> personals,
       Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
       Map<LocalDate, CalendarDayResponse> resolved,
-      Set<LocalDate> holidays) {
+      Set<LocalDate> holidays,
+      User user) {
     int totalSlots = totalDays * 3;
     boolean[] possible = new boolean[totalSlots];
     int uncertainDays = 0;
@@ -214,7 +218,8 @@ public class RecommendationEngine {
         regulars,
         personalsByDate,
         googleBusyByDate,
-        holidays);
+        holidays,
+        user);
 
     LongestRun run = longestPossibleRun(possible);
     int threshold = (totalSlots + 1) / 2; // ⌈totalSlots * 0.5⌉
@@ -240,7 +245,7 @@ public class RecommendationEngine {
     double vacationDays =
         attendance == AttendanceType.NON_ATTEND
             ? 0
-            : vacationDaysForSpan(start, regulars, attendStartSlot, attendEndSlot, holidays);
+            : vacationDaysForSpan(start, regulars, attendStartSlot, attendEndSlot, holidays, user);
 
     return new MemberAttendanceDetail(userId, attendance, uncertainDays, vacationDays);
   }
@@ -254,9 +259,8 @@ public class RecommendationEngine {
     return byDate;
   }
 
-  // 정기 근무로만 막힌 슬롯을, 참여자의 연차 예산(첫 번째로 등록된 RegularSchedule 기준 — #105 "필드 이동" 전
-  // 임시 규칙, #52) 안에서 최장 연속 참석 구간이 가장 길어지는 조합으로 자동 전환한다. 개별 일정·구글 busy로
-  // 막힌 슬롯은 대상에서 제외(연차는 근무만 대체 가능)
+  // 정기 근무로만 막힌 슬롯을, 참여자의 연차 예산(User 연차 정책) 안에서 최장 연속 참석 구간이 가장 길어지는
+  // 조합으로 자동 전환한다. 개별 일정·구글 busy로 막힌 슬롯은 대상에서 제외(연차는 근무만 대체 가능)
   private boolean[] applyVacationSimulation(
       LocalDate start,
       int totalDays,
@@ -264,12 +268,12 @@ public class RecommendationEngine {
       List<RegularSchedule> regulars,
       Map<LocalDate, PersonalSchedule> personalsByDate,
       Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
-      Set<LocalDate> holidays) {
+      Set<LocalDate> holidays,
+      User user) {
     if (regulars.isEmpty()) {
       return possible;
     }
-    RegularSchedule primary = RegularSchedule.policySource(regulars).orElseThrow();
-    int budgetHalfDays = primary.getMaxVacationDays() * HALF_DAYS_PER_DAY;
+    int budgetHalfDays = user.getMaxVacationDays() * HALF_DAYS_PER_DAY;
     if (budgetHalfDays <= 0) {
       return possible;
     }
@@ -283,7 +287,8 @@ public class RecommendationEngine {
             personalsByDate,
             googleBusyByDate,
             holidays,
-            primary.isHalfVacationAvailable());
+            user.isHalfVacationAvailable(),
+            user.isHolidayRest());
     int unitCount = options.unitCosts().length;
     if (unitCount == 0) {
       return possible;
@@ -349,13 +354,14 @@ public class RecommendationEngine {
       Map<LocalDate, PersonalSchedule> personalsByDate,
       Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
       Set<LocalDate> holidays,
-      boolean halfVacationAvailable) {
+      boolean halfVacationAvailable,
+      boolean holidayRest) {
     List<Integer> unitCosts = new ArrayList<>();
     List<SlotRequirement> requirements = new ArrayList<>();
 
     for (int day = 0; day < totalDays; day++) {
       LocalDate date = start.plusDays(day);
-      List<RegularSchedule> matched = matchingRegulars(regulars, date, holidays);
+      List<RegularSchedule> matched = matchingRegulars(regulars, date, holidays, holidayRest);
       if (matched.isEmpty()) {
         continue;
       }
@@ -523,20 +529,22 @@ public class RecommendationEngine {
       List<RegularSchedule> regulars,
       int attendStartSlot,
       int attendEndSlot,
-      Set<LocalDate> holidays) {
+      Set<LocalDate> holidays,
+      User user) {
     if (attendStartSlot < 0) {
       return 0;
     }
-    boolean halfVacationAvailable =
-        RegularSchedule.policySource(regulars)
-            .map(RegularSchedule::isHalfVacationAvailable)
-            .orElse(false);
+    boolean halfVacationAvailable = user.isHalfVacationAvailable();
     double total = 0;
     int firstDay = attendStartSlot / 3;
     int lastDay = attendEndSlot / 3;
     for (int day = firstDay; day <= lastDay; day++) {
       LocalDate date = start.plusDays(day);
-      for (RegularSchedule shift : matchingRegulars(regulars, date, holidays)) {
+      for (RegularSchedule shift : matchingRegulars(
+          regulars,
+          date,
+          holidays,
+          user.isHolidayRest())) {
         total +=
             vacationDaysForShift(shift, day, attendStartSlot, attendEndSlot, halfVacationAvailable);
       }
@@ -576,8 +584,9 @@ public class RecommendationEngine {
   private static List<RegularSchedule> matchingRegulars(
       List<RegularSchedule> regulars,
       LocalDate date,
-      Set<LocalDate> holidays) {
-    if (holidays.contains(date) && RegularSchedule.restsOnHolidays(regulars)) {
+      Set<LocalDate> holidays,
+      boolean holidayRest) {
+    if (holidays.contains(date) && holidayRest) {
       return List.of();
     }
     return regulars.stream()
@@ -589,11 +598,16 @@ public class RecommendationEngine {
 
 
   // 멤버별 regular/personal/구글 신호를 탐색 구간 전체에 대해 한 번만 로드 — 후보 윈도우마다 재조회하지 않음(N+1 방지)
+  // User는 activeMembers가 이미 들고 있는 연관을 그대로 재사용(추가 조회 없음)
   private MemberContext loadContext(
       List<TripMember> activeMembers,
       LocalDate rangeStart,
       LocalDate rangeEnd) {
     List<UUID> userIds = activeMembers.stream().map(member -> member.getUser().getId()).toList();
+
+    Map<UUID, User> usersByUser =
+        activeMembers.stream()
+            .collect(Collectors.toMap(member -> member.getUser().getId(), TripMember::getUser));
 
     Map<UUID, List<RegularSchedule>> regularsByUser =
         schedulePort.findRegularSchedulesByUserIds(userIds);
@@ -619,7 +633,7 @@ public class RecommendationEngine {
     Set<LocalDate> holidays = holidayProvider.findHolidaysBetween(rangeStart, rangeEnd);
 
     return new MemberContext(
-        regularsByUser, personalsByUser, busyByUser, resolvedByUser, holidays);
+        regularsByUser, personalsByUser, busyByUser, resolvedByUser, holidays, usersByUser);
   }
 
   private record MemberContext(
@@ -627,7 +641,8 @@ public class RecommendationEngine {
       Map<UUID, List<PersonalSchedule>> personalsByUser,
       Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser,
       Map<UUID, Map<LocalDate, CalendarDayResponse>> resolvedByUser,
-      Set<LocalDate> holidays
+      Set<LocalDate> holidays,
+      Map<UUID, User> usersByUser
   ) {
   }
 

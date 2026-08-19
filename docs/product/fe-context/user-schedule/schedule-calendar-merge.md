@@ -67,12 +67,150 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 
 `scheduleDate`와 `date`를 같은 키로 매핑하면 날짜가 `undefined`가 되니 주의하라.
 
-## 규칙 4 — 관련 API는 아래 표만 사용하라
+## 규칙 4 — 정기 일정 API 전체 명세
+
+> **이 절은 배포된 Swagger를 대체한다.** 백엔드가 이미 배포된 앱과의 계약을 지키기 위해 이 계약 변경은 배포 전에는 라이브 Swagger로 확인할 수 없다 — 아래가 필드 타입·제약·기본값·에러 케이스까지 Swagger와 동등한 정보다. 배포 후에는 `/swagger-ui/index.html`로 교차 확인해도 된다.
+
+**⚠️ 연차 필드는 정기 일정 API에서 빠졌다.** `maxVacationDays`·`vacationApplyPeriod`·`halfVacationAvailable`·`holidayRest`는 정기 일정 행이 아니라 사용자에게 하나씩 붙는 값으로 옮겨졌고, 전용 API로만 읽고 쓴다. **정기 일정 요청에 계속 실어 보내면 에러 없이 무시된다**(저장된 줄 알기 쉬우니 주의) — 마이그레이션 대상 파일 목록을 포함한 상세는 [`vacation-policy.md`](vacation-policy.md)를 따르라.
+
+모든 요청·응답 예시는 `data` 포함 실제 envelope 그대로다.
+
+### `GET /api/v1/users/schedule/regular` — 정기 일정 목록
+
+| | |
+|---|---|
+| 인증 | Bearer JWT 필수 |
+| Request Body | 없음 |
+| 성공 응답 | `200 OK` — 생성 시각(`createdAt`) 오름차순 |
+
+**응답 스키마 (`data.items[]`)**
+
+| 필드 | 타입 | nullable | 설명 |
+|---|---|---|---|
+| `id` | `string` (UUID) | ✗ | 정기 일정 ID |
+| `title` | `string` | ✗ | 표시명 (출근·수업·회의 등) |
+| `daysOfWeek` | `string` | ✓ | 반복 요일. `MON,TUE,...` 콤마 CSV. 미설정 시 `null` |
+| `startTime` | `string` (`HH:mm:ss`) | ✓ | 시작 시각 |
+| `endTime` | `string` (`HH:mm:ss`) | ✓ | 종료 시각 |
+| `morningStatus` | `string` (`POSSIBLE`\|`IMPOSSIBLE`) | ✓ | 오전 `[00:00,13:00)` 슬롯 — `startTime`/`endTime`에서 서버가 파생 계산 |
+| `afternoonStatus` | 동일 | ✓ | 오후 `[13:00,18:00)` |
+| `eveningStatus` | 동일 | ✓ | 저녁 `[18:00,24:00)` |
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "title": "출근",
+        "daysOfWeek": "MON,TUE,WED,THU,FRI",
+        "startTime": "09:00:00",
+        "endTime": "18:00:00",
+        "morningStatus": "IMPOSSIBLE",
+        "afternoonStatus": "IMPOSSIBLE",
+        "eveningStatus": "POSSIBLE"
+      }
+    ]
+  }
+}
+```
+
+에러: `401 AUTH_INVALID_TOKEN` / `AUTH_EXPIRED` 뿐.
+
+---
+
+### `POST /api/v1/users/schedule/regular` — 정기 일정 생성
+
+| | |
+|---|---|
+| 인증 | Bearer JWT 필수 |
+| 성공 응답 | `201 Created` |
+| 부수효과 | 첫 정기 일정 생성 시 `hasPreSchedule`이 `true`가 됨 — `GET /auth/me` 등 재조회 필요 |
+
+**요청 스키마**
+
+| 필드 | 타입 | 필수 | 제약 | 비고 |
+|---|---|---|---|---|
+| `title` | `string` | ✅ | 공백만으로 안 됨(`@NotBlank`) | 예: `"출근"` |
+| `daysOfWeek` | `string` | ❌ | `MON`~`SUN` 콤마 CSV. 대소문자·중복·순서 무관(서버가 정규화). 알 수 없는 토큰이면 `400` | 생략하면 `null` — "요일 무관, 시간만" 패턴 |
+| `startTime` | `string` (`HH:mm:ss`) | ✅ | `@NotNull` | |
+| `endTime` | `string` (`HH:mm:ss`) | ✅ | `@NotNull`, **`endTime`이 `startTime`보다 뒤여야 함**(같거나 앞이면 `400`) | 자정 넘김(예: 22:00~02:00) 미지원 |
+
+응답 스키마·예시는 위 `GET` 목록의 `items[]` 항목 1개와 동일 모양(`data`가 배열이 아니라 객체 1개).
+
+```json
+// Request
+{ "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00" }
+```
+```json
+// 201
+{
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "출근",
+    "daysOfWeek": "MON,TUE,WED,THU,FRI",
+    "startTime": "09:00:00",
+    "endTime": "18:00:00",
+    "morningStatus": "IMPOSSIBLE",
+    "afternoonStatus": "IMPOSSIBLE",
+    "eveningStatus": "POSSIBLE"
+  }
+}
+```
+
+**에러 (실제 서버 응답 그대로 캡처)**
+
+| HTTP | code | 발생 조건 | 응답 예시 |
+|---|---|---|---|
+| 400 | `INVALID_INPUT` | `title` 공백/누락 | `{"code":"INVALID_INPUT","message":"입력값이 올바르지 않습니다.","errors":[{"field":"title","message":"must not be blank"}]}` |
+| 400 | `INVALID_INPUT` | `startTime`/`endTime` 누락 | `{"code":"INVALID_INPUT","message":"입력값이 올바르지 않습니다.","errors":[{"field":"startTime","message":"must not be null"}]}` (필드명은 누락된 쪽) |
+| 400 | `INVALID_INPUT` | `endTime` ≤ `startTime` | `{"code":"INVALID_INPUT","message":"입력값이 올바르지 않습니다."}` (⚠️ `errors` 배열 없음 — 서비스 레벨 검증이라 필드 정보가 안 실린다) |
+| 400 | `INVALID_INPUT` | `daysOfWeek`에 `MON`~`SUN`(또는 `MONDAY` 등 영문 전체 표기) 외 토큰 | `{"code":"INVALID_INPUT","message":"입력값이 올바르지 않습니다."}` (`errors` 없음) |
+| 401 | `AUTH_INVALID_TOKEN` / `AUTH_EXPIRED` | 위와 동일 | 위와 동일 |
+
+⚠️ `errors` 배열은 **Bean Validation(`@NotBlank`/`@NotNull`) 실패에만** 붙는다. 서비스 레벨 검증(`endTime`≤`startTime`, 잘못된 요일 토큰)은 `errors` 없이 최상위 `message`만 온다 — 폼 에러 표시 로직이 이 차이를 처리하게 짜라 (필드별 인라인 에러가 필요하면 `errors` 유무로 분기).
+
+---
+
+### `PATCH /api/v1/users/schedule/regular/{id}` — 정기 일정 전체 수정
+
+요청 스키마·검증 규칙은 `POST`와 **완전히 동일**(4개 필드 전부 다시 보내야 함 — 부분 수정 아님). 성공 응답은 `200 OK` + 동일 모양.
+
+**⚠️ 하루만 바꾸는 용도가 아니다.** `daysOfWeek`가 매칭되는 **모든 날짜**가 한꺼번에 바뀐다 — 특정 하루만 고치려면 `PATCH /users/schedule/personal`(규칙 2)을 써라.
+
+**에러:** `POST`의 400 표에 더해 아래가 추가된다.
+
+| HTTP | code | 발생 조건 | 응답 예시 |
+|---|---|---|---|
+| 404 | `REGULAR_SCHEDULE_NOT_FOUND` | `{id}`가 존재하지 않거나 본인 소유가 아님 | `{"code":"REGULAR_SCHEDULE_NOT_FOUND","message":"정기 일정을 찾을 수 없습니다."}` |
+
+---
+
+### `DELETE /api/v1/users/schedule/regular/{id}` — 정기 일정 삭제
+
+| | |
+|---|---|
+| 인증 | Bearer JWT 필수 |
+| Request Body | 없음 |
+| 성공 응답 | `204 No Content` (body 없음) |
+| 부수효과 | 정기·개별 일정이 모두 0건이 되면 `hasPreSchedule`이 `false`가 됨 — `GET /auth/me` 재조회 필요 |
+
+**에러**
+
+| HTTP | code | 발생 조건 |
+|---|---|---|
+| 404 | `REGULAR_SCHEDULE_NOT_FOUND` | `{id}`가 존재하지 않거나 본인 소유가 아님 |
+| 401 | `AUTH_INVALID_TOKEN` / `AUTH_EXPIRED` | 토큰 없음·무효·만료 |
+
+---
+
+### 관련 API 요약표
 
 | Method | Path | 역할 |
 |---|---|---|
-| `GET/POST` | `/api/v1/users/schedule/regular` | 정기 패턴 목록/생성 |
+| `GET/POST` | `/api/v1/users/schedule/regular` | 정기 패턴 목록/생성 — 위 전체 명세 참고 |
 | `PATCH/DELETE` | `/api/v1/users/schedule/regular/{id}` | 정기 패턴 전체 수정/삭제 — **하루만 바꾸는 용도 아님** |
+| `GET/PATCH` | `/api/v1/users/schedule/vacation-policy` | 연차·반차·공휴일 휴무 4개 값(사용자당 1개) — [`vacation-policy.md`](vacation-policy.md) |
 | `PATCH` | `/api/v1/users/schedule/personal` | 날짜별 개별 일정 upsert(조회 없음, 이 응답이 곧 조회 결과) — **날짜 하나만 고칠 때 이 API** |
 | `GET` | `/api/v1/users/schedule/calendar?startDate=&endDate=` | 본인 정기+개별 합친 달력 (조회 구간: 오늘~오늘+2년-1, 단 참여 중인 ONGOING 여행 희망 기간 종료일이 그보다 뒤면 그 날짜까지 허용) |
 | `GET` | `/api/v1/trips/{tripId}/members/schedule-calendar` | 여행방 멤버 전원의 정기+개별 합친 달력 (조회 구간: 여행 희망 기간) |
@@ -81,7 +219,7 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 
 | HTTP | code | 상황 |
 |---|---|---|
-| 400 | `INVALID_INPUT` | `personal` upsert의 `items` 비어 있음·`scheduleDate` 누락·한 항목에 `slots`도 `uncertain`도 없음·`slots`를 보냈는데 3필드 중 일부 누락·슬롯 값이 `POSSIBLE`/`IMPOSSIBLE` 외의 값·같은 `scheduleDate`가 `items`에 중복, `regular` 시각/요일 값 오류, `calendar` 조회 구간이 허용 윈도우 밖 |
+| 400 | `INVALID_INPUT` | `personal` upsert의 `items` 비어 있음·`scheduleDate` 누락·한 항목에 `slots`도 `uncertain`도 없음·`slots`를 보냈는데 3필드 중 일부 누락·슬롯 값이 `POSSIBLE`/`IMPOSSIBLE` 외의 값·같은 `scheduleDate`가 `items`에 중복, `regular` 시각/요일 값 오류(위 전체 명세), `calendar` 조회 구간이 허용 윈도우 밖 |
 | 404 | `REGULAR_SCHEDULE_NOT_FOUND` | 존재하지 않거나 본인 소유가 아닌 정기 일정 ID로 수정/삭제 시도 |
 | 401 | `AUTH_INVALID_TOKEN` / `AUTH_EXPIRED` | 토큰 없음·무효·만료 — 재로그인 플로우로 보내라 |
 

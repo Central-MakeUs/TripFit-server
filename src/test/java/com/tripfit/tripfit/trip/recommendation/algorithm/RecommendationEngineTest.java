@@ -20,6 +20,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
@@ -60,6 +61,9 @@ class RecommendationEngineTest {
   @Mock
   private GoogleCalendarService googleCalendarService;
 
+  @Mock
+  private UserRepository userRepository;
+
   private RecommendationEngine engine;
 
   private User yoonji;
@@ -70,13 +74,15 @@ class RecommendationEngineTest {
   void setUp() {
     SchedulePort schedulePort =
         new ScheduleAvailabilityAdapter(
-            regularScheduleRepository, personalScheduleRepository, holidayProvider);
+            regularScheduleRepository, personalScheduleRepository, userRepository,
+            holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     engine = new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
     yoonji = user("yoonji");
     eunseo = user("eunseo");
     when(googleCalendarService.findBusyDaysByUserIds(any(), any(), any())).thenReturn(Map.of());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of());
+    when(userRepository.findAllById(any())).thenReturn(List.of(yoonji, eunseo));
   }
 
   // scoring_draft.md 예시: 10일 오전·12일 오후만 불가능 → 연속 6슬롯(⌈9*0.5⌉=5 이상) → 부분 참석
@@ -203,11 +209,7 @@ class RecommendationEngineTest {
             "출근",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            null,
-            null,
-            null,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(
         work,
         "slotStatuses",
@@ -238,17 +240,14 @@ class RecommendationEngineTest {
   void classifyMembers_p1ExampleFridayOverlap_fullAttendWithOneVacationDay() {
     LocalDate friday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.FRIDAY));
     LocalDate sunday = friday.plusDays(2);
+    yoonji.applyVacationPolicy(1, null, false, null);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            1,
-            null,
-            false,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
@@ -267,17 +266,14 @@ class RecommendationEngineTest {
   void classifyMembers_vacationBudgetInsufficient_degradesToPartialAttend() {
     LocalDate tuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY));
     LocalDate wednesday = tuesday.plusDays(1);
+    yoonji.applyVacationPolicy(1, null, false, null);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            1,
-            null,
-            false,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
@@ -296,17 +292,14 @@ class RecommendationEngineTest {
   void classifyMembers_vacationBudgetExactlyCoversOverlap_fullAttend() {
     LocalDate tuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY));
     LocalDate wednesday = tuesday.plusDays(1);
+    yoonji.applyVacationPolicy(2, null, false, null);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
@@ -324,17 +317,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_halfVacationUnavailable_singleHalfBlockCostsFullDay() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(1, null, false, null);
     RegularSchedule morningOnlyWork =
         RegularSchedule.create(
             yoonji,
             "오전 근무",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(12, 0),
-            1,
-            null,
-            false,
-            null);
+            LocalTime.of(12, 0));
     ReflectionTestUtils.setField(
         morningOnlyWork,
         "slotStatuses",
@@ -358,29 +348,23 @@ class RecommendationEngineTest {
   void classifyMembers_halfVacationAvailable_spendsFractionalDaysFromIntegerBudget() {
     LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
     LocalDate tuesday = monday.plusDays(1);
+    yoonji.applyVacationPolicy(2, null, true, null);
     RegularSchedule mondayWork =
         RegularSchedule.create(
             yoonji,
             "월요일 종일 근무",
             "MON",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            true,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(mondayWork, "createdAt", LocalDateTime.now().minusDays(1));
+    yoonji.applyVacationPolicy(2, null, true, null);
     RegularSchedule tuesdayMorningWork =
         RegularSchedule.create(
             yoonji,
             "화요일 오전 근무",
             "TUE",
             LocalTime.of(9, 0),
-            LocalTime.of(12, 0),
-            2,
-            null,
-            true,
-            null);
+            LocalTime.of(12, 0));
     ReflectionTestUtils.setField(tuesdayMorningWork, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any()))
         .thenReturn(List.of(mondayWork, tuesdayMorningWork));
@@ -400,17 +384,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_halfVacationAvailable_singleHalfBlockCostsHalfDay() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(1, null, true, null);
     RegularSchedule morningOnlyWork =
         RegularSchedule.create(
             yoonji,
             "오전 근무",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(12, 0),
-            1,
-            null,
-            true,
-            null);
+            LocalTime.of(12, 0));
     ReflectionTestUtils.setField(
         morningOnlyWork,
         "slotStatuses",
@@ -433,17 +414,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_personalScheduleBlocksVacationConversion() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(2, null, true, null);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            true,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     PersonalSchedule weddingMorning =
@@ -470,17 +448,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_googleBusyBlocksVacationConversion() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(2, null, true, null);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            true,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
@@ -497,21 +472,19 @@ class RecommendationEngineTest {
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
   }
 
-  // 정기 일정을 2개 이상 등록해 연차 값이 다르면, 가장 먼저 등록된(createdAt 오름차순) 행을 예산으로 쓴다(#105)
+  // 정기 일정을 몇 개 등록하든 연차 예산은 User 소유 값 하나뿐이다(#52) — 행 개수·생성 순서와 무관
   @Test
-  void classifyMembers_multipleRegularSchedules_usesEarliestCreatedAsBudget() {
+  void classifyMembers_multipleRegularSchedules_usesSingleUserVacationBudget() {
     LocalDate date = LocalDate.now().plusDays(9);
+    // 아래 두 정기 일정을 등록해도 예산은 이 값 하나로 고정된다
+    yoonji.applyVacationPolicy(0, null, false, null);
     RegularSchedule firstRegistered =
         RegularSchedule.create(
             yoonji,
             "출근",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            0,
-            null,
-            false,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(
         firstRegistered,
         "slotStatuses",
@@ -521,17 +494,14 @@ class RecommendationEngineTest {
         firstRegistered,
         "createdAt",
         LocalDateTime.now().minusDays(1));
+    // 두 번째 정기 일정도 같은 User 소유라 별도 정책을 갖지 않는다 — 예산은 위에서 설정한 값 하나로 계산된다
     RegularSchedule laterRegistered =
         RegularSchedule.create(
             yoonji,
             "부업",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            5,
-            null,
-            true,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(
         laterRegistered,
         "slotStatuses",
@@ -546,7 +516,7 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // firstRegistered의 연차 0일이 예산으로 쓰여 전환 자체가 불가 — laterRegistered의 5일이 쓰였다면 FULL_ATTEND였을 것
+    // yoonji의 연차 예산 0일이 그대로 쓰여 전환 자체가 불가 — 정기 일정을 2개 등록한 것과 무관
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
   }
 
@@ -555,34 +525,28 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_twoSeparateRegularSchedules_doesNotAutoOpenUnrelatedEveningJob() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(1, null, false, null);
     RegularSchedule dayJob =
         RegularSchedule.create(
             yoonji,
             "낮 근무",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            1,
-            null,
-            false,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(
         dayJob,
         "slotStatuses",
         new SlotStatuses(ScheduleStatus.IMPOSSIBLE, ScheduleStatus.IMPOSSIBLE,
             ScheduleStatus.POSSIBLE));
     ReflectionTestUtils.setField(dayJob, "createdAt", LocalDateTime.now().minusDays(1));
+    yoonji.applyVacationPolicy(1, null, false, null);
     RegularSchedule eveningJob =
         RegularSchedule.create(
             yoonji,
             "저녁 알바",
             allDaysOfWeek(),
             LocalTime.of(19, 0),
-            LocalTime.of(23, 0),
-            1,
-            null,
-            false,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(
         eveningJob,
         "slotStatuses",
@@ -607,34 +571,28 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_twoSeparateRegularSchedules_buysBothWithSufficientBudget() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(2, null, false, null);
     RegularSchedule dayJob =
         RegularSchedule.create(
             yoonji,
             "낮 근무",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            null);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(
         dayJob,
         "slotStatuses",
         new SlotStatuses(ScheduleStatus.IMPOSSIBLE, ScheduleStatus.IMPOSSIBLE,
             ScheduleStatus.POSSIBLE));
     ReflectionTestUtils.setField(dayJob, "createdAt", LocalDateTime.now().minusDays(1));
+    yoonji.applyVacationPolicy(2, null, false, null);
     RegularSchedule eveningJob =
         RegularSchedule.create(
             yoonji,
             "저녁 알바",
             allDaysOfWeek(),
             LocalTime.of(19, 0),
-            LocalTime.of(23, 0),
-            2,
-            null,
-            false,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(
         eveningJob,
         "slotStatuses",
@@ -659,17 +617,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_eveningOnlyRegularSchedule_buysWithFullDayVacation() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(1, null, true, null);
     RegularSchedule eveningOnlyJob =
         RegularSchedule.create(
             yoonji,
             "저녁 알바",
             allDaysOfWeek(),
             LocalTime.of(19, 0),
-            LocalTime.of(23, 0),
-            1,
-            null,
-            true,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(
         eveningOnlyJob,
         "slotStatuses",
@@ -693,17 +648,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_afternoonEveningShiftTwoDays_budgetOneDay_clearsOnlyOneShift() {
     LocalDate start = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(1, null, true, null);
     RegularSchedule afternoonIntoEvening =
         RegularSchedule.create(
             yoonji,
             "오후+저녁 근무",
             allDaysOfWeek(),
             LocalTime.of(13, 0),
-            LocalTime.of(23, 0),
-            1,
-            null,
-            true,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(afternoonIntoEvening, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any()))
         .thenReturn(List.of(afternoonIntoEvening));
@@ -724,17 +676,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_afternoonEveningShift_eveningBlockedElsewhere_buysOnlyAfternoonHalf() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(5, null, true, null);
     RegularSchedule afternoonIntoEvening =
         RegularSchedule.create(
             yoonji,
             "오후+저녁 근무",
             allDaysOfWeek(),
             LocalTime.of(13, 0),
-            LocalTime.of(23, 0),
-            5,
-            null,
-            true,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(afternoonIntoEvening, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any()))
         .thenReturn(List.of(afternoonIntoEvening));
@@ -758,17 +707,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_afternoonEveningShift_fullDayVacationOpensWholeShift() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(1, null, true, null);
     RegularSchedule afternoonIntoEvening =
         RegularSchedule.create(
             yoonji,
             "오후+저녁 근무",
             allDaysOfWeek(),
             LocalTime.of(13, 0),
-            LocalTime.of(23, 0),
-            1,
-            null,
-            true,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(afternoonIntoEvening, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any()))
         .thenReturn(List.of(afternoonIntoEvening));
@@ -787,17 +733,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_afternoonEveningShift_halfVacationUnavailable_stillCostsOneDay() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(2, null, false, null);
     RegularSchedule afternoonIntoEvening =
         RegularSchedule.create(
             yoonji,
             "오후+저녁 근무",
             allDaysOfWeek(),
             LocalTime.of(13, 0),
-            LocalTime.of(23, 0),
-            2,
-            null,
-            false,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(afternoonIntoEvening, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any()))
         .thenReturn(List.of(afternoonIntoEvening));
@@ -816,17 +759,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_fullDayIntoEveningShift_fullDayVacationOpensWholeShift() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(1, null, true, null);
     RegularSchedule fullDayIntoEvening =
         RegularSchedule.create(
             yoonji,
             "종일 근무",
             allDaysOfWeek(),
             LocalTime.of(10, 0),
-            LocalTime.of(20, 0),
-            1,
-            null,
-            true,
-            null);
+            LocalTime.of(20, 0));
     ReflectionTestUtils.setField(fullDayIntoEvening, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(fullDayIntoEvening));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
@@ -844,17 +784,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_eveningBlockedByPersonalSchedule_cannotBeOpenedEvenWithBudget() {
     LocalDate date = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(5, null, true, null);
     RegularSchedule eveningOnlyJob =
         RegularSchedule.create(
             yoonji,
             "저녁 알바",
             allDaysOfWeek(),
             LocalTime.of(19, 0),
-            LocalTime.of(23, 0),
-            5,
-            null,
-            true,
-            null);
+            LocalTime.of(23, 0));
     ReflectionTestUtils.setField(eveningOnlyJob, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(eveningOnlyJob));
     PersonalSchedule nightWedding =
@@ -881,11 +818,7 @@ class RecommendationEngineTest {
             "항상불가",
             "MON,TUE,WED,THU,FRI,SAT,SUN",
             LocalTime.of(0, 0),
-            LocalTime.of(23, 59),
-            null,
-            null,
-            null,
-            null);
+            LocalTime.of(23, 59));
     ReflectionTestUtils.setField(
         alwaysBusy,
         "slotStatuses",
@@ -977,17 +910,14 @@ class RecommendationEngineTest {
   void classifyMembers_holidayRestUser_holidayNeedsNoVacation() {
     LocalDate holiday = LocalDate.now().plusDays(9);
     holidays.add(holiday);
+    yoonji.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            true);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
@@ -1004,17 +934,14 @@ class RecommendationEngineTest {
   @Test
   void classifyMembers_holidayRestUser_nonHolidayStillNeedsVacation() {
     LocalDate workday = LocalDate.now().plusDays(9);
+    yoonji.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            true);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
@@ -1031,17 +958,14 @@ class RecommendationEngineTest {
   void classifyMembers_holidayRestFalseUser_holidayStillNeedsVacation() {
     LocalDate holiday = LocalDate.now().plusDays(9);
     holidays.add(holiday);
+    yoonji.applyVacationPolicy(2, null, false, false);
     RegularSchedule work =
         RegularSchedule.create(
             yoonji,
             "출근",
             allDaysOfWeek(),
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            false);
+            LocalTime.of(18, 0));
     ReflectionTestUtils.setField(work, "createdAt", LocalDateTime.now());
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(List.of(work));
     when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))

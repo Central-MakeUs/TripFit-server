@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -157,7 +158,11 @@ class TripServiceTest {
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
     SchedulePort schedulePort =
         new ScheduleAvailabilityAdapter(
-            regularScheduleRepository, personalScheduleRepository, holidayProvider);
+            regularScheduleRepository, personalScheduleRepository, userRepository,
+            holidayProvider);
+    // resolveMergedSchedules 내부의 공휴일 휴무(holidayRest) 배치 조회 — 이 테스트 파일은 캘린더 세부값이
+    // 아니라 트립 흐름만 검증하므로 모든 테스트에 필요하진 않아 lenient로 둔다(UnnecessaryStubbingException 방지)
+    lenient().when(userRepository.findAllById(any())).thenReturn(List.of(owner, member));
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     TripMemberQueryService tripMemberQueryService =
         new TripMemberQueryService(

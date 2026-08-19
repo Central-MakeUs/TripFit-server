@@ -16,7 +16,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -81,6 +81,9 @@ class TripMemberScheduleCalendarSwaggerConsistencyTest {
   @Test
   void okExample_fieldShape_matchesActualResponse() throws Exception {
     User owner = seedUser("owner1");
+    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
+    owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
     LocalDate startRange = LocalDate.now().plusDays(45);
     LocalDate endRange = startRange.plusDays(3);
@@ -90,11 +93,7 @@ class TripMemberScheduleCalendarSwaggerConsistencyTest {
             "출근",
             "MON,TUE,WED,THU,FRI,SAT,SUN",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            VacationApplyPeriod.ANY,
-            false,
-            true));
+            LocalTime.of(18, 0)));
     Trip trip =
         tripRepository.save(
             new Trip(

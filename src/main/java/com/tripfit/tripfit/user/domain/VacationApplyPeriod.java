@@ -1,8 +1,8 @@
-package com.tripfit.tripfit.user.schedule.domain;
+package com.tripfit.tripfit.user.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "연차 신청 가능 시점. 정기 일정 RegularScheduleResponse.vacationApplyPeriod")
+@Schema(description = "연차 신청 가능 시점. User 연차 정책(VacationPolicyResponse.vacationApplyPeriod)")
 public enum VacationApplyPeriod {
   @Schema(description = "상관없음")
   ANY,

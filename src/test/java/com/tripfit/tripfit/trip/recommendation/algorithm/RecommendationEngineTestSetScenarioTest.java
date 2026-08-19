@@ -19,6 +19,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
+import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
@@ -63,13 +64,17 @@ class RecommendationEngineTestSetScenarioTest {
   @Mock
   private GoogleCalendarService googleCalendarService;
 
+  @Mock
+  private UserRepository userRepository;
+
   private RecommendationEngine engine;
 
   @BeforeEach
   void setUp() {
     SchedulePort schedulePort =
         new ScheduleAvailabilityAdapter(
-            regularScheduleRepository, personalScheduleRepository, holidayProvider);
+            regularScheduleRepository, personalScheduleRepository, userRepository,
+            holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     engine = new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
     when(googleCalendarService.findBusyDaysByUserIds(any(), any(), any())).thenReturn(Map.of());
@@ -91,6 +96,9 @@ class RecommendationEngineTestSetScenarioTest {
     regulars.add(regularSchedule(soeun, "TUE,WED,THU,FRI,SAT", 12, 20, 1, true, false));
     // chaeyeon(E)은 고정 근무 없음 — regular 없음
     when(regularScheduleRepository.findByUserIdIn(any())).thenReturn(regulars);
+    // 공휴일 휴무(holidayRest) 배치 조회 — regularSchedule() 헬퍼가 이미 각 User에 정책을 적용해뒀다
+    when(userRepository.findAllById(any()))
+        .thenReturn(List.of(yoonji, eunseo, giyeon, soeun, chaeyeon));
 
     List<PersonalSchedule> personals = new ArrayList<>();
     // A - 이윤지
@@ -202,17 +210,15 @@ class RecommendationEngineTestSetScenarioTest {
       int maxVacationDays,
       boolean halfVacationAvailable,
       boolean holidayRest) {
+    // 연차·반차·공휴일 휴무는 이제 User 소유 값 — 정기 일정 생성과 함께 대상 User에 적용해둔다
+    user.applyVacationPolicy(maxVacationDays, null, halfVacationAvailable, holidayRest);
     RegularSchedule schedule =
         RegularSchedule.create(
             user,
             "근무",
             daysOfWeek,
             LocalTime.of(startHour, 0),
-            LocalTime.of(endHour, 0),
-            maxVacationDays,
-            null,
-            halfVacationAvailable,
-            holidayRest);
+            LocalTime.of(endHour, 0));
     ReflectionTestUtils.setField(schedule, "createdAt", LocalDateTime.now());
     return schedule;
   }

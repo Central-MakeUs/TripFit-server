@@ -6,6 +6,7 @@
 > GitHub: **[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**  
 > 선행: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12)  
 > related: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (#38)  
+> deferred: **미가입 참여자의 R4 상한 공백** → [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110), Draft)  
 > 용어: [`glossary.md`](../../product/glossary.md)
 
 ## 목표
@@ -58,6 +59,7 @@
 | 항목 | 확정 |
 |------|------|
 | 트리거 | 본인이 **활성 참여**(`TripMember.deletedAt IS NULL`) 중인 `Trip.status = ONGOING` |
+| **미가입 방 (공백)** | **상한에 포함되지 않음** — 초대받았지만 `join` 전이라 `TripMember` row가 없는 방은 트리거되지 않는다. 방장은 `POST /trips` 시 `SCHEDULE_PENDING` row가 즉시 생겨 해당 없음. 이 공백의 해소는 [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md)([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110))로 위임 — 본 스펙 범위 밖 |
 | 확장 기준 필드 | `endRange` (`confirmedStartDate`/`confirmedEndDate`는 ONGOING 동안 보통 null) |
 | 다중 ONGOING | `endRange` **최댓값** 하나로 전역 상한을 정함 (여행별 개별 허용 아님) |
 | Google Calendar 동기화 윈도우 | **동일 적용** — `GoogleCalendarService.syncUserInternal`의 `windowEnd`도 같은 계산 재사용 |
@@ -77,6 +79,8 @@
 
 ### Out of Scope
 
+- **미가입 참여자의 상한 확장** — [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110))
+- **`PATCH /users/schedule/personal`의 윈도우 검증** — 현재 `GET /calendar`에만 있고 `PATCH`에는 없다(저장은 되고 조회는 400인 비대칭). 해소 방향은 위 스펙에서 함께 결정
 - 칩 클릭 시 서버 재조회/구간 재단
 - 칩 전용 API · calendar 임베드 `ongoingTrips[]` (Nice 가능, Must 아님)
 - CANCELED snapshot
@@ -112,6 +116,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-16 | **R4 공백 명문화 + defer** — 초대받았으나 `join` 전인 방은 `TripMember` row가 없어 상한 확장이 트리거되지 않는다는 점, `GET /calendar`와 `PATCH /personal`의 윈도우 검증 비대칭을 Out of Scope에 기록하고 [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md)([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110))로 위임 |
 | 2026-07-27 | **R4 Approved** — C1 상한 `max(today+2y−1, 사용자 ONGOING endRange 최댓값)`로 확장. [#53](https://github.com/Central-MakeUs/TripFit-server/issues/53) |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제(R1 해당 없음), `TERMINATED` → `EXPIRED` 리네임 |
 | 2026-07-21 | Draft · 재확정 C1/C2/C3 |

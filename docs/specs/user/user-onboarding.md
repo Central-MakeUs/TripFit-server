@@ -47,10 +47,26 @@ firstName 또는 lastName null?
        ↓
 [선택] ① Google 캘린더 (연동 또는 건너뛰기)
        ↓
-[선택] ② 사전 일정 / 근무·연차 (등록 또는 건너뛰기) — 상세 `[미정]` #22
+[선택] ② 사전 일정 — "정기 일정이 있나요?"
+         ├─ 예     → [정기 일정 + 연차 3문항] → [개별 일정]
+         └─ 없어요 → [개별 일정]          ← 연차를 묻지 않음
        ↓
-(중간 이탈 → 재진입 시 메인, D-REENTRY-2)
+(각 단계 건너뛰기 가능 · 중간 이탈 → 재진입 시 메인, D-REENTRY-2)
 ```
+
+**② 사전 일정 단계 확정 (2026-08-16 — 구 `[미정]` #22 해소, Figma Wireframe v1 대조):**
+
+| 항목 | 확정 |
+|------|------|
+| 순서 | **① Google 캘린더 → ② 사전 일정** (캘린더가 먼저) |
+| 사전 일정 분기 | 첫 화면이 **"정기 일정이 있나요?"** — 예/없어요 |
+| **연차 3문항 위치** | **정기 일정과 한 덩어리** — "예"로 정기를 입력할 때만 노출. "없어요"면 **묻지 않음** |
+| 건너뛰기 | **가능** (회원가입은 일정 입력을 강제하지 않음) — 방 입장 플로우와 다른 점 |
+| 서버 호출 | 입력한 것만 호출. **`is_all_free`는 여기서 설정하지 않는다** (activate/join 시점 — D-JOIN-TRIP-FLOW) |
+
+> "없어요" + 개별 일정 미입력으로 온보딩을 끝내면 일정 0행 · `isAllFree=false`(=미입력) 상태로 남는다. 방 입장 시 서버가 그때 `is_all_free=true`로 채운다 — 온보딩 단계에서 미리 채우지 않는다.
+
+연차 4개 필드의 저장 위치·전용 API는 [`vacation-policy-user-migration.md`](../user-schedule/vacation-policy-user-migration.md)(#52)가 SSOT. 방 입장 플로우는 [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) D-JOIN-TRIP-FLOW가 SSOT.
 
 **전역 403:** 핵심 API `PROFILE_NAME_REQUIRED` → 클라이언트 `/onboarding/name` 강제 이동
 
@@ -61,7 +77,7 @@ firstName 또는 lastName null?
 | 소셜 login | SDK 로그인 | user row upsert, JWT 발급, boolean 기본값 `false` |
 | 이름 | 성·이름 입력 (소셜 `nickname`은 인풋 prefill만) | `PATCH onboarding/name` → `first_name`, `last_name` |
 | 캘린더 | 연동 또는 건너뛰기 | 연동 성공 시 `isGoogleCalendarConnected=true` (별도 스펙). **건너뛰기 = `false` 유지** |
-| 사전 일정 | 근무·연차 입력 또는 건너뛰기 | 저장/skip. **join 게이트는 D-JOIN-ENTRY** (정기 OR 개별 OR 전부 free·User 전역). 사전 등록·전역 전부 free여도 **신규 trip은 수정/Skip 플로우** (D-JOIN-TRIP-FLOW). 상세·필드 SSOT: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) |
+| 사전 일정 | "정기 일정이 있나요?" → (예) 정기+연차 → 개별 / (없어요) 개별. **각 단계 건너뛰기 가능** | 입력한 것만 저장. **join 게이트는 D-JOIN-ENTRY** (정기 OR 개별 OR 전부 free·User 전역). 사전 등록·전역 전부 free여도 **신규 trip은 확인 플로우 강제** (D-JOIN-TRIP-FLOW). 상세·필드 SSOT: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) |
 | 온보딩 종료 | (선택) 마지막 단계 완료 | 별도 "완료" API·컬럼 없음 (`PATCH /users/onboarding` 2026-07-20 삭제). 완료 여부는 `hasPreSchedule`(파생)·`isAllFree` 값으로 판단 |
 
 > **재진입 (D-REENTRY-2):** `firstName` + `lastName` 완료 → **메인 직행**. 선택 온보딩 완료 여부와 무관하게 **재강제 없음**.
@@ -190,6 +206,7 @@ firstName 또는 lastName null?
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-16 | **② 사전 일정 단계 `[미정]`(#22) 해소** — Figma Wireframe v1 대조로 확정: 캘린더→사전 일정 순서, "정기 일정이 있나요?" 예/없어요 분기, **연차 3문항은 정기 일정과 한 덩어리**("없어요"면 미노출), 회원가입은 건너뛰기 가능(방 입장은 불가 — `schedule-participation-onboarding.md` D-JOIN-TRIP-FLOW) |
 | 2026-07-28 | API 경로 리네이밍 — `PATCH /users/profile`(온보딩) → `PATCH /users/onboarding/name`. 마이페이지 수정 API가 `/users/profile`을 대신 사용(`user-my-page.md` 참고) — 두 API가 "UI 의도만 다른 동일 계약"으로 오해되는 문제 해소 |
 | 2026-07-23 | **문서 정정** — 본문이 여전히 `is_schedule_registered`/`is_optional_onboarding_completed`/`PATCH /users/onboarding`을 Must Have·API로 서술하고 있었으나, 이는 2026-07-20에 이미 삭제된 설계(§확정 정책 요약 참고). 코드·`schedule-participation-onboarding.md`와 일치하도록 전면 수정 |
 | 2026-07-20 | **Amend** D-NAME-1 (Kakao=Google=Apple 이름 게이트), D-REENTRY-2 (재진입 → 메인). 선택 온보딩 boolean 3개·`PATCH /users/onboarding` 삭제 |

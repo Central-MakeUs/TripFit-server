@@ -28,6 +28,10 @@ import org.hibernate.type.SqlTypes;
 @Schema(description = "TripFit 서비스 사용자. 식별 키는 (provider, social_id). 테이블명 users (MySQL 예약어 회피)")
 public class User extends SoftDeleteEntity {
 
+  public static final int DEFAULT_MAX_VACATION_DAYS = 2;
+
+  public static final int MAX_VACATION_DAYS_LIMIT = 10;
+
   @Schema(
       description = "사용자 고유 ID (TripFit 내부 PK, UUID v4)",
       example = "550e8400-e29b-41d4-a716-446655440000")
@@ -91,6 +95,23 @@ public class User extends SoftDeleteEntity {
       example = "true")
   @Column(name = "notification_enabled", nullable = false)
   private boolean notificationEnabled;
+
+  @Schema(description = "여행당 사용 가능 최대 연차 일수. default 2, 최대 10", example = "2")
+  @Column(name = "max_vacation_days", nullable = false)
+  private int maxVacationDays = DEFAULT_MAX_VACATION_DAYS;
+
+  @Schema(description = "연차 신청 가능 시점. null = 미설정", nullable = true)
+  @Enumerated(EnumType.STRING)
+  @Column(name = "vacation_apply_period")
+  private VacationApplyPeriod vacationApplyPeriod;
+
+  @Schema(description = "반차 사용 가능 여부. default false(N)", example = "false")
+  @Column(name = "is_half_vacation_available", nullable = false)
+  private boolean halfVacationAvailable;
+
+  @Schema(description = "공휴일 휴무 여부. default true(Y)", example = "true")
+  @Column(name = "is_holiday_rest", nullable = false)
+  private boolean holidayRest = true;
 
   public User(
       String socialId,
@@ -170,6 +191,19 @@ public class User extends SoftDeleteEntity {
 
   public void applyAllFree(boolean allFree) {
     this.isAllFree = allFree;
+  }
+
+  // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — null 필드는 RegularSchedule 시절과 동일한 기본값으로 대체
+  public void applyVacationPolicy(
+      Integer maxVacationDays,
+      VacationApplyPeriod vacationApplyPeriod,
+      Boolean halfVacationAvailable,
+      Boolean holidayRest) {
+    this.maxVacationDays =
+        maxVacationDays != null ? maxVacationDays : DEFAULT_MAX_VACATION_DAYS;
+    this.vacationApplyPeriod = vacationApplyPeriod;
+    this.halfVacationAvailable = halfVacationAvailable != null && halfVacationAvailable;
+    this.holidayRest = holidayRest == null || holidayRest;
   }
 
   // 탈퇴 확정 — soft delete + PII 스크럽. socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지

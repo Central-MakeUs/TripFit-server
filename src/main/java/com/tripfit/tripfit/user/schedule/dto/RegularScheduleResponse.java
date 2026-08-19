@@ -1,7 +1,6 @@
 package com.tripfit.tripfit.user.schedule.dto;
 
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalTime;
 import java.util.List;
@@ -45,19 +44,7 @@ public record RegularScheduleResponse(
         description = "저녁 [18:00, 24:00) 슬롯. start/end 시각에서 파생",
         example = "POSSIBLE",
         nullable = true)
-    ScheduleStatus eveningStatus,
-
-    @Schema(description = "여행당 최대 연차 일수 (기본 2, 허용 0~10)", example = "2")
-    int maxVacationDays,
-
-    @Schema(description = "연차 신청 가능 시점. 미설정 시 null", example = "ONE_WEEK_BEFORE", nullable = true)
-    VacationApplyPeriod vacationApplyPeriod,
-
-    @Schema(description = "반차 사용 가능 여부 (기본 false)", example = "false")
-    boolean halfVacationAvailable,
-
-    @Schema(description = "공휴일 휴무 여부 (기본 true)", example = "true")
-    boolean holidayRest
+    ScheduleStatus eveningStatus
 ) {
 
   @Schema(description = "정기 일정 목록 응답. GET /users/schedule/regular")
