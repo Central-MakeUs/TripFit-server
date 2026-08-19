@@ -29,6 +29,10 @@
       "description": "FCM 디바이스 토큰 등록·해제"
     },
     {
+      "name": "User Schedule",
+      "description": "본인 정기·개별 일정과 정기+개별을 합친 달력"
+    },
+    {
       "name": "Recommendation",
       "description": "추천 4모드·확정·확정취소. 후보·근거·피드백은 방장 전용, 확정 결과는 방장·참여자 공통(GET /trips/{tripId})"
     },
@@ -43,10 +47,6 @@
     {
       "name": "Google Calendar",
       "description": "Google Calendar OAuth 연동·해제"
-    },
-    {
-      "name": "User Schedule",
-      "description": "본인 정기·개인 일정과 정기+개별을 합친 달력"
     },
     {
       "name": "Trip Members",
@@ -110,7 +110,7 @@
           "User Schedule"
         ],
         "summary": "정기 일정 생성",
-        "description": "매주 반복되는 정기 일정을 추가한다. daysOfWeek는 Weekday(MON~SUN) 콤마 CSV이고, 슬롯은 start/end로 계산된다. 첫 정기 일정 생성 시\n hasPreSchedule이 true가 된다(GET /auth/me 등으로 재조회 필요).",
+        "description": "매주 반복되는 정기 일정을 추가한다. daysOfWeek는 Weekday(MON~SUN) 콤마 CSV이고, 슬롯은 start/end로 계산된다.",
         "operationId": "createRegular",
         "requestBody": {
           "content": {
@@ -180,6 +180,33 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "User Schedule"
+        ],
+        "summary": "정기 일정 전체 삭제",
+        "description": "본인 정기 일정을 전부 삭제한다. 사전 일정 입력 플로우에서 \"정기 일정이 있나요? → 없어요\"를 고른 순간 호출한다. 남아 있던 정기 일정이 추천 계산에 계속 반영되는\n 것을 막기 위한 경로이며, 개별 일정과 연차·휴일 정보는 지우지 않는다. 삭제할 정기 일정이 없어도 204다.",
+        "operationId": "deleteAllRegular",
+        "responses": {
+          "204": {
+            "description": "삭제 성공(No Content). 0건이어도 동일"
+          },
+          "401": {
+            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_EXPIRED",
+                  "message": "액세스 토큰이 만료되었습니다."
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/users/google-calendar": {
@@ -218,8 +245,7 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": true,
-                    "hasRegularSchedule": false,
-                    "hasPreSchedule": false,
+                    "hasCompletedPreSchedule": false,
                     "notificationEnabled": true
                   }
                 }
@@ -301,8 +327,7 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
-                    "hasRegularSchedule": false,
-                    "hasPreSchedule": false,
+                    "hasCompletedPreSchedule": false,
                     "notificationEnabled": true
                   }
                 }
@@ -1035,7 +1060,7 @@
           "Trip"
         ],
         "summary": "여행방 멤버십 활성화",
-        "description": "일정 확인을 끝내 여행방 입장을 완료한다. 방장(create 직후)과 참여자(join 직후)가 모두 이 API를 호출하며, myMemberStatus가\n SCHEDULE_PENDING → ACTIVE로 바뀐다. 방 안 API와 방장의 초대 공유는 이 호출 이후에만 쓸 수 있다.\n\n 이미 ACTIVE면 상태 변경 없이 동일 응답이고 알림도 다시 가지 않는다(idempotent).",
+        "description": "일정 확인을 끝내 여행방 입장을 완료한다. 방장(create 직후)과 참여자(join 직후)가 모두 이 API를 호출하며, myMemberStatus가\n SCHEDULE_PENDING → ACTIVE로 바뀐다. 방 안 API와 방장의 초대 공유는 이 호출 이후에만 쓸 수 있다.\n\n 이미 ACTIVE면 상태 변경 없이 동일 응답이고 알림도 다시 가지 않는다(idempotent).\n\n 사전 일정 입력(연차·휴일 정보의 사전 신청일)을 한 번도 완료하지 않았다면 403 PRE_SCHEDULE_REQUIRED로 거부된다. 정기·개별 일정이 0건인 것은 거부\n 사유가 아니다 — 입력을 끝냈지만 막힌 일정이 없는 사용자는 그대로 통과한다.",
         "operationId": "activateMembership",
         "parameters": [
           {
@@ -1109,15 +1134,15 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · PRE_SCHEDULE_REQUIRED — 사전 일정 입력 미완료",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "TRIP_ACCESS_DENIED",
-                  "message": "여행방 참여 권한이 없습니다."
+                  "code": "PRE_SCHEDULE_REQUIRED",
+                  "message": "사전 일정 입력을 완료해야 여행방에 입장할 수 있습니다."
                 }
               }
             }
@@ -1485,8 +1510,7 @@
                       "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                       "provider": "GOOGLE",
                       "isGoogleCalendarConnected": false,
-                      "hasRegularSchedule": false,
-                      "hasPreSchedule": false,
+                      "hasCompletedPreSchedule": false,
                       "notificationEnabled": true
                     }
                   }
@@ -1603,8 +1627,8 @@
         "tags": [
           "User Schedule"
         ],
-        "summary": "연차·반차·공휴일 휴무 설정 조회",
-        "description": "본인 연차·반차·공휴일 휴무 설정을 조회한다. 정기 일정과 별개로 사람 1명에게 하나만 존재한다.",
+        "summary": "연차·휴일 정보 조회",
+        "description": "본인 연차·휴일 정보를 조회한다. 정기 일정과 별개로 사람 1명에게 하나만 존재한다. 사전 신청일이 null이면 아직 사전 일정 입력을 완료하지 않은 사용자다(최초\n 입력).",
         "operationId": "getVacationPolicy",
         "responses": {
           "200": {
@@ -1645,8 +1669,8 @@
         "tags": [
           "User Schedule"
         ],
-        "summary": "연차·반차·공휴일 휴무 설정 전체 교체",
-        "description": "본인 연차·반차·공휴일 휴무 설정을 전체 교체한다. 부분 수정이 아니라 4개 필드를 매번 전부 보내야 하며, 생략된 필드는 기본값(연차 2일·신청 시점 미설정·반차\n 불가·공휴일 휴무)으로 대체된다. 이 API는 정기 일정 행이 하나도 없어도 저장할 수 있고, 일정 등록이 아니므로 일정 파생값에도 영향을 주지 않는다.",
+        "summary": "연차·휴일 정보 전체 교체",
+        "description": "본인 연차·휴일 정보를 전체 교체한다. 부분 수정이 아니라 4개 필드를 매번 전부 보내야 하고, 하나라도 빠지면 400이다. 정기 일정 행이 하나도 없어도 저장할 수\n 있다. 저장에 성공하면 사전 신청일이 채워져 사용자가 \"갱신 입력\" 상태가 되고, 이후 여행방 입장 시 다시 최초 입력 플로우를 타지 않는다.",
         "operationId": "updateVacationPolicy",
         "requestBody": {
           "content": {
@@ -1678,7 +1702,7 @@
             }
           },
           "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
+            "description": "필수 필드 누락 또는 값 검증 실패 (INVALID_INPUT) — 4개 필드 중 하나라도 빠지면 여기에 해당",
             "content": {
               "*/*": {
                 "schema": {
@@ -1714,7 +1738,7 @@
           "User Schedule"
         ],
         "summary": "정기 일정 삭제",
-        "description": "본인 정기 일정을 삭제한다. 정기·개인 일정이 모두 0건이 되면 hasPreSchedule이 false가 된다(GET /auth/me 재조회).",
+        "description": "본인 정기 일정을 한 건 삭제한다.",
         "operationId": "deleteRegular",
         "parameters": [
           {
@@ -1868,8 +1892,8 @@
         "tags": [
           "User Schedule"
         ],
-        "summary": "개인 일정 슬롯 단위 오버라이드 upsert",
-        "description": "여러 날짜에 슬롯(오전/오후/저녁) 오버라이드·불확실 여부를 등록·수정한다. items는 최소 1개, 같은 scheduleDate 중복은 불가하다. 각 항목은\n slots·uncertain을 독립적으로 선택한다 — 슬롯을 안 건드리려면 slots 필드 자체를 생략(정기+구글 계산값을 그대로 따름), 건드리려면 3개 전부 명시해야\n 한다. 이 API로는 오버라이드가 삭제되지 않는다 — 한 번 반영된 날짜는 계속 유지된다. 첫 저장 시 hasPreSchedule이 true가 된다(GET /auth/me\n 재조회 필요).\n\n 저장 가능한 날짜는 달력 조회와 같은 구간(오늘 ~ 오늘+2년−1, 참여 중인 ONGOING 여행 희망 기간 종료일이 더 뒤면 그 날짜까지)으로 제한된다 — 구간 밖\n 날짜가 하나라도 있으면 저장 전체가 400이다.",
+        "summary": "개별 일정 슬롯 단위 오버라이드 upsert",
+        "description": "여러 날짜에 슬롯(오전/오후/저녁) 오버라이드·불확실 여부를 등록·수정한다. items는 최소 1개, 같은 scheduleDate 중복은 불가하다. 각 항목은\n slots·uncertain을 독립적으로 선택한다 — 슬롯을 안 건드리려면 slots 필드 자체를 생략(정기+구글 계산값을 그대로 따름), 건드리려면 3개 전부 명시해야\n 한다. 이 API로는 오버라이드가 삭제되지 않는다 — 한 번 반영된 날짜는 계속 유지된다.\n\n 저장 가능한 날짜는 달력 조회와 같은 구간(오늘 ~ 오늘+2년−1, 참여 중인 ONGOING 여행 희망 기간 종료일이 더 뒤면 그 날짜까지)으로 제한된다 — 구간 밖\n 날짜가 하나라도 있으면 저장 전체가 400이다.",
         "operationId": "upsertPersonal",
         "requestBody": {
           "content": {
@@ -2166,8 +2190,7 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
-                    "hasRegularSchedule": false,
-                    "hasPreSchedule": false,
+                    "hasCompletedPreSchedule": false,
                     "notificationEnabled": false
                   }
                 }
@@ -2241,8 +2264,7 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
-                    "hasRegularSchedule": false,
-                    "hasPreSchedule": false,
+                    "hasCompletedPreSchedule": false,
                     "notificationEnabled": true
                   }
                 }
@@ -2922,7 +2944,7 @@
           "User Schedule"
         ],
         "summary": "정기+개별 합친 일정 달력 조회",
-        "description": "본인 정기 일정과 개별 일정을 합쳐 날짜별 가능/불가능 달력을 조회한다. 요청 구간은 오늘부터 오늘+2년−1일 안이어야 하지만, 참여 중인 조율 중(ONGOING)\n 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다. 날짜별 슬롯은 개인 일정이 정기보다 우선하고, 정기가 여럿이면 IMPOSSIBLE이 우선하며, 빈\n 날은 응답에서 생략된다. 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출해야 한다.",
+        "description": "본인 정기 일정과 개별 일정을 합쳐 날짜별 가능/불가능 달력을 조회한다. 요청 구간은 오늘부터 오늘+2년−1일 안이어야 하지만, 참여 중인 조율 중(ONGOING)\n 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다. 날짜별 슬롯은 개별 일정이 정기보다 우선하고, 정기가 여럿이면 IMPOSSIBLE이 우선하며, 빈\n 날은 응답에서 생략된다. 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출해야 한다.",
         "operationId": "getCalendar",
         "parameters": [
           {
@@ -3380,7 +3402,7 @@
           "Auth"
         ],
         "summary": "현재 사용자 조회",
-        "description": "로그인 사용자 요약을 조회한다. hasRegularSchedule·hasPreSchedule은 DB 컬럼이 아니라 일정 row 존재 여부에서 조회 시 파생된다.",
+        "description": "로그인 사용자 요약을 조회한다. hasCompletedPreSchedule은 DB 컬럼이 아니라 연차·휴일 정보의 사전 신청일 저장 여부에서 파생된다.",
         "operationId": "me",
         "responses": {
           "200": {
@@ -3400,8 +3422,7 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
-                    "hasRegularSchedule": false,
-                    "hasPreSchedule": false,
+                    "hasCompletedPreSchedule": false,
                     "notificationEnabled": true
                   }
                 }
@@ -3431,7 +3452,7 @@
           "User"
         ],
         "summary": "회원 탈퇴",
-        "description": "본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지\n 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은\n 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 지금 사용 중인 액세스 토큰은 이 요청 이후에도 남은 수명 동안 유효할 수 있다.",
+        "description": "본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지\n 않는다. 개별 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은\n 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 지금 사용 중인 액세스 토큰은 이 요청 이후에도 남은 수명 동안 유효할 수 있다.",
         "operationId": "withdraw",
         "responses": {
           "204": {
@@ -3952,14 +3973,9 @@
             "description": "Google Calendar OAuth 연동 여부",
             "example": false
           },
-          "hasRegularSchedule": {
+          "hasCompletedPreSchedule": {
             "type": "boolean",
-            "description": "정기 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\n개별 일정은 세지 않는다 — 일정 확인 화면에서 \"정기 일정이 있나요?\" 질문을 띄울지 판정하는 값.\ntrue: 정기 일정 생성. false: 정기 일정이 0건(개별 일정만 있어도 false).\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
-            "example": false
-          },
-          "hasPreSchedule": {
-            "type": "boolean",
-            "description": "정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\ntrue: 정기 일정 첫 생성 또는 개별 일정 첫 저장.\nfalse: 두 종류 일정 row가 모두 0건.\n정기·개별을 뭉뚱그린 값이라 정기 일정 유무를 판정할 수 없다 — 그 판정에는 hasRegularSchedule을 쓴다.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "description": "사전 일정 정보를 한 번이라도 입력 완료했는지 (DB 컬럼 없음, 연차·휴일 정보의 사전 신청일 저장 여부에서 파생).\nfalse = 최초 입력 → \"정기 일정이 있나요?\" 화면부터. true = 갱신 입력 → \"일정 변경이 있나요?\" 화면부터.\n정기·개별 일정 row 수는 판정에 쓰지 않는다 — 입력을 끝냈지만 막힌 일정이 없는 사용자도 true다.\nPATCH /users/schedule/vacation-policy 저장 시 true가 되며, 탈퇴 후 재가입하면 false로 돌아간다.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
             "example": false
           },
           "notificationEnabled": {
@@ -4631,7 +4647,7 @@
           },
           "user": {
             "$ref": "#/components/schemas/UserSummaryResponse",
-            "description": "로그인한 사용자 요약 (hasRegularSchedule·hasPreSchedule 포함)"
+            "description": "로그인한 사용자 요약 (사전 일정 입력 완료 여부 hasCompletedPreSchedule 포함)"
           }
         }
       },
@@ -4675,25 +4691,19 @@
       },
       "UpdateVacationPolicyRequest": {
         "type": "object",
-        "description": "연차·반차·공휴일 휴무 설정 전체 교체 요청. PATCH /users/schedule/vacation-policy. 부분 patch 아님 — 생략(null) 필드는 기본값으로 대체",
+        "description": "연차·휴일 정보 전체 교체 요청. PATCH /users/schedule/vacation-policy. 부분 patch 아님 — 4개 값 모두 필수",
         "properties": {
           "maxVacationDays": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "format": "int32",
-            "description": "여행당 최대 연차 일수. 생략 시 2, 허용 0~10",
+            "description": "여행당 최대 연차 일수. 허용 0~10",
             "example": 2,
             "maximum": 10,
             "minimum": 0
           },
           "vacationApplyPeriod": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "연차 신청 가능 시점. 생략 시 null",
+            "type": "string",
+            "description": "연차 신청 가능 시점(사전 신청일). 저장되면 사전 일정 입력 완료로 판정된다 — 생략 불가",
             "enum": [
               "ANY",
               "ONE_WEEK_BEFORE",
@@ -4703,22 +4713,22 @@
             "example": "ONE_WEEK_BEFORE"
           },
           "halfVacationAvailable": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "반차 사용 가능 여부. 생략 시 false",
+            "type": "boolean",
+            "description": "반차 사용 가능 여부",
             "example": false
           },
           "holidayRest": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "공휴일 휴무 여부. 생략 시 true",
+            "type": "boolean",
+            "description": "공휴일 휴무 여부",
             "example": true
           }
-        }
+        },
+        "required": [
+          "halfVacationAvailable",
+          "holidayRest",
+          "maxVacationDays",
+          "vacationApplyPeriod"
+        ]
       },
       "SuccessResponseVacationPolicyResponse": {
         "type": "object",
@@ -4746,7 +4756,7 @@
       },
       "VacationPolicyResponse": {
         "type": "object",
-        "description": "연차·반차·공휴일 휴무 설정 응답. GET/PATCH /users/schedule/vacation-policy",
+        "description": "연차·휴일 정보 응답. GET/PATCH /users/schedule/vacation-policy",
         "properties": {
           "maxVacationDays": {
             "type": "integer",
@@ -4883,7 +4893,7 @@
       },
       "UpdatePersonalScheduleRequest": {
         "type": "object",
-        "description": "개인 일정 슬롯 단위 오버라이드 bulk upsert 요청. PATCH /users/schedule/personal",
+        "description": "개별 일정 슬롯 단위 오버라이드 bulk upsert 요청. PATCH /users/schedule/personal",
         "properties": {
           "items": {
             "type": "array",
@@ -5217,7 +5227,7 @@
           },
           "uncertain": {
             "type": "boolean",
-            "description": "날짜 단위 불확실. 개인 일정 uncertain=true일 때만 true 가능",
+            "description": "날짜 단위 불확실. 개별 일정 uncertain=true일 때만 true 가능",
             "example": false
           }
         }
@@ -5708,7 +5718,7 @@
           },
           "uncertain": {
             "type": "boolean",
-            "description": "날짜 단위 불확실 (개인 일정 uncertain=true일 때)"
+            "description": "날짜 단위 불확실 (개별 일정 uncertain=true일 때)"
           }
         }
       },
