@@ -81,11 +81,7 @@
                         "endTime": "18:00:00",
                         "morningStatus": "IMPOSSIBLE",
                         "afternoonStatus": "IMPOSSIBLE",
-                        "eveningStatus": "POSSIBLE",
-                        "maxVacationDays": 2,
-                        "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                        "halfVacationAvailable": false,
-                        "holidayRest": true
+                        "eveningStatus": "POSSIBLE"
                       }
                     ]
                   }
@@ -143,11 +139,7 @@
                     "endTime": "18:00:00",
                     "morningStatus": "IMPOSSIBLE",
                     "afternoonStatus": "IMPOSSIBLE",
-                    "eveningStatus": "POSSIBLE",
-                    "maxVacationDays": 2,
-                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                    "halfVacationAvailable": false,
-                    "holidayRest": true
+                    "eveningStatus": "POSSIBLE"
                   }
                 }
               }
@@ -1761,6 +1753,116 @@
         ]
       }
     },
+    "/api/v1/users/schedule/vacation-policy": {
+      "get": {
+        "tags": [
+          "User Schedule"
+        ],
+        "summary": "연차·반차·공휴일 휴무 설정 조회",
+        "description": "본인 연차·반차·공휴일 휴무 설정을 조회한다. 정기 일정과 별개로 사람 1명에게 하나만 존재한다.",
+        "operationId": "getVacationPolicy",
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseVacationPolicyResponse"
+                },
+                "example": {
+                  "data": {
+                    "maxVacationDays": 2,
+                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                    "halfVacationAvailable": false,
+                    "holidayRest": true
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_EXPIRED",
+                  "message": "액세스 토큰이 만료되었습니다."
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "User Schedule"
+        ],
+        "summary": "연차·반차·공휴일 휴무 설정 전체 교체",
+        "description": "본인 연차·반차·공휴일 휴무 설정을 전체 교체한다. 부분 수정이 아니라 4개 필드를 매번 전부 보내야 하며, 생략된 필드는 기본값(연차 2일·신청 시점 미설정·반차\n 불가·공휴일 휴무)으로 대체된다. 이 API는 정기 일정 행이 하나도 없어도 저장할 수 있고, 방 입장·전부 가능(isAllFree) 판정에는 영향을 주지 않는다.",
+        "operationId": "updateVacationPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVacationPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "저장 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseVacationPolicyResponse"
+                },
+                "example": {
+                  "data": {
+                    "maxVacationDays": 2,
+                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                    "halfVacationAvailable": false,
+                    "holidayRest": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 검증 실패 (INVALID_INPUT)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "입력값이 올바르지 않습니다."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_EXPIRED",
+                  "message": "액세스 토큰이 만료되었습니다."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/schedule/regular/{id}": {
       "delete": {
         "tags": [
@@ -1859,11 +1961,7 @@
                     "endTime": "18:00:00",
                     "morningStatus": "IMPOSSIBLE",
                     "afternoonStatus": "IMPOSSIBLE",
-                    "eveningStatus": "POSSIBLE",
-                    "maxVacationDays": 2,
-                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                    "halfVacationAvailable": false,
-                    "holidayRest": true
+                    "eveningStatus": "POSSIBLE"
                   }
                 }
               }
@@ -3776,47 +3874,6 @@
             "type": "string",
             "description": "종료 시각",
             "example": "18:00:00"
-          },
-          "maxVacationDays": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "여행당 최대 연차 일수. 생략 시 2, 허용 0~10",
-            "example": 2,
-            "maximum": 10,
-            "minimum": 0
-          },
-          "vacationApplyPeriod": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "연차 신청 가능 시점. 생략 시 null",
-            "enum": [
-              "ANY",
-              "ONE_WEEK_BEFORE",
-              "TWO_WEEKS_BEFORE",
-              "ONE_MONTH_BEFORE"
-            ],
-            "example": "ONE_WEEK_BEFORE"
-          },
-          "halfVacationAvailable": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "반차 사용 가능 여부. 생략 시 false",
-            "example": false
-          },
-          "holidayRest": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "공휴일 휴무 여부. 생략 시 true",
-            "example": true
           }
         },
         "required": [
@@ -3941,36 +3998,6 @@
               "IMPOSSIBLE"
             ],
             "example": "POSSIBLE"
-          },
-          "maxVacationDays": {
-            "type": "integer",
-            "format": "int32",
-            "description": "여행당 최대 연차 일수 (기본 2, 허용 0~10)",
-            "example": 2
-          },
-          "vacationApplyPeriod": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "연차 신청 가능 시점. 미설정 시 null",
-            "enum": [
-              "ANY",
-              "ONE_WEEK_BEFORE",
-              "TWO_WEEKS_BEFORE",
-              "ONE_MONTH_BEFORE"
-            ],
-            "example": "ONE_WEEK_BEFORE"
-          },
-          "halfVacationAvailable": {
-            "type": "boolean",
-            "description": "반차 사용 가능 여부 (기본 false)",
-            "example": false
-          },
-          "holidayRest": {
-            "type": "boolean",
-            "description": "공휴일 휴무 여부 (기본 true)",
-            "example": true
           }
         }
       },
@@ -4926,34 +4953,10 @@
           "payload"
         ]
       },
-      "UpdateRegularScheduleRequest": {
+      "UpdateVacationPolicyRequest": {
         "type": "object",
-        "description": "정기 일정 전체 수정 요청. PATCH /users/schedule/regular/{id}. start/end 변경 시 슬롯 재계산",
+        "description": "연차·반차·공휴일 휴무 설정 전체 교체 요청. PATCH /users/schedule/vacation-policy. 부분 patch 아님 — 생략(null) 필드는 기본값으로 대체",
         "properties": {
-          "title": {
-            "type": "string",
-            "description": "표시명 (출근·수업·회의 등)",
-            "example": "출근",
-            "minLength": 1
-          },
-          "daysOfWeek": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 시 null",
-            "example": "MON,TUE,WED,THU,FRI"
-          },
-          "startTime": {
-            "type": "string",
-            "description": "시작 시각",
-            "example": "09:00:00"
-          },
-          "endTime": {
-            "type": "string",
-            "description": "종료 시각",
-            "example": "18:00:00"
-          },
           "maxVacationDays": {
             "type": [
               "integer",
@@ -4994,6 +4997,96 @@
             ],
             "description": "공휴일 휴무 여부. 생략 시 true",
             "example": true
+          }
+        }
+      },
+      "SuccessResponseVacationPolicyResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VacationPolicyResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "VacationPolicyResponse": {
+        "type": "object",
+        "description": "연차·반차·공휴일 휴무 설정 응답. GET/PATCH /users/schedule/vacation-policy",
+        "properties": {
+          "maxVacationDays": {
+            "type": "integer",
+            "format": "int32",
+            "description": "여행당 최대 연차 일수 (기본 2, 허용 0~10)",
+            "example": 2
+          },
+          "vacationApplyPeriod": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "연차 신청 가능 시점. 미설정 시 null",
+            "enum": [
+              "ANY",
+              "ONE_WEEK_BEFORE",
+              "TWO_WEEKS_BEFORE",
+              "ONE_MONTH_BEFORE"
+            ],
+            "example": "ONE_WEEK_BEFORE"
+          },
+          "halfVacationAvailable": {
+            "type": "boolean",
+            "description": "반차 사용 가능 여부 (기본 false)",
+            "example": false
+          },
+          "holidayRest": {
+            "type": "boolean",
+            "description": "공휴일 휴무 여부 (기본 true)",
+            "example": true
+          }
+        }
+      },
+      "UpdateRegularScheduleRequest": {
+        "type": "object",
+        "description": "정기 일정 전체 수정 요청. PATCH /users/schedule/regular/{id}. start/end 변경 시 슬롯 재계산",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "표시명 (출근·수업·회의 등)",
+            "example": "출근",
+            "minLength": 1
+          },
+          "daysOfWeek": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 시 null",
+            "example": "MON,TUE,WED,THU,FRI"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "시작 시각",
+            "example": "09:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "종료 시각",
+            "example": "18:00:00"
           }
         },
         "required": [
