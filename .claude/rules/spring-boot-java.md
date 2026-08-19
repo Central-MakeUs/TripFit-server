@@ -183,9 +183,9 @@ public enum TripMemberStatus {
 	@Schema(description = """
 			의미: 방장이 방을 만들었지만, 아직 이 방 일정 확인을 끝내지 않은 상태.
 
-			언제: POST /trips 직후 ~ POST .../activate 전. 일반 멤버는 이 값이 되지 않음.
+			언제: 방장=POST /trips 직후, 참여자=POST /trips/join 직후 ~ POST .../activate 전.
 
-			불가: 방 상세·멤버·달력·Pin·초대 공유.
+			불가: 방 상세·멤버·달력·초대 공유.
 			""")
 	SCHEDULE_PENDING,
 	// ...

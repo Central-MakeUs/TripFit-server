@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.domain.SocialProvider;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
@@ -106,6 +107,21 @@ class UserWithdrawalPersistenceServiceTest {
     assertThat(user.isGoogleCalendarConnected()).isFalse();
     assertThat(user.getSocialId()).isEqualTo("google-sub");
     assertThat(user.getProvider()).isEqualTo(SocialProvider.GOOGLE);
+  }
+
+  // #52로 연차 정책이 regular_schedule에서 users로 올라오면서, 일정 행과 함께 지워지던 값이 살아남게 됐다.
+  // 재로그인은 신규 가입과 같은 상태여야 하므로 기본값 복귀를 회귀 테스트로 고정한다
+  @Test
+  void finalizeWithdrawal_resetsVacationPolicyToDefaults() {
+    user.applyVacationPolicy(7, VacationApplyPeriod.ONE_MONTH_BEFORE, true, false);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    persistenceService.finalizeWithdrawal(USER_ID);
+
+    assertThat(user.getMaxVacationDays()).isEqualTo(User.DEFAULT_MAX_VACATION_DAYS);
+    assertThat(user.getVacationApplyPeriod()).isNull();
+    assertThat(user.isHalfVacationAvailable()).isFalse();
+    assertThat(user.isHolidayRest()).isTrue();
   }
 
   @Test

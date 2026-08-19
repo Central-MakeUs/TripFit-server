@@ -67,7 +67,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 
 | 스펙 | wave | 상태 | 범위 | 선행 |
 |------|------|------|------|------|
-| [`schedule-participation-onboarding.md`](trip/schedule-participation-onboarding.md) | 2 | **Implemented** (#22 · **#39 amend**) · **Wave 1→2 이동**(2026-08-03, trip 참여 흐름) | join 게이트 · `SCHEDULE_PENDING`→activate · submit 폐기 · hold→#35 | user-onboarding |
+| [`schedule-participation-onboarding.md`](trip/schedule-participation-onboarding.md) | 2 | **Implemented** (#22 · **#39 · #113 · #114 amend**) · **Wave 1→2 이동**(2026-08-03, trip 참여 흐름) | join 게이트 · 방장·참여자 모두 `SCHEDULE_PENDING`→activate · submit 폐기 · hold 폐지(#114) | user-onboarding |
 | [`trip-room-api.md`](trip/trip-room-api.md) | 2 | **Approved** (#12) · D5 홈 · **#39** SCHEDULE_PENDING/activate | 여행방 CRUD·홈 목록·Pin · activate | #17 · #22 · #39 |
 | [`trip-duration-range.md`](trip/trip-duration-range.md) | 2 | Implemented (hotfix, `trip-room-api` D9 amend) | 여행 일수(n박m일) 검증 범위를 `n+1`~`min(n+2,T)`로 확장 | trip-room-api |
 | [`trip-last-activity-at.md`](trip/trip-last-activity-at.md) | 2 | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
@@ -77,7 +77,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`trip-member-status-derive.md`](trip/trip-member-status-derive.md) | 2 | **Implemented** (#54) | `TripMember.status` 컬럼 제거 → `respondedAt` null 여부로 파생 계산 | #12 |
 | [`trip-member-fill-rate-refactor.md`](trip/trip-member-fill-rate-refactor.md) | 2 | **Implemented** (#60) | 상세 API 멤버 프리뷰 추가 · `memberFillRate` 전환 · `joinedMemberCount` API 미노출 | #12 |
 | [`trip-schedule-calendar-window.md`](trip/trip-schedule-calendar-window.md) | 2 | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · ONGOING 칩 | #17 · #12 |
-| [`trip-calendar-window-pre-join.md`](trip/trip-calendar-window-pre-join.md) | 4 | **Draft (범위 축소, 2026-08-19)** ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110)) · 승인 전 구현 금지 | 본래 증상은 `#114`가 해소 — 남은 범위는 `GET`/`PATCH` 윈도우 검증 비대칭 하나 | #37 · #53 · #114 |
+| [`trip-calendar-window-pre-join.md`](trip/trip-calendar-window-pre-join.md) | 4 | **Implemented** (2026-08-18, [#110](https://github.com/Central-MakeUs/TripFit-server/issues/110)) | 본래 증상은 `#114`가 해소 · `GET`/`PATCH` 윈도우 검증 비대칭은 해결안 D(저장에도 같은 윈도우)로 해소 | #37 · #53 · #114 |
 | [`trip-schedule-snapshot.md`](trip/trip-schedule-snapshot.md) | 2 | **Approved** (#38) · **구현 중** · Wave 2 Must | CONFIRMED/EXPIRED snapshot · R-model A | #27 · #17 · #37 |
 | [`trip-recommendation.md`](trip/trip-recommendation.md) | 2 | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
 | [`trip-recommendation-algorithm.md`](trip/trip-recommendation-algorithm.md) | 2 | **Approved** (#50 Closed) · **2026-08-15 연차/반차 자동 반영 amend Implemented**(#105) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 · 연차/반차 자동 전환 시뮬레이션 | #13 · #17 |
@@ -122,10 +122,10 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#27** | trip-home-schedulers | Implemented |
 | **#54** | trip-member-status-derive | Implemented |
 | **#22** | schedule-participation-onboarding | Closed · **Wave 2**(2026-08-03 Wave 1→2 이동) |
-| **#35** | trip-join-capacity-hold (**Superseded** — `#114`로 hold 폐지) | Open — 구현 후 Closed 처리 대상 |
+| **#35** | trip-join-capacity-hold (**Superseded** — `#114`로 hold 폐지) | Closed (2026-08-14) |
 | **#37** | trip-schedule-calendar-window | Closed |
 | **#38** | trip-schedule-snapshot | Closed |
-| **#110** | trip-calendar-window-pre-join — 본래 증상은 `#114`로 해소, `GET`/`PATCH` 비대칭만 남음 | Open · **Draft(범위 축소)** · wave 4 |
+| **#110** | trip-calendar-window-pre-join — `#114`로 본래 증상 해소 + 저장 윈도우 검증 추가 | Open · **Implemented** · wave 4 |
 | **#44** | google-calendar-oauth | Open · **Wave 3 Must**(2026-08-03 Wave 4→3 이동, 구 Swagger chore 폐기) |
 | **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
 | **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |

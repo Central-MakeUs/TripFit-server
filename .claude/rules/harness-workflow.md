@@ -76,11 +76,11 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 3. DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현
 4. 그 외 → `AGENTS.md` + 관련 `docs/product/` 후 바로 구현
 
-**Wave / `[미정]` / 일정 용어:** `harness-wave.md` (단정 금지 · #2 트래커)
+**Wave / `[미정]` / 일정 용어:** `harness-wave.md` (단정 금지 · 중앙 트래커는 폐지됨, 2026-08-19)
 
 **브랜치:** `main`에서 `{type}/{issue-number}-{description}` — 이슈 번호 생략 금지. SSOT: [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)
 
-**⚠️ 새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인 (2026-08-04 사용자 결정):** `gh issue create` · 새 작업 브랜치 분기(`git checkout -b` 등) · `gh pr create`를 실행하기 전에는 사용자가 이미 명시적으로 요청한 경우가 아니면 **채팅으로 먼저 묻는다.** "이슈 번호 없는 브랜치 금지"(CONTRIBUTING) 같은 형식 규칙과 별개로, **만들지 여부 자체**를 임의 판단하지 않는다 — 이번 작업은 현재 브랜치에서 바로 진행하고 이슈·브랜치 생성은 생략해 달라는 요청이 계기, 이후 PR 생성까지 동일 원칙으로 확장(2026-08-05). `defer-followup` 스킬의 `gh issue create` 단계, `harness-wave.md` `[미정]` 트래커(`#2`), After Coding의 PR 생성 단계 등 이슈·브랜치·PR을 만들 수 있는 모든 지점에 동일하게 적용. **구현·커밋까지는 요청받았어도 "PR까지 올려줘"라고 별도로 확인받지 않았다면 PR 생성 전에 다시 묻는다** — 커밋 승인이 PR 승인을 자동으로 포함하지 않는다.
+**⚠️ 새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인 (2026-08-04 사용자 결정):** `gh issue create` · 새 작업 브랜치 분기(`git checkout -b` 등) · `gh pr create`를 실행하기 전에는 사용자가 이미 명시적으로 요청한 경우가 아니면 **채팅으로 먼저 묻는다.** "이슈 번호 없는 브랜치 금지"(CONTRIBUTING) 같은 형식 규칙과 별개로, **만들지 여부 자체**를 임의 판단하지 않는다 — 이번 작업은 현재 브랜치에서 바로 진행하고 이슈·브랜치 생성은 생략해 달라는 요청이 계기, 이후 PR 생성까지 동일 원칙으로 확장(2026-08-05). `defer-followup` 스킬의 `gh issue create` 단계, After Coding의 PR 생성 단계 등 이슈·브랜치·PR을 만들 수 있는 모든 지점에 동일하게 적용. **구현·커밋까지는 요청받았어도 "PR까지 올려줘"라고 별도로 확인받지 않았다면 PR 생성 전에 다시 묻는다** — 커밋 승인이 PR 승인을 자동으로 포함하지 않는다.
 
 **스펙 신호:** DB 스키마, 3파일+, BR-*, 프로필/배포, **인증·푸시·딥링크·결제** 등 클라 연동 API
 

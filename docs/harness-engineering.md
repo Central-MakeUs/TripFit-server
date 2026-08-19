@@ -40,7 +40,7 @@ Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontma
 | 파일 | 항상 로드? | 핵심 내용 |
 |------|-----------|-----------|
 | [`harness-workflow.md`](../.claude/rules/harness-workflow.md) | ✅ | ⛔ STOP(문서 정합·ErrorCode/AOP same-turn·DB 마이그레이션 금지·레거시 즉시 삭제·Breaking-Change-Reason) + Before/While/After Coding 절차 |
-| [`harness-wave.md`](../.claude/rules/harness-wave.md) | ✅ | Wave Must/Nice/Out을 Backlog 없이 단정 금지, `[미정]` 트래커(#2), Release Gate(스토어 심사 필수 항목) |
+| [`harness-wave.md`](../.claude/rules/harness-wave.md) | ✅ | Wave Must/Nice/Out을 Backlog 없이 단정 금지, `[미정]` 문서 표기(중앙 트래커는 2026-08-19 폐지), Release Gate(스토어 심사 필수 항목) |
 | [`harness-follow-up.md`](../.claude/rules/harness-follow-up.md) | ✅ | 구현 후 후속 제안 형식, 「다른 이슈로」범위 분리(Defer) 절차, ERD 적극 제안(스키마 고정 아님) |
 | [`workflow-tools.md`](../.claude/rules/workflow-tools.md) | ✅ | 도구 채택 우선순위(§7), 버그 재현 절차, 작업 유형→도구 매핑표 |
 | [`plain-language-reporting.md`](../.claude/rules/plain-language-reporting.md) | ✅ | 코드 주석과 **사용자 보고**의 문체를 분리 — 보고는 용어 풀어쓰기·비유 우선, 과장 금지 |
