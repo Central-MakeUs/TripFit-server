@@ -4,7 +4,7 @@ import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(
-    description = "연차·반차·공휴일 휴무 설정 응답. GET/PATCH /users/schedule/vacation-policy")
+    description = "연차·휴일 정보 응답. GET/PATCH /users/schedule/vacation-policy")
 // @formatter:off — record 컴포넌트 가독성(필드별 빈 줄·어노테이션 분리)
 public record VacationPolicyResponse(
     @Schema(description = "여행당 최대 연차 일수 (기본 2, 허용 0~10)", example = "2")

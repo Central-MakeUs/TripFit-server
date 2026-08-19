@@ -210,7 +210,7 @@ class RecommendationEngineTestSetScenarioTest {
       int maxVacationDays,
       boolean halfVacationAvailable,
       boolean holidayRest) {
-    // 연차·반차·공휴일 휴무는 이제 User 소유 값 — 정기 일정 생성과 함께 대상 User에 적용해둔다
+    // 연차·휴일 정보는 이제 User 소유 값 — 정기 일정 생성과 함께 대상 User에 적용해둔다
     user.applyVacationPolicy(maxVacationDays, null, halfVacationAvailable, holidayRest);
     RegularSchedule schedule =
         RegularSchedule.create(

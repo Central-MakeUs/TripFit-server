@@ -176,7 +176,7 @@ public record SlotUpdate(
 | 2 | `{ scheduleDate, uncertain }` (`slots` 생략) | `applyUncertain` — `uncertain`만 갱신. 슬롯은 불변(신규 row면 슬롯 전부 `null`로 생성) |
 | 3 | `{ scheduleDate, slots: {...}, uncertain }` | 둘 다 갱신 — 한 항목 안에서 순서 무관하게 동시 처리 |
 
-### 거부되는 요청 (400 `INVALID_INPUT`, `CommonErrorCode` 사용 — 개인 일정 전용 `ScheduleErrorCode`는 없음)
+### 거부되는 요청 (400 `INVALID_INPUT`, `CommonErrorCode` 사용 — 개별 일정 전용 `ScheduleErrorCode`는 없음)
 
 | # | 요청 | 검증 위치 |
 |---|---|---|

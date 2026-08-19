@@ -42,9 +42,9 @@
 - [x] 위 cascade 완료 후 탈퇴 진행:
   - [x] 개인 전용 데이터 **hard delete**: `PersonalSchedule`, `RegularSchedule`, `GoogleCalendarCredential`, `GoogleCalendarBusyDay`, `RefreshToken` (전부 `userId` 기준)
   - [x] `User` row **soft delete**(`deleted_at` set) + 개인정보 스크럽: `email`·`firstName`·`lastName`·`nickname`·`profileImageUrl` → `null`, `isGoogleCalendarConnected` → `false`
-  - [x] **연차 정책 4개 컬럼 기본값 복귀** (2026-08-18): `maxVacationDays` → `2`, `vacationApplyPeriod` → `null`, `isHalfVacationAvailable` → `false`, `isHolidayRest` → `true`. `#52`로 이 값들이 `regular_schedule`에서 `users`로 올라오기 전에는 정기 일정 행 hard delete와 함께 사라졌으므로, 재로그인이 "신규 가입과 동일한 경험"이 되려면 명시적으로 되돌려야 한다
+  - [x] **연차·휴일 정보 4개 값도 가입 직후 기본값으로 초기화**(2026-08-19 추가 — `User.resetVacationPolicy()`): `maxVacationDays=2`·`vacationApplyPeriod=null`·`halfVacationAvailable=false`·`holidayRest=true`. PII라서가 아니라, **`vacationApplyPeriod`(사전 신청일)가 사전 일정 입력 완료 마커**라서다 — 남겨두면 재가입한 사용자가 곧바로 「갱신 입력」으로 판정돼 입력 플로우를 건너뛴다([`../user-schedule/pre-schedule-entry-flow.md`](../user-schedule/pre-schedule-entry-flow.md))
   - [x] `socialId`·`provider`·`id`는 그대로 유지 — FK 무결성(다른 사용자의 Trip/TripMember 참조) 및 재로그인 차단 판별에 필요
-- [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 그대로 **부활**시켜 로그인 진행 — `deletedAt=null`로 초기화 후 `updateFromProfile`로 email·nickname·profileImageUrl을 소셜 프로필값으로 갱신. `firstName`/`lastName`/`isGoogleCalendarConnected`/**연차 정책 4개 컬럼**은 탈퇴 시 초기화된 채로 유지되어 재로그인 후 온보딩·재연동·연차 재설정이 필요함(신규 가입과 동일한 경험)
+- [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 그대로 **부활**시켜 로그인 진행 — `deletedAt=null`로 초기화 후 `updateFromProfile`로 email·nickname·profileImageUrl을 소셜 프로필값으로 갱신. `firstName`/`lastName`/`isGoogleCalendarConnected`·**연차·휴일 정보 4개 값**은 탈퇴 시 초기화된 채로 유지되어 재로그인 후 온보딩·재연동·**사전 일정 최초 입력**이 필요함(신규 가입과 동일한 경험)
 - [x] `DevAuthService`(dev 전용 테스트 로그인)도 동일하게 부활 처리 — 프로덕션 로그인과 동작 일치
 - [x] 성공 시 `204 No Content`
 - [x] `./gradlew test` 통과, OpenAPI 반영
@@ -150,7 +150,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - ERD 참조: `docs/architecture/erd.md` — 기존 cascade·soft delete 범위는 스키마 컬럼 변경 없음. `#64` Apple 부분은 **신규 테이블 1개**(`apple_credential`) 추가 완료, Google 로그인 부분은 **신규 테이블 1개**(`google_login_credential`, [`google-login-revoke.md`](../auth/google-login-revoke.md)) 추가(아래)
 - 탈퇴 API(`DELETE /api/v1/users/me`) 자체엔 신규 에러 코드 없음(`AUTH_WITHDRAWN_ACCOUNT`는 재가입 정책 확정으로 폐기, provider revoke는 전부 best-effort). 단 로그인 API(`POST /api/v1/auth/login`)에는 `AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`/`AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400) 신규 추가 — 위 API 절 참고
 - hard delete 대상 테이블: `personal_schedule`, `regular_schedule`, `google_calendar_credential`, `google_calendar_busy_day`, `refresh_token`, `apple_credential`, `google_login_credential`(모두 `user_id` 단독 소유, 타 사용자 참조 없음)
-- soft delete + 스크럽 대상: `users` (row 유지, PII 컬럼은 null · 연차 정책 4개 컬럼은 기본값 복귀)
+- soft delete + 스크럽 대상: `users` (row 유지, PII 컬럼 null + 연차·휴일 정보 4개 컬럼 기본값 복귀 — 2026-08-19)
 - cascade 대상: 호출자가 MEMBER인 `trip_member` row(soft delete, [`trip-member-leave.md`](../trip/trip-member-leave.md) 재사용) · 호출자가 OWNER인 `trip` row(soft delete, `deleteTrip()` 재사용 — 해당 방의 다른 멤버 `trip_member` row도 함께 soft delete됨)
 - **`apple_credential` (신규 테이블, 확정)**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, 평문 저장 금지 — `SocialTokenCrypto` 재사용) · `apple_client_id`(varchar, 2026-07-31 추가 — 로그인 시 매칭된 Bundle ID/Services ID 원문, 탈퇴 revoke에 재사용) · `BaseTimeEntity`(생성·수정 시각)만 있는 최소 구조(`google_calendar_credential`의 access token 캐시·동기화 필드는 Apple에 해당 사항 없어 제외). PK는 프로젝트 컨벤션대로 UUID v4(`docs/specs/cross-cutting/uuid-primary-key.md`). `docs/architecture/erd.md` 반영 완료
 - **`google_login_credential` (신규 테이블, [`google-login-revoke.md`](../auth/google-login-revoke.md))**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, `SocialTokenCrypto` 재사용) · `BaseTimeEntity`만 있는 최소 구조. Apple과 달리 client_id 컬럼 없음(Google revoke 엔드포인트가 client_id를 요구하지 않아 저장할 필요 자체가 없음 — 상세 근거는 해당 스펙 설계 노트). PK는 UUID v4. `docs/architecture/erd.md` 반영 완료
@@ -172,6 +172,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - [x] `ONGOING` 방에 OWNER인 사용자 → 탈퇴 시 해당 방 자동 삭제(soft delete) 후 탈퇴 성공. 그 방의 다른 멤버도 더 이상 해당 방을 조회할 수 없음(기존 `deleteTrip()` cascade 재사용 — 별도 신규 검증 없이 회귀 없음 확인)
 - [x] `CONFIRMED`/`EXPIRED` 방에 OWNER·MEMBER로 남아 있어도 동일하게 cascade 처리 후 탈퇴 성공(상태 게이트 없는 `leaveTrip`/`deleteTrip` 재사용)
 - [x] 탈퇴 후 같은 소셜 계정으로 재로그인 시도 → 기존 soft-deleted `User` row가 부활(`deletedAt=null`)하며 로그인 성공. `firstName`/`lastName`/구글 캘린더 연동은 초기화된 상태라 재온보딩 필요
+- [x] 탈퇴 → 같은 소셜 계정 재로그인 → `hasCompletedPreSchedule = false`(사전 신청일이 초기화돼 **최초 입력**으로 복귀, 2026-08-19)
 - [ ] 탈퇴한 사용자가 과거 멤버였던(soft-deleted) 다른 방의 `TripMember` 이력은 그대로 남음(FK 위반 없음) — 기존 soft delete 패턴 재사용으로 구조상 보장, 별도 통합 테스트는 생략
 - [x] **(`#64`)** Google Calendar 연동돼 있던 사용자가 탈퇴 → `GoogleCalendarOAuthClient.revokeRefreshToken()` 호출 후 credential hard delete(mock으로 `verify()` — 실제 호출 자체가 일어나는지 확인) — `UserWithdrawalServiceTest#withdraw_whenGoogleCalendarConnected_revokesRefreshTokenBeforeDeletingCredential`
 - [x] **(`#64`)** Kakao로 로그인한 사용자가 탈퇴 → Kakao unlink 호출(mock `verify()`) 후 탈퇴 정상 완료 — `UserWithdrawalServiceTest#withdraw_whenKakaoProvider_callsKakaoUnlink`

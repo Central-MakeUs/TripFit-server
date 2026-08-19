@@ -45,7 +45,7 @@ trip ||--o{ notification_history : relates_to
         boolean is_google_calendar_connected "Google Calendar 연동 여부"
         boolean notification_enabled "알림 수신 여부 default=true BR-USER-005"
         int max_vacation_days "최대 연차 default=2, #52 regular_schedule에서 이동"
-        string vacation_apply_period "연차 신청 시점, #52 regular_schedule에서 이동"
+        string vacation_apply_period "사전 신청일 — 최초/갱신 입력 판정 마커(null=최초)"
         boolean is_half_vacation_available "반차 가능 여부, #52 regular_schedule에서 이동"
         boolean is_holiday_rest "공휴일 휴무 여부, #52 regular_schedule에서 이동"
         datetime created_at "생성일"
@@ -68,7 +68,7 @@ trip ||--o{ notification_history : relates_to
     }
 
     personal_schedule {
-        uuid id PK "개인 일정 UUID"
+        uuid id PK "개별 일정 UUID"
         uuid user_id FK "사용자"
         date schedule_date "날짜 UNIQUE(user,date)"
         string morning_status "오전 상태"
@@ -247,7 +247,7 @@ trip ||--o{ notification_history : relates_to
 | profile_image_url | varchar | Y | | wave 1 CDN / wave 4 S3 B안 |
 | is_google_calendar_connected | boolean | N | | default false |
 | max_vacation_days | int | N | | default **2**, 허용 **0~10**. `#52`(2026-08-16) — `regular_schedule`에서 이동(사람 1명에게 붙는 값) |
-| vacation_apply_period | varchar | Y | | enum: `ANY` · `ONE_WEEK_BEFORE` · `TWO_WEEKS_BEFORE` · `ONE_MONTH_BEFORE`. default **null**. `#52` — `regular_schedule`에서 이동 |
+| vacation_apply_period | varchar | Y | | **사전 신청일.** enum: `ANY` · `ONE_WEEK_BEFORE` · `TWO_WEEKS_BEFORE` · `ONE_MONTH_BEFORE`. default **null**. `#52` — `regular_schedule`에서 이동. **2026-08-19부터 최초/갱신 입력 판정 마커** — `null`이면 사전 일정 입력 미완료(`hasCompletedPreSchedule=false`, `activate` 시 403 `PRE_SCHEDULE_REQUIRED`). `PATCH /users/schedule/vacation-policy`는 이 값을 **필수**로 요구하고, 탈퇴 스크럽만 다시 `null`로 되돌린다 |
 | is_half_vacation_available | boolean | N | | default **false** (N). `#52` — `regular_schedule`에서 이동 |
 | is_holiday_rest | boolean | N | | default **true** (Y). `#52` — `regular_schedule`에서 이동 |
 | created_at | timestamptz | N | | |
@@ -256,7 +256,7 @@ trip ||--o{ notification_history : relates_to
 
 **API 파생·컬럼:** `hasRegularSchedule` = EXISTS(regular), `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) — **둘 다 컬럼 없이 조회 시 파생**. 방 입장 판정은 사용자 전역 조건이 아니라 **방별 `trip_member` 상태(`ACTIVE`)** 다 ([`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ · ~~`is_all_free`~~ **제거**(후자는 `#113`, 2026-08-18 — 전역 입장 게이트 폐지).
 
-**연차·반차·공휴일 휴무 4개 컬럼(`#52`, 2026-08-16):** 사람 1명에게 붙는 값이라 `regular_schedule`(user당 N행)에서 `users`(user당 1행)로 이동. 정기 일정 CRUD와 분리된 전용 `GET`/`PATCH /users/schedule/vacation-policy`로 조회·수정. 상세: [`vacation-policy-user-migration.md`](../specs/user-schedule/vacation-policy-user-migration.md).
+**연차·휴일 정보 4개 컬럼(`#52`, 2026-08-16):** 사람 1명에게 붙는 값이라 `regular_schedule`(user당 N행)에서 `users`(user당 1행)로 이동. 정기 일정 CRUD와 분리된 전용 `GET`/`PATCH /users/schedule/vacation-policy`로 조회·수정. 상세: [`vacation-policy-user-migration.md`](../specs/user-schedule/vacation-policy-user-migration.md).
 
 ### `refresh_token` — MySQL 테이블 아님 (Redis 이관, 2026-09-15)
 
@@ -284,9 +284,9 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
-**제약:** user당 **0..N행**. soft delete 없음. ~~1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY)~~ — 2026-08-18 `#113`으로 전역 입장 게이트가 폐지돼 정기 일정 행 수는 방 입장 판정과 무관하다(판정은 방별 `trip_member.status = ACTIVE`). 연차·반차·공휴일 휴무 설정은 `#52`(2026-08-16)로 `users`로 이동 — 위 `users` 절 참고.
+**제약:** user당 **0..N행**. soft delete 없음. ~~1행 이상 → 입장 조건 1 충족 (D-JOIN-ENTRY)~~ — 구 전역 입장 조건은 `#113`(2026-08-18)으로 삭제됐고, 행 수는 방 입장 판정에 쓰이지 않는다(판정은 방별 `trip_member.status = ACTIVE`). 사전 일정 입력 완료 판정은 `users.vacation_apply_period` 하나가 담당한다(2026-08-19). 연차·휴일 정보는 `#52`(2026-08-16)로 `users`로 이동 — 위 `users` 절 참고.
 
-### `personal_schedule` (개인 일정 — 슬롯 단위 오버라이드, O1.4)
+### `personal_schedule` (개별 일정 — 슬롯 단위 오버라이드, O1.4)
 
 User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라이드(`null`=오버라이드 없음, 정기+구글 계산값을 그대로 씀) + 날짜 단위 불확실. **trip FK 없음.** 병합 규칙: [`schedule-slot-override.md`](../specs/user-schedule/schedule-slot-override.md)(O1.4, #67) — 구 S1(그 날 전체 대체)은 폐기.
 
@@ -535,7 +535,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | From | To | 관계 | 설명 |
 |------|-----|------|------|
 | users | regular_schedule | 1:N | 정기 일정 (출근·수업·회의 등) |
-| users | personal_schedule | 1:N | 개인 일정 (날짜당 1행) |
+| users | personal_schedule | 1:N | 개별 일정 (날짜당 1행) |
 | users | trip_member | 1:N | 여행방별 참여 |
 | users | trip | 1:N | owner_id (방장) |
 | trip | trip_member | 1:N | |

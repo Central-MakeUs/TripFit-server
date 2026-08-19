@@ -44,8 +44,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 // 사용자 정기·개별 일정 CRUD와 합산 달력 조회 — 정기 일정 없이 개별만 등록 가능
-// hasPreSchedule은 본 Service 응답에 없음 — row INSERT/DELETE 후 UserSummaryService EXISTS → GET /auth/me 등
-// 재조회
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
@@ -74,7 +72,7 @@ public class ScheduleService {
             .toList());
   }
 
-  // 정기 일정 생성 — start/end로 슬롯 계산 후 저장, 첫 row면 hasPreSchedule true(다음 login/me/profile 재조회)
+  // 정기 일정 생성 — start/end로 슬롯 계산 후 저장
   @Transactional
   public RegularScheduleResponse createRegular(UUID userId, CreateRegularScheduleRequest request) {
     // 1. 제목·시각 입력을 검증함
@@ -117,13 +115,13 @@ public class ScheduleService {
     return toRegularResponse(schedule);
   }
 
-  // 연차·반차·공휴일 휴무 설정 조회
+  // 연차·휴일 정보 조회 — 사전 신청일이 null이면 아직 사전 일정 입력을 완료하지 않은 사용자다
   @Transactional(readOnly = true)
   public VacationPolicyResponse getVacationPolicy(UUID userId) {
     return toVacationPolicyResponse(userLookupService.requireUser(userId));
   }
 
-  // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — 일정 등록이 아니므로 일정 파생값에 영향 없음
+  // 연차·휴일 정보 전체 교체(부분 patch 아님) — 사전 신청일이 저장되면서 사용자가 "갱신 입력" 상태가 된다
   @Transactional
   public VacationPolicyResponse updateVacationPolicy(
       UUID userId,
@@ -138,11 +136,18 @@ public class ScheduleService {
     return toVacationPolicyResponse(user);
   }
 
-  // 정기 일정 삭제 — regular 0건 + personal 0건이면 hasPreSchedule false (다음 login/me/profile)
   @Transactional
   public void deleteRegular(UUID userId, UUID regularId) {
     RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     regularScheduleRepository.delete(schedule);
+  }
+
+  // 정기 일정 전체 삭제 — 사전 일정 입력 플로우에서 "정기 일정이 있나요? → 없어요"를 고른 순간 호출된다.
+  // 최초 입력 판정은 사전 신청일만 보므로, 예전에 넣어둔 정기 일정이 남아 있으면 사용자가 "없다"고 답한 것과
+  // 추천 계산이 어긋난다. 0건이어도 성공(멱등)
+  @Transactional
+  public void deleteAllRegular(UUID userId) {
+    regularScheduleRepository.deleteByUserId(userId);
   }
 
   // 본인 소유 정기 일정 로드 — 없거나 타인 소유면 REGULAR_SCHEDULE_NOT_FOUND
@@ -327,9 +332,8 @@ public class ScheduleService {
     }
   }
 
-  private void validateVacationPolicy(Integer maxVacationDays) {
-    if (maxVacationDays != null
-        && (maxVacationDays < 0 || maxVacationDays > User.MAX_VACATION_DAYS_LIMIT)) {
+  private void validateVacationPolicy(int maxVacationDays) {
+    if (maxVacationDays < 0 || maxVacationDays > User.MAX_VACATION_DAYS_LIMIT) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }

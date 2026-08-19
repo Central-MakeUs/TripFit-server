@@ -31,7 +31,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-// O1.4(개인 일정 슬롯 단위 오버라이드)가 방 확정·종료 시 스냅샷 freeze 경로에도 그대로 반영되는지
+// O1.4(개별 일정 슬롯 단위 오버라이드)가 방 확정·종료 시 스냅샷 freeze 경로에도 그대로 반영되는지
 // 실제 MySQL(Testcontainers) DB로 검증한다 — TripScheduleSnapshotService는 package-private이라 같은 패키지에서
 // @SpringBootTest로 실제 빈을 주입받아 호출한다(Mockito 단위 테스트는 TripScheduleSnapshotServiceTest 참고)
 @SpringBootTest
@@ -64,7 +64,7 @@ class TripScheduleSnapshotServiceIntegrationTest {
   void freezeTrip_persistsPartialOverride_slotByslot() {
     User owner =
         new User("snapshot-sub", SocialProvider.GOOGLE, "snap@example.com", "방장", null);
-    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    // 연차·휴일 정보는 이제 User 소유 값
     owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     owner = userRepository.save(owner);
 

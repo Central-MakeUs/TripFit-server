@@ -35,7 +35,7 @@ import org.springframework.web.context.WebApplicationContext;
 // GET/POST/PATCH/DELETE /users/schedule/regular·GET /calendar·PATCH /personal 각각은
 // UserScheduleControllerTest(mock 단위)·ScheduleServiceTest(mock 단위)·
 // PersonalScheduleOverrideIntegrationTest(개별+달력만)로 개별 검증돼 있었지만, 정기 일정
-// 생성→목록→수정→달력 반영→삭제까지 이어지는 전체 생명주기와 hasPreSchedule 파생값 전이는
+// 생성→목록→수정→달력 반영→삭제까지 이어지는 전체 생명주기와 hasCompletedPreSchedule 파생값 전이는
 // 실제 HTTP+MySQL(Testcontainers) 라운드트립으로 검증된 적이 없었다. 이 클래스가 그 공백을 메운다.
 @SpringBootTest
 @ActiveProfiles("test")
@@ -248,44 +248,63 @@ class RegularScheduleLifecycleIntegrationTest {
         .andExpect(jsonPath("$.data.days[0].afternoonStatus").value("POSSIBLE"));
   }
 
-  // 정기 일정 생성·삭제가 문서화된 파생값 hasPreSchedule(GET /auth/me)에도 실제로 반영되는지 —
-  // 지금까지는 Swagger 주의사항으로만 적혀 있었고 실제 흐름으로 검증된 적은 없었다
+  // 최초/갱신 판정이 일정 데이터가 아니라 연차·휴일 정보(사전 신청일)에만 달려 있는지 —
+  // 정기 일정을 만들어도 최초 그대로여야 하고, 연차를 저장한 뒤에는 정기를 전부 지워도 갱신이어야 한다
   @Test
-  void hasPreSchedule_togglesTrueOnCreate_falseOnDeleteWithNoPersonalLeft() throws Exception {
+  void hasCompletedPreSchedule_flipsOnVacationPolicySaveOnly_notOnScheduleRows() throws Exception {
     mockMvc
         .perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.hasPreSchedule").value(false));
-
-    MvcResult createResult =
-        mockMvc
-            .perform(
-                post("/api/v1/users/schedule/regular")
-                    .header(HttpHeaders.AUTHORIZATION, bearer())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        """
-                            {"title": "출근", "daysOfWeek": "MON", "startTime": "09:00:00", "endTime": "18:00:00", "maxVacationDays": 2, "vacationApplyPeriod": "ANY", "halfVacationAvailable": false, "holidayRest": true}
-                            """))
-            .andExpect(status().isCreated())
-            .andReturn();
-    UUID regularId = extractId(createResult);
-
-    mockMvc
-        .perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer()))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.hasPreSchedule").value(true));
+        .andExpect(jsonPath("$.data.hasCompletedPreSchedule").value(false));
 
     mockMvc
         .perform(
-            delete("/api/v1/users/schedule/regular/" + regularId)
-                .header(HttpHeaders.AUTHORIZATION, bearer()))
-        .andExpect(status().isNoContent());
+            post("/api/v1/users/schedule/regular")
+                .header(HttpHeaders.AUTHORIZATION, bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"title": "출근", "daysOfWeek": "MON", "startTime": "09:00:00", "endTime": "18:00:00"}
+                        """))
+        .andExpect(status().isCreated());
+
+    // 정기 일정을 만들어도 사전 신청일이 없으면 여전히 최초 입력이다
+    mockMvc
+        .perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.hasCompletedPreSchedule").value(false));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/users/schedule/vacation-policy")
+                .header(HttpHeaders.AUTHORIZATION, bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"maxVacationDays": 2, "vacationApplyPeriod": "ANY", "halfVacationAvailable": false, "holidayRest": true}
+                        """))
+        .andExpect(status().isOk());
 
     mockMvc
         .perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.hasPreSchedule").value(false));
+        .andExpect(jsonPath("$.data.hasCompletedPreSchedule").value(true));
+
+    // "정기 일정이 있나요? → 없어요" 경로 — 전체 삭제 후에도 갱신 입력 상태는 유지된다
+    mockMvc
+        .perform(
+            delete("/api/v1/users/schedule/regular").header(HttpHeaders.AUTHORIZATION, bearer()))
+        .andExpect(status().isNoContent());
+
+    mockMvc
+        .perform(get("/api/v1/users/schedule/regular").header(HttpHeaders.AUTHORIZATION, bearer()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.items").isEmpty());
+
+    mockMvc
+        .perform(get("/api/v1/auth/me").header(HttpHeaders.AUTHORIZATION, bearer()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.hasCompletedPreSchedule").value(true));
   }
 
   // 존재하지 않거나 타인 소유인 정기 일정을 수정·삭제하려 하면 404

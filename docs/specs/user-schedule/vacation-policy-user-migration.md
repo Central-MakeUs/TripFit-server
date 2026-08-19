@@ -1,7 +1,8 @@
-# 연차·반차·공휴일 휴무 설정 — RegularSchedule → User 이동
+# 연차·휴일 정보 — RegularSchedule → User 이동
 
 > 상태: Approved (2026-08-16) — 구현 진행 중
-> MVP: In scope (`docs/product/mvp.md` "개인별 근무 정보 및 연차 조건 설정")
+> **2026-08-19 amend:** `PATCH /users/schedule/vacation-policy`의 4개 필드가 **전부 필수**가 됐다(구 "생략 시 기본값 대체" 폐지, 누락 시 400). 그중 `vacationApplyPeriod`(사전 신청일)는 **사전 일정 입력 완료 마커**로 쓰여, 값이 지워지면 사용자가 최초 입력 상태로 되돌아간다 — 전체 교체 요청에서 값이 빠지면 마커가 지워지므로 필수화가 그 회귀를 막는다. SSOT: [`pre-schedule-entry-flow.md`](pre-schedule-entry-flow.md)
+> MVP: In scope (`docs/product/mvp.md` "개인별 정기 일정 및 연차·휴일 정보 설정")
 > 관련 BR: N/A (스키마 리팩토링, 정책 변경 없음)
 
 ## 목표
@@ -44,9 +45,9 @@
 - [ ] `User` 엔티티에 4개 필드 추가 (기본값은 현재 `RegularSchedule`과 동일)
 - [ ] `RegularSchedule`에서 4개 필드·관련 상수·`policySource`/`restsOnHolidays` 제거
 - [ ] `CreateRegularScheduleRequest`/`UpdateRegularScheduleRequest`/`RegularScheduleResponse`에서 4개 필드 제거
-- [ ] 신규 `GET`·`PATCH /api/v1/users/schedule/vacation-policy` — `UserScheduleController`에 추가, PATCH는 4개 필드 전체 교체(부분 patch 아님 — 기존 정기 일정 요청과 동일한 "생략 시 기본값" 시맨틱 유지)
+- [ ] 신규 `GET`·`PATCH /api/v1/users/schedule/vacation-policy` — `UserScheduleController`에 추가, PATCH는 4개 필드 전체 교체(부분 patch 아님). ~~"생략 시 기본값" 시맨틱~~ → **2026-08-19 전부 필수·누락 시 400**으로 개정 ([`pre-schedule-entry-flow.md`](pre-schedule-entry-flow.md) P-1)
 - [x] ~~**신규 엔드포인트는 `isAllFree`를 건드리지 않는다**~~ (2026-08-18 `#113`으로 `isAllFree` 자체가 삭제돼 해당 없음) — `clearAllFreeOnScheduleAdded`/`markAllFreeIfNoSchedules` 호출 금지. 연차 설정 저장은 "일정 등록"이 아니므로 방 입장 조건(`hasPreSchedule OR isAllFree`)에 영향을 주면 안 된다. 넣으면 이미 방에 있는 사용자가 일정만 수정해도 `isAllFree`가 풀려 `SCHEDULE_ENTRY_REQUIRED`로 튕긴다(재입장 join이 뒤따르지 않는 `GroupCalendarSection`·`RoomDetailSection` 수정 흐름)
-- [ ] `UserSummaryResponse`는 **무변경** — 같은 값이 두 곳에 생기면 연차 저장 후 `/auth/me` 캐시가 낡는다. `/auth/login`·`/auth/me`·`/users/profile` 계약도 그대로 유지돼 프론트 대응 범위가 줄어든다
+- [ ] `UserSummaryResponse`에 **연차 4개 값 자체는 넣지 않는다** — 같은 값이 두 곳에 생기면 연차 저장 후 `/auth/me` 캐시가 낡는다. (2026-08-19: 값이 아니라 **저장 여부**만 `hasCompletedPreSchedule` boolean으로 노출된다 — 중복 소스 문제는 그대로 없다)
 - [ ] `RecommendationEngine`·`ScheduleCalendarResolver` 호출부를 `User` 직접 참조로 교체 (대표 행 추론 로직 완전 삭제)
 - [ ] `Breaking-Change-Reason` 트레일러 (커밋)
 - [ ] `docs/architecture/erd.md` — `users`/`regular_schedule` 테이블 갱신
@@ -67,7 +68,7 @@
 
 | Method | Path | Auth | 설명 |
 |--------|------|------|------|
-| GET | `/api/v1/users/schedule/vacation-policy` | JWT | **(신규)** 연차·반차·공휴일 휴무 설정 조회 |
+| GET | `/api/v1/users/schedule/vacation-policy` | JWT | **(신규)** 연차·휴일 정보 조회 |
 | PATCH | `/api/v1/users/schedule/vacation-policy` | JWT | **(신규)** 위 설정 전체 교체 |
 | GET | `/api/v1/users/schedule/regular` | JWT | **(계약 변경)** 응답에서 4개 필드 제거 |
 | POST | `/api/v1/users/schedule/regular` | JWT | **(계약 변경)** 요청에서 4개 필드 제거 — title/daysOfWeek/startTime/endTime만 |
@@ -110,10 +111,10 @@ PATCH 요청 / GET·PATCH 응답(`data`) 공통 형태:
 
 ### 피그마 화면 흐름 (2026-08-16 확인)
 
-- [ ] **회원가입 — "정기 일정 없어요"**: 연차 스텝을 묻지 않으므로 `vacation-policy`를 호출하지 않는다. `User`는 기본값을 유지하고, 정기 일정 row가 0건이라 추천·달력 결과에 영향 없음(`applyVacationSimulation`의 `regulars.isEmpty()` early return 유지 확인)
-- [ ] **회원가입 — 건너뛰기**: 아무 API도 호출되지 않고 입장 조건·기본값 모두 기존과 동일
-- [ ] **방 입장 — 정기 0건 + "없어요" + 개별 일정 미입력**: 연차 스텝도 **묻지 않는다**(연차는 정기와 한 덩어리) → `vacation-policy` 미호출·기본값 유지. 일정 row는 0건이라 `hasPreSchedule=false`지만, 방 입장 판정은 그 방의 `trip_member.status = ACTIVE` 하나이므로 입장에는 영향 없음 (2026-08-18 `#113` — 구 `markAllFreeIfNoSchedules`/`is_all_free` 경로 삭제)
-- [ ] **방 입장 — 정기 1건 이상**: "입력하신 일정을 확인해주세요" 경로에서 `GET /users/schedule/regular`와 `GET /users/schedule/vacation-policy`를 나란히 호출해 기존 값을 프리필, 수정 시 각각 저장. 연차만 바꿔도 `hasPreSchedule`은 변하지 않음(구 `isAllFree`는 `#113`으로 삭제)
+- [x] ~~**회원가입 — "정기 일정 없어요"**: 연차 스텝을 묻지 않으므로 `vacation-policy`를 호출하지 않는다~~ → **2026-08-19 폐기.** 회원가입 온보딩에서 사전 일정 단계 자체가 사라졌다(이름 → Google 캘린더까지). 정기 일정 0건이어도 추천·달력에 영향이 없다는 부분(`applyVacationSimulation`의 `regulars.isEmpty()` early return)은 그대로 유효하다
+- [x] ~~**회원가입 — 건너뛰기**: 아무 API도 호출되지 않고 입장 조건·기본값 모두 기존과 동일~~ → **2026-08-19 폐기.** 회원가입에서 사전 일정을 받지 않으므로 이 시나리오가 성립하지 않는다. 신규 유저의 4개 값은 기본값(`vacationApplyPeriod=null` 포함)으로 남고, 그 상태가 곧 **최초 입력** 판정이다
+- [x] ~~**방 입장 — 정기 0건 + "없어요" + 개별 일정 미입력**: 연차 스텝도 **묻지 않는다**~~ → **2026-08-19 폐기.** `없어요` 경로도 연차·휴일 정보를 거치며, 이때 저장되는 **사전 신청일**이 사전 일정 입력 완료 마커가 된다. 일정 row가 0건이어도 `hasCompletedPreSchedule=true`이고 `activate`를 통과한다 ([`pre-schedule-entry-flow.md`](pre-schedule-entry-flow.md))
+- [x] **방 입장 — 갱신 입력**(구 "정기 1건 이상" 경로): `GET /users/schedule/regular`와 `GET /users/schedule/vacation-policy`를 나란히 호출해 기존 값을 프리필, 수정 시 각각 저장. 분기 기준은 **정기 일정 건수가 아니라 `hasCompletedPreSchedule`**(=사전 신청일 저장 여부)이다 — 2026-08-19 변경. 연차를 저장하면 `hasCompletedPreSchedule`이 `true`가 된다(구 `hasPreSchedule`·`isAllFree`는 각각 2026-08-19·`#113`으로 삭제)
 - [x] ~~**이미 참여 중인 방에서 일정만 수정**: `vacation-policy` 저장 후에도 `isAllFree`가 유지되어 `SCHEDULE_ENTRY_REQUIRED`로 튕기지 않음~~ → 2026-08-18 `#113`으로 전역 게이트가 삭제돼 이 시나리오 자체가 성립하지 않는다(연차 저장이 방 접근에 영향을 줄 경로 없음)
 - [ ] **정기 일정 전체 삭제**: 연차 설정은 `users`에 남는다(기존엔 행과 함께 사라짐). 재등록 시 이전 설정이 그대로 조회됨
 - [ ] 정기 일정 여러 개 등록된 유저 — 연차 시뮬레이션·공휴일 판정이 기존과 동일한 결과 (회귀 없음, `RecommendationEngineTestSetScenarioTest` 등 기존 테스트 통과)
@@ -145,7 +146,7 @@ PATCH 요청 / GET·PATCH 응답(`data`) 공통 형태:
 | 백엔드 기본 `holidayRest=true` vs 클라 기본 `holiday:false` | 확인됨 — 무해 | 클라이언트 `DEFAULT_BASIC_INFO_VALUE`는 `holiday:false`지만 마법사가 항상 명시값을 보내므로 기본값이 드러나는 건 "연차 스텝 자체를 건너뛴 경우"뿐이고, 그때는 정기 일정 row가 0건이라 판정에 쓰이지 않는다. 엔티티 기본값은 현행(`true`) 유지 |
 | 연차 노출 게이트를 서버에도 걸지 여부 | **확정 — UI에서만** (2026-08-16) | 화면상 "정기 일정 + 연차"는 한 덩어리라 정기를 입력·수정할 때만 연차가 노출된다. 그러나 **서버 `PATCH /vacation-policy`에는 정기 일정 존재 조건을 걸지 않는다** — ① 같은 형태의 선행 게이트(BR-USER-006 `REGULAR_SCHEDULE_REQUIRED`)를 이미 D-BR006-5로 폐기한 전례가 있고 ② 게이트를 걸면 "정기를 전부 지웠다 재등록해도 연차 설정이 보존된다"는 본 이동의 이점이 사라진다 |
 | 정기 0건 사용자의 연차 값 | 보존 · 미노출 · 미사용 | 정기를 전부 삭제해도 연차 값은 `users`에 남지만, UI 게이트 때문에 조회·수정 화면이 뜨지 않는다. 계산에도 쓰이지 않는다(`applyVacationSimulation`은 `regulars.isEmpty()`면 early return, 공휴일 판정도 제외할 정기가 없음) → **무해**. 정기를 다시 등록하면 그대로 되살아난다 |
-| 구 가정 "방 입장 흐름에서 정기 0건일 때 연차 답변이 버려짐" | **철회 (2026-08-16)** | 초안은 클라이언트 `basic-info/index.tsx`가 "없어요"에도 연차 3스텝을 진행한다고 보고 이를 본 변경으로 해소되는 결함으로 적었으나, Figma 흐름 확인 결과 **방 입장에서도 "없어요"면 연차를 묻지 않는다**(연차=정기와 한 덩어리). 따라서 버려지는 답변 자체가 없다 — 해당 항목은 결함이 아니었다 |
+| 구 가정 "방 입장 흐름에서 정기 0건일 때 연차 답변이 버려짐" | **철회 (2026-08-16) → 2026-08-19 상황 변경** — 이제 `없어요` 경로도 연차를 묻고 그 값이 입력 완료 마커가 된다 | 초안은 클라이언트 `basic-info/index.tsx`가 "없어요"에도 연차 3스텝을 진행한다고 보고 이를 본 변경으로 해소되는 결함으로 적었으나, Figma 흐름 확인 결과 **방 입장에서도 "없어요"면 연차를 묻지 않는다**(연차=정기와 한 덩어리). 따라서 버려지는 답변 자체가 없다 — 해당 항목은 결함이 아니었다 |
 | 상용 DB 데이터 이동 방식(컬럼 이동 시 기존 값 보존) | [미정] — 별도 트랙 | 프론트 대응 완료 후 진행. 그 시점에 `AGENTS.md` "상용 보존 데이터 없음" 전제 재검토와 함께 별도 결정 필요 |
 
 ## 변경 이력

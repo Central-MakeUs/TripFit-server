@@ -30,7 +30,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 - **구현 상태:** D5 홈 2뷰(`scope`·필터·`last_activity_at`·`pinned_at`)·`TripHomeCardResponse`/`TripDetailResponse` 분리·`membersPreview` 배치 조회 반영. **#27** EXPIRED·Pin 배치 Implemented · **#26** `last_activity_at` AOP Implemented
 - **참여:** 소셜 로그인 필수 (BR-USER-002), 비회원 없음. **초대는 카카오·OS 링크 공유**(딥링크/Universal Link에 `inviteCode` 포함) — 코드 수동 입력은 보조
 - **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](../user-schedule/schedule-unified.md)
-- **참여 완료:** 방장·멤버 **동일** — 방 진입(방장 `POST /trips` · 멤버 `POST /trips/join`) 시 `SCHEDULE_PENDING` → 일정 확인 → `POST .../activate` 후 `ACTIVE` (2026-08-18 `#114` — 이전에는 멤버만 join 한 번으로 바로 `ACTIVE`였다). 방 안 API는 `ACTIVE` (구 전역 `canEnterRoom` 조건은 2026-08-18 `#113`으로 삭제) ([#39](https://github.com/Central-MakeUs/TripFit-server/issues/39))
+- **참여 완료:** 방장·멤버 **동일** — 방 진입(방장 `POST /trips` · 멤버 `POST /trips/join`) 시 `SCHEDULE_PENDING` → 일정 확인 → `POST .../activate` 후 `ACTIVE` (2026-08-19 `#114` — 이전에는 멤버만 join 한 번으로 바로 `ACTIVE`였다). 방 안 API는 `ACTIVE` (구 전역 `canEnterRoom` 조건은 2026-08-18 `#113`으로 삭제) ([#39](https://github.com/Central-MakeUs/TripFit-server/issues/39))
 - **홈 UI SSOT:** 정책서 홈 — 진행 중인 여행(캐러셀) + 전체 여행 보기(리스트·필터). Pin은 **진행 중 캐러셀에만** 정렬 적용
 
 ### 관련 문서
@@ -325,7 +325,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 
 예시: `memberCount=6` → fillRate ≈ 2/6.
 
-**`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` (2026-07-30 amend, "일정이 확정됐어요" 화면 반영):** `status=CONFIRMED`일 때만 값이 채워지고(그 외 `null`) **방장·참여자 모두** 볼 수 있다 — 확정 후에는 전원에게 공개되는 요약 통계라 `recommendations`/`recommendations/{rank}`(방장 전용)와 달리 이 필드는 `TripDetailResponse`에 그대로 둔다. 의미: `confirmedAttendCount`=전체·부분 참석 인원 수(연차 사용 여부 무관), `confirmedVacationMemberCount`=연차가 필요한 인원 수, `confirmedUncertainCount`=불확실 일정이 있던 인원 수 — 전부 **확정 시점에 1회 계산해 저장**(그 뒤 개인 일정이 바뀌어도 갱신 안 됨, confirm 당시 스냅샷과 동일 시점). 계산 주체는 `trip-recommendation.md`(#13)의 confirm 플로우 — 상세: 해당 스펙 참고. `unconfirm` 시 셋 다 다시 `null`.
+**`confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` (2026-07-30 amend, "일정이 확정됐어요" 화면 반영):** `status=CONFIRMED`일 때만 값이 채워지고(그 외 `null`) **방장·참여자 모두** 볼 수 있다 — 확정 후에는 전원에게 공개되는 요약 통계라 `recommendations`/`recommendations/{rank}`(방장 전용)와 달리 이 필드는 `TripDetailResponse`에 그대로 둔다. 의미: `confirmedAttendCount`=전체·부분 참석 인원 수(연차 사용 여부 무관), `confirmedVacationMemberCount`=연차가 필요한 인원 수, `confirmedUncertainCount`=불확실 일정이 있던 인원 수 — 전부 **확정 시점에 1회 계산해 저장**(그 뒤 개별 일정이 바뀌어도 갱신 안 됨, confirm 당시 스냅샷과 동일 시점). 계산 주체는 `trip-recommendation.md`(#13)의 confirm 플로우 — 상세: 해당 스펙 참고. `unconfirm` 시 셋 다 다시 `null`.
 
 ### `members/schedule-calendar` 응답 (D2)
 

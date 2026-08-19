@@ -276,7 +276,7 @@
 
 - `Trip.lastRecommendationMode` — 이미 존재 (기존 컬럼)
 - `Trip.unconfirmReason` / `Trip.unconfirmReasonDetail` — **JPA 컬럼 신규 추가 필요** (`erd.md`엔 이미 문서화돼 있으나 `Trip` 엔티티엔 아직 없음). unconfirm 시 최신값 덮어쓰기 (이력 아님)
-- `Trip.confirmedAttendCount` / `Trip.confirmedVacationMemberCount` / `Trip.confirmedUncertainCount` — **신규 컬럼**(Integer, nullable). confirm 시 `#50` `classifyMembers` 결과를 집계해 1회 저장(그 뒤 개인 일정이 바뀌어도 갱신 안 됨 — confirm 시점 스냅샷), unconfirm 시 `null`로 초기화. 응답 노출은 `trip-room-api.md`의 `TripDetailResponse` amend 절 참고 — **이 스펙에서 새 API를 만들지 않고 기존 Trip 상세에 얹기로 결정**(위 UX 흐름 8번)
+- `Trip.confirmedAttendCount` / `Trip.confirmedVacationMemberCount` / `Trip.confirmedUncertainCount` — **신규 컬럼**(Integer, nullable). confirm 시 `#50` `classifyMembers` 결과를 집계해 1회 저장(그 뒤 개별 일정이 바뀌어도 갱신 안 됨 — confirm 시점 스냅샷), unconfirm 시 `null`로 초기화. 응답 노출은 `trip-room-api.md`의 `TripDetailResponse` amend 절 참고 — **이 스펙에서 새 API를 만들지 않고 기존 Trip 상세에 얹기로 결정**(위 UX 흐름 8번)
 - `recommendation` — 기존 엔티티, trip_id FK, hard DELETE only. **2026-07-30 카드 UI 반영 필드 개정:**
   - 삭제: `reason`(TEXT), `riskNote`(TEXT) — 자연어 사유 자동 생성 Nice to Have가 화면에 없어 폐기
   - 추가: `attendRate`(int, %) · `partialAttendCount`(int) · `uncertainCount`(int) · `totalVacationDays`(double) — 카드 표시 4개 지표, `#50` 계산 결과를 그대로 저장

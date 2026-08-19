@@ -16,9 +16,6 @@ public interface RegularScheduleRepository extends JpaRepository<RegularSchedule
 
   Optional<RegularSchedule> findByIdAndUserId(UUID id, UUID userId);
 
-  // hasRegularSchedule·hasPreSchedule 파생용 — regular_schedule row ≥1
-  boolean existsByUserId(UUID userId);
-
-  // 회원 탈퇴 cascade — userId 기준 전체 hard delete
+  // 정기 일정 전체 삭제 — 회원 탈퇴 cascade, 그리고 "정기 일정이 있나요? → 없어요" 선택 시
   void deleteByUserId(UUID userId);
 }

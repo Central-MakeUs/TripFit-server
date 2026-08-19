@@ -26,7 +26,6 @@ public class UserProfileService {
   public UserSummaryResponse registerOnboardingName(UUID userId, OnboardingNameRequest request) {
     User user = userLookupService.requireUser(userId);
     user.applyProfilePatch(request.firstName().trim(), request.lastName().trim(), null);
-    // hasPreSchedule은 userSummaryService가 일정 테이블 EXISTS로 매번 파생
     return userSummaryService.toSummary(user);
   }
 

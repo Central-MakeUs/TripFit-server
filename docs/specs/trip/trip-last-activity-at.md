@@ -25,7 +25,7 @@
 | 이벤트 | touch | 구현·비고 |
 |--------|-------|-----------|
 | 여행방 생성 | ✓ | `created_at`과 동일 시각으로 초기화 ([#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)) |
-| 신규 참여 (join) | ✗ | **2026-08-18 `#114` amend** — `join`은 초대 링크를 연 시점(멤버가 `SCHEDULE_PENDING`으로 생김)이라 방에 실질적 변화가 없다. 실제 참여 완료인 `activate`가 touch하므로 이벤트가 사라지는 게 아니라 시점이 정확해진다 |
+| 신규 참여 (join) | ✗ | **2026-08-19 `#114` amend** — `join`은 초대 링크를 연 시점(멤버가 `SCHEDULE_PENDING`으로 생김)이라 방에 실질적 변화가 없다. 실제 참여 완료인 `activate`가 touch하므로 이벤트가 사라지는 게 아니라 시점이 정확해진다 |
 | 여행방 정보 수정 (PATCH) | ✓ | Implemented |
 | 일정 확인 완료 (`POST .../activate`) | ✓ | **#39 · #114** — `SCHEDULE_PENDING→ACTIVE` · `@TripActivity` — 방장·참여자 **모두** 이 경로를 거치므로 신규 참여 touch도 여기서 함께 커버된다 (구 trip `submit` 폐기) |
 | 추천 일정 생성 | ✓ | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) — hook 미연동 |

@@ -2,7 +2,10 @@ package com.tripfit.tripfit.user.schedule.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -169,6 +172,32 @@ class UserScheduleControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.items[0].uncertain").value(true))
         .andExpect(jsonPath("$.data.items[0].morningStatus").value("IMPOSSIBLE"));
+  }
+
+  // 사전 신청일이 빠지면 400 — 이 값이 최초/갱신 판정 마커라 누락을 200으로 흘려보내면 판정이 서지 않는다
+  @Test
+  void patchVacationPolicy_whenVacationApplyPeriodMissing_returns400() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/users/schedule/vacation-policy")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {"maxVacationDays": 5, "halfVacationAvailable": true, "holidayRest": false}
+                        """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+    verify(scheduleService, never()).updateVacationPolicy(any(), any());
+  }
+
+  @Test
+  void deleteAllRegular_returns204() throws Exception {
+    mockMvc
+        .perform(delete("/api/v1/users/schedule/regular"))
+        .andExpect(status().isNoContent());
+
+    verify(scheduleService).deleteAllRegular(USER_ID);
   }
 
   @Test

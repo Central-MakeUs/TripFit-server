@@ -10,6 +10,6 @@ public record LoginResponse(
     @Schema(description = "access JWT 만료까지 남은 시간(초)", example = "900") long expiresIn,
 
     @Schema(
-        description = "로그인한 사용자 요약 (hasRegularSchedule·hasPreSchedule 포함)") UserSummaryResponse user
+        description = "로그인한 사용자 요약 (사전 일정 입력 완료 여부 hasCompletedPreSchedule 포함)") UserSummaryResponse user
 ) {
 }

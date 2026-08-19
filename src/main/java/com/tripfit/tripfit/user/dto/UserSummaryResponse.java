@@ -45,22 +45,13 @@ public record UserSummaryResponse(
 
     @Schema(
         description = """
-            정기 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).
-            개별 일정은 세지 않는다 — 일정 확인 화면에서 "정기 일정이 있나요?" 질문을 띄울지 판정하는 값.
-            true: 정기 일정 생성. false: 정기 일정이 0건(개별 일정만 있어도 false).
+            사전 일정 정보를 한 번이라도 입력 완료했는지 (DB 컬럼 없음, 연차·휴일 정보의 사전 신청일 저장 여부에서 파생).
+            false = 최초 입력 → "정기 일정이 있나요?" 화면부터. true = 갱신 입력 → "일정 변경이 있나요?" 화면부터.
+            정기·개별 일정 row 수는 판정에 쓰지 않는다 — 입력을 끝냈지만 막힌 일정이 없는 사용자도 true다.
+            PATCH /users/schedule/vacation-policy 저장 시 true가 되며, 탈퇴 후 재가입하면 false로 돌아간다.
             일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
             """,
-        example = "false") boolean hasRegularSchedule,
-
-    @Schema(
-        description = """
-            정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).
-            true: 정기 일정 첫 생성 또는 개별 일정 첫 저장.
-            false: 두 종류 일정 row가 모두 0건.
-            정기·개별을 뭉뚱그린 값이라 정기 일정 유무를 판정할 수 없다 — 그 판정에는 hasRegularSchedule을 쓴다.
-            일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
-            """,
-        example = "false") boolean hasPreSchedule,
+        example = "false") boolean hasCompletedPreSchedule,
 
     @Schema(
         description = "알림 수신 여부(BR-USER-005). default true. PATCH /users/profile로 변경",
