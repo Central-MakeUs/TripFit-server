@@ -47,7 +47,6 @@ public class JwtService {
       JWTClaimsSet claims =
           new JWTClaimsSet.Builder()
               .subject(userId.toString())
-              .jwtID(UUID.randomUUID().toString())
               .issueTime(Date.from(now))
               .expirationTime(Date.from(expiry))
               .build();
@@ -62,7 +61,7 @@ public class JwtService {
     }
   }
 
-  // 액세스 토큰을 검증하고 사용자 ID와 jti 클레임을 추출함
+  // 액세스 토큰을 검증하고 사용자 ID 클레임을 추출함
   public AccessTokenClaims parseAccessToken(String accessToken) {
     try {
       // 1. 토큰 문자열을 파싱하고 서명이 유효한지 확인함
@@ -78,16 +77,12 @@ public class JwtService {
         throw new TripFitException(AuthErrorCode.AUTH_EXPIRED);
       }
 
-      // 3. subject·jti 값을 검증하고 클레임 record로 반환함
-      String jti = claims.getJWTID();
-      if (jti == null || jti.isBlank()) {
-        throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
-      }
+      // 3. subject 값을 검증하고 클레임 record로 반환함
       String subject = claims.getSubject();
       if (subject == null || subject.isBlank()) {
         throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);
       }
-      return new AccessTokenClaims(UUID.fromString(subject), jti, expiration.toInstant());
+      return new AccessTokenClaims(UUID.fromString(subject));
     } catch (ParseException | JOSEException exception) {
       // 파싱·서명 실패는 클라이언트 토큰 오류와 구분하지 않고 AUTH_INVALID_TOKEN으로 통일
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_TOKEN);

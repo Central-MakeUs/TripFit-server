@@ -1,7 +1,5 @@
 package com.tripfit.tripfit.auth.jwt;
 
-import com.tripfit.tripfit.auth.oauth.TokenRevocationChecker;
-import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.security.AuthErrorResponseWriter;
 import com.tripfit.tripfit.common.exception.ErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
@@ -31,16 +29,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtService jwtService;
 
-  private final TokenRevocationChecker tokenRevocationChecker;
-
   private final AuthErrorResponseWriter authErrorResponseWriter;
 
   public JwtAuthenticationFilter(
       JwtService jwtService,
-      TokenRevocationChecker tokenRevocationChecker,
       AuthErrorResponseWriter authErrorResponseWriter) {
     this.jwtService = jwtService;
-    this.tokenRevocationChecker = tokenRevocationChecker;
     this.authErrorResponseWriter = authErrorResponseWriter;
   }
 
@@ -54,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   @Override
   // 1. Bearer 없거나 빈 토큰 → 익명으로 chain 계속 (authenticated API는 EntryPoint/Resolver가 차단)
-  // 2. 파싱 후 jti 폐기 여부 검사 → SecurityContext에 JwtAuthentication 설정
+  // 2. 파싱 성공 시 SecurityContext에 JwtAuthentication 설정
   protected void doFilterInternal(
       HttpServletRequest request,
       HttpServletResponse response,
@@ -74,14 +68,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     try {
       AccessTokenClaims claims = jwtService.parseAccessToken(accessToken);
-      // logout 등으로 폐기된 access jti는 Advice 전에 Filter에서 401 envelope
-      if (tokenRevocationChecker.isRevoked(claims.jti())) {
-        authErrorResponseWriter.write(response, AuthErrorCode.AUTH_INVALID_TOKEN);
-        return;
-      }
       SecurityContextHolder.getContext()
-          .setAuthentication(
-              new JwtAuthentication(claims.userId(), claims.jti(), claims.expiresAt()));
+          .setAuthentication(new JwtAuthentication(claims.userId()));
       filterChain.doFilter(request, response);
     } catch (TripFitException exception) {
       // JWT 파싱·검증 실패 — Filter 경로라 GlobalExceptionHandler 대신 Writer 사용
