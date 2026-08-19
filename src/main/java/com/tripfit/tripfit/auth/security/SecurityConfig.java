@@ -37,8 +37,7 @@ public class SecurityConfig {
         List.of(
             "https://tripfit.online",
             "https://www.tripfit.online",
-            "https://api.tripfit.online",
-            "http://localhost:3000"));
+            "https://api.tripfit.online"));
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
