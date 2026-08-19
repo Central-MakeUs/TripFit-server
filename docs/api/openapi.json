@@ -3614,7 +3614,7 @@
           "Trip Members"
         ],
         "summary": "여행방 나가기",
-        "description": "참여자(MEMBER)가 스스로 여행방에서 나간다. 방장은 사용할 수 없다(여행방 삭제를 대신 써야 함). 방 상태(ONGOING/CONFIRMED/EXPIRED)와\n 무관하게 항상 허용되고, 나간 뒤 같은 초대 코드로 다시 참여할 수 있다.",
+        "description": "참여자(MEMBER)가 스스로 여행방에서 나간다. 이 방에 입장(ACTIVE)한 멤버만 호출할 수 있고, 일정 확인 전(SCHEDULE_PENDING)이면 403이다.\n 방장은 사용할 수 없다(여행방 삭제를 대신 써야 함). 방 상태(ONGOING/CONFIRMED/EXPIRED)와는 무관하게 허용되고, 나간 뒤 같은 초대 코드로 다시\n 참여할 수 있다.",
         "operationId": "leaveTrip",
         "parameters": [
           {
@@ -3660,15 +3660,15 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING)",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
                 "example": {
-                  "code": "TRIP_ACCESS_DENIED",
-                  "message": "여행방 참여 권한이 없습니다."
+                  "code": "SCHEDULE_ACTIVATION_REQUIRED",
+                  "message": "이 여행방 일정 확인을 완료해야 입장할 수 있습니다."
                 }
               }
             }
