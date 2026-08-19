@@ -244,7 +244,9 @@ class TripCommandService {
     return tripMemberQueryService.listMembers(tripId, ownerId);
   }
 
-  // 멤버가 스스로 여행방에서 나간다 — 방 상태 무관(내보내기와 달리 ONGOING 게이트 없음), 방장은 불가
+  // 멤버가 스스로 여행방에서 나간다 — 방 상태 무관(내보내기와 달리 ONGOING 게이트 없음), 방장은 불가.
+  // 멤버십 상태(ACTIVE) 게이트는 Controller의 @TripMemberOnly가 담당한다 — 여기서 막으면 회원 탈퇴 cascade가
+  // SCHEDULE_PENDING 멤버십을 정리하지 못한다
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public void leaveTrip(UUID tripId, UUID callerId) {
