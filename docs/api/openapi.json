@@ -81,11 +81,7 @@
                         "endTime": "18:00:00",
                         "morningStatus": "IMPOSSIBLE",
                         "afternoonStatus": "IMPOSSIBLE",
-                        "eveningStatus": "POSSIBLE",
-                        "maxVacationDays": 2,
-                        "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                        "halfVacationAvailable": false,
-                        "holidayRest": true
+                        "eveningStatus": "POSSIBLE"
                       }
                     ]
                   }
@@ -143,11 +139,7 @@
                     "endTime": "18:00:00",
                     "morningStatus": "IMPOSSIBLE",
                     "afternoonStatus": "IMPOSSIBLE",
-                    "eveningStatus": "POSSIBLE",
-                    "maxVacationDays": 2,
-                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                    "halfVacationAvailable": false,
-                    "holidayRest": true
+                    "eveningStatus": "POSSIBLE"
                   }
                 }
               }
@@ -226,8 +218,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": true,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -309,8 +301,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -477,7 +469,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseCreateTripResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripEntryResponse"
                 },
                 "example": {
                   "data": {
@@ -1043,7 +1035,7 @@
           "Trip"
         ],
         "summary": "여행방 멤버십 활성화",
-        "description": "방장의 일정 확인을 끝내 여행방 입장·초대 공유를 가능하게 한다. 본인이 방장이고 myMemberStatus가 SCHEDULE_PENDING(create\n 직후·activate 전)일 때만 의미가 있다 — 멤버는 이 API를 쓰지 않고 join으로 바로 ACTIVE가 된다. 이미 ACTIVE면 상태 변경 없이 동일\n 응답(idempotent)이고, 방 안 API는 이 호출 이후에만 쓸 수 있다.",
+        "description": "일정 확인을 끝내 여행방 입장을 완료한다. 방장(create 직후)과 참여자(join 직후)가 모두 이 API를 호출하며, myMemberStatus가\n SCHEDULE_PENDING → ACTIVE로 바뀐다. 방 안 API와 방장의 초대 공유는 이 호출 이후에만 쓸 수 있다.\n\n 이미 ACTIVE면 상태 변경 없이 동일 응답이고 알림도 다시 가지 않는다(idempotent).",
         "operationId": "activateMembership",
         "parameters": [
           {
@@ -1144,7 +1136,7 @@
           "Trip"
         ],
         "summary": "초대 링크로 참여",
-        "description": "초대 코드로 여행방에 참여한다. 멤버는 SCHEDULE_PENDING 없이 join 한 번으로 바로 ACTIVE가 된다(방장의 create 직후\n SCHEDULE_PENDING은 이 API가 아니라 activate로 처리). 이미 ACTIVE인 멤버가 다시 호출하면 변경 없이 동일 응답을\n 반환한다(idempotent). 직전에 정원 hold를 발급받았다면 그 hold를 소비해 확정하고, hold가 없거나 만료됐다면 그 시점의 정원(확정 멤버 수 + 다른\n 사용자의 활성 hold 수)을 다시 확인한다.",
+        "description": "초대 코드로 여행방에 참여한다. 초대 링크를 연 직후, 일정 확인 화면에 들어가기 전에 호출한다 — 멤버는 SCHEDULE_PENDING으로 생성되고 일정 확인을 마친 뒤\n activate로 ACTIVE가 된다. 이 응답만으로는 아직 방 안 API를 쓸 수 없다.\n\n 이미 멤버인 사용자가 다시 호출하면 새 자리를 소비하지 않고 그 시점의 myMemberStatus를 그대로 반환한다(idempotent) — 링크를 다시 열었을 때도 같은\n 응답이므로 클라이언트는 myMemberStatus만 보고 일정 플로우·방 안 중 어디로 보낼지 정하면 된다.\n\n 정원은 SCHEDULE_PENDING 멤버까지 포함해 세며, 가득 찼으면 TRIP_MEMBER_FULL로 거부된다.",
         "operationId": "joinTrip",
         "requestBody": {
           "content": {
@@ -1162,41 +1154,13 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseTripDetailResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripEntryResponse"
                 },
                 "example": {
                   "data": {
                     "tripId": "550e8400-e29b-41d4-a716-446655440000",
-                    "name": "제주도 여행",
-                    "destination": "제주도",
-                    "startRange": "2026-08-01",
-                    "endRange": "2026-08-31",
-                    "durationDays": 4,
-                    "durationNights": 3,
-                    "memberCount": 6,
                     "status": "ONGOING",
-                    "inviteCode": "AB12CD",
-                    "confirmedStartDate": null,
-                    "confirmedEndDate": null,
-                    "confirmedAttendCount": null,
-                    "confirmedVacationMemberCount": null,
-                    "confirmedUncertainCount": null,
-                    "lastRecommendationMode": null,
-                    "lastActivityAt": "2026-07-20T10:00:00",
-                    "pinned": false,
-                    "myRole": "MEMBER",
-                    "myMemberStatus": "ACTIVE",
-                    "activeMemberCount": 3,
-                    "memberFillRate": 0.5,
-                    "membersPreview": [
-                      {
-                        "userId": "550e8400-e29b-41d4-a716-446655440000",
-                        "displayName": "길동",
-                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
-                        "role": "OWNER"
-                      }
-                    ],
-                    "membersPreviewOverflow": 0
+                    "myMemberStatus": "SCHEDULE_PENDING"
                   }
                 }
               }
@@ -1266,133 +1230,6 @@
           },
           "409": {
             "description": "TRIP_MEMBER_FULL — 정원 초과 · TRIP_ALREADY_CONFIRMED — 확정된 방 · TRIP_EXPIRED — 종료된 방",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "TRIP_MEMBER_FULL",
-                  "message": "참여 인원이 가득 찼습니다."
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer-jwt": []
-          }
-        ]
-      }
-    },
-    "/api/v1/trips/join/hold": {
-      "post": {
-        "tags": [
-          "Trip"
-        ],
-        "summary": "초대코드 미리보기 + 정원 hold 생성",
-        "description": "초대코드로 여행방을 미리보기하며 10분 hold를 생성한다. 정원(확정 멤버 수 + 활성 hold 수)이 가득 찼으면 hold 없이 409로 실패한다. 같은 사용자가\n 재호출하면 기존 hold의 TTL만 10분으로 갱신되고 자리를 중복으로 소비하지 않는다. 이미 ACTIVE 멤버면 hold 없이 동일 정보를 반환하고,\n SCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다.",
-        "operationId": "previewAndHold",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/JoinTripRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "미리보기·hold 성공",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseTripJoinPreviewResponse"
-                },
-                "example": {
-                  "data": {
-                    "tripId": "550e8400-e29b-41d4-a716-446655440000",
-                    "name": "제주도 여행",
-                    "destination": "제주도",
-                    "startRange": "2026-08-01",
-                    "endRange": "2026-08-31",
-                    "durationDays": 4,
-                    "durationNights": 3,
-                    "memberCount": 6,
-                    "activeMemberCount": 3,
-                    "status": "ONGOING"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "입력값이 올바르지 않습니다.",
-                  "errors": [
-                    {
-                      "field": "inviteCode",
-                      "message": "초대 코드는 필수입니다."
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "AUTH_EXPIRED",
-                  "message": "액세스 토큰이 만료되었습니다."
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ACTIVATION_REQUIRED — 방장이 호출 시도",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "PROFILE_NAME_REQUIRED",
-                  "message": "성·이름 입력이 필요합니다."
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "INVITE_CODE_NOT_FOUND — 초대 코드 없음",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVITE_CODE_NOT_FOUND",
-                  "message": "초대 코드를 찾을 수 없습니다."
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "TRIP_MEMBER_FULL — 정원(hold 포함) 초과 · TRIP_ALREADY_CONFIRMED — 확정된 방 · TRIP_EXPIRED — 종료된 방",
             "content": {
               "*/*": {
                 "schema": {
@@ -1648,8 +1485,8 @@
                       "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                       "provider": "GOOGLE",
                       "isGoogleCalendarConnected": false,
+                      "hasRegularSchedule": false,
                       "hasPreSchedule": false,
-                      "isAllFree": false,
                       "notificationEnabled": true
                     }
                   }
@@ -1761,6 +1598,116 @@
         ]
       }
     },
+    "/api/v1/users/schedule/vacation-policy": {
+      "get": {
+        "tags": [
+          "User Schedule"
+        ],
+        "summary": "연차·반차·공휴일 휴무 설정 조회",
+        "description": "본인 연차·반차·공휴일 휴무 설정을 조회한다. 정기 일정과 별개로 사람 1명에게 하나만 존재한다.",
+        "operationId": "getVacationPolicy",
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseVacationPolicyResponse"
+                },
+                "example": {
+                  "data": {
+                    "maxVacationDays": 2,
+                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                    "halfVacationAvailable": false,
+                    "holidayRest": true
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_EXPIRED",
+                  "message": "액세스 토큰이 만료되었습니다."
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "User Schedule"
+        ],
+        "summary": "연차·반차·공휴일 휴무 설정 전체 교체",
+        "description": "본인 연차·반차·공휴일 휴무 설정을 전체 교체한다. 부분 수정이 아니라 4개 필드를 매번 전부 보내야 하며, 생략된 필드는 기본값(연차 2일·신청 시점 미설정·반차\n 불가·공휴일 휴무)으로 대체된다. 이 API는 정기 일정 행이 하나도 없어도 저장할 수 있고, 일정 등록이 아니므로 일정 파생값에도 영향을 주지 않는다.",
+        "operationId": "updateVacationPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVacationPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "저장 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseVacationPolicyResponse"
+                },
+                "example": {
+                  "data": {
+                    "maxVacationDays": 2,
+                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                    "halfVacationAvailable": false,
+                    "holidayRest": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 검증 실패 (INVALID_INPUT)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "입력값이 올바르지 않습니다."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_EXPIRED",
+                  "message": "액세스 토큰이 만료되었습니다."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/schedule/regular/{id}": {
       "delete": {
         "tags": [
@@ -1859,11 +1806,7 @@
                     "endTime": "18:00:00",
                     "morningStatus": "IMPOSSIBLE",
                     "afternoonStatus": "IMPOSSIBLE",
-                    "eveningStatus": "POSSIBLE",
-                    "maxVacationDays": 2,
-                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                    "halfVacationAvailable": false,
-                    "holidayRest": true
+                    "eveningStatus": "POSSIBLE"
                   }
                 }
               }
@@ -2207,8 +2150,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": false
                   }
                 }
@@ -2282,8 +2225,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -2333,7 +2276,7 @@
           "Trip"
         ],
         "summary": "여행방 상세",
-        "description": "여행방 상세 정보를 조회한다. 멤버이면서 ACTIVE(일정 activate/join 완료)이고 방 입장 조건(일정≥1 또는 전부 free)을 충족해야 하며,\n SCHEDULE_PENDING(방장 activate 전) 상태면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다. 응답에는 inviteCode가\n 포함된다(방장 초대 공유용) — create 응답에는 없던 값이다.",
+        "description": "여행방 상세 정보를 조회한다. 이 방의 멤버이면서 ACTIVE(일정 activate/join 완료)여야 하며, SCHEDULE_PENDING(방장 activate 전)\n 상태면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다. 응답에는 inviteCode가 포함된다(방장 초대 공유용) — create 응답에는 없던 값이다.",
         "operationId": "getTrip",
         "parameters": [
           {
@@ -2407,7 +2350,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료",
             "content": {
               "*/*": {
                 "schema": {
@@ -2784,7 +2727,7 @@
           "Trip"
         ],
         "summary": "Pin 토글",
-        "description": "홈 목록에서 이 방을 고정(Pin)하거나 해제한다. 멤버면 되고(SCHEDULE_PENDING 방장 포함), 방 입장(ACTIVE + 입장 조건)까지는 필요 없다.",
+        "description": "홈 목록에서 이 방을 고정(Pin)하거나 해제한다. 멤버면 되고(SCHEDULE_PENDING 방장 포함), 방 입장(ACTIVE)까지는 필요 없다.",
         "operationId": "updatePin",
         "parameters": [
           {
@@ -3170,7 +3113,7 @@
           "Trip Members"
         ],
         "summary": "참여자 목록",
-        "description": "여행방 참여자 목록을 조회한다. 방 입장 가능(ACTIVE + 입장 조건) 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에\n <code>(2)</code>처럼 번호가 붙는다.",
+        "description": "여행방 참여자 목록을 조회한다. 이 방에서 ACTIVE인 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에\n <code>(2)</code>처럼 번호가 붙는다.",
         "operationId": "listMembers",
         "parameters": [
           {
@@ -3225,7 +3168,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING)",
             "content": {
               "*/*": {
                 "schema": {
@@ -3421,7 +3364,7 @@
           "Auth"
         ],
         "summary": "현재 사용자 조회",
-        "description": "로그인 사용자 요약을 조회한다. hasPreSchedule은 일정 row 존재 여부에서 파생된 값, isAllFree는 DB 컬럼이다.",
+        "description": "로그인 사용자 요약을 조회한다. hasRegularSchedule·hasPreSchedule은 DB 컬럼이 아니라 일정 row 존재 여부에서 조회 시 파생된다.",
         "operationId": "me",
         "responses": {
           "200": {
@@ -3441,8 +3384,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -3700,51 +3643,6 @@
           }
         ]
       }
-    },
-    "/api/v1/trips/{tripId}/join/hold": {
-      "delete": {
-        "tags": [
-          "Trip"
-        ],
-        "summary": "정원 hold 해제",
-        "description": "참여 플로우 첫 화면(정기 일정 입력)에서 뒤로가기로 플로우를 이탈할 때 hold를 즉시 반환한다. 개별 일정 화면에서 정기 일정 화면으로 되돌아가는 것처럼 플로우 안에서\n 이동하는 뒤로가기는 호출 대상이 아니다(hold 유지). 이미 만료됐거나 join으로 소비된 hold를 호출해도 안전하다(idempotent) — 항상 204.",
-        "operationId": "releaseJoinHold",
-        "parameters": [
-          {
-            "name": "tripId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "해제 성공(존재하지 않던 hold 포함)"
-          },
-          "401": {
-            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "AUTH_EXPIRED",
-                  "message": "액세스 토큰이 만료되었습니다."
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer-jwt": []
-          }
-        ]
-      }
     }
   },
   "components": {
@@ -3776,47 +3674,6 @@
             "type": "string",
             "description": "종료 시각",
             "example": "18:00:00"
-          },
-          "maxVacationDays": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "여행당 최대 연차 일수. 생략 시 2, 허용 0~10",
-            "example": 2,
-            "maximum": 10,
-            "minimum": 0
-          },
-          "vacationApplyPeriod": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "연차 신청 가능 시점. 생략 시 null",
-            "enum": [
-              "ANY",
-              "ONE_WEEK_BEFORE",
-              "TWO_WEEKS_BEFORE",
-              "ONE_MONTH_BEFORE"
-            ],
-            "example": "ONE_WEEK_BEFORE"
-          },
-          "halfVacationAvailable": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "반차 사용 가능 여부. 생략 시 false",
-            "example": false
-          },
-          "holidayRest": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "공휴일 휴무 여부. 생략 시 true",
-            "example": true
           }
         },
         "required": [
@@ -3941,36 +3798,6 @@
               "IMPOSSIBLE"
             ],
             "example": "POSSIBLE"
-          },
-          "maxVacationDays": {
-            "type": "integer",
-            "format": "int32",
-            "description": "여행당 최대 연차 일수 (기본 2, 허용 0~10)",
-            "example": 2
-          },
-          "vacationApplyPeriod": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "연차 신청 가능 시점. 미설정 시 null",
-            "enum": [
-              "ANY",
-              "ONE_WEEK_BEFORE",
-              "TWO_WEEKS_BEFORE",
-              "ONE_MONTH_BEFORE"
-            ],
-            "example": "ONE_WEEK_BEFORE"
-          },
-          "halfVacationAvailable": {
-            "type": "boolean",
-            "description": "반차 사용 가능 여부 (기본 false)",
-            "example": false
-          },
-          "holidayRest": {
-            "type": "boolean",
-            "description": "공휴일 휴무 여부 (기본 true)",
-            "example": true
           }
         }
       },
@@ -4109,14 +3936,14 @@
             "description": "Google Calendar OAuth 연동 여부",
             "example": false
           },
-          "hasPreSchedule": {
+          "hasRegularSchedule": {
             "type": "boolean",
-            "description": "정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\ntrue: 정기 일정 첫 생성 또는 개별 일정 첫 저장.\nfalse: 두 종류 일정 row가 모두 0건.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "description": "정기 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\n개별 일정은 세지 않는다 — 일정 확인 화면에서 \"정기 일정이 있나요?\" 질문을 띄울지 판정하는 값.\ntrue: 정기 일정 생성. false: 정기 일정이 0건(개별 일정만 있어도 false).\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
             "example": false
           },
-          "isAllFree": {
+          "hasPreSchedule": {
             "type": "boolean",
-            "description": "전부 free 선언 여부 (user.is_all_free 저장, 기본 false).\n방 입장 조건: hasPreSchedule OR isAllFree.\ntrue: 일정 없이 Skip+0행으로 create/join·activate 시 설정.\nfalse: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "description": "정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\ntrue: 정기 일정 첫 생성 또는 개별 일정 첫 저장.\nfalse: 두 종류 일정 row가 모두 0건.\n정기·개별을 뭉뚱그린 값이라 정기 일정 유무를 판정할 수 없다 — 그 판정에는 hasRegularSchedule을 쓴다.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
             "example": false
           },
           "notificationEnabled": {
@@ -4191,40 +4018,12 @@
           "startRange"
         ]
       },
-      "CreateTripResponse": {
-        "type": "object",
-        "description": "여행방 생성 응답. POST /trips.\n방장은 SCHEDULE_PENDING(입장 전) — myMemberStatus=SCHEDULE_PENDING면 클라가 일정 activate 플로우로 라우팅.\ninviteCode 필드 없음 — activate→ACTIVE 후 상세에서만 공유용 코드 제공.\n",
-        "properties": {
-          "tripId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "생성된 여행방 ID"
-          },
-          "status": {
-            "type": "string",
-            "description": "여행방 진행 상태. create 직후 ONGOING",
-            "enum": [
-              "ONGOING",
-              "CONFIRMED",
-              "EXPIRED"
-            ]
-          },
-          "myMemberStatus": {
-            "type": "string",
-            "description": "방장 멤버십. create 직후 항상 SCHEDULE_PENDING(방장 전용) — 일정 activate 전까지 아직 이 값.\n멤버는 이 응답을 받지 않음. activate 후 myMemberStatus는 상세에서 ACTIVE.\n",
-            "enum": [
-              "SCHEDULE_PENDING",
-              "ACTIVE"
-            ]
-          }
-        }
-      },
-      "SuccessResponseCreateTripResponse": {
+      "SuccessResponseTripEntryResponse": {
         "type": "object",
         "description": "API 성공 응답 envelope",
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/CreateTripResponse",
+            "$ref": "#/components/schemas/TripEntryResponse",
             "description": "응답 본문"
           },
           "message": {
@@ -4240,6 +4039,34 @@
               "null"
             ],
             "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "TripEntryResponse": {
+        "type": "object",
+        "description": "방 진입 상태. POST /trips(생성) · POST /trips/join(참여) 공통 응답.\n방장·참여자 모두 SCHEDULE_PENDING으로 시작 — 일정 확인 플로우를 마치고 activate하면 ACTIVE가 된다.\n클라는 myMemberStatus 하나로 라우팅한다(SCHEDULE_PENDING=일정 플로우, ACTIVE=방 안).\ninviteCode 필드 없음 — 입장(ACTIVE) 후 상세에서만 공유용 코드를 제공한다.\n",
+        "properties": {
+          "tripId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "여행방 ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "여행방 진행 상태. create·join 직후 ONGOING",
+            "enum": [
+              "ONGOING",
+              "CONFIRMED",
+              "EXPIRED"
+            ]
+          },
+          "myMemberStatus": {
+            "type": "string",
+            "description": "호출자의 이 방 멤버십 상태. create·신규 join 직후 항상 SCHEDULE_PENDING.\n이미 멤버인 사용자가 join을 다시 호출하면 그 시점의 실제 상태(SCHEDULE_PENDING 또는 ACTIVE)를 그대로 반환한다.\n",
+            "enum": [
+              "SCHEDULE_PENDING",
+              "ACTIVE"
+            ]
           }
         }
       },
@@ -4479,7 +4306,7 @@
       },
       "TripDetailResponse": {
         "type": "object",
-        "description": "여행방 상세. GET/join/activate/patch/pin 등.\n호출 전제=ACTIVE+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.\nSCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED.\n",
+        "description": "여행방 상세. GET/join/activate/patch/pin 등.\n호출 전제=이 방에서 ACTIVE. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.\nSCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED.\n",
         "properties": {
           "tripId": {
             "type": "string",
@@ -4664,102 +4491,6 @@
           "inviteCode"
         ]
       },
-      "SuccessResponseTripJoinPreviewResponse": {
-        "type": "object",
-        "description": "API 성공 응답 envelope",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/TripJoinPreviewResponse",
-            "description": "응답 본문"
-          },
-          "message": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "에러 메시지 (성공 시 null)"
-          },
-          "code": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "에러 코드 (성공 시 null)"
-          }
-        }
-      },
-      "TripJoinPreviewResponse": {
-        "type": "object",
-        "description": "초대코드로 여행방을 미리보기하며 10분 hold를 생성한 결과. POST /trips/join/hold",
-        "properties": {
-          "tripId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "여행방 ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "여행방 이름",
-            "maxLength": 15
-          },
-          "destination": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "여행지. null=미정"
-          },
-          "startRange": {
-            "type": "string",
-            "format": "date",
-            "description": "희망 여행 기간 시작일"
-          },
-          "endRange": {
-            "type": "string",
-            "format": "date",
-            "description": "희망 여행 기간 종료일"
-          },
-          "durationDays": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "희망 여행 일수 (m일). null=미정"
-          },
-          "durationNights": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "희망 여행 박수 (n박). durationDays와 쌍으로 저장(nights+1 ≤ days ≤ nights+2). null=미정",
-            "example": 3
-          },
-          "memberCount": {
-            "type": "integer",
-            "format": "int32",
-            "description": "모집 정원 (1~10)",
-            "example": 6,
-            "maximum": 10,
-            "minimum": 1
-          },
-          "activeMemberCount": {
-            "type": "integer",
-            "format": "int32",
-            "description": "일정 확인 완료(ACTIVE) 멤버 수"
-          },
-          "status": {
-            "type": "string",
-            "description": "여행방 진행 상태(effectiveStatus)",
-            "enum": [
-              "ONGOING",
-              "CONFIRMED",
-              "EXPIRED"
-            ]
-          }
-        }
-      },
       "DeviceTokenRegisterRequest": {
         "type": "object",
         "description": "디바이스 토큰 등록·갱신 요청. POST /notifications/device-tokens",
@@ -4884,7 +4615,7 @@
           },
           "user": {
             "$ref": "#/components/schemas/UserSummaryResponse",
-            "description": "로그인한 사용자 요약 (hasPreSchedule·isAllFree 포함)"
+            "description": "로그인한 사용자 요약 (hasRegularSchedule·hasPreSchedule 포함)"
           }
         }
       },
@@ -4926,34 +4657,10 @@
           "payload"
         ]
       },
-      "UpdateRegularScheduleRequest": {
+      "UpdateVacationPolicyRequest": {
         "type": "object",
-        "description": "정기 일정 전체 수정 요청. PATCH /users/schedule/regular/{id}. start/end 변경 시 슬롯 재계산",
+        "description": "연차·반차·공휴일 휴무 설정 전체 교체 요청. PATCH /users/schedule/vacation-policy. 부분 patch 아님 — 생략(null) 필드는 기본값으로 대체",
         "properties": {
-          "title": {
-            "type": "string",
-            "description": "표시명 (출근·수업·회의 등)",
-            "example": "출근",
-            "minLength": 1
-          },
-          "daysOfWeek": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 시 null",
-            "example": "MON,TUE,WED,THU,FRI"
-          },
-          "startTime": {
-            "type": "string",
-            "description": "시작 시각",
-            "example": "09:00:00"
-          },
-          "endTime": {
-            "type": "string",
-            "description": "종료 시각",
-            "example": "18:00:00"
-          },
           "maxVacationDays": {
             "type": [
               "integer",
@@ -4994,6 +4701,96 @@
             ],
             "description": "공휴일 휴무 여부. 생략 시 true",
             "example": true
+          }
+        }
+      },
+      "SuccessResponseVacationPolicyResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VacationPolicyResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "VacationPolicyResponse": {
+        "type": "object",
+        "description": "연차·반차·공휴일 휴무 설정 응답. GET/PATCH /users/schedule/vacation-policy",
+        "properties": {
+          "maxVacationDays": {
+            "type": "integer",
+            "format": "int32",
+            "description": "여행당 최대 연차 일수 (기본 2, 허용 0~10)",
+            "example": 2
+          },
+          "vacationApplyPeriod": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "연차 신청 가능 시점. 미설정 시 null",
+            "enum": [
+              "ANY",
+              "ONE_WEEK_BEFORE",
+              "TWO_WEEKS_BEFORE",
+              "ONE_MONTH_BEFORE"
+            ],
+            "example": "ONE_WEEK_BEFORE"
+          },
+          "halfVacationAvailable": {
+            "type": "boolean",
+            "description": "반차 사용 가능 여부 (기본 false)",
+            "example": false
+          },
+          "holidayRest": {
+            "type": "boolean",
+            "description": "공휴일 휴무 여부 (기본 true)",
+            "example": true
+          }
+        }
+      },
+      "UpdateRegularScheduleRequest": {
+        "type": "object",
+        "description": "정기 일정 전체 수정 요청. PATCH /users/schedule/regular/{id}. start/end 변경 시 슬롯 재계산",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "표시명 (출근·수업·회의 등)",
+            "example": "출근",
+            "minLength": 1
+          },
+          "daysOfWeek": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 시 null",
+            "example": "MON,TUE,WED,THU,FRI"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "시작 시각",
+            "example": "09:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "종료 시각",
+            "example": "18:00:00"
           }
         },
         "required": [

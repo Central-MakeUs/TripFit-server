@@ -288,6 +288,9 @@ public class UserScheduleController {
    * 여러 날짜에 슬롯(오전/오후/저녁) 오버라이드·불확실 여부를 등록·수정한다. items는 최소 1개, 같은 scheduleDate 중복은 불가하다. 각 항목은
    * slots·uncertain을 독립적으로 선택한다 — 슬롯을 안 건드리려면 slots 필드 자체를 생략(정기+구글 계산값을 그대로 따름), 건드리려면 3개 전부 명시해야
    * 한다. 이 API로는 오버라이드가 삭제되지 않는다 — 한 번 반영된 날짜는 계속 유지된다.
+   *
+   * 저장 가능한 날짜는 달력 조회와 같은 구간(오늘 ~ 오늘+2년−1, 참여 중인 ONGOING 여행 희망 기간 종료일이 더 뒤면 그 날짜까지)으로 제한된다 — 구간 밖
+   * 날짜가 하나라도 있으면 저장 전체가 400이다.
    */
   @Operation(summary = "개별 일정 슬롯 단위 오버라이드 upsert")
   @ApiResponses({
@@ -302,7 +305,7 @@ public class UserScheduleController {
                       """))),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT — items 비어 있음·scheduleDate 중복·한 항목에 slots·uncertain 둘 다 없음·slots 필드 일부 누락",
+          description = "INVALID_INPUT — items 비어 있음·scheduleDate 중복·한 항목에 slots·uncertain 둘 다 없음·slots 필드 일부 누락·scheduleDate가 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -391,6 +394,12 @@ public class UserScheduleController {
                   summary = "items가 비어 있으면 400(INVALID_INPUT)",
                   value = """
                       {"items": []}
+                      """),
+              @ExampleObject(
+                  name = "❌ 허용 윈도우 밖 날짜 → 400",
+                  summary = "지난 날짜이거나 오늘+2년−1(참여 중 ONGOING 여행 종료일이 더 뒤면 그 날짜)을 넘는 날짜는 저장할 수 없음 — 저장해도 GET /calendar로 다시 조회할 수 없는 구간이기 때문",
+                  value = """
+                      {"items": [{"scheduleDate": "2099-01-01", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
                       """)
           }))
   @PatchMapping("/personal")

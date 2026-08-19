@@ -23,7 +23,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 ├── rules/                 ← 상황별 AI 규칙 (.md + paths frontmatter)
 │   ├── README.md                  ← 이 파일 (구조·사용법)
 │   ├── harness-workflow.md        # ⛔ STOP · Before/While/After (코어, always-load)
-│   ├── harness-wave.md            # Wave Must/Nice/Out · [미정]#2 · 일정 용어 (always-load)
+│   ├── harness-wave.md            # Wave Must/Nice/Out · [미정] 처리 · 일정 용어 (always-load)
 │   ├── harness-follow-up.md       # 후속 제안 · Defer · ERD 제안 (always-load)
 │   ├── workflow-tools.md          # Claude Code 도구 매핑 (always-load)
 │   ├── plain-language-reporting.md # 비전공자용 쉬운 설명 (보고·채팅만, 코드 주석 제외, always-load)
@@ -70,7 +70,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | 파일 | 요약 | SSOT 범위 |
 |------|------|-----------|
 | `harness-workflow.md` | ⛔ 문서 정합 · ErrorCode/AOP · DB · **레거시(교체=같은 PR 삭제)** · **API Breaking-Change-Reason 트레일러** · Before/While/After | **코어 STOP·코딩 흐름** |
-| `harness-wave.md` | Wave Must/Nice/Out 단정 금지 · `[미정]`→#2 · 희망기간/조회윈도우/A1 | Wave·용어 |
+| `harness-wave.md` | Wave Must/Nice/Out 단정 금지 · `[미정]` 문서 표기(중앙 트래커 폐지) · 희망기간/조회윈도우/A1 | Wave·용어 |
 | `harness-follow-up.md` | 💡 후속 제안 · ✅ Defer 이슈 분리 · 💡 ERD 적극 제안 | 완료 후·범위 미루기 |
 | `workflow-tools.md` | **도구 우선순위**(Claude Code 기본 > OMC > Superpowers > 프로젝트 문서) · Claude Code 도구 매핑 | 워크플로 도구 연동·채택 판단 |
 | `plain-language-reporting.md` | 사용자 보고(채팅·`refactor-log.md`·완료 요약)는 용어 풀어쓰기·비유 위주로 쉽게. **코드 `//` 주석은 대상 아님**(`spring-boot-java.md` Comments가 SSOT) | 사용자 대상 설명 vs 코드 주석 스타일 분리 |

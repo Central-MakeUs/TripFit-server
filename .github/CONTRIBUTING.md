@@ -122,9 +122,9 @@ Nice/Must 구분은 **Wave Backlog Issue** 본문 + 실행 Issue **비고** — 
 
 이슈당 **wave 1개** + kind 1개 + area 1개 권장.
 
-### `[미정]` chore 트래커
+### `[미정]` 항목 처리
 
-기획·스펙·BR의 **`[미정]`** 항목은 **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** 에 모은다 (`kind: chore`). 상세: `.claude/rules/harness-wave.md`.
+중앙 트래커(구 `#2`)는 폐지됐다(2026-08-19) — 기획·스펙·BR의 `[미정]` 항목은 해당 문서에 표기만 남긴다. 상세: `.claude/rules/harness-wave.md`.
 
 ### 마일스톤 (= wave)
 

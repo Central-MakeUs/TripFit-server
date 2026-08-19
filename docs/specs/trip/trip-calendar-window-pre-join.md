@@ -1,7 +1,7 @@
 # 방 입장 전 달력 윈도우 — 미가입 참여자가 여행 기간을 조회하지 못하는 문제
 
 > wave: **[미정]** — Wave 분류는 Backlog(`#29`~`#32`) 확정 전까지 단정하지 않음 (`harness-wave.md`)
-> 상태: **Draft (범위 축소, 2026-08-19 `#114`)** — 승인 전 구현 금지. 본래 증상(미가입 참여자에게 멤버 row가 없어 C1 상한이 확장되지 않던 문제)은 `#114`가 `join`을 일정 플로우 맨 앞으로 옮기면서 **자연히 해소**됐다(`SCHEDULE_PENDING` row도 `findMaxOngoingEndRangeByUserId` 계산에 포함된다). 남은 범위는 **`GET /calendar`는 윈도우를 검증하는데 `PATCH /personal`은 하지 않는 계약 비대칭** 하나뿐이며, 해결안 A/B는 더 이상 필요 없다(B는 hold 폐지로 성립 자체가 불가)
+> 상태: **Implemented** (2026-08-18) — 본래 증상(미가입 참여자에게 멤버 row가 없어 C1 상한이 확장되지 않던 문제)은 `#114`가 `join`을 일정 플로우 맨 앞으로 옮기면서 **자연히 해소**됐다(`SCHEDULE_PENDING` row도 `findMaxOngoingEndRangeByUserId` 계산에 포함된다). 남아 있던 **`GET /calendar` ↔ `PATCH /personal` 윈도우 검증 비대칭**은 **해결안 D(저장에도 같은 윈도우 적용)**로 확정·구현했다. 구 해결안 A/B는 불필요해졌다(B는 hold 폐지로 성립 자체가 불가)
 > MVP: 해당 없음 (기존 계약의 빈틈 보완)
 > GitHub: **[#110](https://github.com/Central-MakeUs/TripFit-server/issues/110)**
 > 선행: [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (#37 · R4 #53) — 본 스펙은 그 C1 윈도우의 예외 케이스
@@ -59,16 +59,28 @@ WHERE tm.user.id = :userId
 
 > **권장:** A 또는 B. C는 제품 제약을 새로 거는 것이라 기획 확정 없이 채택하지 않는다.
 
+### 최종 결론 (2026-08-18 사용자 확정)
+
+**A·B·C 모두 채택하지 않는다.** `#114`가 `join`을 일정 플로우 맨 앞으로 옮기면서 참여자도 일정 화면 진입 시점에 이미 `SCHEDULE_PENDING` 멤버 row를 갖게 돼, R4 상한이 그 방 `endRange`까지 자동으로 확장된다 — A가 풀려던 문제가 사라졌고, B는 hold 자체가 폐지돼 성립하지 않는다.
+
+**D. 저장에도 조회와 같은 윈도우를 적용한다 (채택).** `PATCH /users/schedule/personal`이 저장 전에 `validateCalendarDateRange`를 호출해, 요청 날짜가 `[today, max(today+2년−1, 참여 중 ONGOING endRange 최댓값)]` 밖이면 400 `INVALID_INPUT`으로 거부한다.
+
+- **상한 계산은 조회와 같은 함수(`ScheduleService.resolveCalendarWindowEnd`)를 재사용한다** — R4의 "참여 중 ONGOING 여행 종료일까지 확장" 규칙이 저장에도 그대로 적용되고, 두 API가 갈라질 수 없다.
+- **지난 날짜도 같은 이유로 막는다.** 조회 구간이 `today`부터라 과거 날짜에 저장된 개별 일정 역시 다시 조회할 수 없다 — 상한만 막고 하한을 두면 같은 결함이 반대쪽에 남는다.
+- **한 항목이라도 구간 밖이면 요청 전체를 거부한다**(부분 저장 없음) — 기존 검증(중복 날짜·슬롯 누락)과 같은 방식.
+
+**알려진 한계 (이번 범위 밖):** 윈도우는 고정값이 아니라 조회 시점에 계산된다. 저장 시점엔 구간 안이었어도 그 방이 `EXPIRED`로 바뀌거나 사용자가 방을 나가면 상한이 다시 `today+2년−1`로 줄어, 이미 저장된 날짜가 구간 밖으로 밀려 조회되지 않을 수 있다. 저장 검증만으로는 없앨 수 없고(상한이 움직이는 값인 이상 구조적), 해소하려면 "이미 저장된 일정은 상한과 무관하게 조회 허용" 같은 별도 정책이 필요하다. 빈도가 낮아 이번엔 명시만 하고 다루지 않는다.
+
 ## 요구사항
 
 ### Must Have
 
-- [ ] 해결안 A/B/C 중 하나 확정 (승인 게이트)
-- [ ] 미가입 참여자가 초대받은 방의 희망 기간을 개별 일정 화면에서 조회 가능
-- [ ] 방장 경로 회귀 없음 (`SCHEDULE_PENDING` 멤버 row로 이미 확장되는 동작 유지)
-- [ ] `GET /calendar`와 `PATCH /personal`의 윈도우 검증 비대칭 해소 방향 확정·반영
-- [ ] 계약 변경 시 `Breaking-Change-Reason` 트레일러 + `trip-schedule-calendar-window.md` R4 amend
-- [ ] `./gradlew test`
+- [x] 해결안 확정 (승인 게이트) — **D 채택** (2026-08-18)
+- [x] 미가입 참여자가 초대받은 방의 희망 기간을 개별 일정 화면에서 조회 가능 — `#114`로 해소
+- [x] 방장 경로 회귀 없음 (`SCHEDULE_PENDING` 멤버 row로 이미 확장되는 동작 유지)
+- [x] `GET /calendar`와 `PATCH /personal`의 윈도우 검증 비대칭 해소 — `upsertPersonal`이 `validateCalendarDateRange` 호출
+- [x] 계약 변경 `Breaking-Change-Reason` 트레일러 + `trip-schedule-calendar-window.md` R4 amend
+- [x] `./gradlew test`
 
 ### Out of Scope
 
@@ -79,12 +91,16 @@ WHERE tm.user.id = :userId
 
 ## 완료 기준
 
-- [ ] 해결안 확정 후 Approved
-- [ ] 구현 + 회귀 테스트(방장·참여자·2년 경계)
-- [ ] `trip-schedule-calendar-window.md` R4 절 amend
-- [ ] `docs/specs/README.md` 상태 갱신
+- [x] 해결안 확정 후 Approved → Implemented (2026-08-18)
+- [x] 구현 + 회귀 테스트 — 상한 밖 400 · 과거 날짜 400 · ONGOING 여행으로 확장된 구간은 저장 허용
+- [x] `trip-schedule-calendar-window.md` R4 절 amend
+- [x] `docs/specs/README.md` 상태 갱신
 
 ## 변경 이력
+
+| 날짜 | 변경 |
+|------|------|
+| 2026-08-18 | **해결안 D 확정·구현 (`#110`)** — 본래 증상은 `#114`로 해소돼 A/B/C를 모두 폐기하고, 남은 `GET`/`PATCH` 비대칭을 "저장에도 같은 윈도우 적용"으로 해소. 상한 계산은 조회와 같은 함수를 재사용해 R4 확장 규칙이 저장에도 동일하게 걸린다. 과거 날짜도 같은 이유로 거부. 윈도우가 나중에 줄어들면 기존 저장분이 조회 밖으로 밀리는 한계는 알려진 사항으로 명시 |
 
 | 날짜 | 변경 |
 |------|------|
