@@ -120,6 +120,7 @@ class GoogleCalendarServiceTest {
                 true,
                 false,
                 false,
+                false,
                 true));
 
     googleCalendarService.connect(USER_ID, "auth-code", null);
@@ -165,6 +166,7 @@ class GoogleCalendarServiceTest {
                 true,
                 false,
                 false,
+                false,
                 true));
 
     googleCalendarService.connect(USER_ID, "auth-code", redirectUri);
@@ -202,6 +204,7 @@ class GoogleCalendarServiceTest {
                 user.getProfileImageUrl(),
                 user.getProvider(),
                 true,
+                false,
                 false,
                 false,
                 true));
@@ -308,6 +311,7 @@ class GoogleCalendarServiceTest {
                 user.getProfileImageUrl(),
                 user.getProvider(),
                 false,
+                true,
                 true,
                 false,
                 true));

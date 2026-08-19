@@ -77,6 +77,7 @@ class UserControllerTest {
                 false,
                 false,
                 false,
+                false,
                 true));
 
     mockMvc
@@ -121,6 +122,7 @@ class UserControllerTest {
                 null,
                 SocialProvider.GOOGLE,
                 false,
+                true,
                 true,
                 false,
                 true));

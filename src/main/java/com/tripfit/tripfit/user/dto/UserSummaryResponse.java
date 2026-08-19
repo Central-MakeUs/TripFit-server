@@ -45,9 +45,19 @@ public record UserSummaryResponse(
 
     @Schema(
         description = """
+            정기 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).
+            개별 일정은 세지 않는다 — 일정 확인 화면에서 "정기 일정이 있나요?" 질문을 띄울지 판정하는 값.
+            true: 정기 일정 생성. false: 정기 일정이 0건(개별 일정만 있어도 false).
+            일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
+            """,
+        example = "false") boolean hasRegularSchedule,
+
+    @Schema(
+        description = """
             정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).
             true: 정기 일정 첫 생성 또는 개별 일정 첫 저장.
             false: 두 종류 일정 row가 모두 0건.
+            정기·개별을 뭉뚱그린 값이라 정기 일정 유무를 판정할 수 없다 — 그 판정에는 hasRegularSchedule을 쓴다.
             일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
             """,
         example = "false") boolean hasPreSchedule,

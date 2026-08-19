@@ -51,6 +51,29 @@ class UserSummaryServiceTest {
 
     assertThat(summary.isAllFree()).isTrue();
     assertThat(summary.hasPreSchedule()).isFalse();
+    assertThat(summary.hasRegularSchedule()).isFalse();
+  }
+
+  // 개별 일정만 등록한 사용자 — 두 파생 필드가 갈리는 유일한 조합
+  @Test
+  void toSummary_personalScheduleOnly_hasPreScheduleTrueButHasRegularScheduleFalse() {
+    when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
+    when(personalScheduleRepository.existsByUserId(user.getId())).thenReturn(true);
+
+    var summary = userSummaryService.toSummary(user);
+
+    assertThat(summary.hasPreSchedule()).isTrue();
+    assertThat(summary.hasRegularSchedule()).isFalse();
+  }
+
+  @Test
+  void toSummary_regularScheduleExists_bothDerivedFieldsTrue() {
+    when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(true);
+
+    var summary = userSummaryService.toSummary(user);
+
+    assertThat(summary.hasPreSchedule()).isTrue();
+    assertThat(summary.hasRegularSchedule()).isTrue();
   }
 
   @Test

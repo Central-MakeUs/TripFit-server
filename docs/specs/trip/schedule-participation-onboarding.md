@@ -168,7 +168,7 @@ canEnterRoom(user) =
 - **"정기 일정이 있나요?"는 정기 0건인 사용자에게만 노출된다.** 이미 정기가 있는 사용자에게는 이 질문 자체가 없고, 기존 값을 불러와 확인·수정하는 화면으로 간다 → "없어요를 눌렀는데 기존 정기가 남아 있다"는 모순 상황이 생기지 않는다.
 - **연차는 정기 일정과 한 덩어리다.** 정기 일정을 입력·수정하는 화면에서만 노출된다. "없어요" 경로에서는 연차를 묻지 않고, 저장돼 있던 연차 값은 그대로 보존된다(`User`에 저장 — [`vacation-policy-user-migration.md`](../user-schedule/vacation-policy-user-migration.md) #52).
 
-> **⚠️ 분기 판단에 `hasPreSchedule`을 쓰지 말 것 (2026-08-16):** `hasPreSchedule`은 **정기 OR 개별**이 하나라도 있으면 `true`인 파생값이다(D-BR006-C). 이 값으로 위 2분기를 판정하면 **개별 일정만 등록한 사용자**(정기 0건)에게 "입력하신 일정을 확인해주세요"가 뜨고 정기 화면이 비어 있는 상태가 된다. 분기는 반드시 **`GET /api/v1/users/schedule/regular` 응답 길이**로 한다 — 1건 이상 분기에서 어차피 필요한 호출이라 왕복이 늘지 않는다.
+> **⚠️ 분기 판단에 `hasPreSchedule`을 쓰지 말 것 (2026-08-16 · 2026-08-17 amend):** `hasPreSchedule`은 **정기 OR 개별**이 하나라도 있으면 `true`인 파생값이다(D-BR006-C). 이 값으로 위 2분기를 판정하면 **개별 일정만 등록한 사용자**(정기 0건)에게 "입력하신 일정을 확인해주세요"가 뜨고 정기 화면이 비어 있는 상태가 된다. 분기 판정은 **`hasRegularSchedule`**(login · `GET /auth/me` · profile PATCH 응답 — 정기 EXISTS만 반영, D-BR006-C) **또는 `GET /api/v1/users/schedule/regular` 응답 길이** 중 하나로 한다. 1건 이상 분기는 어차피 프리필용 목록 호출이 필요하므로, 요약 응답을 이미 들고 있으면 `hasRegularSchedule`로 먼저 갈라 0건 경로의 불필요한 목록 호출을 없앨 수 있다.
 
 **일정을 바꾸지 않고 통과했을 때 (확정):**
 
@@ -253,14 +253,18 @@ canEnterRoom(user) =
 
 **`hasPreSchedule` (D-BR006-C 확정):** login/me 응답 필드. `UserSummaryService`가 `regular_schedule` OR `personal_schedule` row 존재 여부를 **조회 시 파생**.
 
-### D-BR006-C: `hasPreSchedule` 파생 (확정)
+### D-BR006-C: `hasPreSchedule` · `hasRegularSchedule` 파생 (확정)
 
 | 항목 | 확정 |
 |------|------|
 | SSOT | `regular_schedule` / `personal_schedule` **테이블 row** |
-| API | `UserSummaryResponse.hasPreSchedule` — login · `GET /auth/me` · profile PATCH |
-| DB 컬럼 | `is_schedule_registered` **제거** (Hibernate ddl-auto) |
+| API | `UserSummaryResponse.hasPreSchedule` · `UserSummaryResponse.hasRegularSchedule` — login · `GET /auth/me` · profile PATCH |
+| `hasPreSchedule` | `EXISTS(regular) OR EXISTS(personal)` — 온보딩·마이페이지 **표시용**. 정기 유무 판정에 쓰지 않음 |
+| `hasRegularSchedule` | `EXISTS(regular)`만 (2026-08-17 추가) — 일정 확인 플로우 2분기 판정용. 개별 일정은 세지 않음 |
+| DB 컬럼 | `is_schedule_registered` **제거** (Hibernate ddl-auto). 두 필드 모두 **컬럼 없음 — 조회 시 파생** |
 | 구 `@Hidden` onboarding PATCH | **삭제** |
+
+**`hasRegularSchedule`을 추가한 이유 (2026-08-17):** 요약 응답에 "정기 일정이 있는가"를 알려주는 값이 없어, 프론트가 가장 가까워 보이는 `hasPreSchedule`을 분기에 전용(轉用)하는 오용이 실제로 발생했다(개별 일정만 등록한 사용자가 빈 정기 화면에 갇힘). 두 값의 차이는 **개별 일정만 있는 사용자**에서만 드러난다 — `hasPreSchedule=true`, `hasRegularSchedule=false`.
 
 ### D-SPARSE-3: 달력 omit(빈 날) — 방 입장 후 해석
 
@@ -442,6 +446,7 @@ canEnterRoom(user) =
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-17 | **D-BR006-C amend — `hasRegularSchedule` 필드 추가** — 요약 응답(login · `GET /auth/me` · profile PATCH)에 정기 일정 EXISTS만 반영하는 파생 boolean을 신설. 계기: 요약 응답에 정기 유무를 알려주는 값이 없어 프론트가 `hasPreSchedule`(정기 OR 개별)을 일정 확인 플로우 분기에 전용해, 개별 일정만 등록한 사용자가 빈 정기 화면에 갇히는 QA 이슈가 발생. D-JOIN-TRIP-FLOW 분기 판정 근거에 이 필드를 추가(기존 `GET /users/schedule/regular` 길이 판정도 계속 유효) |
 | 2026-08-16 | **D-JOIN-CLEAR stale 정정** — "Skip인데 이미 0행 → 방장 `POST /trips` 시 `is_all_free=true`"는 #39 amend(create는 markAllFree 안 함) 이후 갱신되지 않은 문구였다. 실제 구현은 `TripCommandService.activateMembership`이 설정하므로 **방장은 `activate` 시점**으로 정정 (같은 문서 D-JOIN-TRIP-FLOW 백엔드 가드 2·BR-USER-007과 이미 일치) |
 | 2026-08-16 | **D-JOIN-TRIP-FLOW amend (Figma Wireframe v1 대조)** — ① 방 입장 플로우는 **건너뛰기 버튼 없음**(회원가입 온보딩만 건너뛰기 가능), 구 "Skip" 표현은 "확인 후 변경 없이 통과"로 재정의 ② 정기 일정 **보유 여부 2분기**("사전 일정 입력이 필요해요" vs "입력하신 일정을 확인해주세요") 명문화 — "정기 일정이 있나요?"는 정기 0건인 사용자에게만 노출 ③ **분기 판정에 `hasPreSchedule` 사용 금지**(정기 OR 개별 파생값이라 개별만 있는 사용자를 오분기) → `GET /users/schedule/regular` 길이로 판정 ④ 연차는 정기 일정과 한 덩어리(정기 미입력 시 미노출) ⑤ 개별 일정 화면은 손댄 날짜만 PATCH(전 기간 재전송 시 정기 유래 값이 개별 오버라이드로 굳어 복구 불가) |
 | 2026-07-30 | **O1.4 정합 반영** — `schedule-slot-override.md` O1.4가 개별 일정 삭제 경로를 전면 제거함에 따라 D-JOIN-CLEAR·"일정 수정 API 형태" 절 갱신: 개별 일정으로 `is_all_free`를 켜는 경로는 이제 없음(정기 삭제 + 개별 미등록 조합만 유효), "개인 CLEAR" 삭제 시맨틱 문구 제거. `canEnterRoom`이 OR 조건이라 개별 일정이 있으면 애초에 `is_all_free` 전환이 불필요하다는 점을 121행 아래 `[미정]` 노트로 남김(기존 데이터를 지우지 않고 명시적으로 "전부 free" 선언하는 UX는 추후 검토 대상, [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)) |

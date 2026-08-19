@@ -19,7 +19,7 @@
 | 2 | 이름 = **성(`lastName`) + 이름(`firstName`)** 분리, **필수·건너뛰기 없음** |
 | 3 | **회원가입 = 소셜 login upsert + JWT** (이름 전에도 토큰 발급) |
 | 4 | `isGoogleCalendarConnected` — OAuth 연동 시만 `true`; 미연동·건너뛰기 = `false` |
-| 5 | **`hasPreSchedule`** — login/me **조회 시 파생** (`regular_schedule` OR `personal_schedule` ≥1). D-BR006-C |
+| 5 | **`hasPreSchedule`** — login/me **조회 시 파생** (`regular_schedule` OR `personal_schedule` ≥1) · **`hasRegularSchedule`** — 같은 응답, `regular_schedule` ≥1만. D-BR006-C |
 | 6 | ~~`isScheduleRegistered`~~ · ~~`isOptionalOnboardingCompleted`~~ · ~~`PATCH /users/onboarding`~~ — **2026-07-20 제거** (#22) |
 | 7 | `onboarding_step` **미사용** |
 | 8 | **D-NAME-1** — Kakao / Google / Apple 동일: login JWT 후 이름 필수, 핵심 API 403, login·refresh·me·온보딩 이름 PATCH 차단 금지 |
@@ -119,8 +119,10 @@ firstName 또는 lastName null?
   "profileImageUrl": "https://lh3.googleusercontent.com/...",
   "provider": "GOOGLE",
   "isGoogleCalendarConnected": false,
+  "hasRegularSchedule": false,
   "hasPreSchedule": false,
-  "isAllFree": false
+  "isAllFree": false,
+  "notificationEnabled": true
 }
 ```
 
@@ -130,8 +132,10 @@ firstName 또는 lastName null?
 | lastName | Y | 미입력 시 null → 이름 화면 |
 | nickname | Y | 소셜 provider 값. prefill용 |
 | isGoogleCalendarConnected | N | default `false`. **연동 성공 시만** `true` |
-| hasPreSchedule | N | DB 컬럼 없음, 조회 시 파생(정기 OR 개별 일정 ≥1). 상세: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) D-BR006-C |
+| hasRegularSchedule | N | DB 컬럼 없음, 조회 시 파생(정기 일정 ≥1 — 개별은 제외). 일정 확인 플로우 분기 판정용. 상세: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) D-BR006-C |
+| hasPreSchedule | N | DB 컬럼 없음, 조회 시 파생(정기 OR 개별 일정 ≥1). 표시용 — 정기 유무 판정에는 `hasRegularSchedule`. 상세: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) D-BR006-C |
 | isAllFree | N | `user.is_all_free` 저장값. 상세: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) |
+| notificationEnabled | N | `user.notification_enabled` 저장값(default `true`, BR-USER-005). 온보딩 API는 변경하지 않음 — `PATCH /users/profile` 전용 |
 
 ### `PATCH /api/v1/users/onboarding/name`
 

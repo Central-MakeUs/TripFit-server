@@ -125,7 +125,7 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 |---|---|
 | 인증 | Bearer JWT 필수 |
 | 성공 응답 | `201 Created` |
-| 부수효과 | 첫 정기 일정 생성 시 `hasPreSchedule`이 `true`가 됨 — `GET /auth/me` 등 재조회 필요 |
+| 부수효과 | 첫 정기 일정 생성 시 `hasRegularSchedule`·`hasPreSchedule`이 `true`가 됨 — `GET /auth/me` 등 재조회 필요 |
 
 **요청 스키마**
 
@@ -193,7 +193,7 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 | 인증 | Bearer JWT 필수 |
 | Request Body | 없음 |
 | 성공 응답 | `204 No Content` (body 없음) |
-| 부수효과 | 정기·개별 일정이 모두 0건이 되면 `hasPreSchedule`이 `false`가 됨 — `GET /auth/me` 재조회 필요 |
+| 부수효과 | 정기가 0건이 되면 `hasRegularSchedule`이, 정기·개별이 모두 0건이 되면 `hasPreSchedule`까지 `false`가 됨 — `GET /auth/me` 재조회 필요 |
 
 **에러**
 

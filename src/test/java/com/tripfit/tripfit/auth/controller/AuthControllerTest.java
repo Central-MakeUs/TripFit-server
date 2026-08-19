@@ -279,6 +279,7 @@ class AuthControllerTest {
         false,
         false,
         false,
+        false,
         true);
   }
 }

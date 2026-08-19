@@ -8,8 +8,8 @@
 |------|-------------|------|
 | [`auth/`](auth/) | `auth` | 8 |
 | [`user/`](user/) | `user` (+`user/googlecalendar`) | 6 |
-| [`user-schedule/`](user-schedule/) | `user/schedule` | 3 |
-| [`trip/`](trip/) | `trip` (recommendation 포함 — 별도 최상위 패키지 아님, flat) | 19 |
+| [`user-schedule/`](user-schedule/) | `user/schedule` | 6 |
+| [`trip/`](trip/) | `trip` (recommendation 포함 — 별도 최상위 패키지 아님, flat) | 20 |
 | [`notification/`](notification/) | `notification` | 1 |
 | [`cross-cutting/`](cross-cutting/) | 도메인 무관 (PK 전략·OpenAPI·CI 등) | 5 |
 
@@ -57,6 +57,8 @@
 | [`schedule-calendar-resolve.md`](user-schedule/schedule-calendar-resolve.md) | 2 | **Implemented** (#17) · S1·R2=A · **A1→#37** | regular+personal → 날짜별 정기+개별 합친 달력 조회 | schedule-unified (#11) · #37 |
 | [`schedule-slot-override.md`](user-schedule/schedule-slot-override.md) | 2 | **Approved** (#67) | S1(개별 전체 대체) → O1(슬롯 단위 오버라이드) 전환 | schedule-calendar-resolve.md |
 | [`schedule-holiday-rest.md`](user-schedule/schedule-holiday-rest.md) | 2 | **Approved** (#107) | `holidayRest` 근무일 판정 반영 — 공공데이터포털 특일정보 API + Redis 캐싱, 달력·추천 공통 | schedule-calendar-resolve (A4) · decision 011 |
+| [`vacation-policy-user-migration.md`](user-schedule/vacation-policy-user-migration.md) | 4 | **Approved** (2026-08-16, `#52`) · PR [#111](https://github.com/Central-MakeUs/TripFit-server/pull/111) 구현 완료·merge 대기 | 연차·반차·공휴일 휴무 설정을 `RegularSchedule` → `User`로 이동 (스키마 리팩터, 정책 불변) | schedule-unified · trip-recommendation-algorithm |
+| [`schedule-state-response.md`](user-schedule/schedule-state-response.md) | 2 | **Superseded** (2026-08-18, 미구현) | 정기 "없어요" 선언 저장·`regularScheduleState`·`canEnterRoom` 노출 — 폐기. 유효한 진단만 `trip-join-schedule-gate`로 이관 | trip-join-schedule-gate |
 
 ## `trip/`
 
@@ -79,7 +81,8 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`trip-recommendation.md`](trip/trip-recommendation.md) | 2 | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
 | [`trip-recommendation-algorithm.md`](trip/trip-recommendation-algorithm.md) | 2 | **Approved** (#50 Closed) · **2026-08-15 연차/반차 자동 반영 amend Implemented**(#105) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 · 연차/반차 자동 전환 시뮬레이션 | #13 · #17 |
 | [`trip-recommendation-scoring-source.md`](trip/trip-recommendation-scoring-source.md) | 2 | 확정 (기획자 승인) | 추천 스코어링 원본 자료 — `trip-recommendation-algorithm`이 구현하는 패널티 구간표·가중치·동점 기준의 원본 출처(참고 자료, SSOT 아님) | trip-recommendation-algorithm |
-| [`trip-join-capacity-hold.md`](trip/trip-join-capacity-hold.md) | 4 | **Implemented** (#35, Open — 미머지) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
+| [`trip-join-capacity-hold.md`](trip/trip-join-capacity-hold.md) | 4 | **Implemented** (#35, Open — 미머지) · **`trip-join-schedule-gate` 승인 시 Superseded 예정**(hold 완전 폐지) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
+| [`trip-join-schedule-gate.md`](trip/trip-join-schedule-gate.md) | 2 | **Draft** (2026-08-18 개정) · 승인 전 구현 금지 · **BR-USER-006·007 개정 / 011 삭제 포함** | 참여자 `join`을 `SCHEDULE_PENDING`으로 앞당겨 방 입장 일정 확인을 서버가 강제 · hold→DB 비관적 락 대체 · 전역 입장 게이트(`is_all_free`) 삭제 | #22 · #35 · #39 · #110 |
 | [`package-structure-refactor.md`](trip/package-structure-refactor.md) | 4 | Draft (설계 확정, 구현 착수 전 이슈·decision 003 amend 필요) | trip 도메인 패키지 포트/어댑터 재설계 — flat 구조 재검토 | decision 003 amend |
 | [`kakao-invite-share.md`](trip/kakao-invite-share.md) | 3 | **Approved** (#19) | 카카오·링크 공유 A/B/C · create에 inviteCode 없음 · 신규 API 없음 | trip-room-api D3 · #12 |
 | [`trip-thumbnail-image.md`](trip/trip-thumbnail-image.md) | 미정 (#62) | Draft | 여행방 확정 기간을 베이스 이미지에 합성해 카카오 공유용 동적 썸네일 자동 생성 · S3 등 오브젝트 스토리지 신규 구축 필요 | kakao-invite-share (#19) |
