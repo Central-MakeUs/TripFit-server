@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
@@ -14,6 +15,8 @@ import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 // 회원 탈퇴 유스케이스 — cascade(참여 방 나가기·소유 방 삭제) → 소셜 provider revoke(best-effort) → 개인 데이터 hard delete →
 // User soft delete·PII 스크럽
 public class UserWithdrawalService {
+
+  private static final Logger log = LoggerFactory.getLogger(UserWithdrawalService.class);
 
   private final UserLookupService userLookupService;
 
@@ -40,6 +45,8 @@ public class UserWithdrawalService {
 
   private final KakaoUnlinkClient kakaoUnlinkClient;
 
+  private final AppleCredentialService appleCredentialService;
+
   private final RefreshTokenService refreshTokenService;
 
   public UserWithdrawalService(
@@ -52,6 +59,7 @@ public class UserWithdrawalService {
       GoogleCalendarOAuthClient googleCalendarOAuthClient,
       GoogleCalendarTokenCrypto googleCalendarTokenCrypto,
       KakaoUnlinkClient kakaoUnlinkClient,
+      AppleCredentialService appleCredentialService,
       RefreshTokenService refreshTokenService) {
     this.userLookupService = userLookupService;
     this.tripService = tripService;
@@ -62,6 +70,7 @@ public class UserWithdrawalService {
     this.googleCalendarOAuthClient = googleCalendarOAuthClient;
     this.googleCalendarTokenCrypto = googleCalendarTokenCrypto;
     this.kakaoUnlinkClient = kakaoUnlinkClient;
+    this.appleCredentialService = appleCredentialService;
     this.refreshTokenService = refreshTokenService;
   }
 
@@ -81,6 +90,7 @@ public class UserWithdrawalService {
     // 2. 소셜 provider revoke·unlink (best-effort — 실패해도 탈퇴 자체는 계속 진행)
     revokeGoogleCalendarIfConnected(userId);
     unlinkKakaoIfProvider(user);
+    appleCredentialService.revokeAndDeleteIfPresent(userId);
 
     // 3. 개인 전용 데이터 hard delete
     personalScheduleRepository.deleteByUserId(userId);
@@ -100,15 +110,19 @@ public class UserWithdrawalService {
   }
 
   // Google Calendar 연동돼 있으면 credential hard delete 전에 refresh token revoke 호출 (best-effort,
-  // disconnect()와 동일 패턴)
+  // disconnect()와 동일 패턴) — 복호화 실패 등 예상 밖 오류도 탈퇴 자체를 막지 않도록 여기서 흡수함
   private void revokeGoogleCalendarIfConnected(UUID userId) {
     googleCalendarCredentialRepository
         .findByUser_Id(userId)
         .ifPresent(
             (GoogleCalendarCredential credential) -> {
-              String refreshToken = googleCalendarTokenCrypto.decrypt(
-                  credential.getRefreshTokenCiphertext());
-              googleCalendarOAuthClient.revokeRefreshToken(refreshToken);
+              try {
+                String refreshToken =
+                    googleCalendarTokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
+                googleCalendarOAuthClient.revokeRefreshToken(refreshToken);
+              } catch (Exception exception) {
+                log.warn("Google Calendar credential revoke failed", exception);
+              }
             });
   }
 

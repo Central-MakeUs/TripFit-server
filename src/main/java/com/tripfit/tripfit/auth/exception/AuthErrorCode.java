@@ -31,6 +31,10 @@ public enum AuthErrorCode implements ErrorCode {
   AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_FORBIDDEN", "접근 권한이 없습니다."),
 
   @Schema(
+      description = "APPLE 로그인인데 authorizationCode 누락 — 탈퇴 시 Apple revoke 호출에 필요(App Store 심사 요건)")
+  AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED(HttpStatus.BAD_REQUEST, "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED", "Apple 로그인에는 authorizationCode가 필요합니다."),
+
+  @Schema(
       description = "Apple S2S notification payload 형식 오류 — outer JWT 파싱 실패·events JSON 파싱 실패·sub 등 필수 필드 누락")
   AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD(HttpStatus.BAD_REQUEST, "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD", "Apple 알림 payload 형식이 올바르지 않습니다."),
 

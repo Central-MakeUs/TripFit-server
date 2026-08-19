@@ -58,11 +58,13 @@ public class AuthController {
 
           호출 시점: 앱 최초 로그인·재로그인.
 
-          전제: Google/Kakao/Apple에서 받은 유효한 토큰.
+          전제: Google/Kakao/Apple에서 받은 유효한 토큰. provider가 APPLE이면 Apple 네이티브 Sign in 인증 결과의 authorizationCode도 함께 보내야 한다.
 
           결과: access·refresh 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
 
-          주요 에러: AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)
+          주의: APPLE 로그인은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 Apple 쪽 연결 해제(revoke)에 쓰이는 refresh token을 매 로그인마다 최신 상태로 갱신하기 위함.
+
+          주요 에러: AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED — APPLE인데 authorizationCode 누락 · AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료(재로그인 유도) · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효 · AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider 접근 실패(재시도 유도)
           """)
   @ApiResponses({
       @ApiResponse(
@@ -82,6 +84,15 @@ public class AuthController {
               examples = @ExampleObject(
                   value = """
                       {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "token", "message": "필수 값입니다."}]}
+                      """))),
+      @ApiResponse(
+          responseCode = "400",
+          description = "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED — provider가 APPLE인데 authorizationCode 누락",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class),
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED", "message": "Apple 로그인에는 authorizationCode가 필요합니다."}
                       """))),
       @ApiResponse(
           responseCode = "401",
@@ -105,7 +116,8 @@ public class AuthController {
   @PostMapping("/login")
   ResponseEntity<SuccessResponse<LoginResponse>> login(
       @Valid @RequestBody LoginRequest request) {
-    LoginResponse response = authService.login(request.provider(), request.token());
+    LoginResponse response =
+        authService.login(request.provider(), request.token(), request.authorizationCode());
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 

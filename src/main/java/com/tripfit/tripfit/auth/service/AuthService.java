@@ -35,32 +35,49 @@ public class AuthService {
 
   private final UserLookupService userLookupService;
 
+  private final AppleCredentialService appleCredentialService;
+
   public AuthService(
       SocialTokenVerifierRegistry verifierRegistry,
       UserRepository userRepository,
       JwtService jwtService,
       RefreshTokenService refreshTokenService,
       UserSummaryService userSummaryService,
-      UserLookupService userLookupService) {
+      UserLookupService userLookupService,
+      AppleCredentialService appleCredentialService) {
     this.verifierRegistry = verifierRegistry;
     this.userRepository = userRepository;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
     this.userSummaryService = userSummaryService;
     this.userLookupService = userLookupService;
+    this.appleCredentialService = appleCredentialService;
   }
 
   // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함
   @Transactional
-  public LoginResponse login(SocialProvider provider, String token) {
-    // 1. 소셜 제공자별 검증기를 찾아 외부 토큰을 검증함
+  public LoginResponse login(SocialProvider provider, String token, String authorizationCode) {
+    // 1. APPLE인데 authorizationCode가 없으면 즉시 거부 — 탈퇴 시 Apple revoke 호출이 항상 no-op이 되는 걸 막기 위한
+    // 강제(App Store Guideline 5.1.1(v) 심사 요건)
+    if (provider == SocialProvider.APPLE
+        && (authorizationCode == null || authorizationCode.isBlank())) {
+      throw new TripFitException(AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED);
+    }
+
+    // 2. 소셜 제공자별 검증기를 찾아 외부 토큰을 검증함
     SocialTokenVerifier verifier = verifierRegistry.getVerifier(provider);
     OAuthProfile profile = verifier.verify(token);
 
-    // 2. 소셜 프로필 기준으로 사용자를 조회하거나 신규 저장함
+    // 3. 소셜 프로필 기준으로 사용자를 조회하거나 신규 저장함
     User user = upsertUser(profile);
 
-    // 3. 액세스·리프레시 발급 — user.hasPreSchedule은 toSummary()가 일정 EXISTS로 파생 (user 컬럼 아님)
+    // 4. APPLE이면 탈퇴 시 revoke용 refresh token을 교환·저장(best-effort — token 교환 자체가 실패해도 로그인 흐름은 계속
+    // 진행)
+    if (provider == SocialProvider.APPLE) {
+      appleCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode);
+    }
+
+    // 5. 액세스·리프레시 발급 — user.hasPreSchedule은 toSummary()가 일정 EXISTS로 파생 (user 컬럼 아님)
     String accessToken = jwtService.createAccessToken(user.getId());
     RefreshToken refreshToken = refreshTokenService.create(user.getId());
     return new LoginResponse(

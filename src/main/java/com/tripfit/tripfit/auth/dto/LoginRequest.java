@@ -18,7 +18,7 @@ public record LoginRequest(
         requiredMode = Schema.RequiredMode.REQUIRED) @NotBlank String token,
 
     @Schema(
-        description = "APPLE 전용 authorization code. 탈퇴 시 Apple revoke 호출(#64)에 필요한 refresh token 교환용 — GOOGLE/KAKAO는 보내지 않음",
+        description = "APPLE 전용 authorization code — provider가 APPLE이면 필수, GOOGLE/KAKAO는 보내지 않음(값이 있어도 무시). Apple 네이티브 Sign in 인증 결과에 포함된 authorizationCode 원문. 탈퇴 시 Apple 쪽 연결을 해제(revoke)하는 데 쓰일 refresh token을 교환하기 위한 값",
         example = "c1234...",
         nullable = true,
         requiredMode = Schema.RequiredMode.NOT_REQUIRED) String authorizationCode
