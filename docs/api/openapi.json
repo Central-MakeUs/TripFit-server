@@ -1530,21 +1530,22 @@
           "Auth"
         ],
         "summary": "액세스·리프레시 토큰 재발급 (RTR)",
-        "description": "refresh token으로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되므로 응답의 새\n refreshToken으로 반드시 교체해야 한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를\n 폐기한다(401 AUTH_REFRESH_REUSE).",
+        "description": "refresh token 쿠키로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되고 응답이 Set-Cookie로\n 내려주는 새 값으로 브라우저가 자동 교체한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를\n 폐기한다(401 AUTH_REFRESH_REUSE).",
         "operationId": "refresh",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefreshRequest"
-              }
+        "parameters": [
+          {
+            "name": "refreshToken",
+            "in": "cookie",
+            "description": "login 또는 이전 refresh 응답이 내려준 refresh token 쿠키",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
-            "description": "재발급 성공",
+            "description": "재발급 성공 — Set-Cookie로 새 refreshToken 전달(HttpOnly)",
             "content": {
               "*/*": {
                 "schema": {
@@ -1553,35 +1554,14 @@
                 "example": {
                   "data": {
                     "accessToken": "eyJhbG...",
-                    "refreshToken": "550e8400-e29b-41d4-a716-446655440002",
-                    "expiresIn": 7200
+                    "expiresIn": 900
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "입력값이 올바르지 않습니다.",
-                  "errors": [
-                    {
-                      "field": "refreshToken",
-                      "message": "필수 값입니다."
-                    }
-                  ]
-                }
-              }
-            }
-          },
           "401": {
-            "description": "AUTH_INVALID_REFRESH — refresh 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
+            "description": "AUTH_INVALID_REFRESH — refresh 쿠키 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
             "content": {
               "*/*": {
                 "schema": {
@@ -1606,41 +1586,22 @@
           "Auth"
         ],
         "summary": "로그아웃",
-        "description": "refresh token을 폐기해 재발급을 막는다. accessToken을 함께 보내면 자체 만료 시각 전이라도 즉시 무효화된다(블랙리스트) — 없거나 이미 만료·위조된\n 값이면 조용히 무시되고 로그아웃 자체는 계속 성공한다.",
+        "description": "refresh token 쿠키를 폐기해 재발급을 막고 브라우저에서도 쿠키를 지운다. 쿠키가 이미 없거나 만료됐어도 조용히 넘어가고 로그아웃 자체는 계속 성공한다. 액세스\n 토큰은 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 로그아웃 후에도 이미 발급된 액세스 토큰은 남은 수명 동안 유효할 수 있다.",
         "operationId": "logout",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LogoutRequest"
-              }
+        "parameters": [
+          {
+            "name": "refreshToken",
+            "in": "cookie",
+            "description": "폐기할 refresh token 쿠키. 없어도 로그아웃은 성공한다",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "204": {
-            "description": "로그아웃 성공(No Content)"
-          },
-          "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "입력값이 올바르지 않습니다.",
-                  "errors": [
-                    {
-                      "field": "refreshToken",
-                      "message": "필수 값입니다."
-                    }
-                  ]
-                }
-              }
-            }
+            "description": "로그아웃 성공(No Content) — Set-Cookie로 refreshToken 쿠키 삭제"
           }
         },
         "security": [
@@ -1654,7 +1615,7 @@
           "Auth"
         ],
         "summary": "소셜 로그인",
-        "description": "소셜 토큰으로 로그인하고 access·refresh를 발급한다. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은\n authorizationCode도 함께 보내야 한다(<code>LoginRequest.authorizationCode</code> 필드 설명 참고 — GOOGLE은 네이티브 앱이냐\n 브라우저 리다이렉트냐에 따라 값을 받는 방법이 다름). GOOGLE 브라우저 리다이렉트 로그인이면 <code>redirectUri</code>도 실제 리다이렉트에 쓴 값과 정확히\n 일치하게 보내야 한다.\n\n <p>\n APPLE·GOOGLE은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 provider revoke에 쓸\n refresh token을 확보하기 위함. GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고(정상 동작), redirectUri가 실제 값과 다르면\n 토큰 교환이 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).",
+        "description": "소셜 토큰으로 로그인하고 access·refresh를 발급한다. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은\n authorizationCode도 함께 보내야 한다(<code>LoginRequest.authorizationCode</code> 필드 설명 참고 — GOOGLE은 네이티브 앱이냐\n 브라우저 리다이렉트냐에 따라 값을 받는 방법이 다름). GOOGLE 브라우저 리다이렉트 로그인이면 <code>redirectUri</code>도 실제 리다이렉트에 쓴 값과 정확히\n 일치하게 보내야 한다.\n\n <p>\n APPLE·GOOGLE은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 provider revoke에 쓸\n refresh token을 확보하기 위함. GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고(정상 동작), redirectUri가 실제 값과 다르면\n 토큰 교환이 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).\n\n <p>\n refresh token은 응답 바디가 아니라 HttpOnly 쿠키(<code>Set-Cookie: refreshToken=...</code>)로 내려간다 — 클라이언트\n JavaScript가 값을 직접 다루지 않아도 되고(탈취 표면 축소), 이후 refresh·logout 요청 시 브라우저가 자동으로 실어 보낸다.",
         "operationId": "login",
         "requestBody": {
           "content": {
@@ -1668,7 +1629,7 @@
         },
         "responses": {
           "200": {
-            "description": "로그인 성공",
+            "description": "로그인 성공 — Set-Cookie로 refreshToken 전달(HttpOnly)",
             "content": {
               "*/*": {
                 "schema": {
@@ -1677,8 +1638,7 @@
                 "example": {
                   "data": {
                     "accessToken": "eyJhbG...",
-                    "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
-                    "expiresIn": 7200,
+                    "expiresIn": 900,
                     "user": {
                       "id": "550e8400-e29b-41d4-a716-446655440000",
                       "email": "user@example.com",
@@ -3512,7 +3472,7 @@
           "User"
         ],
         "summary": "회원 탈퇴",
-        "description": "본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지\n 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 지금 사용 중인 액세스\n 토큰도 이 요청과 동시에 즉시 무효화된다.",
+        "description": "본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지\n 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은\n 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 지금 사용 중인 액세스 토큰은 이 요청 이후에도 남은 수명 동안 유효할 수 있다.",
         "operationId": "withdraw",
         "responses": {
           "204": {
@@ -4824,21 +4784,6 @@
           "token"
         ]
       },
-      "RefreshRequest": {
-        "type": "object",
-        "description": "액세스 토큰 재발급 요청. POST /auth/refresh",
-        "properties": {
-          "refreshToken": {
-            "type": "string",
-            "description": "login 또는 이전 refresh 응답에서 받은 refresh token",
-            "example": "550e8400-e29b-41d4-a716-446655440000",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
-      },
       "RefreshResponse": {
         "type": "object",
         "description": "액세스 토큰 재발급 성공 응답. POST /auth/refresh",
@@ -4848,16 +4793,11 @@
             "description": "새 TripFit access JWT",
             "example": "eyJhbG..."
           },
-          "refreshToken": {
-            "type": "string",
-            "description": "새 refresh token. 기존 값은 이 응답과 동시에 폐기되므로 반드시 저장해 교체해야 한다(RTR)",
-            "example": "550e8400-e29b-41d4-a716-446655440000"
-          },
           "expiresIn": {
             "type": "integer",
             "format": "int64",
             "description": "access JWT 만료까지 남은 시간(초)",
-            "example": 7200
+            "example": 900
           }
         }
       },
@@ -4884,29 +4824,6 @@
             "description": "에러 코드 (성공 시 null)"
           }
         }
-      },
-      "LogoutRequest": {
-        "type": "object",
-        "description": "로그아웃 요청. POST /auth/logout",
-        "properties": {
-          "refreshToken": {
-            "type": "string",
-            "description": "서버에서 폐기할 refresh token",
-            "example": "550e8400-e29b-41d4-a716-446655440000",
-            "minLength": 1
-          },
-          "accessToken": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "현재 보유한 access token. 있으면 만료 전이라도 즉시 무효화(블랙리스트 등록)한다. 없거나 이미 만료·위조된 값이면 조용히 무시하고 로그아웃 자체는 계속 성공한다",
-            "example": "eyJhbG..."
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
       },
       "LoginRequest": {
         "type": "object",
@@ -4959,16 +4876,11 @@
             "description": "TripFit API 호출용 access JWT",
             "example": "eyJhbG..."
           },
-          "refreshToken": {
-            "type": "string",
-            "description": "access 만료 시 POST /auth/refresh에 사용하는 opaque refresh token",
-            "example": "550e8400-e29b-41d4-a716-446655440000"
-          },
           "expiresIn": {
             "type": "integer",
             "format": "int64",
             "description": "access JWT 만료까지 남은 시간(초)",
-            "example": 7200
+            "example": 900
           },
           "user": {
             "$ref": "#/components/schemas/UserSummaryResponse",
