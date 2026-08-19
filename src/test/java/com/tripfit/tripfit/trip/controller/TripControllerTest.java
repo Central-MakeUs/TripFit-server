@@ -24,7 +24,6 @@ import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
 import com.tripfit.tripfit.trip.membership.dto.TripJoinPreviewResponse;
 import com.tripfit.tripfit.trip.service.TripService;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,7 +56,7 @@ class TripControllerTest {
   void setUp() {
     SecurityContextHolder.getContext()
         .setAuthentication(
-            new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
+            new JwtAuthentication(USER_ID));
     mockMvc =
         MockMvcBuilders.standaloneSetup(new TripController(tripService))
             .setCustomArgumentResolvers(new AuthorizedUserArgumentResolver())

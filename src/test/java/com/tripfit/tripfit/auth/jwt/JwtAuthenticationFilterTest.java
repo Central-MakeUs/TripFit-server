@@ -3,11 +3,9 @@ package com.tripfit.tripfit.auth.jwt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
-import com.tripfit.tripfit.auth.oauth.TokenRevocationChecker;
 import com.tripfit.tripfit.auth.security.AuthErrorResponseWriter;
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import jakarta.servlet.FilterChain;
@@ -27,9 +25,6 @@ import java.util.UUID;
 class JwtAuthenticationFilterTest {
 
   @Mock
-  private TokenRevocationChecker tokenRevocationChecker;
-
-  @Mock
   private FilterChain filterChain;
 
   private JwtService jwtService;
@@ -46,9 +41,7 @@ class JwtAuthenticationFilterTest {
     jwtProperties.setAccessExpirationSeconds(3600);
     jwtService = new JwtService(jwtProperties);
     objectMapper = new ObjectMapper();
-    filter =
-        new JwtAuthenticationFilter(
-            jwtService, tokenRevocationChecker, new AuthErrorResponseWriter());
+    filter = new JwtAuthenticationFilter(jwtService, new AuthErrorResponseWriter());
   }
 
   @Test
@@ -59,9 +52,6 @@ class JwtAuthenticationFilterTest {
     request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
     MockHttpServletResponse response = new MockHttpServletResponse();
 
-    when(tokenRevocationChecker.isRevoked(org.mockito.ArgumentMatchers.anyString()))
-        .thenReturn(false);
-
     filter.doFilterInternal(request, response, filterChain);
 
     verify(filterChain).doFilter(request, response);
@@ -69,26 +59,6 @@ class JwtAuthenticationFilterTest {
         .isInstanceOf(JwtAuthentication.class);
     assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
         .isEqualTo(UUID.fromString("550e8400-e29b-41d4-a716-446655440007"));
-  }
-
-  @Test
-  void doFilterInternal_revokedToken_returns401() throws Exception {
-    String token =
-        jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440007"));
-    String jti = jwtService.parseAccessToken(token).jti();
-    MockHttpServletRequest request = new MockHttpServletRequest();
-    request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-    MockHttpServletResponse response = new MockHttpServletResponse();
-
-    when(tokenRevocationChecker.isRevoked(jti)).thenReturn(true);
-
-    filter.doFilterInternal(request, response, filterChain);
-
-    verify(filterChain, never()).doFilter(request, response);
-    assertThat(response.getStatus()).isEqualTo(401);
-    ErrorResponse errorResponse =
-        objectMapper.readValue(response.getContentAsByteArray(), ErrorResponse.class);
-    assertThat(errorResponse.code()).isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN.getCode());
   }
 
   @Test

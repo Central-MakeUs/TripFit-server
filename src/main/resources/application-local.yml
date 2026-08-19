@@ -12,3 +12,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+tripfit:
+  auth:
+    cookie:
+      # 로컬 개발 서버는 HTTPS가 없어 Secure 쿠키가 브라우저에 저장되지 않으므로 로컬에서만 끈다
+      secure: false

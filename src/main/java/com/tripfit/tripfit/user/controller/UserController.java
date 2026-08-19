@@ -1,7 +1,6 @@
 package com.tripfit.tripfit.user.controller;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
-import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.user.dto.OnboardingNameRequest;
@@ -19,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -126,8 +124,8 @@ public class UserController {
 
   /**
    * 본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지
-   * 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 지금 사용 중인 액세스
-   * 토큰도 이 요청과 동시에 즉시 무효화된다.
+   * 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은
+   * 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 지금 사용 중인 액세스 토큰은 이 요청 이후에도 남은 수명 동안 유효할 수 있다.
    */
   @Operation(summary = "회원 탈퇴")
   @ApiResponses({
@@ -143,10 +141,7 @@ public class UserController {
   })
   @DeleteMapping("/me")
   ResponseEntity<Void> withdraw(@AuthorizedUser UUID userId) {
-    // JwtAuthenticationFilter가 이 요청을 통과시킨 시점에 이미 검증된 JwtAuthentication뿐이므로 안전하게 캐스팅
-    JwtAuthentication authentication =
-        (JwtAuthentication) SecurityContextHolder.getContext().getAuthentication();
-    userWithdrawalService.withdraw(userId, authentication.getJti(), authentication.getExpiresAt());
+    userWithdrawalService.withdraw(userId);
     return ResponseEntity.noContent().build();
   }
 }

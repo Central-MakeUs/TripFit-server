@@ -1,7 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
 import lombok.RequiredArgsConstructor;
-import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
@@ -23,7 +22,7 @@ public class AuthLoginPersistenceService {
   @Transactional
   public Result persist(OAuthProfile profile) {
     User user = upsertUser(profile);
-    RefreshToken refreshToken = refreshTokenService.create(user.getId());
+    IssuedRefreshToken refreshToken = refreshTokenService.create(user.getId());
     return new Result(user, refreshToken);
   }
 
@@ -60,7 +59,7 @@ public class AuthLoginPersistenceService {
 
   public record Result(
       User user,
-      RefreshToken refreshToken
+      IssuedRefreshToken refreshToken
   ) {
   }
 }

@@ -21,7 +21,6 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
 import java.lang.reflect.Method;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -65,7 +64,7 @@ class TripAuthorizationInterceptorTest {
         new TripAuthorizationInterceptor(tripRepository, support, userDirectoryPort);
     SecurityContextHolder.getContext()
         .setAuthentication(
-            new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
+            new JwtAuthentication(USER_ID));
   }
 
   @AfterEach

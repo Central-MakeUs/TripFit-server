@@ -1,20 +1,26 @@
 package com.tripfit.tripfit.auth.controller;
 
+import jakarta.servlet.http.Cookie;
 import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.tripfit.tripfit.auth.config.AuthCookieProperties;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
+import com.tripfit.tripfit.auth.jwt.JwtProperties;
 import com.tripfit.tripfit.auth.oauth.AppleNotificationEvent;
 import com.tripfit.tripfit.auth.oauth.AppleNotificationVerifier;
+import com.tripfit.tripfit.auth.security.RefreshCookieFactory;
 import com.tripfit.tripfit.auth.service.AppleNotificationService;
 import com.tripfit.tripfit.auth.service.AuthService;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
@@ -46,8 +52,14 @@ class AuthControllerTest {
 
   @BeforeEach
   void setUp() {
+    JwtProperties jwtProperties = new JwtProperties();
+    jwtProperties.setRefreshExpirationDays(30);
+    RefreshCookieFactory refreshCookieFactory =
+        new RefreshCookieFactory(new AuthCookieProperties(), jwtProperties);
     AuthController authController =
-        new AuthController(authService, appleNotificationVerifier, appleNotificationService);
+        new AuthController(
+            authService, appleNotificationVerifier, appleNotificationService,
+            refreshCookieFactory);
     mockMvc =
         MockMvcBuilders.standaloneSetup(authController)
             .setControllerAdvice(new GlobalExceptionHandler())
@@ -55,9 +67,11 @@ class AuthControllerTest {
   }
 
   @Test
-  void login_returnsTokens() throws Exception {
+  void login_returnsAccessTokenBodyAndRefreshTokenCookie() throws Exception {
     when(authService.login(eq(SocialProvider.GOOGLE), eq("google-id-token"), any(), any()))
-        .thenReturn(new LoginResponse("access-jwt", "refresh-token", 7200L, sampleUserSummary()));
+        .thenReturn(
+            new AuthService.LoginResult(
+                new LoginResponse("access-jwt", 900L, sampleUserSummary()), "refresh-token"));
 
     mockMvc
         .perform(
@@ -69,26 +83,35 @@ class AuthControllerTest {
                         """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.accessToken").value("access-jwt"))
-        .andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
-        .andExpect(jsonPath("$.data.user.id").value("550e8400-e29b-41d4-a716-446655440001"));
+        .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+        .andExpect(jsonPath("$.data.user.id").value("550e8400-e29b-41d4-a716-446655440001"))
+        .andExpect(cookie().value("refreshToken", "refresh-token"))
+        .andExpect(cookie().httpOnly("refreshToken", true));
   }
 
   @Test
-  void refresh_returnsRotatedAccessAndRefreshToken() throws Exception {
+  void refresh_withCookie_returnsRotatedAccessTokenAndSetsNewCookie() throws Exception {
     when(authService.refresh("refresh-token"))
-        .thenReturn(new RefreshResponse("new-access-jwt", "new-refresh-token", 7200L));
+        .thenReturn(
+            new AuthService.RefreshResult(
+                new RefreshResponse("new-access-jwt", 900L), "new-refresh-token"));
 
     mockMvc
-        .perform(
-            post("/api/v1/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                        {"refreshToken":"refresh-token"}
-                        """))
+        .perform(post("/api/v1/auth/refresh").cookie(new Cookie("refreshToken", "refresh-token")))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"))
-        .andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"));
+        .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+        .andExpect(cookie().value("refreshToken", "new-refresh-token"));
+  }
+
+  @Test
+  void refresh_withoutCookie_returns401WithoutCallingService() throws Exception {
+    mockMvc
+        .perform(post("/api/v1/auth/refresh"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("AUTH_INVALID_REFRESH"));
+
+    verifyNoInteractions(authService);
   }
 
   @Test
@@ -98,46 +121,29 @@ class AuthControllerTest {
         .refresh("stolen-token");
 
     mockMvc
-        .perform(
-            post("/api/v1/auth/refresh")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                        {"refreshToken":"stolen-token"}
-                        """))
+        .perform(post("/api/v1/auth/refresh").cookie(new Cookie("refreshToken", "stolen-token")))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.code").value("AUTH_REFRESH_REUSE"));
   }
 
   @Test
-  void logout_returns204() throws Exception {
+  void logout_withCookie_returns204AndClearsCookie() throws Exception {
     mockMvc
-        .perform(
-            post("/api/v1/auth/logout")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                        {"refreshToken":"refresh-token"}
-                        """))
-        .andExpect(status().isNoContent());
+        .perform(post("/api/v1/auth/logout").cookie(new Cookie("refreshToken", "refresh-token")))
+        .andExpect(status().isNoContent())
+        .andExpect(cookie().maxAge("refreshToken", 0));
 
-    verify(authService).logout("refresh-token", null);
+    verify(authService).logout("refresh-token");
   }
 
-  // 클라이언트가 accessToken을 같이 보내면 그대로 서비스에 전달돼야 함(즉시 블랙리스트 등록용)
+  // 쿠키가 이미 없어도(만료·미전송) 로그아웃 자체는 계속 성공해야 함
   @Test
-  void logout_withAccessToken_passesItToService() throws Exception {
+  void logout_withoutCookie_stillReturns204() throws Exception {
     mockMvc
-        .perform(
-            post("/api/v1/auth/logout")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                        {"refreshToken":"refresh-token","accessToken":"current-access-jwt"}
-                        """))
+        .perform(post("/api/v1/auth/logout"))
         .andExpect(status().isNoContent());
 
-    verify(authService).logout("refresh-token", "current-access-jwt");
+    verify(authService).logout(null);
   }
 
   @Test
