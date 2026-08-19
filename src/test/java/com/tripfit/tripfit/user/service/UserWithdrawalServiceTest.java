@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
@@ -59,6 +60,9 @@ class UserWithdrawalServiceTest {
   private KakaoUnlinkClient kakaoUnlinkClient;
 
   @Mock
+  private AppleCredentialService appleCredentialService;
+
+  @Mock
   private RefreshTokenService refreshTokenService;
 
   private UserWithdrawalService userWithdrawalService;
@@ -76,6 +80,7 @@ class UserWithdrawalServiceTest {
             googleCalendarOAuthClient,
             googleCalendarTokenCrypto,
             kakaoUnlinkClient,
+            appleCredentialService,
             refreshTokenService);
   }
 
@@ -170,6 +175,16 @@ class UserWithdrawalServiceTest {
   }
 
   @Test
+  void withdraw_callsAppleCredentialRevokeAndDelete() {
+    User user = user();
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
+  }
+
+  @Test
   void withdraw_whenAlreadyWithdrawn_isIdempotentNoOp() {
     User user = user();
     user.setDeletedAt(LocalDateTime.now().minusDays(1));
@@ -180,6 +195,7 @@ class UserWithdrawalServiceTest {
     verify(tripService, never()).leaveAllActiveTripsAsMember(any());
     verify(tripService, never()).deleteAllOwnedActiveTrips(any());
     verify(personalScheduleRepository, never()).deleteByUserId(any());
+    verify(appleCredentialService, never()).revokeAndDeleteIfPresent(any());
   }
 
   private static User user() {
