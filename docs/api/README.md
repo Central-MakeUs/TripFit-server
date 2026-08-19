@@ -56,7 +56,7 @@ oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** �
 
 - 요청 파라미터 **기본값 변경** — `@Parameter(defaultValue=...)` 컨벤션이 없어 서버 기본 페이지 크기·정렬 순서가 바뀌어도 스펙엔 애초에 안 나타남
 - `String` 필드의 **허용 포맷/파싱 규칙 변경** — 예: `Weekday.daysOfWeek`의 구분자·요일 표기. 스키마엔 `string`이라고만 나오고 실제 규칙은 코드 안에만 있음(`spring-boot-java.md` Enum 절에 "계약이 String인 필드"로 의도적으로 분류된 케이스)
-- **계산 필드(computed field)의 트리거 조건 변경** — 예: `hasPreSchedule`. 타입·이름은 그대로인데 "언제 true가 되는지" 로직만 바뀌면 스키마 diff는 0
+- **계산 필드(computed field)의 트리거 조건 변경** — 예: `hasCompletedPreSchedule`. 타입·이름은 그대로인데 "언제 true가 되는지" 로직만 바뀌면 스키마 diff는 0
 - **CORS·env 값 변경** — `allowedOrigins`, `JWT_ACCESS_EXPIRATION` 등. "필드가 있다"는 보장돼도 "언제 세션이 끊기는지"·"어디서 호출 가능한지"는 OpenAPI 스펙 개념 밖
 - **HTTP 헤더 추가·제거·의미 변경** — 이 저장소 DTO는 전부 바디 기준이라 헤더 기반 계약이 생기면 완전한 사각지대
 - 그 외 트레일러도 안 달고 새/변경 `ErrorCode`도 안 만드는 순수 비즈니스 로직 변경(예: 검증 규칙 강화, side effect 추가/제거) 일반

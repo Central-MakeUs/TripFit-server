@@ -198,7 +198,7 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 | `REDIS_PORT` | | 기본 6379 |
 | `REDIS_PASSWORD` | ✅ | Redis `requirepass` — GitHub Secret 등록 완료(2026-08-10) |
 | `JWT_SECRET` | ✅ | Access JWT 서명 키 (256bit+ random) |
-| `JWT_ACCESS_EXPIRATION` | | 기본 7200초(2h) |
+| `JWT_ACCESS_EXPIRATION` | | 기본 900초(15분) |
 | `JWT_REFRESH_EXPIRATION_DAYS` | | 기본 30일 |
 | `GOOGLE_CLIENT_ID` | | Google 로그인 web client ID (`aud` 검증 · authorization code 교환) |
 | `GOOGLE_CLIENT_SECRET` | | Google 로그인 web client secret (authorization code 교환) |

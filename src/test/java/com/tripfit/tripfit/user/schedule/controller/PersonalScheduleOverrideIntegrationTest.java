@@ -89,7 +89,7 @@ class PersonalScheduleOverrideIntegrationTest {
 
     user = new User("google-sub-o14", SocialProvider.GOOGLE, "o14@example.com", "유저A", null);
     user.applyProfilePatch("길동", "홍", null);
-    // 연차·반차·공휴일 휴무는 이제 User 소유 값 — R1·R2 정기 일정이 공통으로 쓰던 값을 User에 적용
+    // 연차·휴일 정보는 이제 User 소유 값 — R1·R2 정기 일정이 공통으로 쓰던 값을 User에 적용
     user.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     user = userRepository.save(user);
     accessToken = jwtService.createAccessToken(user.getId());

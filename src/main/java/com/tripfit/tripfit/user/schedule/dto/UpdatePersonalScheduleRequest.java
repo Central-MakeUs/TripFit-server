@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 
-@Schema(description = "개인 일정 슬롯 단위 오버라이드 bulk upsert 요청. PATCH /users/schedule/personal")
+@Schema(description = "개별 일정 슬롯 단위 오버라이드 bulk upsert 요청. PATCH /users/schedule/personal")
 public record UpdatePersonalScheduleRequest(
     @Schema(
         description = "날짜별 upsert 항목. 같은 scheduleDate 중복 금지",

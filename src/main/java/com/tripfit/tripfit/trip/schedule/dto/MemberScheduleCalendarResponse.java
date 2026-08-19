@@ -34,7 +34,7 @@ public record MemberScheduleCalendarResponse(
       @Schema(description = "오전 [00:00, 13:00) 합친 값") ScheduleStatus morningStatus,
       @Schema(description = "오후 [13:00, 18:00) 합친 값") ScheduleStatus afternoonStatus,
       @Schema(description = "저녁 [18:00, 24:00) 합친 값") ScheduleStatus eveningStatus,
-      @Schema(description = "날짜 단위 불확실 (개인 일정 uncertain=true일 때)") boolean uncertain
+      @Schema(description = "날짜 단위 불확실 (개별 일정 uncertain=true일 때)") boolean uncertain
   ) {
   }
 }

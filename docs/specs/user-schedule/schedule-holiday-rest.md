@@ -218,7 +218,7 @@ regularsAppliedOn(matched, date, holidays, holidayRest):
 - [x] `schedule-calendar-resolve.md` A4 amend (REMOVED 문구 실제 삭제 확인)
 - [x] `trip-recommendation-algorithm.md` 리스크 표 amend
 - [x] `#2` 공휴일 항목 종결 확인 (2026-08-16 처리 완료)
-- [x] `Breaking-Change-Reason:` 트레일러 — **해당 없음**으로 판정 (2026-08-16). 요청·응답 필드·enum·`ErrorCode`·경로가 전부 무변경이고, 달라지는 것은 같은 계약 위의 **데이터 값**뿐이라 프론트 처리 로직이 바뀌지 않는다. 공휴일에 정기가 빠져 그 날짜가 sparse 응답에서 omit될 수 있으나, omit 자체는 기존에도 "일정 없는 날"에서 발생하던 정상 형태다
+- [x] `Breaking-Change-Reason:` 트레일러 — **대상**으로 판정, 구현 커밋(`055dc24`)에 포함 (2026-09-08 정정 — 위 78번째 줄과 모순되던 "해당 없음" 판정을 철회). 요청·응답 필드·enum·`ErrorCode`·경로는 무변경이지만, 같은 계약 위에서 공휴일 슬롯이 `IMPOSSIBLE`→`POSSIBLE`로 바뀌고 `totalVacationDays`·순위가 달라져 **프론트 화면 표시가 바뀐다** — "optional·값만 변화"로 좁혀 트레일러를 생략할 사유가 아니다(`harness-workflow.md` STOP §5)
 - [x] 배포 환경변수 배선 (2026-08-16 — CI/CD `envs` 화이트리스트·`export`·`docker-compose` app 환경변수에 `HOLIDAY_API_SERVICE_KEY` 추가. 누락 상태였으면 Secret을 등록해도 컨테이너까지 전달되지 않았음)
 - [x] `docs/specs/README.md` 인덱스에 본 스펙 등록 (2026-08-16, 스펙 작성 시 완료)
 - [x] OpenAPI 변경 없음 확인 (스키마 무변경 — 값만 변화)
@@ -245,3 +245,4 @@ regularsAppliedOn(matched, date, holidays, holidayRest):
 | 2026-08-16 | H2 구글 캘린더 busy 유지 **사용자 승인** — 잔여 확인 항목 없음 |
 | 2026-08-16 | **Approved** — 전체 스펙 사용자 승인 |
 | 2026-08-18 | **amend** — Out of Scope의 "공휴일 목록 조회 API 없음" 삭제, API 절 amend. 캘린더 화면에 공휴일 표시가 안 되는 프론트 요구가 확인돼 [`schedule-holiday-list-api.md`](schedule-holiday-list-api.md)로 분리 승인 (`#107`) |
+| 2026-09-08 | **완료 기준 정정** — 228번째 줄 `Breaking-Change-Reason` 판정을 78번째 줄과 모순되는 "해당 없음"에서 **"대상"**으로 정정. 실제 구현 커밋(`055dc24`)에 트레일러가 포함돼 있었고, 이 정정 이전엔 문서 안에서 판정이 엇갈려 있었다 |

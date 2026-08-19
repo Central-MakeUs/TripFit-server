@@ -63,7 +63,7 @@ class GetCalendarSwaggerConsistencyTest {
             "getcal@example.com",
             "닉",
             null);
-    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    // 연차·휴일 정보는 이제 User 소유 값
     user.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     user = userRepository.save(user);
     accessToken = jwtService.createAccessToken(user.getId());

@@ -200,11 +200,14 @@ public class TripMemberController {
     return ResponseEntity.ok(SuccessResponse.of(tripService.removeMember(tripId, ownerId, userId)));
   }
 
-  // 이 방 일정 확인(ACTIVE) 여부와 무관하게 나갈 수 있어야 하므로 @TripMemberOnly 미부착 — 서비스에서 직접 멤버십 검증
+  // 나가기도 방 안 기능이라 @TripMemberOnly로 ACTIVE를 요구한다 — 일정 확인 전(SCHEDULE_PENDING) 자리는 본인이 비울 수
+  // 없고 방장 내보내기로만 회수된다. 회원 탈퇴 cascade는 이 인터셉터를 타지 않고 서비스를 직접 호출하므로 상태 무관으로 계속 정리된다
   /**
-   * 참여자(MEMBER)가 스스로 여행방에서 나간다. 방장은 사용할 수 없다(여행방 삭제를 대신 써야 함). 방 상태(ONGOING/CONFIRMED/EXPIRED)와
-   * 무관하게 항상 허용되고, 나간 뒤 같은 초대 코드로 다시 참여할 수 있다.
+   * 참여자(MEMBER)가 스스로 여행방에서 나간다. 이 방에 입장(ACTIVE)한 멤버만 호출할 수 있고, 일정 확인 전(SCHEDULE_PENDING)이면 403이다.
+   * 방장은 사용할 수 없다(여행방 삭제를 대신 써야 함). 방 상태(ONGOING/CONFIRMED/EXPIRED)와는 무관하게 허용되고, 나간 뒤 같은 초대 코드로 다시
+   * 참여할 수 있다.
    */
+  @TripMemberOnly
   @Operation(summary = "여행방 나가기")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "나가기 성공(No Content)"),
@@ -227,12 +230,13 @@ public class TripMemberController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감",
+          description = "TRIP_ACCESS_DENIED — 비참여자 또는 이미 나감 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_ACCESS_DENIED", "message": "여행방 참여 권한이 없습니다."}
-                  """)))
+              examples = @ExampleObject(
+                  value = """
+                      {"code": "SCHEDULE_ACTIVATION_REQUIRED", "message": "이 여행방 일정 확인을 완료해야 입장할 수 있습니다."}
+                      """)))
   })
   @DeleteMapping("/me")
   ResponseEntity<Void> leaveTrip(@PathVariable UUID tripId, @AuthorizedUser UUID userId) {

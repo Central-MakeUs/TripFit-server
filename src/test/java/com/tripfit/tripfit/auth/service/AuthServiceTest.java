@@ -93,8 +93,7 @@ class AuthServiceTest {
                   u.getProfileImageUrl(),
                   u.getProvider(),
                   u.isGoogleCalendarConnected(),
-                  false,
-                  false,
+                  u.hasCompletedPreSchedule(),
                   u.isNotificationEnabled());
             });
   }
@@ -137,7 +136,7 @@ class AuthServiceTest {
     assertThat(result.response().user().nickname()).isEqualTo("홍길동");
     assertThat(result.response().user().profileImageUrl())
         .isEqualTo("https://example.com/profile.png");
-    assertThat(result.response().user().hasPreSchedule()).isFalse();
+    assertThat(result.response().user().hasCompletedPreSchedule()).isFalse();
   }
 
   @Test

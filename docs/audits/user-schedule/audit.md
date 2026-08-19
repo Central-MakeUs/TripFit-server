@@ -45,7 +45,7 @@
 
 - **Priority**: Low
 - **Category**: 패키지 구조 / Readability
-- **문제**: `ScheduleService.displayName(User)`(`ScheduleService.java:392-401`, `public static`)는 "성+이름 → nickname → 기본값 '사용자'"를 계산하는 순수 사용자 표시명 로직으로, 정기·개인 일정과는 관련이 없다. 실제 호출부도 `notification/service/NotificationEventListener.java:76`(여행방 참여 알림 메시지 조립) 단 한 곳뿐이며, `ScheduleService` 내부에서는 사용되지 않는다.
+- **문제**: `ScheduleService.displayName(User)`(`ScheduleService.java:392-401`, `public static`)는 "성+이름 → nickname → 기본값 '사용자'"를 계산하는 순수 사용자 표시명 로직으로, 정기·개별 일정과는 관련이 없다. 실제 호출부도 `notification/service/NotificationEventListener.java:76`(여행방 참여 알림 메시지 조립) 단 한 곳뿐이며, `ScheduleService` 내부에서는 사용되지 않는다.
 - **왜 문제인가**: `user/schedule` 패키지는 "정기·개별 일정 CRUD와 합산 달력"이 책임인데, 이 static 유틸이 여기 얹혀 있어 다른 도메인(`notification`)이 스케줄 서비스를 import하게 만든다. `spring-boot-java.md`의 패키지 레이아웃 원칙(도메인별 책임 분리)과 어긋나고, 향후 `ScheduleService`를 리팩터링할 때 이 무관한 static 메서드 때문에 영향 범위 분석이 헷갈릴 수 있다.
 - **개선 방법**: `displayName()`을 `user/domain/User`의 도메인 메서드(예: `User.displayName()`) 또는 `user/service/UserSummaryService`로 이동하고, `NotificationEventListener`의 import·호출부를 갱신한다.
 - **API 영향**: No Impact — 순수 내부 리팩터링, HTTP 계약 없음.
@@ -74,7 +74,7 @@
 - **Priority**: Low
 - **Category**: 성능 최적화
 - **문제**: `resolve()`(`ScheduleCalendarResolver.java:35-55`)는 구간의 각 날짜마다 `findPersonal(personals, date)`(`:57-64`)로 `personals` 리스트를 선형 탐색하고, `matchingRegulars(regulars, dayOfWeek)`(`:161-171`)로 `regulars` 리스트를 매번 선형 탐색한다.
-- **왜 문제인가**: `getCalendar()`는 최대 today+2년(약 730일) 구간을 허용하고, 그 구간에 개인 일정 오버라이드가 날짜마다 있을 수 있다. 현재 구조에서는 날짜 수와 오버라이드 수가 둘 다 커지면 비교 횟수가 곱으로 늘어난다(현재 규모에서는 체감 지연을 유발할 정도는 아니지만, `audit-checklist.md` 6번 "O(n²) 코드"에 해당하는 패턴이다).
+- **왜 문제인가**: `getCalendar()`는 최대 today+2년(약 730일) 구간을 허용하고, 그 구간에 개별 일정 오버라이드가 날짜마다 있을 수 있다. 현재 구조에서는 날짜 수와 오버라이드 수가 둘 다 커지면 비교 횟수가 곱으로 늘어난다(현재 규모에서는 체감 지연을 유발할 정도는 아니지만, `audit-checklist.md` 6번 "O(n²) 코드"에 해당하는 패턴이다).
 - **개선 방법**: 진입 시 `personals`를 `Map<LocalDate, PersonalSchedule>`로 한 번만 인덱싱하고, `regulars`는 요일별로 미리 그룹핑(`Map<DayOfWeek, List<RegularSchedule>>`)해 각 날짜에서 O(1)/그룹 크기만큼만 조회하도록 바꾼다. 로직·결과값은 동일하게 유지 가능.
 - **API 영향**: No Impact — `ScheduleCalendarResolver`는 내부 헬퍼 클래스, DTO 필드·순서에 영향 없음.
 - **예상 변경 파일**: `user/schedule/service/ScheduleCalendarResolver.java`
@@ -98,7 +98,7 @@
 
 ## 15. 백엔드 아키텍처 개선 제안
 
-이 도메인 자체(정기/개인 일정 CRUD·합산 달력)는 외부 provider 호출이나 비동기 처리가 필요한 지점이 없다 — Google Calendar 연동은 `user/googlecalendar` 도메인이 이미 별도로 감사·처리했고(`docs/audits/user/audit.md` A-1), 이 도메인은 그 결과(`GoogleCalendarService.findBusyDaysByUserId`)를 순수 조회로만 소비한다. Redis/Circuit Breaker/Async 같은 인프라 도입이 정당화될 만한 지연·장애 전파 지점이 없어 카테고리 15는 제안할 항목이 없다(YAGNI) — A-1·B-4의 쿼리/알고리즘 최적화만으로 이 도메인의 성능 리스크는 충분히 해소된다.
+이 도메인 자체(정기/개별 일정 CRUD·합산 달력)는 외부 provider 호출이나 비동기 처리가 필요한 지점이 없다 — Google Calendar 연동은 `user/googlecalendar` 도메인이 이미 별도로 감사·처리했고(`docs/audits/user/audit.md` A-1), 이 도메인은 그 결과(`GoogleCalendarService.findBusyDaysByUserId`)를 순수 조회로만 소비한다. Redis/Circuit Breaker/Async 같은 인프라 도입이 정당화될 만한 지연·장애 전파 지점이 없어 카테고리 15는 제안할 항목이 없다(YAGNI) — A-1·B-4의 쿼리/알고리즘 최적화만으로 이 도메인의 성능 리스크는 충분히 해소된다.
 
 ## 승인 대기
 

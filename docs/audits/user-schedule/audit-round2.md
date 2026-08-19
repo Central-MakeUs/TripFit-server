@@ -36,7 +36,7 @@
 
 ## 💡 C. 참고 사항 (권장하지만 이번엔 수정하지 않음)
 
-- **`PATCH /users/schedule/personal`의 `scheduleDate`에 범위 검증이 전혀 없음** (`UpdatePersonalScheduleRequest.PersonalScheduleItem.scheduleDate`는 `@NotNull`만 있고 상/하한 없음, `validatePersonalItem()`도 값 조합만 검사) — `GET /calendar`는 `validateCalendarDateRange()`로 `[today, today+2년−1]`(또는 ONGOING 여행 종료일까지)로 명확히 제한되는데, 개인 일정 upsert는 임의 연도(예: 0001년, 9999년)도 그대로 저장된다. A-1을 적용하면 `resolve()` 자체의 순회 비용은 `O(items)`로 줄어 CPU/메모리 폭주 위험은 크게 낮아지지만, "말이 안 되는 날짜가 영구 저장된다"는 데이터 품질 문제 자체는 남는다. 다만 이를 지금 고치려면 지금까지 성공하던 요청(먼 과거/미래 날짜)에 새로운 400을 추가해야 해 **"API 계약 100% 동일 유지"라는 이번 라운드의 절대 원칙과 정면충돌**한다 — 별도 스펙(허용 날짜 윈도우 정책)·에러코드·product 승인이 선행돼야 하므로 이번 무손실 리팩터링 라운드 범위 밖으로 보류한다.
+- **`PATCH /users/schedule/personal`의 `scheduleDate`에 범위 검증이 전혀 없음** (`UpdatePersonalScheduleRequest.PersonalScheduleItem.scheduleDate`는 `@NotNull`만 있고 상/하한 없음, `validatePersonalItem()`도 값 조합만 검사) — `GET /calendar`는 `validateCalendarDateRange()`로 `[today, today+2년−1]`(또는 ONGOING 여행 종료일까지)로 명확히 제한되는데, 개별 일정 upsert는 임의 연도(예: 0001년, 9999년)도 그대로 저장된다. A-1을 적용하면 `resolve()` 자체의 순회 비용은 `O(items)`로 줄어 CPU/메모리 폭주 위험은 크게 낮아지지만, "말이 안 되는 날짜가 영구 저장된다"는 데이터 품질 문제 자체는 남는다. 다만 이를 지금 고치려면 지금까지 성공하던 요청(먼 과거/미래 날짜)에 새로운 400을 추가해야 해 **"API 계약 100% 동일 유지"라는 이번 라운드의 절대 원칙과 정면충돌**한다 — 별도 스펙(허용 날짜 윈도우 정책)·에러코드·product 승인이 선행돼야 하므로 이번 무손실 리팩터링 라운드 범위 밖으로 보류한다.
 - **1차 audit.md의 C 항목 재검증 결과 — 여전히 유효, 변경 없음**: `CreateRegularScheduleRequest`/`UpdateRegularScheduleRequest` 구조 중복(record 상속 불가), `ScheduleCalendarResolver.resolve()` 4-인자 오버로드(테스트 전용, 실사용처 없음), `PersonalSchedule`/`RegularSchedule`의 전역 `@Setter` 컨벤션(저장소 전역 이슈) — 코드를 다시 읽어 확인했으며 1차 판단이 여전히 타당하다.
 
 **참고(감사만, 수정 대상 아님) — 도메인 외부 소비처 관찰**: `trip/service/TripMemberQueryService.buildLive()`와 `trip/service/TripScheduleSnapshotService.freezeTrip()`는 멤버마다 `support.resolveMergedSchedule(...)`를 개별 호출해 멤버 수만큼 `RegularScheduleRepository`/`PersonalScheduleRepository` 쿼리를 반복한다(N+1). 반면 같은 패턴을 쓰는 `RecommendationEngine.loadContext()`는 `findByUserIdIn`/`findByUserIdInAndScheduleDateBetween`으로 이미 배치 조회한다. 이는 `trip` 도메인 코드이고 user-schedule 리포지토리를 그대로 소비만 하는 것이라 이번 라운드(user-schedule 도메인) 수정 대상은 아니다 — trip 도메인 자체 감사에서 다룰 사안으로 남겨둔다.
@@ -48,7 +48,7 @@
 
 ## 15. 백엔드 아키텍처 개선 제안
 
-- **Security — Now**: 위 C의 `scheduleDate` 범위 미검증 건. `PATCH /personal`이 GET /calendar와 달리 날짜 상/하한이 없는 비대칭 상태다. A-1 적용으로 CPU/메모리 리스크는 완화되지만, 근본적으로는 "얼마나 먼 과거/미래까지 개인 일정을 허용할 것인가"를 스펙으로 확정하고 `INVALID_INPUT`(또는 신규 ErrorCode)로 막는 것이 바람직하다. 다만 이는 API 계약 변경(신규 400 케이스)이라 이번 라운드 승인 항목이 아니라 별도 스펙·이슈로 진행 권장.
+- **Security — Now**: 위 C의 `scheduleDate` 범위 미검증 건. `PATCH /personal`이 GET /calendar와 달리 날짜 상/하한이 없는 비대칭 상태다. A-1 적용으로 CPU/메모리 리스크는 완화되지만, 근본적으로는 "얼마나 먼 과거/미래까지 개별 일정을 허용할 것인가"를 스펙으로 확정하고 `INVALID_INPUT`(또는 신규 ErrorCode)로 막는 것이 바람직하다. 다만 이는 API 계약 변경(신규 400 케이스)이라 이번 라운드 승인 항목이 아니라 별도 스펙·이슈로 진행 권장.
 - 그 외 카테고리(Redis/Event/Async/DB/Monitoring/Resilience/API)는 1차와 동일하게 해당 없음(YAGNI) — 이 도메인은 외부 I/O가 Google Calendar 조회(이미 `user/googlecalendar` 도메인에서 별도 처리)뿐이고, A-1 적용만으로 성능 리스크가 충분히 해소된다.
 
 ## 승인 대기

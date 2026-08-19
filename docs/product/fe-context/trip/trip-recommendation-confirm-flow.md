@@ -153,7 +153,7 @@
 | `confirmedVacationMemberCount` | int | 확정 시점 연차가 필요한 인원 수 |
 | `confirmedUncertainCount` | int | 확정 시점 불확실 일정이 있던 인원 수 |
 
-이 세 통계는 **확정 시점에 1회 계산해 저장** — 이후 참여자가 개인 일정을 바꿔도 재계산되지 않는다(스냅샷과 동일 시점 고정).
+이 세 통계는 **확정 시점에 1회 계산해 저장** — 이후 참여자가 개별 일정을 바꿔도 재계산되지 않는다(스냅샷과 동일 시점 고정).
 
 **에러**: 400 `INVALID_CONFIRM_REQUEST`(rank·직접날짜 둘 다 없거나 둘 다 있음) · 400 `CONFIRM_DURATION_MISMATCH`(직접 입력 일수 불일치) · 404 `RECOMMENDATION_NOT_FOUND` · 409 `TRIP_NOT_ONGOING`(이미 CONFIRMED — 재확정하려면 먼저 unconfirm)
 

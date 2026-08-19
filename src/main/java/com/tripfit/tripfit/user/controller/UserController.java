@@ -52,7 +52,7 @@ public class UserController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasRegularSchedule": false, "hasPreSchedule": false, "notificationEnabled": true}}
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasCompletedPreSchedule": false, "notificationEnabled": true}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -94,7 +94,7 @@ public class UserController {
           content = @Content(
               examples = @ExampleObject(
                   value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasRegularSchedule": false, "hasPreSchedule": false, "notificationEnabled": false}}
+                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasCompletedPreSchedule": false, "notificationEnabled": false}}
                       """))),
       @ApiResponse(
           responseCode = "400",
@@ -124,7 +124,7 @@ public class UserController {
 
   /**
    * 본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지
-   * 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은
+   * 않는다. 개별 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은
    * 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 지금 사용 중인 액세스 토큰은 이 요청 이후에도 남은 수명 동안 유효할 수 있다.
    */
   @Operation(summary = "회원 탈퇴")

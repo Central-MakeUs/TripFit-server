@@ -194,7 +194,7 @@ public enum TripMemberStatus {
 
 ### 파생·조회 시 계산 필드 (DB 컬럼 없음)
 
-Entity·`user` 테이블에 **저장되지 않는** API 필드(예: `hasPreSchedule`)는 아래를 **반드시** 남긴다.
+Entity·`user` 테이블에 **저장되지 않는** API 필드(예: `hasCompletedPreSchedule` — `users.vacation_apply_period IS NOT NULL` 파생)는 아래를 **반드시** 남긴다.
 
 | 위치 | 필수 내용 |
 |------|-----------|
@@ -294,7 +294,7 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 				useReturnTypeSchema = true,
 				content = @Content(
 						examples = @ExampleObject(value = """
-								{"data": {"id": "3f2e2c1a-...", "name": "김트립", "hasRegularSchedule": true, "hasPreSchedule": true}}
+								{"data": {"id": "3f2e2c1a-...", "name": "김트립", "hasCompletedPreSchedule": true}}
 								"""))),
 		@ApiResponse(
 				responseCode = "401",

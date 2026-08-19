@@ -1,4 +1,4 @@
-# 연차·반차·공휴일 휴무 설정 — 구현 규칙 (계약 변경 대응 필수)
+# 연차·휴일 정보 — 구현 규칙 (계약 변경 대응 필수)
 
 TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연차 신청 시점 / 반차·공휴일)을 구현·수정할 때 아래 규칙을 따르라. 여기 없는 세부 계약은 추측하지 말고 사용자에게 확인하라.
 
@@ -23,7 +23,7 @@ TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연
 | 필드 | 타입 | nullable | 설명 |
 |---|---|---|---|
 | `maxVacationDays` | `int` | ✗ | 여행당 최대 연차 일수. 0~10, 저장 안 했으면 `2` |
-| `vacationApplyPeriod` | `string` (enum) | ✓ | 아래 enum 표 참고. 저장 안 했으면 `null` |
+| `vacationApplyPeriod` | `string` (enum) | ✓ | 아래 enum 표 참고. **저장 안 했으면 `null` = 사전 일정 입력 미완료(최초 입력)** |
 | `halfVacationAvailable` | `boolean` | ✗ | 반차 사용 가능 여부. 저장 안 했으면 `false` |
 | `holidayRest` | `boolean` | ✗ | 공휴일 휴무 여부. 저장 안 했으면 `true` |
 
@@ -72,10 +72,12 @@ TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연
 
 | 필드 | 타입 | 필수 | 제약 | 생략(누락/`null`) 시 |
 |---|---|---|---|---|
-| `maxVacationDays` | `integer` | 아니오 | `0` ≤ x ≤ `10` | `2` |
-| `vacationApplyPeriod` | `string` (enum) | 아니오 | 아래 enum 표 값 중 하나 | `null` (미설정) |
-| `halfVacationAvailable` | `boolean` | 아니오 | — | `false` |
-| `holidayRest` | `boolean` | 아니오 | — | `true` |
+| `maxVacationDays` | `integer` | **예** | `0` ≤ x ≤ `10` | **400** |
+| `vacationApplyPeriod` | `string` (enum) | **예** | 아래 enum 표 값 중 하나 | **400** |
+| `halfVacationAvailable` | `boolean` | **예** | — | **400** |
+| `holidayRest` | `boolean` | **예** | — | **400** |
+
+> **2026-08-19 계약 변경 — 4개 필드가 전부 필수가 됐다.** 예전에는 생략하면 기본값으로 대체됐지만, 지금은 하나라도 빠지면 400이다. 이 API는 **부분 수정이 아니라 전체 교체**라, 예전 방식대로 바뀐 값만 보내면 나머지가 기본값으로 덮여 쓰였다 — 특히 `vacationApplyPeriod`가 지워지면 그 사용자는 **사전 일정 입력을 한 적 없는 상태로 되돌아간다**(아래 규칙 참고). 폼의 4개 값을 항상 함께 보내라.
 
 ```json
 // Request
@@ -143,16 +145,34 @@ TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연
 
 `vacationApplyPeriod`의 `ANY`(상관없음)와 `null`(미설정)은 **서로 다른 값**이다. 사용자가 "상관없음"을 고른 것과 아직 안 고른 것을 같은 값으로 보내지 마라.
 
-## 규칙 3 — 연차 화면은 **정기 일정과 한 덩어리로만** 노출하라
+이 구분이 화면 흐름을 좌우한다. **`vacationApplyPeriod`(사전 신청일)가 저장돼 있는지가 "사전 일정 입력을 끝냈는지"의 판정 기준**이기 때문이다(2026-08-19 확정).
 
-정기 일정을 입력·수정하는 경로에서만 연차 3문항을 띄운다. "정기 일정 없어요"를 고른 사용자에게는 **연차를 묻지 마라** — 회원가입·방 입장 두 플로우 모두 동일하다.
+| 상태 | 판정 | 여행방 입장 시 첫 화면 |
+|---|---|---|
+| `null` | **최초 입력** | `정기 일정이 있나요?` |
+| enum 값(=`ANY` 포함) | **갱신 입력** | `일정 변경이 있나요?` |
 
-- 회원가입 "없어요" → 곧바로 개별 일정 화면 (`SignupFlow`가 이미 이렇게 동작)
-- **방 입장 "없어요" → 곧바로 개별 일정 화면** ← 현재 연차 3문항으로 넘어가고 있어 수정 필요 (규칙 4)
+- 요약 응답(`/auth/login`·`/auth/me` 등)의 **`hasCompletedPreSchedule`** 이 같은 판정을 boolean으로 알려준다 — 이 API를 따로 부르지 않아도 첫 화면을 정할 수 있다.
+- **정기·개별 일정 건수는 판정과 무관하다.** 일정이 하나도 없어도 이 값이 있으면 갱신이고, 정기 일정이 잔뜩 있어도 이 값이 없으면 최초다.
+- 이 값을 지우는 경로는 **탈퇴뿐**이다. 일정을 전부 지워도 갱신 상태는 유지된다.
+- `activate`(여행방 입장 완료)는 이 값이 없으면 **403 `PRE_SCHEDULE_REQUIRED`**로 거부된다.
 
-**서버는 이 제한을 강제하지 않는다.** `PATCH /vacation-policy`는 정기 일정이 0건이어도 그대로 저장된다 — 정기 일정 유무를 선행 조건으로 거는 게이트는 의도적으로 두지 않았다(정기를 전부 지웠다 다시 등록해도 연차 설정이 보존되도록). 따라서 **화면 노출 제어는 전적으로 프론트 책임**이다.
+## 규칙 3 — 연차·휴일 정보 화면은 **모든 사전 일정 입력 경로에서** 노출하라 (2026-08-19 전면 개정)
 
-정기 일정을 전부 삭제해도 연차 값은 서버에 그대로 남는다. 이때 값은 어떤 계산에도 쓰이지 않으니(정기가 없으면 연차 시뮬레이션 자체를 건너뜀) "지워야 한다"고 생각하지 마라 — 지우는 API도 없다.
+> **구 규칙 폐기:** 예전에는 "정기 일정과 한 덩어리라 '없어요'를 고른 사용자에게는 연차를 묻지 마라"였다. **정반대가 됐다.**
+
+`정기 일정이 있나요? → 없어요`를 고른 사용자에게도 연차·휴일 정보 화면을 띄워라. 이 화면을 저장해야 **사전 신청일**이 채워지고, 그 값이 "사전 일정 입력을 끝냈다"는 유일한 표시다. 여기서 건너뛰면 그 사용자는 다음에도 최초 입력으로 들어오고, `activate`가 403 `PRE_SCHEDULE_REQUIRED`로 막는다.
+
+| 경로 | 연차·휴일 정보 화면 |
+|---|---|
+| 최초 입력 · `있어요` | 정기 일정 입력 **다음에** 노출 |
+| 최초 입력 · `없어요` | 정기 화면을 건너뛰고 **바로** 노출 |
+| 갱신 입력 | 정기 일정 수정 **다음에** 노출 (기존 값 프리필) |
+| 마이페이지 `기본정보 관리` | 정기 일정 **다음에** 노출 |
+
+**서버는 이 화면의 노출 순서를 강제하지 않는다.** `PATCH /vacation-policy`는 정기 일정이 0건이어도 그대로 저장된다 — 정기 유무를 선행 조건으로 거는 게이트는 의도적으로 두지 않았다(정기를 전부 지웠다 다시 등록해도 연차 설정이 보존되도록). 서버가 검사하는 건 딱 하나, **`activate` 시점에 사전 신청일이 있는가**다.
+
+정기 일정을 전부 삭제해도 연차 값은 서버에 그대로 남는다(지우는 API도 없다). 이때 값은 연차 시뮬레이션에 쓰이지 않지만, **입력 완료 표시로는 계속 유효하다** — "지워야 한다"고 생각하지 마라.
 
 ## 규칙 4 — 아래 지점을 전부 고쳐라 (마이그레이션 체크리스트)
 
@@ -165,7 +185,9 @@ TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연
 | `app/my-schedule/_components/MyScheduleSection.tsx` | 동일 패턴 | 동일 |
 | `utils/mapRegularSchedule.ts`(`getLeaveNoticeDaysFromRegularSchedules` 등) | 정기 응답에서 연차 역산 | **함수 자체 제거** — 역산할 원본이 없어졌다 |
 | `hooks/useSaveRegularSchedule.ts` | 저장 시 모든 정기 행에 연차 값 중복 전송 | 정기는 `title`/`daysOfWeek`/`startTime`/`endTime`만, 연차는 `PATCH /vacation-policy` **1회** 별도 호출 |
-| `components/basic-info/index.tsx:184` | `confirmDirectInputOnNoRegularSchedule`가 회원가입에만 적용 | 방 입장 경로에도 적용해 "없어요" → 개별 일정으로 직행 (규칙 3) |
+| `components/basic-info/index.tsx:184` | `confirmDirectInputOnNoRegularSchedule`가 "없어요" 선택 시 연차 스텝을 건너뛰게 함 | **제거하라 (2026-08-19).** "없어요" 경로도 연차·휴일 정보를 거쳐야 한다 — 이 스킵이 남아 있으면 사전 신청일이 저장되지 않아 사용자가 영원히 최초 입력에 갇히고 `activate`가 403으로 막힌다 (규칙 3) |
+| "없어요" 선택 시 | (없음) | `DELETE /api/v1/users/schedule/regular` **즉시 호출** — 남아 있던 정기 일정 전체 삭제 (`trip/trip-room-create-join.md` 규칙 6) |
+| 연차 저장 요청 | 바뀐 필드만 전송 | **4개 필드를 항상 함께** — 하나라도 빠지면 400 (규칙 2) |
 
 조회는 정기 일정 목록과 **나란히(병렬로)** 하라 — 두 API는 서로 의존하지 않는다.
 
@@ -183,16 +205,16 @@ TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연
 | `GET` | `/api/v1/users/schedule/vacation-policy` | JWT | 연차 4개 값 조회. 한 번도 저장 안 했으면 기본값(`2`/`null`/`false`/`true`) |
 | `PATCH` | `/api/v1/users/schedule/vacation-policy` | JWT | 4개 값 **전체 교체** |
 
-`GET /auth/me`·`POST /auth/login`·`PATCH /users/profile` 응답(`UserSummaryResponse`)에는 **연차 값이 들어 있지 않다.** 일부러 넣지 않았으니(같은 값이 두 곳에 있으면 연차 저장 후 캐시가 낡는다) 거기서 찾지 마라. 이 API는 저장 후에도 `hasRegularSchedule`·`hasPreSchedule`을 바꾸지 않으므로(규칙 6) `/auth/me` 재조회도 필요 없다.
+`GET /auth/me`·`POST /auth/login`·`PATCH /users/profile` 응답(`UserSummaryResponse`)에는 **연차 값 4개가 들어 있지 않다.** 일부러 넣지 않았으니(같은 값이 두 곳에 있으면 연차 저장 후 캐시가 낡는다) 거기서 찾지 마라. 다만 **저장 여부**는 `hasCompletedPreSchedule` boolean으로 실려 있고, 이 API로 처음 저장하면 그 값이 `false → true`로 바뀐다 — **저장 직후 `/auth/me`를 다시 불러 최신 값을 받아라.**
 
 | HTTP | code | 상황 | 처리 |
 |---|---|---|---|
-| 400 | `INVALID_INPUT` | `maxVacationDays`가 0~10 밖·`vacationApplyPeriod` 오타 | 폼 검증 에러로 표시 |
+| 400 | `INVALID_INPUT` | **4개 필드 중 하나라도 누락**·`maxVacationDays`가 0~10 밖·`vacationApplyPeriod` 오타 | 폼 검증 에러로 표시 |
 | 401 | `AUTH_INVALID_TOKEN` / `AUTH_EXPIRED` | 토큰 없음·무효·만료 | 재로그인 플로우 |
 
 ## 규칙 6 — 이 API는 방 입장 조건을 **건드리지 않는다**. 그렇게 가정하고 짜라
 
-연차 설정 저장은 "일정 등록"이 아니다. `PATCH /vacation-policy`를 호출해도 `hasRegularSchedule`·`hasPreSchedule`은 변하지 않는다.
+연차·휴일 정보 저장은 "일정 등록"이 아니다 — 정기·개별 일정 행은 하나도 만들어지지 않는다. 다만 **`hasCompletedPreSchedule`은 이 저장으로 `true`가 된다**(사전 신청일이 채워지므로). 2026-08-19 이전에 있던 `hasRegularSchedule`·`hasPreSchedule`은 삭제됐다.
 
 - 저장 후 `GET /auth/me`를 다시 부를 필요 없다 (정기·개별 일정 저장과 다른 점).
 - 이미 방에 참여 중인 사용자가 연차만 수정해도 방에서 튕기지 않는다.

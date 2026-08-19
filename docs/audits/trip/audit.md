@@ -9,7 +9,7 @@
 
 ## ✅ A. 반드시 수정해야 하는 사항
 
-### A-1. 정기·개인 일정(및 Google Calendar busy) 조회가 멤버별로 개별 쿼리를 날리는 N+1 — 배치 조회 메서드가 이미 있는데도 사용하지 않음
+### A-1. 정기·개별 일정(및 Google Calendar busy) 조회가 멤버별로 개별 쿼리를 날리는 N+1 — 배치 조회 메서드가 이미 있는데도 사용하지 않음
 
 - **Priority**: High
 - **Category**: Performance / JPA

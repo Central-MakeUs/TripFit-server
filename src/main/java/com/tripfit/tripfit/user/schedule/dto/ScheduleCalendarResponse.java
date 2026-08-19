@@ -33,7 +33,7 @@ public record ScheduleCalendarResponse(
       ScheduleStatus eveningStatus,
 
       @Schema(
-          description = "날짜 단위 불확실. 개인 일정 uncertain=true일 때만 true 가능",
+          description = "날짜 단위 불확실. 개별 일정 uncertain=true일 때만 true 가능",
           example = "false")
       boolean uncertain
   ) {

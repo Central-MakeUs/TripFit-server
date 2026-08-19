@@ -83,7 +83,7 @@ class TripMemberScheduleCalendarIntegrationTest {
     User owner =
         new User("trip-member-sub", SocialProvider.GOOGLE, "owner@example.com", "방장", null);
     owner.applyProfilePatch("길동", "홍", null);
-    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    // 연차·휴일 정보는 이제 User 소유 값
     owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());

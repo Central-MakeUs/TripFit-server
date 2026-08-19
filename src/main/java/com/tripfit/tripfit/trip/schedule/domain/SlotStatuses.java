@@ -7,9 +7,9 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import java.time.LocalTime;
 
-// 정기·개인 일정이 공유하는 오전/오후/저녁 슬롯 상태
+// 정기·개별 일정이 공유하는 오전/오후/저녁 슬롯 상태
 @Embeddable
-@Schema(description = "TimeSlot별 가능/불가 상태 (정기·개인 일정 공통)")
+@Schema(description = "TimeSlot별 가능/불가 상태 (정기·개별 일정 공통)")
 public class SlotStatuses {
 
   @Schema(description = "오전 슬롯 상태", example = "IMPOSSIBLE", nullable = true)

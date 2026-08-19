@@ -37,7 +37,7 @@ import org.hibernate.type.SqlTypes;
 public class PersonalSchedule extends BaseTimeEntity {
 
   @Schema(
-      description = "개인 일정 ID (UUID v4)",
+      description = "개별 일정 ID (UUID v4)",
       example = "550e8400-e29b-41d4-a716-446655440000")
   @Id
   @GeneratedValue

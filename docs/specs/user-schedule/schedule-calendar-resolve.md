@@ -7,7 +7,7 @@
 > 상태: **Implemented** (#17) — S1·R2=A · sparse. **A1:** #37에서 today~+2년 윈도우로 amend (**Implemented** on feat/37)  
 > MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
 
-> ⚠️ **개인 일정 병합 규칙 S1은 폐기되었다.** [`schedule-slot-override.md`](schedule-slot-override.md)(O1, #67, **Approved**)가 "개별 행이 있으면 그 날 전체 대체"(S1)를 "슬롯 단위 오버라이드"로 대체한다 — 아래 R1·S1 관련 서술은 **이력 문서**로만 남기고, 현재 병합 계약은 O1 스펙을 SSOT로 본다. R2(정기 복수 겹침)·R3(uncertain)·R4(레이어 없음)·A1(기간 상한)·sparse 원칙은 O1에서도 그대로 유지된다.
+> ⚠️ **개별 일정 병합 규칙 S1은 폐기되었다.** [`schedule-slot-override.md`](schedule-slot-override.md)(O1, #67, **Approved**)가 "개별 행이 있으면 그 날 전체 대체"(S1)를 "슬롯 단위 오버라이드"로 대체한다 — 아래 R1·S1 관련 서술은 **이력 문서**로만 남기고, 현재 병합 계약은 O1 스펙을 SSOT로 본다. R2(정기 복수 겹침)·R3(uncertain)·R4(레이어 없음)·A1(기간 상한)·sparse 원칙은 O1에서도 그대로 유지된다.
 
 ## 목표
 

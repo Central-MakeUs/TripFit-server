@@ -119,7 +119,6 @@ class GoogleCalendarServiceTest {
                 user.getProvider(),
                 true,
                 false,
-                false,
 
                 true));
 
@@ -165,7 +164,6 @@ class GoogleCalendarServiceTest {
                 user.getProvider(),
                 true,
                 false,
-                false,
 
                 true));
 
@@ -204,7 +202,6 @@ class GoogleCalendarServiceTest {
                 user.getProfileImageUrl(),
                 user.getProvider(),
                 true,
-                false,
                 false,
 
                 true));
@@ -311,7 +308,6 @@ class GoogleCalendarServiceTest {
                 user.getProfileImageUrl(),
                 user.getProvider(),
                 false,
-                true,
                 true,
 
                 true));

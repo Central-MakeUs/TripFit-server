@@ -46,6 +46,7 @@ import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
@@ -143,11 +144,7 @@ class TripServiceTest {
     trip = ongoingTrip();
 
     UserLookupService userLookupService = new UserLookupService(userRepository);
-    UserSummaryService userSummaryService =
-        new UserSummaryService(
-            regularScheduleRepository,
-            personalScheduleRepository,
-            userLookupService);
+    UserSummaryService userSummaryService = new UserSummaryService();
     UserDirectoryPort userDirectoryPort =
         new UserDirectoryAdapter(
             userLookupService, userRepository, userProfileService, userSummaryService);
@@ -307,7 +304,6 @@ class TripServiceTest {
             6,
             "제주"));
 
-    verify(regularScheduleRepository, never()).existsByUserId(OWNER_ID);
   }
 
   @Test
@@ -324,6 +320,28 @@ class TripServiceTest {
     assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.ACTIVE);
     assertThat(joined.getActivatedAt()).isNotNull();
     assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
+  }
+
+  // 사전 일정 입력을 한 번도 끝내지 않은 사용자는 ACTIVE가 될 수 없다 — 일정 0건 멤버를 "모든 날 가능"으로
+  // 계산하는 추천의 전제를 서버가 지키는 지점
+  @Test
+  void activateMembership_whenPreScheduleNotCompleted_throwsPreScheduleRequired() {
+    owner.resetVacationPolicy();
+    TripMember pending =
+        new TripMember(
+            trip,
+            owner,
+            TripMemberRole.OWNER,
+            TripMemberStatus.SCHEDULE_PENDING,
+            LocalDateTime.now());
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
+        .thenReturn(Optional.of(pending));
+
+    assertThatThrownBy(() -> tripService.activateMembership(TRIP_ID, OWNER_ID))
+        .isInstanceOf(TripFitException.class)
+        .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.PRE_SCHEDULE_REQUIRED);
+    assertThat(pending.getStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
   }
 
   @Test
@@ -449,7 +467,6 @@ class TripServiceTest {
     var entry = tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
 
     assertThat(entry.myMemberStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
-    verify(regularScheduleRepository, never()).existsByUserId(MEMBER_ID);
   }
 
   @Test
@@ -1020,6 +1037,31 @@ class TripServiceTest {
     assertThat(membership2.getDeletedAt()).isNotNull();
   }
 
+  // 탈퇴 cascade는 Controller 인터셉터(@TripMemberOnly)를 타지 않는다 — 일정 확인 전(SCHEDULE_PENDING)
+  // 멤버십도 정리돼야 탈퇴한 사용자가 잡아둔 자리가 방에 계속 남지 않는다 (#122)
+  @Test
+  void leaveAllActiveTripsAsMember_leavesSchedulePendingMembershipToo() {
+    TripMember pending =
+        new TripMember(
+            trip,
+            member,
+            TripMemberRole.MEMBER,
+            TripMemberStatus.SCHEDULE_PENDING,
+            LocalDateTime.now());
+
+    when(
+        tripMemberRepository
+            .findByUser_IdAndRoleAndDeletedAtIsNull(MEMBER_ID, TripMemberRole.MEMBER))
+        .thenReturn(List.of(pending));
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.of(pending));
+
+    tripService.leaveAllActiveTripsAsMember(MEMBER_ID);
+
+    assertThat(pending.getDeletedAt()).isNotNull();
+  }
+
   @Test
   void leaveAllActiveTripsAsMember_whenNoMemberships_doesNothing() {
     when(
@@ -1136,10 +1178,12 @@ class TripServiceTest {
     return new TripMember(trip, user, role, TripMemberStatus.ACTIVE, joinedAt);
   }
 
+  // 사전 일정 입력을 마친 사용자 — activate 게이트(PRE_SCHEDULE_REQUIRED)를 통과하려면 사전 신청일이 있어야 한다
   private static User user(UUID id, String lastName, String firstName) {
     User u = new User("sub-" + id, SocialProvider.GOOGLE, "u@example.com", "nick", null);
     u.setId(id);
     u.applyProfilePatch(firstName, lastName, null);
+    u.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     return u;
   }
 }

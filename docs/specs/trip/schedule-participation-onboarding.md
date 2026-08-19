@@ -3,10 +3,20 @@
 > wave: **2** (2026-08-03 Wave 1→2 이동 — trip 참여 흐름, 도메인축 재분류)
 > implements: BR-USER-001(이름 게이트), BR-USER-006(부분), BR-USER-007(부분)
 > deferred: BR-NOTI-001/002(wave 3)
-> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend**(방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`) + **`#113` amend(2026-08-18 — 전역 입장 게이트 `is_all_free`·`canEnterRoom` 폐지)** + **`#114` amend(2026-08-18 — 참여자도 join 시 `SCHEDULE_PENDING`, hold 폐지)**. submit 삭제. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
+> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend**(방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`) + **`#113` amend(2026-08-18 — 전역 입장 게이트 `is_all_free`·`canEnterRoom` 폐지)** + **`#114` amend(2026-08-19 — 참여자도 join 시 `SCHEDULE_PENDING`, hold 폐지)**. submit 삭제. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
 > GitHub: **#22** · amend **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)**
 > 선행: [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
 > 결정 amend: [`007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) (D-REENTRY-2)
+
+> ## ⚠️ 2026-08-19 amend — 최초/갱신 입력 판정 도입 (정기 일정 유무 2분기 폐기)
+>
+> **사전 일정 입력 플로우의 분기는 이제 「최초 입력 vs 갱신 입력」이며, 판정은 `사전 신청일`(`users.vacation_apply_period`) 저장 여부 하나다.** 아래 본문의 「정기 일정 보유 여부로 2분기」·`hasRegularSchedule` 서술은 **폐지된 계약**이며 이력으로만 남긴다.
+>
+> **왜:** 정기·개별 일정은 사용자에 따라 실제 데이터가 0건일 수 있어, 데이터 존재 여부로는 **"아직 입력을 안 한 사람"과 "입력을 끝냈지만 막힌 일정이 없는 사람"을 구분할 수 없다.** 연차·휴일 정보 4개 값 중 `사전 신청일`만 nullable이라(나머지 3개는 기본값이 늘 차 있음) 이 값이 유일한 입력 완료 마커가 된다.
+>
+> **함께 바뀐 것:** 회원가입 온보딩에서 사전 일정 단계 제거 · 모든 입력 플로우에서 건너뛰기 미노출 · `activate`에 입력 완료 게이트(403 `PRE_SCHEDULE_REQUIRED`) 추가 · `hasRegularSchedule`/`hasPreSchedule` 삭제 후 `hasCompletedPreSchedule` 신설
+>
+> SSOT: [`../user-schedule/pre-schedule-entry-flow.md`](../user-schedule/pre-schedule-entry-flow.md)
 
 > ## ⚠️ 2026-08-18 amend (`#113`) — 전역 입장 게이트 폐지
 >
@@ -118,7 +128,7 @@
 | 의미 | `false` + row 0 = **미입력**(입장 불가). `true` = 전부 free **선언됨**(입장 가능) |
 
 - ~~셋 모두 불만족 → 방 입장 불가~~ → **`#113`으로 폐지.** 방 안 API 차단은 `@TripMemberOnly`의 `ACTIVE` 검사 하나가 담당한다.
-- `hasPreSchedule` (= regular OR personal ≥1)는 **데이터 존재 파생값**이며 입장 게이트가 아니다(마이페이지 표시용). 정기 유무 판정은 `hasRegularSchedule`.
+- `hasCompletedPreSchedule`은 **입장 게이트가 아니라 화면 분기값**이다. 방 입장 가능 여부는 그 방의 `myMemberStatus = ACTIVE`가 답한다.
 - **전역 전부 free ≠ 신규 trip 프리패스** (D-JOIN-TRIP-FLOW).
 
 > **구 D-JOIN-3/4 폐기.** row 0만으로는 미입력과 전부 free 구분 불가 → `is_all_free` 필수.
@@ -163,34 +173,26 @@
 | 경로 | 동작 |
 |------|------|
 | **방장** | 「방 생성」→ **방 생성 폼** → `POST /trips`(`SCHEDULE_PENDING`) → **일정 확인 플로우** → `POST .../activate`(`ACTIVE`) |
-| **참여자** | 초대 링크 → `POST /trips/join`(`SCHEDULE_PENDING`) → **일정 확인 플로우** → **(수정 시 patch)** → `POST .../activate` (`ACTIVE`) — 2026-08-18 `#114`, 구 hold 폐지 |
+| **참여자** | 초대 링크 → `POST /trips/join`(`SCHEDULE_PENDING`) → **일정 확인 플로우** → **(수정 시 patch)** → `POST .../activate`(`ACTIVE`) — `#114`로 `join`이 플로우 맨 앞으로 이동, 구 hold는 폐지 |
 
-**일정 확인 플로우 — 정기 일정 보유 여부로 2분기 (2026-08-16 확정):**
+**일정 확인 플로우 — 최초/갱신 입력으로 2분기 (2026-08-19 확정):**
 
 ```text
-[정기 일정 목록 조회] ← 분기 판단은 이 결과로만 한다 (아래 ⚠️ 참고)
+[hasCompletedPreSchedule] ← 판정은 이 값 하나로만 한다 (= 사전 신청일 저장 여부)
    │
-   ├─ 0건 → "사전 일정 입력이 필요해요" 모달 → 확인
-   │         → "정기 일정이 있나요?"
-   │             ├─ 예     → [정기 일정 + 연차] → [개별 일정] → 입장
-   │             └─ 없어요 → [개별 일정] → 입장          ← 연차를 묻지 않음
+   ├─ false (최초 입력) → "정기 일정이 있나요?"
+   │       ├─ 예     → [정기 일정] → [연차·휴일 정보] → [개별 일정] → 입장
+   │       └─ 없어요 → DELETE /users/schedule/regular(즉시) → [연차·휴일 정보] → [개별 일정] → 입장
    │
-   └─ 1건 이상 → "입력하신 일정을 확인해주세요" 모달 → 확인
-             → [정기 일정(기존 값 프리필) + 연차 — 필요 시 수정]
-             → [개별 일정] → 입장
+   └─ true (갱신 입력) → "일정 변경이 있나요?" (있어요/없어요 — 안내용, 분기 없음)
+           → [정기 일정 수정(기존 값 프리필)] → [연차·휴일 정보] → [개별 일정] → 입장
 ```
 
-- **"정기 일정이 있나요?"는 정기 0건인 사용자에게만 노출된다.** 이미 정기가 있는 사용자에게는 이 질문 자체가 없고, 기존 값을 불러와 확인·수정하는 화면으로 간다 → "없어요를 눌렀는데 기존 정기가 남아 있다"는 모순 상황이 생기지 않는다.
-- **연차는 정기 일정과 한 덩어리다.** 정기 일정을 입력·수정하는 화면에서만 노출된다. "없어요" 경로에서는 연차를 묻지 않고, 저장돼 있던 연차 값은 그대로 보존된다(`User`에 저장 — [`vacation-policy-user-migration.md`](../user-schedule/vacation-policy-user-migration.md) #52).
-
-> **⚠️ 분기 판단에 `hasPreSchedule`을 쓰지 말 것 (2026-08-16 · 2026-08-17 amend):** `hasPreSchedule`은 **정기 OR 개별**이 하나라도 있으면 `true`인 파생값이다(D-BR006-C). 이 값으로 위 2분기를 판정하면 **개별 일정만 등록한 사용자**(정기 0건)에게 "입력하신 일정을 확인해주세요"가 뜨고 정기 화면이 비어 있는 상태가 된다. 분기 판정은 **`hasRegularSchedule`**(login · `GET /auth/me` · profile PATCH 응답 — 정기 EXISTS만 반영, D-BR006-C) **또는 `GET /api/v1/users/schedule/regular` 응답 길이** 중 하나로 한다. 1건 이상 분기는 어차피 프리필용 목록 호출이 필요하므로, 요약 응답을 이미 들고 있으면 `hasRegularSchedule`로 먼저 갈라 0건 경로의 불필요한 목록 호출을 없앨 수 있다.
-
-**일정을 바꾸지 않고 통과했을 때 (확정):**
-
-| 현재 전역 상태 | 마지막 버튼(activate/join) 시 |
-|----------------|------------------------------|
-| 정기 또는 개별 ≥1 | **이전 상태 유지** (patch 불필요) |
-| regular 0 **AND** personal 0 | **`is_all_free = true`** — 방장 **activate** · 참여자 **join** 시 서버 설정 (create에서는 안 함) |
+- **`정기 일정이 있나요?`는 최초 입력에서만 노출된다.** 갱신 입력에는 대신 `일정 변경이 있나요?`가 뜨는데, 이 화면은 **분기 목적이 아니라** "처음부터 다시 입력하는 게 아니라 기존 정보를 확인·수정하는 과정"임을 알리는 안내 화면이다 — 어느 쪽을 골라도 같은 경로로 간다.
+- **연차·휴일 정보는 두 갈래 모두 지난다.** `없어요` 경로에서도 묻는다(2026-08-19 변경 — 구 확정은 "정기와 한 덩어리라 없어요면 미노출"이었다). 이 단계를 지나야 `사전 신청일`이 저장되므로, 여기서 빠지면 판정 마커가 영원히 세워지지 않는다.
+- **`없어요` 선택 시 기존 정기 일정을 즉시 전부 삭제한다** (`DELETE /api/v1/users/schedule/regular`). 최초 판정은 사전 신청일만 보므로, 예전에 넣어둔 정기가 남아 있으면 사용자가 "없다"고 답한 것과 추천 계산이 어긋난다.
+- **건너뛰기는 없다.** 여행방 입장 플로우에서는 필요한 정보를 넣기 전까지 `다음` 버튼이 비활성화되고, 갱신 입력은 기존 값이 있으므로 기본 활성화다.
+- **서버 게이트:** `activate`는 `사전 신청일`이 없으면 **403 `PRE_SCHEDULE_REQUIRED`**로 거부한다. 정기·개별 일정이 0건인 것은 거부 사유가 **아니다**.
 
 > **개별 일정 화면은 "손댄 날짜만" 저장해야 한다.** 이 화면의 프리필은 `GET /users/schedule/calendar`(정기+개별+구글 합친 값)인데, 그 값을 화면에 보인 전 기간 그대로 `PATCH /personal`로 되돌려보내면 **정기 유래 계산값이 전부 개별 오버라이드 row로 굳는다**(O1.4 이후 삭제 경로 없음 — 이후 정기를 수정해도 그 날짜들은 옛 값으로 고정, 되돌릴 수 없음). 방 입장 플로우는 **방마다 매번** 이 화면을 거치므로 위험이 누적된다. 상세: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) "마이페이지 개별 일정 편집 UX" 엣지 케이스.
 
@@ -203,13 +205,13 @@
 
 | 항목 | 확정 |
 |------|------|
-| 플로우 순서 | **정기 → 개별** (연차는 정기와 한 덩어리) |
+| 플로우 순서 | **정기 → 연차·휴일 정보 → 개별** (2026-08-19 — 구 "연차는 정기와 한 덩어리, 없어요면 미노출" 폐기. `없어요` 경로도 연차·휴일 정보를 거친다) |
 | 건너뛰기 | **없음** — 두 화면 모두 거쳐야 입장 (회원가입 온보딩과 반대) |
 | **방장·참여자 공통** | 방 진입(방장 `POST /trips` · 참여자 `POST /trips/join`)=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE` (#39 · #114) |
 | **prefill** | **프론트 UX** — 백엔드 계약·#22 미정 **아님** |
 | 재입장 | `ACTIVE` → 방 상세 (BR-USER-010). `SCHEDULE_PENDING` → 일정 플로우. 미가입 참여자 → 플로우 |
 
-### D-JOIN-MEMBER · API (확정 — 2026-07-21 · #39 amend · **2026-08-18 `#114` amend**)
+### D-JOIN-MEMBER · API (확정 — 2026-07-21 · #39 amend · **2026-08-19 `#114` amend**)
 
 | 역할 | 흐름 | `trip_member` |
 |------|------|---------------|
@@ -221,10 +223,10 @@
 - 일정 확인 완료(방장·참여자 공통): `POST /api/v1/trips/{tripId}/activate`
 - **구 `POST .../schedule/submit` — 삭제·재사용 금지.**
 
-**`SCHEDULE_PENDING`:** 방 진입 직후 상태 — **방장 create·참여자 join 모두** 이 값으로 시작한다(2026-08-18 `#114`. 이전에는 방장 전용이었고 멤버 신규 INSERT는 `ACTIVE`만이었다).
+**`SCHEDULE_PENDING`:** 방 진입 직후 상태 — **방장 create·참여자 join 모두** 이 값으로 시작한다(2026-08-19 `#114`. 이전에는 방장 전용이었고 멤버 신규 INSERT는 `ACTIVE`만이었다).
 **초대 공유:** 방장 ∧ **`ACTIVE`(방 입장 후)** 만 — SCHEDULE_PENDING은 입장 불가 → 공유 불가. create·join 응답에 `inviteCode` 없음 ([`kakao-invite-share.md`](kakao-invite-share.md) S-1·S-2).
 
-**정원 보장:** `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리해 동시 요청에도 정원을 넘기지 않는다. 자리는 `SCHEDULE_PENDING`부터 차지하며, 일정 확인을 끝내지 않은 사람의 자리는 자동 회수하지 않는다(방 나가기로만 해제). 초과 시 409 `TRIP_MEMBER_FULL`. ~~hold → #35~~ (2026-08-18 `#114`로 폐지).
+**정원 보장:** `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리해 동시 요청에도 정원을 넘기지 않는다. 자리는 `SCHEDULE_PENDING`부터 차지하며, 일정 확인을 끝내지 않은 사람의 자리는 자동 회수하지 않고 **방장 내보내기로만 해제**된다(2026-08-19 `#122` — 나가기도 입장(`ACTIVE`) 후에만 가능). 초과 시 409 `TRIP_MEMBER_FULL`. ~~hold → #35~~ (2026-08-19 `#114`로 폐지).
 
 ### D-MEMBER-FILL: 모집 현황 (확정 — 2026-07-28 amend)
 
@@ -262,24 +264,23 @@
 | 필드 | 상태 |
 |------|------|
 | `isGoogleCalendarConnected` | **유지** — OAuth 연동 SSOT (Google Calendar API wave 3) |
-| `isScheduleRegistered` | **제거** — `hasPreSchedule` 파생 (D-BR006-C) |
+| `isScheduleRegistered` | **제거** — 현행 대체값은 `hasCompletedPreSchedule` 파생 (D-BR006-C. 당시 대체값이던 `hasPreSchedule`은 2026-08-19 삭제) |
 | `isOptionalOnboardingCompleted` | **제거** — 재접속 SSOT = 이름 완료 (D-REENTRY-2) |
 | `PATCH /users/onboarding` | **삭제** |
 
-**`hasPreSchedule` (D-BR006-C 확정):** login/me 응답 필드. `UserSummaryService`가 `regular_schedule` OR `personal_schedule` row 존재 여부를 **조회 시 파생**.
+**`hasCompletedPreSchedule` (D-BR006-C 확정, 2026-08-19 개정):** login/me 응답 필드. `UserSummaryService`가 `users.vacation_apply_period`의 존재 여부를 **조회 시 파생**한다.
 
-### D-BR006-C: `hasPreSchedule` · `hasRegularSchedule` 파생 (확정)
+### D-BR006-C: `hasCompletedPreSchedule` 파생 (확정 — 2026-08-19 전면 개정)
 
 | 항목 | 확정 |
 |------|------|
-| SSOT | `regular_schedule` / `personal_schedule` **테이블 row** |
-| API | `UserSummaryResponse.hasPreSchedule` · `UserSummaryResponse.hasRegularSchedule` — login · `GET /auth/me` · profile PATCH |
-| `hasPreSchedule` | `EXISTS(regular) OR EXISTS(personal)` — 온보딩·마이페이지 **표시용**. 정기 유무 판정에 쓰지 않음 |
-| `hasRegularSchedule` | `EXISTS(regular)`만 (2026-08-17 추가) — 일정 확인 플로우 2분기 판정용. 개별 일정은 세지 않음 |
-| DB 컬럼 | `is_schedule_registered` **제거** (Hibernate ddl-auto). 두 필드 모두 **컬럼 없음 — 조회 시 파생** |
-| 구 `@Hidden` onboarding PATCH | **삭제** |
+| SSOT | `users.vacation_apply_period` **한 컬럼** |
+| API | `UserSummaryResponse.hasCompletedPreSchedule` — login · `GET /auth/me` · profile PATCH · google-calendar 연결/해제 |
+| 파생식 | `vacation_apply_period IS NOT NULL` — 정기·개별 일정 row 수는 **읽지 않는다** |
+| 되돌아가는 경로 | **탈퇴 후 재가입뿐**. 일정 삭제·연차 재저장으로는 `false`가 되지 않는다 |
+| DB 컬럼 | 파생 필드라 **컬럼 없음**. 마커 자체는 기존 연차 컬럼을 그대로 쓴다(신규 컬럼 없음) |
 
-**`hasRegularSchedule`을 추가한 이유 (2026-08-17):** 요약 응답에 "정기 일정이 있는가"를 알려주는 값이 없어, 프론트가 가장 가까워 보이는 `hasPreSchedule`을 분기에 전용(轉用)하는 오용이 실제로 발생했다(개별 일정만 등록한 사용자가 빈 정기 화면에 갇힘). 두 값의 차이는 **개별 일정만 있는 사용자**에서만 드러난다 — `hasPreSchedule=true`, `hasRegularSchedule=false`.
+**구 `hasRegularSchedule`·`hasPreSchedule` (2026-08-19 삭제):** 각각 "정기 EXISTS", "정기 OR 개별 EXISTS"를 노출하던 파생 필드였다. `hasRegularSchedule`은 정기 유무 2분기 판정 전용이었는데 그 분기가 사라져 존재 이유를 잃었고, `hasPreSchedule`은 원래 용도(전역 입장 게이트 `canEnterRoom`)가 `#113`에서 삭제된 뒤 **서버 어디에서도 소비되지 않는 값**으로 남아 있었다. 비슷한 boolean을 여럿 노출하면 프론트가 조합식을 만드는 표면이 생긴다(QA 이슈 1·2의 원인) — 하나만 남긴다.
 
 ### D-SPARSE-3: 달력 omit(빈 날) — 방 입장 후 해석
 
@@ -291,7 +292,7 @@
 
 > **전부 free vs omit=POSSIBLE:** **별개 유지 (A안)**. `is_all_free` = 입장 게이트 · omit = 입장 후 달력/추천. 합치지 않음 — D-SPARSE vs `is_all_free` 절.
 
-### D-BR006-5: 정기·개인 일정 독립 (BR-USER-006 게이트 삭제)
+### D-BR006-5: 정기·개별 일정 독립 (BR-USER-006 게이트 삭제)
 
 | 항목 | 확정 |
 |------|------|
@@ -300,9 +301,9 @@
 | personal-only | personal만 있어도 입장 조건 **2** 충족 (D-JOIN-ENTRY) |
 | 구현 | `ScheduleService.requireRegularScheduleRegistered` 호출 제거 · personal GET/PATCH/calendar **regular 게이트 없음** |
 
-**`isScheduleRegistered` — D-BR006-C 확정 (2026-07-20):** DB 컬럼 **제거**. `hasPreSchedule` = 조회 시 `EXISTS(regular) OR EXISTS(personal)` 파생.
+**`isScheduleRegistered` — D-BR006-C 확정 (2026-07-20):** DB 컬럼 **제거**. 당시 대체값은 `hasPreSchedule`(조회 시 `EXISTS(regular) OR EXISTS(personal)` 파생)이었으나, **2026-08-19 그 필드도 삭제되고 `hasCompletedPreSchedule`로 대체됐다** — 현행 계약은 위 D-BR006-C 표.
 
-### D-PERSONAL-6: 개인 일정 수정 — 나비효과 없음
+### D-PERSONAL-6: 개별 일정 수정 — 나비효과 없음
 
 | 항목 | 확정 |
 |------|------|
@@ -461,6 +462,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-19 | **최초/갱신 입력 판정 도입 — 정기 일정 유무 2분기 폐기.** ① 분기 판정을 `사전 신청일`(`users.vacation_apply_period`) 저장 여부 하나로 단일화 ② `없어요` 경로에서도 연차·휴일 정보를 묻고, 남아 있던 정기 일정은 `DELETE /users/schedule/regular`로 즉시 전체 삭제 ③ 갱신 입력은 `일정 변경이 있나요?`(안내용, 분기 없음)로 시작 ④ `activate`에 403 `PRE_SCHEDULE_REQUIRED` 게이트 추가 ⑤ `hasRegularSchedule`·`hasPreSchedule` 삭제 → `hasCompletedPreSchedule` 신설 ⑥ 회원가입 온보딩에서 사전 일정 단계 제거·건너뛰기 미노출. SSOT: [`../user-schedule/pre-schedule-entry-flow.md`](../user-schedule/pre-schedule-entry-flow.md) |
 | 2026-08-18 | **`#113` amend — 전역 입장 게이트 폐지.** D-JOIN-ENTRY 3조건·`canEnterRoom`·`user.is_all_free`·`SCHEDULE_ENTRY_REQUIRED`·D-JOIN-CLEAR 전이 규칙을 모두 폐지하고, 방 입장 판정을 **방별 `trip_member.status = ACTIVE`** 하나로 단일화. BR-USER-006·007 개정 · BR-USER-011 삭제 동반. 동작 변화 없음(전역 게이트는 `ACTIVE` 멤버에게 항상 참이라 이미 아무것도 막지 못했음). SSOT: [`trip-join-schedule-gate.md`](trip-join-schedule-gate.md) J-7 |
 | 2026-08-17 | **D-BR006-C amend — `hasRegularSchedule` 필드 추가** — 요약 응답(login · `GET /auth/me` · profile PATCH)에 정기 일정 EXISTS만 반영하는 파생 boolean을 신설. 계기: 요약 응답에 정기 유무를 알려주는 값이 없어 프론트가 `hasPreSchedule`(정기 OR 개별)을 일정 확인 플로우 분기에 전용해, 개별 일정만 등록한 사용자가 빈 정기 화면에 갇히는 QA 이슈가 발생. D-JOIN-TRIP-FLOW 분기 판정 근거에 이 필드를 추가(기존 `GET /users/schedule/regular` 길이 판정도 계속 유효) |
 | 2026-08-16 | **D-JOIN-CLEAR stale 정정** — "Skip인데 이미 0행 → 방장 `POST /trips` 시 `is_all_free=true`"는 #39 amend(create는 markAllFree 안 함) 이후 갱신되지 않은 문구였다. 실제 구현은 `TripCommandService.activateMembership`이 설정하므로 **방장은 `activate` 시점**으로 정정 (같은 문서 D-JOIN-TRIP-FLOW 백엔드 가드 2·BR-USER-007과 이미 일치) |
