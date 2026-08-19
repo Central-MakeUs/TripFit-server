@@ -469,7 +469,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseCreateTripResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripEntryResponse"
                 },
                 "example": {
                   "data": {
@@ -1035,7 +1035,7 @@
           "Trip"
         ],
         "summary": "여행방 멤버십 활성화",
-        "description": "방장의 일정 확인을 끝내 여행방 입장·초대 공유를 가능하게 한다. 본인이 방장이고 myMemberStatus가 SCHEDULE_PENDING(create\n 직후·activate 전)일 때만 의미가 있다 — 멤버는 이 API를 쓰지 않고 join으로 바로 ACTIVE가 된다. 이미 ACTIVE면 상태 변경 없이 동일\n 응답(idempotent)이고, 방 안 API는 이 호출 이후에만 쓸 수 있다.",
+        "description": "일정 확인을 끝내 여행방 입장을 완료한다. 방장(create 직후)과 참여자(join 직후)가 모두 이 API를 호출하며, myMemberStatus가\n SCHEDULE_PENDING → ACTIVE로 바뀐다. 방 안 API와 방장의 초대 공유는 이 호출 이후에만 쓸 수 있다.\n\n 이미 ACTIVE면 상태 변경 없이 동일 응답이고 알림도 다시 가지 않는다(idempotent).",
         "operationId": "activateMembership",
         "parameters": [
           {
@@ -1136,7 +1136,7 @@
           "Trip"
         ],
         "summary": "초대 링크로 참여",
-        "description": "초대 코드로 여행방에 참여한다. 멤버는 SCHEDULE_PENDING 없이 join 한 번으로 바로 ACTIVE가 된다(방장의 create 직후\n SCHEDULE_PENDING은 이 API가 아니라 activate로 처리). 이미 ACTIVE인 멤버가 다시 호출하면 변경 없이 동일 응답을\n 반환한다(idempotent). 직전에 정원 hold를 발급받았다면 그 hold를 소비해 확정하고, hold가 없거나 만료됐다면 그 시점의 정원(확정 멤버 수 + 다른\n 사용자의 활성 hold 수)을 다시 확인한다.",
+        "description": "초대 코드로 여행방에 참여한다. 초대 링크를 연 직후, 일정 확인 화면에 들어가기 전에 호출한다 — 멤버는 SCHEDULE_PENDING으로 생성되고 일정 확인을 마친 뒤\n activate로 ACTIVE가 된다. 이 응답만으로는 아직 방 안 API를 쓸 수 없다.\n\n 이미 멤버인 사용자가 다시 호출하면 새 자리를 소비하지 않고 그 시점의 myMemberStatus를 그대로 반환한다(idempotent) — 링크를 다시 열었을 때도 같은\n 응답이므로 클라이언트는 myMemberStatus만 보고 일정 플로우·방 안 중 어디로 보낼지 정하면 된다.\n\n 정원은 SCHEDULE_PENDING 멤버까지 포함해 세며, 가득 찼으면 TRIP_MEMBER_FULL로 거부된다.",
         "operationId": "joinTrip",
         "requestBody": {
           "content": {
@@ -1154,41 +1154,13 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseTripDetailResponse"
+                  "$ref": "#/components/schemas/SuccessResponseTripEntryResponse"
                 },
                 "example": {
                   "data": {
                     "tripId": "550e8400-e29b-41d4-a716-446655440000",
-                    "name": "제주도 여행",
-                    "destination": "제주도",
-                    "startRange": "2026-08-01",
-                    "endRange": "2026-08-31",
-                    "durationDays": 4,
-                    "durationNights": 3,
-                    "memberCount": 6,
                     "status": "ONGOING",
-                    "inviteCode": "AB12CD",
-                    "confirmedStartDate": null,
-                    "confirmedEndDate": null,
-                    "confirmedAttendCount": null,
-                    "confirmedVacationMemberCount": null,
-                    "confirmedUncertainCount": null,
-                    "lastRecommendationMode": null,
-                    "lastActivityAt": "2026-07-20T10:00:00",
-                    "pinned": false,
-                    "myRole": "MEMBER",
-                    "myMemberStatus": "ACTIVE",
-                    "activeMemberCount": 3,
-                    "memberFillRate": 0.5,
-                    "membersPreview": [
-                      {
-                        "userId": "550e8400-e29b-41d4-a716-446655440000",
-                        "displayName": "길동",
-                        "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
-                        "role": "OWNER"
-                      }
-                    ],
-                    "membersPreviewOverflow": 0
+                    "myMemberStatus": "SCHEDULE_PENDING"
                   }
                 }
               }
@@ -1258,133 +1230,6 @@
           },
           "409": {
             "description": "TRIP_MEMBER_FULL — 정원 초과 · TRIP_ALREADY_CONFIRMED — 확정된 방 · TRIP_EXPIRED — 종료된 방",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "TRIP_MEMBER_FULL",
-                  "message": "참여 인원이 가득 찼습니다."
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer-jwt": []
-          }
-        ]
-      }
-    },
-    "/api/v1/trips/join/hold": {
-      "post": {
-        "tags": [
-          "Trip"
-        ],
-        "summary": "초대코드 미리보기 + 정원 hold 생성",
-        "description": "초대코드로 여행방을 미리보기하며 10분 hold를 생성한다. 정원(확정 멤버 수 + 활성 hold 수)이 가득 찼으면 hold 없이 409로 실패한다. 같은 사용자가\n 재호출하면 기존 hold의 TTL만 10분으로 갱신되고 자리를 중복으로 소비하지 않는다. 이미 ACTIVE 멤버면 hold 없이 동일 정보를 반환하고,\n SCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다.",
-        "operationId": "previewAndHold",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/JoinTripRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "미리보기·hold 성공",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessResponseTripJoinPreviewResponse"
-                },
-                "example": {
-                  "data": {
-                    "tripId": "550e8400-e29b-41d4-a716-446655440000",
-                    "name": "제주도 여행",
-                    "destination": "제주도",
-                    "startRange": "2026-08-01",
-                    "endRange": "2026-08-31",
-                    "durationDays": 4,
-                    "durationNights": 3,
-                    "memberCount": 6,
-                    "activeMemberCount": 3,
-                    "status": "ONGOING"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "입력값이 올바르지 않습니다.",
-                  "errors": [
-                    {
-                      "field": "inviteCode",
-                      "message": "초대 코드는 필수입니다."
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "AUTH_EXPIRED",
-                  "message": "액세스 토큰이 만료되었습니다."
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ACTIVATION_REQUIRED — 방장이 호출 시도",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "PROFILE_NAME_REQUIRED",
-                  "message": "성·이름 입력이 필요합니다."
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "INVITE_CODE_NOT_FOUND — 초대 코드 없음",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVITE_CODE_NOT_FOUND",
-                  "message": "초대 코드를 찾을 수 없습니다."
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "TRIP_MEMBER_FULL — 정원(hold 포함) 초과 · TRIP_ALREADY_CONFIRMED — 확정된 방 · TRIP_EXPIRED — 종료된 방",
             "content": {
               "*/*": {
                 "schema": {
@@ -3798,51 +3643,6 @@
           }
         ]
       }
-    },
-    "/api/v1/trips/{tripId}/join/hold": {
-      "delete": {
-        "tags": [
-          "Trip"
-        ],
-        "summary": "정원 hold 해제",
-        "description": "참여 플로우 첫 화면(정기 일정 입력)에서 뒤로가기로 플로우를 이탈할 때 hold를 즉시 반환한다. 개별 일정 화면에서 정기 일정 화면으로 되돌아가는 것처럼 플로우 안에서\n 이동하는 뒤로가기는 호출 대상이 아니다(hold 유지). 이미 만료됐거나 join으로 소비된 hold를 호출해도 안전하다(idempotent) — 항상 204.",
-        "operationId": "releaseJoinHold",
-        "parameters": [
-          {
-            "name": "tripId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "해제 성공(존재하지 않던 hold 포함)"
-          },
-          "401": {
-            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "AUTH_EXPIRED",
-                  "message": "액세스 토큰이 만료되었습니다."
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer-jwt": []
-          }
-        ]
-      }
     }
   },
   "components": {
@@ -4218,40 +4018,12 @@
           "startRange"
         ]
       },
-      "CreateTripResponse": {
-        "type": "object",
-        "description": "여행방 생성 응답. POST /trips.\n방장은 SCHEDULE_PENDING(입장 전) — myMemberStatus=SCHEDULE_PENDING면 클라가 일정 activate 플로우로 라우팅.\ninviteCode 필드 없음 — activate→ACTIVE 후 상세에서만 공유용 코드 제공.\n",
-        "properties": {
-          "tripId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "생성된 여행방 ID"
-          },
-          "status": {
-            "type": "string",
-            "description": "여행방 진행 상태. create 직후 ONGOING",
-            "enum": [
-              "ONGOING",
-              "CONFIRMED",
-              "EXPIRED"
-            ]
-          },
-          "myMemberStatus": {
-            "type": "string",
-            "description": "방장 멤버십. create 직후 항상 SCHEDULE_PENDING(방장 전용) — 일정 activate 전까지 아직 이 값.\n멤버는 이 응답을 받지 않음. activate 후 myMemberStatus는 상세에서 ACTIVE.\n",
-            "enum": [
-              "SCHEDULE_PENDING",
-              "ACTIVE"
-            ]
-          }
-        }
-      },
-      "SuccessResponseCreateTripResponse": {
+      "SuccessResponseTripEntryResponse": {
         "type": "object",
         "description": "API 성공 응답 envelope",
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/CreateTripResponse",
+            "$ref": "#/components/schemas/TripEntryResponse",
             "description": "응답 본문"
           },
           "message": {
@@ -4267,6 +4039,34 @@
               "null"
             ],
             "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "TripEntryResponse": {
+        "type": "object",
+        "description": "방 진입 상태. POST /trips(생성) · POST /trips/join(참여) 공통 응답.\n방장·참여자 모두 SCHEDULE_PENDING으로 시작 — 일정 확인 플로우를 마치고 activate하면 ACTIVE가 된다.\n클라는 myMemberStatus 하나로 라우팅한다(SCHEDULE_PENDING=일정 플로우, ACTIVE=방 안).\ninviteCode 필드 없음 — 입장(ACTIVE) 후 상세에서만 공유용 코드를 제공한다.\n",
+        "properties": {
+          "tripId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "여행방 ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "여행방 진행 상태. create·join 직후 ONGOING",
+            "enum": [
+              "ONGOING",
+              "CONFIRMED",
+              "EXPIRED"
+            ]
+          },
+          "myMemberStatus": {
+            "type": "string",
+            "description": "호출자의 이 방 멤버십 상태. create·신규 join 직후 항상 SCHEDULE_PENDING.\n이미 멤버인 사용자가 join을 다시 호출하면 그 시점의 실제 상태(SCHEDULE_PENDING 또는 ACTIVE)를 그대로 반환한다.\n",
+            "enum": [
+              "SCHEDULE_PENDING",
+              "ACTIVE"
+            ]
           }
         }
       },
@@ -4690,102 +4490,6 @@
         "required": [
           "inviteCode"
         ]
-      },
-      "SuccessResponseTripJoinPreviewResponse": {
-        "type": "object",
-        "description": "API 성공 응답 envelope",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/TripJoinPreviewResponse",
-            "description": "응답 본문"
-          },
-          "message": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "에러 메시지 (성공 시 null)"
-          },
-          "code": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "에러 코드 (성공 시 null)"
-          }
-        }
-      },
-      "TripJoinPreviewResponse": {
-        "type": "object",
-        "description": "초대코드로 여행방을 미리보기하며 10분 hold를 생성한 결과. POST /trips/join/hold",
-        "properties": {
-          "tripId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "여행방 ID"
-          },
-          "name": {
-            "type": "string",
-            "description": "여행방 이름",
-            "maxLength": 15
-          },
-          "destination": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "여행지. null=미정"
-          },
-          "startRange": {
-            "type": "string",
-            "format": "date",
-            "description": "희망 여행 기간 시작일"
-          },
-          "endRange": {
-            "type": "string",
-            "format": "date",
-            "description": "희망 여행 기간 종료일"
-          },
-          "durationDays": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "희망 여행 일수 (m일). null=미정"
-          },
-          "durationNights": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "희망 여행 박수 (n박). durationDays와 쌍으로 저장(nights+1 ≤ days ≤ nights+2). null=미정",
-            "example": 3
-          },
-          "memberCount": {
-            "type": "integer",
-            "format": "int32",
-            "description": "모집 정원 (1~10)",
-            "example": 6,
-            "maximum": 10,
-            "minimum": 1
-          },
-          "activeMemberCount": {
-            "type": "integer",
-            "format": "int32",
-            "description": "일정 확인 완료(ACTIVE) 멤버 수"
-          },
-          "status": {
-            "type": "string",
-            "description": "여행방 진행 상태(effectiveStatus)",
-            "enum": [
-              "ONGOING",
-              "CONFIRMED",
-              "EXPIRED"
-            ]
-          }
-        }
       },
       "DeviceTokenRegisterRequest": {
         "type": "object",
