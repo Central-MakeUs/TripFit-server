@@ -7,11 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record LoginResponse(
     @Schema(description = "TripFit API 호출용 access JWT", example = "eyJhbG...") String accessToken,
 
-    @Schema(
-        description = "access 만료 시 POST /auth/refresh에 사용하는 opaque refresh token",
-        example = "550e8400-e29b-41d4-a716-446655440000") String refreshToken,
-
-    @Schema(description = "access JWT 만료까지 남은 시간(초)", example = "7200") long expiresIn,
+    @Schema(description = "access JWT 만료까지 남은 시간(초)", example = "900") long expiresIn,
 
     @Schema(
         description = "로그인한 사용자 요약 (hasRegularSchedule·hasPreSchedule 포함)") UserSummaryResponse user

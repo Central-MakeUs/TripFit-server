@@ -18,7 +18,6 @@ import com.tripfit.tripfit.notification.domain.NotificationType;
 import com.tripfit.tripfit.notification.dto.NotificationResponse;
 import com.tripfit.tripfit.notification.exception.NotificationErrorCode;
 import com.tripfit.tripfit.notification.service.NotificationQueryService;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -46,7 +45,7 @@ class NotificationControllerTest {
   void setUp() {
     SecurityContextHolder.getContext()
         .setAuthentication(
-            new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
+            new JwtAuthentication(USER_ID));
     NotificationController controller = new NotificationController(notificationQueryService);
     mockMvc =
         MockMvcBuilders.standaloneSetup(controller)

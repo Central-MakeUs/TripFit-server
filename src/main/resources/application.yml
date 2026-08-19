@@ -31,8 +31,9 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      # 액세스 토큰 블랙리스트는 fail-open(RedisTokenRevocationChecker)이 전제라, Redis 장애 시 매 요청이
-      # 기본 타임아웃(수십 초)만큼 멈추지 않도록 연결·명령 타임아웃을 짧게 고정
+      # refresh token SSOT(RefreshTokenService)가 여기 있어 fail-closed다 — Redis 장애 시 로그인
+      # 갱신 자체가 불가능해지는 리스크를 감수하기로 확정(docs/specs/auth/auth-refresh-redis-cookie.md).
+      # 그래도 요청이 무한정 멈추지 않도록 연결·명령 타임아웃은 짧게 고정
       connect-timeout: 300ms
       timeout: 300ms
 
@@ -61,8 +62,13 @@ springdoc:
 tripfit:
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-must-be-at-least-32-chars}
-    access-expiration-seconds: ${JWT_ACCESS_EXPIRATION:7200}
+    access-expiration-seconds: ${JWT_ACCESS_EXPIRATION:900}
     refresh-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:30}
+  auth:
+    cookie:
+      # api.tripfit.online이 발급한 쿠키를 프론트 tripfit.online과도 공유하도록 상위 도메인으로 지정
+      domain: ${COOKIE_DOMAIN:localhost}
+      secure: ${COOKIE_SECURE:true}
   oauth:
     google-client-id: ${GOOGLE_CLIENT_ID:}
     google-client-secret: ${GOOGLE_CLIENT_SECRET:}
