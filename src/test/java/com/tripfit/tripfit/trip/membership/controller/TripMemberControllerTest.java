@@ -18,7 +18,6 @@ import com.tripfit.tripfit.trip.schedule.dto.MemberScheduleCalendarResponse.Memb
 import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse.TripMemberItemResponse;
 import com.tripfit.tripfit.trip.service.TripService;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -51,7 +50,7 @@ class TripMemberControllerTest {
   void setUp() {
     SecurityContextHolder.getContext()
         .setAuthentication(
-            new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
+            new JwtAuthentication(USER_ID));
     mockMvc =
         MockMvcBuilders.standaloneSetup(new TripMemberController(tripService))
             .setCustomArgumentResolvers(new AuthorizedUserArgumentResolver())

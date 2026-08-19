@@ -81,11 +81,7 @@
                         "endTime": "18:00:00",
                         "morningStatus": "IMPOSSIBLE",
                         "afternoonStatus": "IMPOSSIBLE",
-                        "eveningStatus": "POSSIBLE",
-                        "maxVacationDays": 2,
-                        "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                        "halfVacationAvailable": false,
-                        "holidayRest": true
+                        "eveningStatus": "POSSIBLE"
                       }
                     ]
                   }
@@ -143,11 +139,7 @@
                     "endTime": "18:00:00",
                     "morningStatus": "IMPOSSIBLE",
                     "afternoonStatus": "IMPOSSIBLE",
-                    "eveningStatus": "POSSIBLE",
-                    "maxVacationDays": 2,
-                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                    "halfVacationAvailable": false,
-                    "holidayRest": true
+                    "eveningStatus": "POSSIBLE"
                   }
                 }
               }
@@ -226,8 +218,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": true,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -309,8 +301,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -1530,21 +1522,22 @@
           "Auth"
         ],
         "summary": "액세스·리프레시 토큰 재발급 (RTR)",
-        "description": "refresh token으로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되므로 응답의 새\n refreshToken으로 반드시 교체해야 한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를\n 폐기한다(401 AUTH_REFRESH_REUSE).",
+        "description": "refresh token 쿠키로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되고 응답이 Set-Cookie로\n 내려주는 새 값으로 브라우저가 자동 교체한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를\n 폐기한다(401 AUTH_REFRESH_REUSE).",
         "operationId": "refresh",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefreshRequest"
-              }
+        "parameters": [
+          {
+            "name": "refreshToken",
+            "in": "cookie",
+            "description": "login 또는 이전 refresh 응답이 내려준 refresh token 쿠키",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
-            "description": "재발급 성공",
+            "description": "재발급 성공 — Set-Cookie로 새 refreshToken 전달(HttpOnly)",
             "content": {
               "*/*": {
                 "schema": {
@@ -1553,35 +1546,14 @@
                 "example": {
                   "data": {
                     "accessToken": "eyJhbG...",
-                    "refreshToken": "550e8400-e29b-41d4-a716-446655440002",
-                    "expiresIn": 7200
+                    "expiresIn": 900
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "입력값이 올바르지 않습니다.",
-                  "errors": [
-                    {
-                      "field": "refreshToken",
-                      "message": "필수 값입니다."
-                    }
-                  ]
-                }
-              }
-            }
-          },
           "401": {
-            "description": "AUTH_INVALID_REFRESH — refresh 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
+            "description": "AUTH_INVALID_REFRESH — refresh 쿠키 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
             "content": {
               "*/*": {
                 "schema": {
@@ -1606,41 +1578,22 @@
           "Auth"
         ],
         "summary": "로그아웃",
-        "description": "refresh token을 폐기해 재발급을 막는다. accessToken을 함께 보내면 자체 만료 시각 전이라도 즉시 무효화된다(블랙리스트) — 없거나 이미 만료·위조된\n 값이면 조용히 무시되고 로그아웃 자체는 계속 성공한다.",
+        "description": "refresh token 쿠키를 폐기해 재발급을 막고 브라우저에서도 쿠키를 지운다. 쿠키가 이미 없거나 만료됐어도 조용히 넘어가고 로그아웃 자체는 계속 성공한다. 액세스\n 토큰은 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 로그아웃 후에도 이미 발급된 액세스 토큰은 남은 수명 동안 유효할 수 있다.",
         "operationId": "logout",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LogoutRequest"
-              }
+        "parameters": [
+          {
+            "name": "refreshToken",
+            "in": "cookie",
+            "description": "폐기할 refresh token 쿠키. 없어도 로그아웃은 성공한다",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "204": {
-            "description": "로그아웃 성공(No Content)"
-          },
-          "400": {
-            "description": "요청 값 검증 실패 (INVALID_INPUT)",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "code": "INVALID_INPUT",
-                  "message": "입력값이 올바르지 않습니다.",
-                  "errors": [
-                    {
-                      "field": "refreshToken",
-                      "message": "필수 값입니다."
-                    }
-                  ]
-                }
-              }
-            }
+            "description": "로그아웃 성공(No Content) — Set-Cookie로 refreshToken 쿠키 삭제"
           }
         },
         "security": [
@@ -1654,7 +1607,7 @@
           "Auth"
         ],
         "summary": "소셜 로그인",
-        "description": "소셜 토큰으로 로그인하고 access·refresh를 발급한다. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은\n authorizationCode도 함께 보내야 한다(<code>LoginRequest.authorizationCode</code> 필드 설명 참고 — GOOGLE은 네이티브 앱이냐\n 브라우저 리다이렉트냐에 따라 값을 받는 방법이 다름). GOOGLE 브라우저 리다이렉트 로그인이면 <code>redirectUri</code>도 실제 리다이렉트에 쓴 값과 정확히\n 일치하게 보내야 한다.\n\n <p>\n APPLE·GOOGLE은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 provider revoke에 쓸\n refresh token을 확보하기 위함. GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고(정상 동작), redirectUri가 실제 값과 다르면\n 토큰 교환이 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).",
+        "description": "소셜 토큰으로 로그인하고 access·refresh를 발급한다. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은\n authorizationCode도 함께 보내야 한다(<code>LoginRequest.authorizationCode</code> 필드 설명 참고 — GOOGLE은 네이티브 앱이냐\n 브라우저 리다이렉트냐에 따라 값을 받는 방법이 다름). GOOGLE 브라우저 리다이렉트 로그인이면 <code>redirectUri</code>도 실제 리다이렉트에 쓴 값과 정확히\n 일치하게 보내야 한다.\n\n <p>\n APPLE·GOOGLE은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 provider revoke에 쓸\n refresh token을 확보하기 위함. GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고(정상 동작), redirectUri가 실제 값과 다르면\n 토큰 교환이 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).\n\n <p>\n refresh token은 응답 바디가 아니라 HttpOnly 쿠키(<code>Set-Cookie: refreshToken=...</code>)로 내려간다 — 클라이언트\n JavaScript가 값을 직접 다루지 않아도 되고(탈취 표면 축소), 이후 refresh·logout 요청 시 브라우저가 자동으로 실어 보낸다.",
         "operationId": "login",
         "requestBody": {
           "content": {
@@ -1668,7 +1621,7 @@
         },
         "responses": {
           "200": {
-            "description": "로그인 성공",
+            "description": "로그인 성공 — Set-Cookie로 refreshToken 전달(HttpOnly)",
             "content": {
               "*/*": {
                 "schema": {
@@ -1677,8 +1630,7 @@
                 "example": {
                   "data": {
                     "accessToken": "eyJhbG...",
-                    "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
-                    "expiresIn": 7200,
+                    "expiresIn": 900,
                     "user": {
                       "id": "550e8400-e29b-41d4-a716-446655440000",
                       "email": "user@example.com",
@@ -1688,8 +1640,8 @@
                       "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                       "provider": "GOOGLE",
                       "isGoogleCalendarConnected": false,
+                      "hasRegularSchedule": false,
                       "hasPreSchedule": false,
-                      "isAllFree": false,
                       "notificationEnabled": true
                     }
                   }
@@ -1801,6 +1753,116 @@
         ]
       }
     },
+    "/api/v1/users/schedule/vacation-policy": {
+      "get": {
+        "tags": [
+          "User Schedule"
+        ],
+        "summary": "연차·반차·공휴일 휴무 설정 조회",
+        "description": "본인 연차·반차·공휴일 휴무 설정을 조회한다. 정기 일정과 별개로 사람 1명에게 하나만 존재한다.",
+        "operationId": "getVacationPolicy",
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseVacationPolicyResponse"
+                },
+                "example": {
+                  "data": {
+                    "maxVacationDays": 2,
+                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                    "halfVacationAvailable": false,
+                    "holidayRest": true
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_EXPIRED",
+                  "message": "액세스 토큰이 만료되었습니다."
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "User Schedule"
+        ],
+        "summary": "연차·반차·공휴일 휴무 설정 전체 교체",
+        "description": "본인 연차·반차·공휴일 휴무 설정을 전체 교체한다. 부분 수정이 아니라 4개 필드를 매번 전부 보내야 하며, 생략된 필드는 기본값(연차 2일·신청 시점 미설정·반차\n 불가·공휴일 휴무)으로 대체된다. 이 API는 정기 일정 행이 하나도 없어도 저장할 수 있고, 일정 등록이 아니므로 일정 파생값에도 영향을 주지 않는다.",
+        "operationId": "updateVacationPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVacationPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "저장 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseVacationPolicyResponse"
+                },
+                "example": {
+                  "data": {
+                    "maxVacationDays": 2,
+                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
+                    "halfVacationAvailable": false,
+                    "holidayRest": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 검증 실패 (INVALID_INPUT)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "INVALID_INPUT",
+                  "message": "입력값이 올바르지 않습니다."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": "AUTH_EXPIRED",
+                  "message": "액세스 토큰이 만료되었습니다."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/schedule/regular/{id}": {
       "delete": {
         "tags": [
@@ -1899,11 +1961,7 @@
                     "endTime": "18:00:00",
                     "morningStatus": "IMPOSSIBLE",
                     "afternoonStatus": "IMPOSSIBLE",
-                    "eveningStatus": "POSSIBLE",
-                    "maxVacationDays": 2,
-                    "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                    "halfVacationAvailable": false,
-                    "holidayRest": true
+                    "eveningStatus": "POSSIBLE"
                   }
                 }
               }
@@ -2247,8 +2305,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": false
                   }
                 }
@@ -2322,8 +2380,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -2373,7 +2431,7 @@
           "Trip"
         ],
         "summary": "여행방 상세",
-        "description": "여행방 상세 정보를 조회한다. 멤버이면서 ACTIVE(일정 activate/join 완료)이고 방 입장 조건(일정≥1 또는 전부 free)을 충족해야 하며,\n SCHEDULE_PENDING(방장 activate 전) 상태면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다. 응답에는 inviteCode가\n 포함된다(방장 초대 공유용) — create 응답에는 없던 값이다.",
+        "description": "여행방 상세 정보를 조회한다. 이 방의 멤버이면서 ACTIVE(일정 activate/join 완료)여야 하며, SCHEDULE_PENDING(방장 activate 전)\n 상태면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다. 응답에는 inviteCode가 포함된다(방장 초대 공유용) — create 응답에는 없던 값이다.",
         "operationId": "getTrip",
         "parameters": [
           {
@@ -2447,7 +2505,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료",
             "content": {
               "*/*": {
                 "schema": {
@@ -2824,7 +2882,7 @@
           "Trip"
         ],
         "summary": "Pin 토글",
-        "description": "홈 목록에서 이 방을 고정(Pin)하거나 해제한다. 멤버면 되고(SCHEDULE_PENDING 방장 포함), 방 입장(ACTIVE + 입장 조건)까지는 필요 없다.",
+        "description": "홈 목록에서 이 방을 고정(Pin)하거나 해제한다. 멤버면 되고(SCHEDULE_PENDING 방장 포함), 방 입장(ACTIVE)까지는 필요 없다.",
         "operationId": "updatePin",
         "parameters": [
           {
@@ -3210,7 +3268,7 @@
           "Trip Members"
         ],
         "summary": "참여자 목록",
-        "description": "여행방 참여자 목록을 조회한다. 방 입장 가능(ACTIVE + 입장 조건) 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에\n <code>(2)</code>처럼 번호가 붙는다.",
+        "description": "여행방 참여자 목록을 조회한다. 이 방에서 ACTIVE인 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에\n <code>(2)</code>처럼 번호가 붙는다.",
         "operationId": "listMembers",
         "parameters": [
           {
@@ -3265,7 +3323,7 @@
             }
           },
           "403": {
-            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING) · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+            "description": "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료(SCHEDULE_PENDING)",
             "content": {
               "*/*": {
                 "schema": {
@@ -3461,7 +3519,7 @@
           "Auth"
         ],
         "summary": "현재 사용자 조회",
-        "description": "로그인 사용자 요약을 조회한다. hasPreSchedule은 일정 row 존재 여부에서 파생된 값, isAllFree는 DB 컬럼이다.",
+        "description": "로그인 사용자 요약을 조회한다. hasRegularSchedule·hasPreSchedule은 DB 컬럼이 아니라 일정 row 존재 여부에서 조회 시 파생된다.",
         "operationId": "me",
         "responses": {
           "200": {
@@ -3481,8 +3539,8 @@
                     "profileImageUrl": "https://lh3.googleusercontent.com/a/example",
                     "provider": "GOOGLE",
                     "isGoogleCalendarConnected": false,
+                    "hasRegularSchedule": false,
                     "hasPreSchedule": false,
-                    "isAllFree": false,
                     "notificationEnabled": true
                   }
                 }
@@ -3512,7 +3570,7 @@
           "User"
         ],
         "summary": "회원 탈퇴",
-        "description": "본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지\n 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 지금 사용 중인 액세스\n 토큰도 이 요청과 동시에 즉시 무효화된다.",
+        "description": "본인 계정을 탈퇴한다. 진행 중인 방이 있어도 차단하지 않는다 — 참여 중인 방은 자동으로 나가기 처리되고, 소유한 방은 자동 삭제돼 다른 참여자에게도 더 이상 보이지\n 않는다. 개인 일정·구글 캘린더 연동·리프레시 토큰은 즉시 제거되고, 계정은 soft delete되며 이메일·이름·닉네임·프로필 이미지가 제거된다. 액세스 토큰은\n 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 지금 사용 중인 액세스 토큰은 이 요청 이후에도 남은 수명 동안 유효할 수 있다.",
         "operationId": "withdraw",
         "responses": {
           "204": {
@@ -3816,47 +3874,6 @@
             "type": "string",
             "description": "종료 시각",
             "example": "18:00:00"
-          },
-          "maxVacationDays": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "여행당 최대 연차 일수. 생략 시 2, 허용 0~10",
-            "example": 2,
-            "maximum": 10,
-            "minimum": 0
-          },
-          "vacationApplyPeriod": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "연차 신청 가능 시점. 생략 시 null",
-            "enum": [
-              "ANY",
-              "ONE_WEEK_BEFORE",
-              "TWO_WEEKS_BEFORE",
-              "ONE_MONTH_BEFORE"
-            ],
-            "example": "ONE_WEEK_BEFORE"
-          },
-          "halfVacationAvailable": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "반차 사용 가능 여부. 생략 시 false",
-            "example": false
-          },
-          "holidayRest": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "공휴일 휴무 여부. 생략 시 true",
-            "example": true
           }
         },
         "required": [
@@ -3981,36 +3998,6 @@
               "IMPOSSIBLE"
             ],
             "example": "POSSIBLE"
-          },
-          "maxVacationDays": {
-            "type": "integer",
-            "format": "int32",
-            "description": "여행당 최대 연차 일수 (기본 2, 허용 0~10)",
-            "example": 2
-          },
-          "vacationApplyPeriod": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "연차 신청 가능 시점. 미설정 시 null",
-            "enum": [
-              "ANY",
-              "ONE_WEEK_BEFORE",
-              "TWO_WEEKS_BEFORE",
-              "ONE_MONTH_BEFORE"
-            ],
-            "example": "ONE_WEEK_BEFORE"
-          },
-          "halfVacationAvailable": {
-            "type": "boolean",
-            "description": "반차 사용 가능 여부 (기본 false)",
-            "example": false
-          },
-          "holidayRest": {
-            "type": "boolean",
-            "description": "공휴일 휴무 여부 (기본 true)",
-            "example": true
           }
         }
       },
@@ -4149,14 +4136,14 @@
             "description": "Google Calendar OAuth 연동 여부",
             "example": false
           },
-          "hasPreSchedule": {
+          "hasRegularSchedule": {
             "type": "boolean",
-            "description": "정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\ntrue: 정기 일정 첫 생성 또는 개별 일정 첫 저장.\nfalse: 두 종류 일정 row가 모두 0건.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "description": "정기 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\n개별 일정은 세지 않는다 — 일정 확인 화면에서 \"정기 일정이 있나요?\" 질문을 띄울지 판정하는 값.\ntrue: 정기 일정 생성. false: 정기 일정이 0건(개별 일정만 있어도 false).\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
             "example": false
           },
-          "isAllFree": {
+          "hasPreSchedule": {
             "type": "boolean",
-            "description": "전부 free 선언 여부 (user.is_all_free 저장, 기본 false).\n방 입장 조건: hasPreSchedule OR isAllFree.\ntrue: 일정 없이 Skip+0행으로 create/join·activate 시 설정.\nfalse: 사용자가 명시적으로 해제하거나, 일정 row가 생기면 hasPreSchedule으로 대체 가능.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
+            "description": "정기 또는 개별 일정이 1건 이상 있는지 (DB 컬럼 없음, 조회 시 계산).\ntrue: 정기 일정 첫 생성 또는 개별 일정 첫 저장.\nfalse: 두 종류 일정 row가 모두 0건.\n정기·개별을 뭉뚱그린 값이라 정기 일정 유무를 판정할 수 없다 — 그 판정에는 hasRegularSchedule을 쓴다.\n일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.\n",
             "example": false
           },
           "notificationEnabled": {
@@ -4519,7 +4506,7 @@
       },
       "TripDetailResponse": {
         "type": "object",
-        "description": "여행방 상세. GET/join/activate/patch/pin 등.\n호출 전제=ACTIVE+입장조건. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.\nSCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED.\n",
+        "description": "여행방 상세. GET/join/activate/patch/pin 등.\n호출 전제=이 방에서 ACTIVE. inviteCode는 여기(입장 후)에만 있음 — 방장 공유용.\nSCHEDULE_PENDING 방장이 호출하면 SCHEDULE_ACTIVATION_REQUIRED.\n",
         "properties": {
           "tripId": {
             "type": "string",
@@ -4824,21 +4811,6 @@
           "token"
         ]
       },
-      "RefreshRequest": {
-        "type": "object",
-        "description": "액세스 토큰 재발급 요청. POST /auth/refresh",
-        "properties": {
-          "refreshToken": {
-            "type": "string",
-            "description": "login 또는 이전 refresh 응답에서 받은 refresh token",
-            "example": "550e8400-e29b-41d4-a716-446655440000",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
-      },
       "RefreshResponse": {
         "type": "object",
         "description": "액세스 토큰 재발급 성공 응답. POST /auth/refresh",
@@ -4848,16 +4820,11 @@
             "description": "새 TripFit access JWT",
             "example": "eyJhbG..."
           },
-          "refreshToken": {
-            "type": "string",
-            "description": "새 refresh token. 기존 값은 이 응답과 동시에 폐기되므로 반드시 저장해 교체해야 한다(RTR)",
-            "example": "550e8400-e29b-41d4-a716-446655440000"
-          },
           "expiresIn": {
             "type": "integer",
             "format": "int64",
             "description": "access JWT 만료까지 남은 시간(초)",
-            "example": 7200
+            "example": 900
           }
         }
       },
@@ -4884,29 +4851,6 @@
             "description": "에러 코드 (성공 시 null)"
           }
         }
-      },
-      "LogoutRequest": {
-        "type": "object",
-        "description": "로그아웃 요청. POST /auth/logout",
-        "properties": {
-          "refreshToken": {
-            "type": "string",
-            "description": "서버에서 폐기할 refresh token",
-            "example": "550e8400-e29b-41d4-a716-446655440000",
-            "minLength": 1
-          },
-          "accessToken": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "현재 보유한 access token. 있으면 만료 전이라도 즉시 무효화(블랙리스트 등록)한다. 없거나 이미 만료·위조된 값이면 조용히 무시하고 로그아웃 자체는 계속 성공한다",
-            "example": "eyJhbG..."
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
       },
       "LoginRequest": {
         "type": "object",
@@ -4959,20 +4903,15 @@
             "description": "TripFit API 호출용 access JWT",
             "example": "eyJhbG..."
           },
-          "refreshToken": {
-            "type": "string",
-            "description": "access 만료 시 POST /auth/refresh에 사용하는 opaque refresh token",
-            "example": "550e8400-e29b-41d4-a716-446655440000"
-          },
           "expiresIn": {
             "type": "integer",
             "format": "int64",
             "description": "access JWT 만료까지 남은 시간(초)",
-            "example": 7200
+            "example": 900
           },
           "user": {
             "$ref": "#/components/schemas/UserSummaryResponse",
-            "description": "로그인한 사용자 요약 (hasPreSchedule·isAllFree 포함)"
+            "description": "로그인한 사용자 요약 (hasRegularSchedule·hasPreSchedule 포함)"
           }
         }
       },
@@ -5014,34 +4953,10 @@
           "payload"
         ]
       },
-      "UpdateRegularScheduleRequest": {
+      "UpdateVacationPolicyRequest": {
         "type": "object",
-        "description": "정기 일정 전체 수정 요청. PATCH /users/schedule/regular/{id}. start/end 변경 시 슬롯 재계산",
+        "description": "연차·반차·공휴일 휴무 설정 전체 교체 요청. PATCH /users/schedule/vacation-policy. 부분 patch 아님 — 생략(null) 필드는 기본값으로 대체",
         "properties": {
-          "title": {
-            "type": "string",
-            "description": "표시명 (출근·수업·회의 등)",
-            "example": "출근",
-            "minLength": 1
-          },
-          "daysOfWeek": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 시 null",
-            "example": "MON,TUE,WED,THU,FRI"
-          },
-          "startTime": {
-            "type": "string",
-            "description": "시작 시각",
-            "example": "09:00:00"
-          },
-          "endTime": {
-            "type": "string",
-            "description": "종료 시각",
-            "example": "18:00:00"
-          },
           "maxVacationDays": {
             "type": [
               "integer",
@@ -5082,6 +4997,96 @@
             ],
             "description": "공휴일 휴무 여부. 생략 시 true",
             "example": true
+          }
+        }
+      },
+      "SuccessResponseVacationPolicyResponse": {
+        "type": "object",
+        "description": "API 성공 응답 envelope",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VacationPolicyResponse",
+            "description": "응답 본문"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 메시지 (성공 시 null)"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "에러 코드 (성공 시 null)"
+          }
+        }
+      },
+      "VacationPolicyResponse": {
+        "type": "object",
+        "description": "연차·반차·공휴일 휴무 설정 응답. GET/PATCH /users/schedule/vacation-policy",
+        "properties": {
+          "maxVacationDays": {
+            "type": "integer",
+            "format": "int32",
+            "description": "여행당 최대 연차 일수 (기본 2, 허용 0~10)",
+            "example": 2
+          },
+          "vacationApplyPeriod": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "연차 신청 가능 시점. 미설정 시 null",
+            "enum": [
+              "ANY",
+              "ONE_WEEK_BEFORE",
+              "TWO_WEEKS_BEFORE",
+              "ONE_MONTH_BEFORE"
+            ],
+            "example": "ONE_WEEK_BEFORE"
+          },
+          "halfVacationAvailable": {
+            "type": "boolean",
+            "description": "반차 사용 가능 여부 (기본 false)",
+            "example": false
+          },
+          "holidayRest": {
+            "type": "boolean",
+            "description": "공휴일 휴무 여부 (기본 true)",
+            "example": true
+          }
+        }
+      },
+      "UpdateRegularScheduleRequest": {
+        "type": "object",
+        "description": "정기 일정 전체 수정 요청. PATCH /users/schedule/regular/{id}. start/end 변경 시 슬롯 재계산",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "표시명 (출근·수업·회의 등)",
+            "example": "출근",
+            "minLength": 1
+          },
+          "daysOfWeek": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "반복 요일. Weekday 콤마 구분(MON~SUN). 생략 시 null",
+            "example": "MON,TUE,WED,THU,FRI"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "시작 시각",
+            "example": "09:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "종료 시각",
+            "example": "18:00:00"
           }
         },
         "required": [
