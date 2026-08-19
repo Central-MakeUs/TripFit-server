@@ -10,6 +10,7 @@ import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.membership.dto.MemberPreviewResponse;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
+import com.tripfit.tripfit.trip.dto.TripEntryResponse;
 import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
@@ -85,6 +86,11 @@ public class TripServiceSupport {
         memberFillRate(activeMemberCount, trip.getMemberCount()),
         previews,
         previewOverflow(joinedMemberCount));
+  }
+
+  // 방 진입 상태 DTO — create·join 공통. inviteCode를 담지 않아 입장 전(SCHEDULE_PENDING)에도 안전하다
+  public TripEntryResponse toEntry(Trip trip, TripMember membership) {
+    return new TripEntryResponse(trip.getId(), effectiveStatus(trip), membership.getStatus());
   }
 
   // 여행방 상세 DTO — inviteCode·본인 역할/상태·모집률·멤버 프리뷰 포함

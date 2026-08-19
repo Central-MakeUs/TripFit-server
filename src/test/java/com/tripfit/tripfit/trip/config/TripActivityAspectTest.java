@@ -6,13 +6,11 @@ import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripStatus;
-import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.aspectj.lang.JoinPoint;
@@ -60,52 +58,10 @@ class TripActivityAspectTest {
     aspect.touchLastActivity(
         joinPoint,
         DummyService.class.getMethod("mutate", UUID.class, UUID.class)
-            .getAnnotation(TripActivity.class),
-        null);
+            .getAnnotation(TripActivity.class));
 
     assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
     verify(tripRepository).findByIdAndDeletedAtIsNull(TRIP_ID);
-  }
-
-  @Test
-  void touchLastActivity_resolvesTripIdFromReturnValue() throws Exception {
-    TripDetailResponse response = sampleDetailResponse();
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
-
-    aspect.touchLastActivity(
-        joinPoint,
-        DummyService.class.getMethod("join").getAnnotation(TripActivity.class),
-        response);
-
-    assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
-  }
-
-  private static TripDetailResponse sampleDetailResponse() {
-    return new TripDetailResponse(
-        TRIP_ID,
-        "제주",
-        null,
-        LocalDate.now(),
-        LocalDate.now().plusDays(9),
-        4,
-        3,
-        6,
-        TripStatus.ONGOING,
-        "ABC123",
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        LocalDateTime.now(),
-        false,
-        null,
-        null,
-        0,
-        1.0 / 6.0,
-        List.of(),
-        0);
   }
 
   private static Trip sampleTrip() {
@@ -129,10 +85,5 @@ class TripActivityAspectTest {
 
     @TripActivity(tripIdParam = "tripId")
     public void mutate(UUID tripId, UUID userId) {}
-
-    @TripActivity(tripIdFromReturn = true)
-    public TripDetailResponse join() {
-      return sampleDetailResponse();
-    }
   }
 }

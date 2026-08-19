@@ -6,7 +6,7 @@ import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.recommendation.dto.ConfirmTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
-import com.tripfit.tripfit.trip.dto.CreateTripResponse;
+import com.tripfit.tripfit.trip.dto.TripEntryResponse;
 import com.tripfit.tripfit.trip.membership.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.schedule.dto.MemberScheduleCalendarResponse;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
@@ -16,7 +16,6 @@ import com.tripfit.tripfit.trip.recommendation.dto.SaveRecommendationFeedbackReq
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
-import com.tripfit.tripfit.trip.membership.dto.TripJoinPreviewResponse;
 import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.recommendation.dto.UnconfirmTripRequest;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
@@ -39,7 +38,7 @@ public class TripService {
   private final TripRecommendationService tripRecommendationService;
 
   // facade: 여행방 생성 → TripCommandService
-  public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {
+  public TripEntryResponse createTrip(UUID userId, CreateTripRequest request) {
     return tripCommandService.createTrip(userId, request);
   }
 
@@ -63,22 +62,12 @@ public class TripService {
     tripCommandService.deleteTrip(tripId, userId);
   }
 
-  // facade: 초대코드 미리보기 + 정원 hold 생성 → TripCommandService
-  public TripJoinPreviewResponse previewAndHold(UUID userId, JoinTripRequest request) {
-    return tripCommandService.previewAndHold(userId, request);
-  }
-
-  // facade: 정원 hold 해제 → TripCommandService
-  public void releaseJoinHold(UUID tripId, UUID userId) {
-    tripCommandService.releaseJoinHold(tripId, userId);
-  }
-
   // facade: 초대코드 참여 → TripCommandService
-  public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
+  public TripEntryResponse joinTrip(UUID userId, JoinTripRequest request) {
     return tripCommandService.joinTrip(userId, request);
   }
 
-  // facade: 방장 멤버십 activate(SCHEDULE_PENDING→ACTIVE) → TripCommandService
+  // facade: 멤버십 activate(SCHEDULE_PENDING→ACTIVE) → TripCommandService
   public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
     return tripCommandService.activateMembership(tripId, userId);
   }

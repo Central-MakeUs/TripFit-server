@@ -124,13 +124,30 @@ class TripFullLifecycleIntegrationTest {
             .andReturn();
     String inviteCode = extract("inviteCode", activateResult.getResponse().getContentAsString());
 
-    // 3. 멤버가 초대코드로 참여 — join 즉시 ACTIVE
+    // 3. 멤버가 초대코드로 참여 — 링크를 연 시점이라 SCHEDULE_PENDING, 아직 방 안은 못 본다
     mockMvc
         .perform(
             post("/api/v1/trips/join")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"inviteCode\": \"" + inviteCode + "\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.myMemberStatus").value("SCHEDULE_PENDING"))
+        .andExpect(jsonPath("$.data.inviteCode").doesNotExist());
+
+    // 3-1. 일정 확인 전에는 방 상세가 막힌다
+    mockMvc
+        .perform(
+            get("/api/v1/trips/" + tripId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberToken))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value("SCHEDULE_ACTIVATION_REQUIRED"));
+
+    // 3-2. 멤버도 방장과 같은 activate를 거쳐 ACTIVE가 된다
+    mockMvc
+        .perform(
+            post("/api/v1/trips/" + tripId + "/activate")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.myMemberStatus").value("ACTIVE"));
 

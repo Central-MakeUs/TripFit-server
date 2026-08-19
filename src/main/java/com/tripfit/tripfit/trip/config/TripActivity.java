@@ -10,9 +10,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TripActivity {
 
-  /** 메서드 파라미터 이름(UUID tripId). {@link #tripIdFromReturn()} 와 배타. */
+  /** 갱신 대상 여행방을 가리키는 메서드 파라미터 이름(UUID tripId). */
   String tripIdParam() default "";
-
-  /** 반환 {@code TripDetailResponse.tripId()} 사용 (신규 join 등). */
-  boolean tripIdFromReturn() default false;
 }

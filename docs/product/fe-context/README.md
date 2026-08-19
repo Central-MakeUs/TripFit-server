@@ -8,7 +8,7 @@
 
 | 폴더 | 대응 패키지 | 파일 |
 |------|-------------|------|
-| `trip/` | `trip` | [`trip-room-create-join.md`](trip/trip-room-create-join.md) · [`trip-owner-activate-api.md`](trip/trip-owner-activate-api.md) · [`trip-recommendation-confirm-flow.md`](trip/trip-recommendation-confirm-flow.md) · [`trip-room-exit-policies.md`](trip/trip-room-exit-policies.md) |
+| `trip/` | `trip` | [`trip-room-create-join.md`](trip/trip-room-create-join.md) · [`trip-activate-api.md`](trip/trip-activate-api.md) · [`trip-recommendation-confirm-flow.md`](trip/trip-recommendation-confirm-flow.md) · [`trip-room-exit-policies.md`](trip/trip-room-exit-policies.md) |
 | `user-schedule/` | `user.schedule` | [`schedule-calendar-merge.md`](user-schedule/schedule-calendar-merge.md) · [`schedule-personal-override-scenarios.md`](user-schedule/schedule-personal-override-scenarios.md) · [`vacation-policy.md`](user-schedule/vacation-policy.md) |
 | `user/` | `user`, `user.googlecalendar` | [`user-onboarding.md`](user/user-onboarding.md) · [`google-calendar-merge.md`](user/google-calendar-merge.md) |
 

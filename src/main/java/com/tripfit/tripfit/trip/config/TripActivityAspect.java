@@ -1,7 +1,6 @@
 package com.tripfit.tripfit.trip.config;
 
 import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import java.util.UUID;
 import org.aspectj.lang.JoinPoint;
@@ -25,9 +24,9 @@ public class TripActivityAspect {
     this.tripRepository = tripRepository;
   }
 
-  @AfterReturning(pointcut = "@annotation(tripActivity)", returning = "result")
-  public void touchLastActivity(JoinPoint joinPoint, TripActivity tripActivity, Object result) {
-    UUID tripId = resolveTripId(joinPoint, tripActivity, result);
+  @AfterReturning(pointcut = "@annotation(tripActivity)")
+  public void touchLastActivity(JoinPoint joinPoint, TripActivity tripActivity) {
+    UUID tripId = resolveTripId(joinPoint, tripActivity);
     if (tripId == null) {
       return;
     }
@@ -35,14 +34,8 @@ public class TripActivityAspect {
     tripRepository.findByIdAndDeletedAtIsNull(tripId).ifPresent(Trip::touchLastActivity);
   }
 
-  // tripIdFromReturn=true → TripDetailResponse.tripId / 아니면 tripIdParam 이름의 UUID 인자
-  private UUID resolveTripId(JoinPoint joinPoint, TripActivity tripActivity, Object result) {
-    if (tripActivity.tripIdFromReturn()) {
-      if (result instanceof TripDetailResponse detail) {
-        return detail.tripId();
-      }
-      return null;
-    }
+  // tripIdParam 이름의 UUID 인자에서 대상 방을 찾는다 — 반환 타입에 의존하지 않아 DTO가 바뀌어도 조용히 끊기지 않는다
+  private UUID resolveTripId(JoinPoint joinPoint, TripActivity tripActivity) {
     String paramName = tripActivity.tripIdParam();
     if (paramName.isBlank()) {
       return null;

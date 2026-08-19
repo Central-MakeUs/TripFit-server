@@ -1,7 +1,7 @@
 # 방 입장 전 달력 윈도우 — 미가입 참여자가 여행 기간을 조회하지 못하는 문제
 
 > wave: **[미정]** — Wave 분류는 Backlog(`#29`~`#32`) 확정 전까지 단정하지 않음 (`harness-wave.md`)
-> 상태: **Draft** — 승인 전 구현 금지
+> 상태: **Draft (범위 축소, 2026-09-13 `#114`)** — 승인 전 구현 금지. 본래 증상(미가입 참여자에게 멤버 row가 없어 C1 상한이 확장되지 않던 문제)은 `#114`가 `join`을 일정 플로우 맨 앞으로 옮기면서 **자연히 해소**됐다(`SCHEDULE_PENDING` row도 `findMaxOngoingEndRangeByUserId` 계산에 포함된다). 남은 범위는 **`GET /calendar`는 윈도우를 검증하는데 `PATCH /personal`은 하지 않는 계약 비대칭** 하나뿐이며, 해결안 A/B는 더 이상 필요 없다(B는 hold 폐지로 성립 자체가 불가)
 > MVP: 해당 없음 (기존 계약의 빈틈 보완)
 > GitHub: **[#110](https://github.com/Central-MakeUs/TripFit-server/issues/110)**
 > 선행: [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (#37 · R4 #53) — 본 스펙은 그 C1 윈도우의 예외 케이스

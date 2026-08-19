@@ -1,6 +1,6 @@
 # 참여자 join을 SCHEDULE_PENDING으로 — 방 입장 일정 확인 서버 강제
 
-> 상태: Draft (2026-08-18 개정) — 승인 대기
+> 상태: **Implemented** (2026-09-13 — `#113`으로 J-7·J-8, `#114`로 J-1·J-3·J-4·J-6·J-9 구현 완료)
 > MVP: In scope (방 입장 플로우)
 > 관련 BR: BR-USER-006 · BR-USER-007 · BR-USER-011 (**BR 개정 포함** — J-7)
 > 흡수한 스펙: [`user-schedule/schedule-state-response.md`](../user-schedule/schedule-state-response.md) (Superseded)
@@ -90,25 +90,25 @@
 
 ### Must Have
 
-- [ ] `joinAsNewMember`를 일정 플로우 **맨 앞**으로 이동 — 초대 링크 진입 직후 호출, `SCHEDULE_PENDING` 멤버 생성 (J-1)
-- [ ] `joinAsNewMember`가 `Trip` 행 비관적 락(`SELECT ... FOR UPDATE`) 하에서 정원 체크 + 멤버 INSERT를 한 트랜잭션으로 처리 (J-4, B안)
-- [ ] `POST /api/v1/trips/join/hold` · `DELETE .../join/hold` 엔드포인트 + Redis 원자 체크·TTL 코드 **완전 삭제** (J-4)
-- [ ] **전역 입장 게이트 완전 삭제 (J-7)** — `users.is_all_free` 컬럼 · `canEnterRoom`/`requireCanEnterRoom` · `markAllFreeIfNoSchedules`/`clearAllFreeOnScheduleAdded` · `SCHEDULE_ENTRY_REQUIRED` · `UserDirectoryPort` 두 메서드 · 인터셉터 호출 · `ScheduleService` 호출 3곳까지 한 번에 (STOP §4 — "응답에서만 제거" 금지)
-- [ ] `join` 응답을 `TripEntryResponse`(`tripId` · `status` · `myMemberStatus`)로 축소 — 입장 전 참여자에게 `inviteCode`가 나가지 않을 것 (J-3)
-- [ ] `CreateTripResponse` → `TripEntryResponse` 리네임을 같은 턴에 전부 반영(DTO·Controller·테스트·스펙·fe-context)
-- [ ] **`join` 멱등** — 이미 멤버면 새 row·이벤트 없이 현재 `myMemberStatus`를 담아 200 (J-3, 2026-09-13)
-- [ ] **`TripJoinCompletedEvent`도 `activate`로 이동** — `SCHEDULE_PENDING → ACTIVE` 전이가 실제로 일어난 호출에서만 발행 (J-6)
-- [ ] **정원 카운트 기준 = `SCHEDULE_PENDING` 포함 전체 멤버 row** · `activate`에는 정원 체크를 넣지 않음 (J-4)
-- [ ] **`last_activity_at` touch를 `activate` 한 곳으로** — `joinAsNewMember`의 `@TripActivity` 제거 + `trip-last-activity-at.md` L1 amend (J-9)
-- [ ] **`TripActivity.tripIdFromReturn` 옵션·Aspect 분기 삭제** — 사용처 0 (J-9, STOP §4)
-- [ ] **`AllMembersSubmittedEvent`를 `activate`에서 ACTIVE 멤버 수 기준으로 발행** — 일정 미제출 멤버로 정원이 찼을 때 방장에게 "전원 제출 완료" 알림이 가지 않을 것 (J-6)
-- [ ] `UserSummaryResponse`에서 `isAllFree` 제거 + Controller `@ApiResponse` 예시 JSON 6종(`AuthController` 2 · `UserController` 2 · `GoogleCalendarController` 2)에서도 제거 (J-5·J-7)
-- [ ] **BR-USER-006·007 개정 · BR-USER-011 삭제**를 `docs/product/business-rules/user.md`에 같은 턴에 반영 (J-7)
-- [ ] `trip-recommendation-algorithm.md`의 "응답 참여자 판정" 근거 문장에서 `isAllFree` 의존 서술 교체 — **판정 로직·결과는 불변**, 근거만 "ACTIVE 멤버 전원 = 응답 참여자"로 정리 (J-7)
-- [ ] `hasRegularSchedule`은 **유지** — 규칙 1·2 분기에 필요한 유일한 값 (이미 구현됨)
-- [ ] 이탈자(일정 미완료 후 방치된 `SCHEDULE_PENDING`) 자리는 **자동 회수하지 않는다** — 별도 TTL·배치 로직 추가 금지, 방 나가기로만 해제 (J-4 ②, "나" 확정)
-- [ ] `Breaking-Change-Reason:` 트레일러 (join 위치·정원 판정 방식 변경 + 응답 축소 + 엔드포인트 2개 삭제 + 필드 제거)
-- [ ] `./gradlew test` 통과
+- [x] `joinAsNewMember`를 일정 플로우 **맨 앞**으로 이동 — 초대 링크 진입 직후 호출, `SCHEDULE_PENDING` 멤버 생성 (J-1)
+- [x] `joinAsNewMember`가 `Trip` 행 비관적 락(`SELECT ... FOR UPDATE`) 하에서 정원 체크 + 멤버 INSERT를 한 트랜잭션으로 처리 (J-4, B안)
+- [x] `POST /api/v1/trips/join/hold` · `DELETE .../join/hold` 엔드포인트 + Redis 원자 체크·TTL 코드 **완전 삭제** (J-4)
+- [x] **전역 입장 게이트 완전 삭제 (J-7)** — `users.is_all_free` 컬럼 · `canEnterRoom`/`requireCanEnterRoom` · `markAllFreeIfNoSchedules`/`clearAllFreeOnScheduleAdded` · `SCHEDULE_ENTRY_REQUIRED` · `UserDirectoryPort` 두 메서드 · 인터셉터 호출 · `ScheduleService` 호출 3곳까지 한 번에 (STOP §4 — "응답에서만 제거" 금지)
+- [x] `join` 응답을 `TripEntryResponse`(`tripId` · `status` · `myMemberStatus`)로 축소 — 입장 전 참여자에게 `inviteCode`가 나가지 않을 것 (J-3)
+- [x] `CreateTripResponse` → `TripEntryResponse` 리네임을 같은 턴에 전부 반영(DTO·Controller·테스트·스펙·fe-context)
+- [x] **`join` 멱등** — 이미 멤버면 새 row·이벤트 없이 현재 `myMemberStatus`를 담아 200 (J-3, 2026-09-13)
+- [x] **`TripJoinCompletedEvent`도 `activate`로 이동** — `SCHEDULE_PENDING → ACTIVE` 전이가 실제로 일어난 호출에서만 발행 (J-6)
+- [x] **정원 카운트 기준 = `SCHEDULE_PENDING` 포함 전체 멤버 row** · `activate`에는 정원 체크를 넣지 않음 (J-4)
+- [x] **`last_activity_at` touch를 `activate` 한 곳으로** — `joinAsNewMember`의 `@TripActivity` 제거 + `trip-last-activity-at.md` L1 amend (J-9)
+- [x] **`TripActivity.tripIdFromReturn` 옵션·Aspect 분기 삭제** — 사용처 0 (J-9, STOP §4)
+- [x] **`AllMembersSubmittedEvent`를 `activate`에서 ACTIVE 멤버 수 기준으로 발행** — 일정 미제출 멤버로 정원이 찼을 때 방장에게 "전원 제출 완료" 알림이 가지 않을 것 (J-6)
+- [x] `UserSummaryResponse`에서 `isAllFree` 제거 + Controller `@ApiResponse` 예시 JSON 6종(`AuthController` 2 · `UserController` 2 · `GoogleCalendarController` 2)에서도 제거 (J-5·J-7)
+- [x] **BR-USER-006·007 개정 · BR-USER-011 삭제**를 `docs/product/business-rules/user.md`에 같은 턴에 반영 (J-7)
+- [x] `trip-recommendation-algorithm.md`의 "응답 참여자 판정" 근거 문장에서 `isAllFree` 의존 서술 교체 — **판정 로직·결과는 불변**, 근거만 "ACTIVE 멤버 전원 = 응답 참여자"로 정리 (J-7)
+- [x] `hasRegularSchedule`은 **유지** — 규칙 1·2 분기에 필요한 유일한 값 (이미 구현됨)
+- [x] 이탈자(일정 미완료 후 방치된 `SCHEDULE_PENDING`) 자리는 **자동 회수하지 않는다** — 별도 TTL·배치 로직 추가 금지, 방 나가기로만 해제 (J-4 ②, "나" 확정)
+- [x] `Breaking-Change-Reason:` 트레일러 (join 위치·정원 판정 방식 변경 + 응답 축소 + 엔드포인트 2개 삭제 + 필드 제거)
+- [x] `./gradlew test` 통과
 
 ### Nice to Have
 
@@ -283,24 +283,24 @@ J-1 이후 이 전제가 깨진다 — `SCHEDULE_PENDING` 멤버로 정원이 �
 
 ## 완료 기준
 
-- [ ] `./gradlew test` 통과
-- [ ] join 직후 방 상세·멤버·달력·추천 호출이 **403 `SCHEDULE_ACTIVATION_REQUIRED`**로 막히는 통합 테스트
-- [ ] join → activate 순서를 거치면 정상 입장되는 통합 테스트
-- [ ] join 응답에 `inviteCode`가 **없음**을 확인하는 테스트
-- [ ] 이미 `SCHEDULE_PENDING`인 사람이 join을 다시 호출하면 **200 + `myMemberStatus=SCHEDULE_PENDING`**, 멤버 row가 늘지 않고 이벤트도 재발행되지 않음 (J-3 멱등)
-- [ ] `ACTIVE`인 사람이 join을 다시 호출해도 **200 + `myMemberStatus=ACTIVE`** (J-3 멱등)
-- [ ] **`SCHEDULE_PENDING` 멤버로 정원이 차도 `ALL_MEMBERS_SUBMITTED` 알림이 발송되지 않고, 전원 `activate` 후에야 발송되는 테스트** (J-6)
-- [ ] 정원이 찬 방에 **동시 join 요청**이 들어와도 비관적 락으로 정원을 넘기지 않는 테스트 — 마지막 1자리를 다수가 동시에 요청하는 케이스 포함 (J-4 ①)
-- [ ] `join`은 `last_activity_at`을 갱신하지 않고 `activate`가 갱신함 (J-9)
-- [ ] `TripActivity.tripIdFromReturn` 참조가 코드에 0건 (J-9)
-- [ ] 링크만 연(`SCHEDULE_PENDING`) 사람 때문에 방장에게 참여 완료 알림이 가지 않고, `activate` 후에 발송됨 (J-6)
-- [ ] `SCHEDULE_PENDING`으로 자리를 차지한 채 방치된 멤버가 **자동으로 제외·삭제되지 않음**을 확인하는 회귀 테스트 (J-4 ②, "나" 확정 — 나중에 실수로 TTL 로직이 추가되는 것을 막기 위함)
-- [ ] **`SCHEDULE_ENTRY_REQUIRED`·`canEnterRoom`·`is_all_free` 참조가 코드에 0건**임을 grep으로 확인 (J-7)
-- [ ] 일정 0건인 사용자가 `join` → `activate` → 방 안 API까지 정상 통과하는 통합 테스트 (전역 게이트 삭제 후에도 막히지 않을 것)
-- [ ] 정기 일정을 전부 삭제한 `ACTIVE` 멤버가 기존 방 API를 계속 쓸 수 있음을 확인 (J-7 회귀 — 삭제 전에는 `deleteRegular`의 `markAllFreeIfNoSchedules`가 보장하던 동작)
-- [ ] 추천 결과가 J-7 전후로 동일함을 확인 — 일정 0건 멤버가 여전히 "전부 가능" 응답 참여자로 계산될 것
-- [ ] 생성된 `/v3/api-docs`에서 hold 엔드포인트 2개와 `isAllFree`가 **사라진 것** 확인
-- [ ] `REMOVED` 항목(hold 엔드포인트·Redis 코드 포함)이 코드·문서에서 실제 삭제됐는지 (STOP §4)
+- [x] `./gradlew test` 통과
+- [x] join 직후 방 상세·멤버·달력·추천 호출이 **403 `SCHEDULE_ACTIVATION_REQUIRED`**로 막히는 통합 테스트
+- [x] join → activate 순서를 거치면 정상 입장되는 통합 테스트
+- [x] join 응답에 `inviteCode`가 **없음**을 확인하는 테스트
+- [x] 이미 `SCHEDULE_PENDING`인 사람이 join을 다시 호출하면 **200 + `myMemberStatus=SCHEDULE_PENDING`**, 멤버 row가 늘지 않고 이벤트도 재발행되지 않음 (J-3 멱등)
+- [x] `ACTIVE`인 사람이 join을 다시 호출해도 **200 + `myMemberStatus=ACTIVE`** (J-3 멱등)
+- [x] **`SCHEDULE_PENDING` 멤버로 정원이 차도 `ALL_MEMBERS_SUBMITTED` 알림이 발송되지 않고, 전원 `activate` 후에야 발송되는 테스트** (J-6)
+- [x] 정원이 찬 방에 **동시 join 요청**이 들어와도 비관적 락으로 정원을 넘기지 않는 테스트 — 마지막 1자리를 다수가 동시에 요청하는 케이스 포함 (J-4 ①)
+- [x] `join`은 `last_activity_at`을 갱신하지 않고 `activate`가 갱신함 (J-9)
+- [x] `TripActivity.tripIdFromReturn` 참조가 코드에 0건 (J-9)
+- [x] 링크만 연(`SCHEDULE_PENDING`) 사람 때문에 방장에게 참여 완료 알림이 가지 않고, `activate` 후에 발송됨 (J-6)
+- [x] `SCHEDULE_PENDING`으로 자리를 차지한 채 방치된 멤버가 **자동으로 제외·삭제되지 않음**을 확인하는 회귀 테스트 (J-4 ②, "나" 확정 — 나중에 실수로 TTL 로직이 추가되는 것을 막기 위함)
+- [x] **`SCHEDULE_ENTRY_REQUIRED`·`canEnterRoom`·`is_all_free` 참조가 코드에 0건**임을 grep으로 확인 (J-7)
+- [x] 일정 0건인 사용자가 `join` → `activate` → 방 안 API까지 정상 통과하는 통합 테스트 (전역 게이트 삭제 후에도 막히지 않을 것)
+- [x] 정기 일정을 전부 삭제한 `ACTIVE` 멤버가 기존 방 API를 계속 쓸 수 있음을 확인 (J-7 회귀 — 삭제 전에는 `deleteRegular`의 `markAllFreeIfNoSchedules`가 보장하던 동작)
+- [x] 추천 결과가 J-7 전후로 동일함을 확인 — 일정 0건 멤버가 여전히 "전부 가능" 응답 참여자로 계산될 것
+- [x] 생성된 `/v3/api-docs`에서 hold 엔드포인트 2개와 `isAllFree`가 **사라진 것** 확인
+- [x] `REMOVED` 항목(hold 엔드포인트·Redis 코드 포함)이 코드·문서에서 실제 삭제됐는지 (STOP §4)
 
 ## 영향받는 문서
 
@@ -314,7 +314,7 @@ J-1 이후 이 전제가 깨진다 — `SCHEDULE_PENDING` 멤버로 정원이 �
 | `.claude/rules/client-platform.md` | 멤버십 상태 행 ("멤버 join=`ACTIVE` 즉시" → `SCHEDULE_PENDING` 경유) |
 | `.claude/rules/spring-boot-java.md` | Javadoc 예시의 "멤버는 이 API를 쓰지 않고 join으로 바로 ACTIVE가 된다" 문구 교체 (Controller Javadoc과 동일 내용) |
 | `fe-context/trip/trip-room-create-join.md` | 규칙 1·5·6 · 위반 2건 수정 지침 |
-| `fe-context/trip/trip-owner-activate-api.md` | 참여자도 activate를 호출하도록 + **파일명에서 `owner` 제거 rename 제안**(`trip-activate-api.md`) — 방장 전용 API가 아니게 됨 |
+| `fe-context/trip/trip-activate-api.md` | 참여자도 activate를 호출하도록 갱신 + `trip-owner-activate-api.md`에서 rename(2026-09-13 완료) — 방장 전용 API가 아니게 됨 |
 | `fe-context/user/user-onboarding.md` | 응답 예시에서 `isAllFree` 제거 |
 | [`trip-last-activity-at.md`](trip-last-activity-at.md) | L1 표 "신규 참여 (join)" → touch 안 함, `activate`로 단일화 (J-9) |
 | `product/design/figma-wireframe-v1.md` · `auth/auth-social-login.md` · `user/user-onboarding.md` | 응답 예시 |
@@ -335,6 +335,7 @@ J-1 이후 이 전제가 깨진다 — `SCHEDULE_PENDING` 멤버로 정원이 �
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-09-13 | **구현 완료 (`#114`)** — J-1(`join`을 플로우 맨 앞·`SCHEDULE_PENDING`) · J-3(`TripEntryResponse` 축소 + 멱등) · J-4(초대코드 조회를 `SELECT ... FOR UPDATE`로 잠그고 카운트+INSERT를 한 트랜잭션에서 처리, hold 코드 전체 삭제) · J-6(알림 2종을 `activate`로 이동) · J-9(touch를 `activate`로 일원화, `tripIdFromReturn` 삭제). 구현 중 확인: 락을 트랜잭션의 **첫 조회**로 두지 않으면 REPEATABLE READ 스냅샷 때문에 정원 카운트가 옛 값을 읽어 동시 join 8건 중 5건이 통과했다 — `findByInviteCodeForUpdate`를 join 트랜잭션의 첫 쿼리로 고정해 해결. 알림은 `TripMemberRole.MEMBER`일 때만 참여 완료 이벤트를 발행(방장 자기 방 제외) |
 | 2026-09-13 | **재검토 후 6건 확정 (사용자 결정)** — ① 입장 전 방 정보 화면은 없다(피그마 기준) → `TripJoinPreviewResponse` 대체 API 없이 삭제 ② `join` **멱등화** — 이미 멤버면 403이 아니라 현재 `myMemberStatus`로 200(에러 코드로 라우팅하는 구조 제거, J-5와 정합) ③ `TripJoinCompletedEvent`도 `activate`로 이동 ④ **J-9 신설** — `last_activity_at` touch를 `activate` 한 곳으로 모으고, `@TripActivity(tripIdFromReturn)`이 J-3의 응답 축소로 조용히 깨지는 문제를 옵션·Aspect 분기 삭제로 해소 ⑤ 정원 카운트 기준(`SCHEDULE_PENDING` 포함)·`activate` 정원 미체크 명시 ⑥ "Redis 코드 전부 삭제"의 범위를 hold 코드로 한정(토큰 무효화는 Redis 계속 사용) |
 | 2026-08-18 | **J-7 추가 + 적용 범위 확정 (사용자 결정, A안)** — ① "매 방 입장" 해석을 **(가) 새 방 참여 시 1회**(재진입 제외)로 확정 ② 전역 입장 게이트(`is_all_free` 컬럼·`canEnterRoom`·`SCHEDULE_ENTRY_REQUIRED`·`markAllFreeIfNoSchedules`)를 **응답에서만 제거 → 장치째 삭제**로 전환. 근거: `ACTIVE` 멤버에게 항상 참이라 아무것도 막지 못하는 죽은 게이트인데, 자동으로 켜지는 특성 때문에 QA 이슈 1의 "두 번째 입장부터 달라짐" 재현 조건을 만들고 있었음 ③ 선행 검토였던 `user-schedule/schedule-state-response.md`를 **Superseded**로 전환하고 유효한 진단만 이관 — `regularScheduleState`·선언 저장·`canEnterRoom` 노출은 모두 폐기 ④ J-2는 J-7에 흡수 |
 | 2026-08-17 | **J-1·J-4 최종 확정 (사용자 결정)** — 초안이 기각했던 "`join`을 플로우 맨 앞으로 이동"을 채택으로 뒤집음. 이유: 방장 흐름과의 통일성, hold 엔드포인트 2개 삭제, `#110`(달력 조회 윈도우 공백) 부수 해결. J-4 ①은 B안(DB 비관적 락) 확정 — Redis hold 코드 전체 삭제. J-4 ②는 "나"(이탈자 자리 자동 회수 안 함) 확정 — `activate`에 새 실패 케이스가 추가되는 "가"안은 기각 |

@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.trip.service;
 
-import com.tripfit.tripfit.trip.membership.service.TripJoinHoldService;
 import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.membership.service.TripJoinService;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
@@ -13,11 +12,10 @@ import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
-import com.tripfit.tripfit.trip.dto.CreateTripResponse;
+import com.tripfit.tripfit.trip.dto.TripEntryResponse;
 import com.tripfit.tripfit.trip.membership.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
-import com.tripfit.tripfit.trip.membership.dto.TripJoinPreviewResponse;
 import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.event.AllMembersSubmittedEvent;
@@ -47,8 +45,6 @@ class TripCommandService {
 
   private final TripJoinService tripJoinService;
 
-  private final TripJoinHoldService tripJoinHoldService;
-
   private final TripRecommendationService tripRecommendationService;
 
   private final TripMemberQueryService tripMemberQueryService;
@@ -59,7 +55,7 @@ class TripCommandService {
 
   // 여행방 생성 — 방장은 SCHEDULE_PENDING(일정 확인 전). activate 전에는 ACTIVE가 아님
   @Transactional
-  public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {
+  public TripEntryResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = support.findUser(userId);
     // 성·이름 미완료면 생성 불가
     userDirectoryPort.requireProfileNameComplete(owner);
@@ -95,11 +91,11 @@ class TripCommandService {
             LocalDateTime.now());
     tripMemberRepository.save(ownerMember);
     // inviteCode는 DB에만 발급 — SCHEDULE_PENDING(입장 전) 생성 응답에는 안 실림. 공유는 activate 후 상세에서
-    return new CreateTripResponse(
-        trip.getId(), support.effectiveStatus(trip), ownerMember.getStatus());
+    return support.toEntry(trip, ownerMember);
   }
 
-  // 방장 멤버십을 SCHEDULE_PENDING→ACTIVE로 activate — 이미 ACTIVE면 동일 상세 반환(idempotent)
+  // 일정 확인을 끝내 멤버십을 SCHEDULE_PENDING→ACTIVE로 바꾼다 — 방장·참여자 모두 이 경로로 방에 들어온다.
+  // 이미 ACTIVE면 상태·알림 변화 없이 동일 상세를 반환한다(idempotent)
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
@@ -107,8 +103,25 @@ class TripCommandService {
     TripMember membership = support.requireMembership(tripId, userId);
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
       membership.activate();
+      publishEntryEvents(trip, membership);
     }
     return support.toDetail(trip, membership);
+  }
+
+  // 방 입장이 실제로 완료된 순간에만 알린다 — join은 초대 링크를 연 시점일 뿐이라 알림 근거가 되지 못한다.
+  // 1. 참여 완료: 방장의 create-activate는 자기 방이라 알릴 대상이 아니므로 참여자만 발행
+  // 2. 전원 제출: "자리가 찼다"가 아니라 "전원이 일정 확인을 마쳤다"로 판정 — 방금 activate한 본인도 포함되도록
+  // flush 이후 값을 세는 count 쿼리를 쓴다
+  private void publishEntryEvents(Trip trip, TripMember membership) {
+    if (membership.getRole() == TripMemberRole.MEMBER) {
+      applicationEventPublisher.publishEvent(
+          new TripJoinCompletedEvent(trip.getId(), membership.getUser().getId()));
+    }
+    long activeMemberCount =
+        tripMemberRepository.countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(trip.getId());
+    if (activeMemberCount >= trip.getMemberCount()) {
+      applicationEventPublisher.publishEvent(new AllMembersSubmittedEvent(trip.getId()));
+    }
   }
 
   // 방장만 메타 수정 — 희망 박/일이 바뀌면 기존 추천 후보를 삭제한다
@@ -161,109 +174,37 @@ class TripCommandService {
     }
   }
 
-  // 초대코드로 여행방을 미리보기하며 10분 hold를 생성한다 — 참여 플로우 진입 시점에 정원 자리를 선점(#35).
-  // 이미 멤버면 hold 없이 동일 정보 반환. 정원(확정 멤버 수 + 활성 hold 수) 초과면 hold 없이 409
-  @Transactional(readOnly = true)
-  public TripJoinPreviewResponse previewAndHold(UUID userId, JoinTripRequest request) {
-    User user = support.findUser(userId);
-    userDirectoryPort.requireProfileNameComplete(user);
-    Trip trip = findTripByInviteCode(request);
-    var existing =
-        tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
-    if (existing.isPresent()) {
-      support.requireActive(existing.get());
-      return toPreview(trip);
-    }
-    TripStatus status = support.effectiveStatus(trip);
-    switch (status) {
-      case CONFIRMED -> throw new TripFitException(TripErrorCode.TRIP_ALREADY_CONFIRMED);
-      case EXPIRED -> throw new TripFitException(TripErrorCode.TRIP_EXPIRED);
-      case ONGOING -> {
-        long joinedMemberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
-        boolean held =
-            tripJoinHoldService.tryHold(
-                trip.getId(),
-                userId,
-                joinedMemberCount,
-                trip.getMemberCount());
-        if (!held) {
-          throw new TripFitException(TripErrorCode.TRIP_MEMBER_FULL);
-        }
-      }
-    }
-    return toPreview(trip);
-  }
-
-  // 참여 플로우 첫 화면 이탈 시 hold를 즉시 반환한다 — 존재하지 않거나 이미 만료·소비된 hold도 안전한 no-op
-  public void releaseJoinHold(UUID tripId, UUID userId) {
-    tripJoinHoldService.release(tripId, userId);
-  }
-
-  // 초대코드로 참여 — 신규 멤버는 바로 ACTIVE. SCHEDULE_PENDING(activate 전 방장)는 activate로 유도.
-  // 유효한 hold가 있으면 정원을 재확인하지 않고 확정(hold 발급 시 이미 원자적으로 보장됨) — 없으면(만료·미호출)
-  // 확정 멤버 수 + 다른 사용자의 활성 hold 수를 함께 봐서 기존 D8 정원 체크로 폴백
+  // 초대 링크로 참여 — 신규 멤버는 SCHEDULE_PENDING으로 생기고, 일정 확인을 마친 뒤 activate로 ACTIVE가 된다.
+  // 이미 멤버면 새 row·알림 없이 현재 상태만 돌려준다(멱등) — 링크를 다시 열어도 같은 응답이라
+  // 클라이언트가 에러 코드가 아니라 myMemberStatus 하나로 라우팅한다
   @Transactional
-  public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
+  public TripEntryResponse joinTrip(UUID userId, JoinTripRequest request) {
+    // 1. 방 조회가 곧 자리 확보 락이다 — 이 트랜잭션의 첫 조회여야 한다. 다른 조회를 먼저 하면 그 시점으로
+    // 읽기 스냅샷이 고정돼, 그 뒤 커밋된 다른 참여자의 멤버 row가 아래 정원 카운트에서 빠진다
+    Trip trip = findLockedTripByInviteCode(request);
     User user = support.findUser(userId);
     // 성·이름 미완료면 참여 불가
     userDirectoryPort.requireProfileNameComplete(user);
-    Trip trip = findTripByInviteCode(request);
     var existing =
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {
-      TripMember membership = existing.get();
-      // SCHEDULE_PENDING면 join으로 상세를 우회하지 못함 — activate 필요
-      support.requireActive(membership);
-      return support.toDetail(trip, membership);
+      return support.toEntry(trip, existing.get());
     }
-    TripStatus status = support.effectiveStatus(trip);
-    long joinedMemberCount = 0;
-    switch (status) {
+    switch (support.effectiveStatus(trip)) {
       case CONFIRMED -> throw new TripFitException(TripErrorCode.TRIP_ALREADY_CONFIRMED);
       case EXPIRED -> throw new TripFitException(TripErrorCode.TRIP_EXPIRED);
+      // 정원은 락을 잡은 뒤 세야 정확하므로 joinAsNewMember 안에서 확인한다
       case ONGOING -> {
-        joinedMemberCount = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
-        boolean hasHold = tripJoinHoldService.hasActiveHold(trip.getId(), userId);
-        if (!hasHold) {
-          long othersActiveHolds = tripJoinHoldService.countActiveHolds(trip.getId());
-          if (joinedMemberCount + othersActiveHolds >= trip.getMemberCount()) {
-            throw new TripFitException(TripErrorCode.TRIP_MEMBER_FULL);
-          }
-        }
       }
     }
-    TripDetailResponse response = tripJoinService.joinAsNewMember(trip, user);
-    tripJoinHoldService.release(trip.getId(), userId);
-    applicationEventPublisher.publishEvent(new TripJoinCompletedEvent(trip.getId(), userId));
-    // D11 — 멤버는 join 즉시 ACTIVE라 "정원 도달"이 곧 전원 제출 완료. 방금 저장한 신규 멤버만큼 +1해 재조회 없이 판정
-    if (joinedMemberCount + 1 >= trip.getMemberCount()) {
-      applicationEventPublisher.publishEvent(new AllMembersSubmittedEvent(trip.getId()));
-    }
-    return response;
+    return tripJoinService.joinAsNewMember(trip, user);
   }
 
-  private Trip findTripByInviteCode(JoinTripRequest request) {
+  private Trip findLockedTripByInviteCode(JoinTripRequest request) {
     String inviteCode = request.inviteCode().trim().toUpperCase();
     return tripRepository
-        .findByInviteCodeAndDeletedAtIsNull(inviteCode)
+        .findByInviteCodeForUpdate(inviteCode)
         .orElseThrow(() -> new TripFitException(TripErrorCode.INVITE_CODE_NOT_FOUND));
-  }
-
-  private TripJoinPreviewResponse toPreview(Trip trip) {
-    var counts =
-        support.loadMemberCountsByTripIds(java.util.List.of(trip.getId())).get(trip.getId());
-    int activeMemberCount = counts == null ? 0 : (int) counts.getActiveCount();
-    return new TripJoinPreviewResponse(
-        trip.getId(),
-        trip.getName(),
-        trip.getDestination(),
-        trip.getStartRange(),
-        trip.getEndRange(),
-        trip.getDurationDays(),
-        trip.getDurationNights(),
-        trip.getMemberCount(),
-        activeMemberCount,
-        support.effectiveStatus(trip));
   }
 
   // 멤버 Pin on/off — 만료 Pin 자동 해제는 일 배치(TripHomeMaintenanceService)

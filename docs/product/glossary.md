@@ -37,7 +37,7 @@
 
 | 오해 | 실제 |
 |------|------|
-| SCHEDULE_PENDING = "일정 아직 안 넣은 일반 멤버" | **아님.** SCHEDULE_PENDING은 **방장 create 직후만**. 멤버는 join 시 **바로 ACTIVE** |
+| SCHEDULE_PENDING = "일정 아직 안 넣은 일반 멤버" | **정확히는** "이 방의 일정 확인을 아직 안 끝낸 멤버". 방장은 `POST /trips` 직후, 참여자는 `POST /trips/join` 직후 이 상태이며, `activate`로 ACTIVE가 된다 |
 | create 응답의 inviteCode로 바로 카톡 공유 | **불가.** create에 `inviteCode` **없음**. activate→ACTIVE→상세의 `inviteCode` |
 | 홈에 방이 보이면 상세·공유 가능 | SCHEDULE_PENDING면 홈에만 보일 수 있음 → **activate 플로우**. 상세/공유는 ACTIVE 후 |
 | 멤버도 SCHEDULE_PENDING을 거친다 | **거치지 않음** |

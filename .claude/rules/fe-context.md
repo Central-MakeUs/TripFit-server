@@ -17,7 +17,7 @@ paths:
 | `user-schedule/` | `user.schedule` | 정기·개별 일정, 병합 달력 |
 | `trip/` | `trip` | 방 생성·참여·나가기·activate |
 
-새 문서 추가 시 어느 도메인 패키지를 다루는지 먼저 정하고 그 폴더에 넣는다. 두 도메인에 걸치면(예: activate가 trip 상태 전이 + schedule 데이터를 같이 참조) **주로 바뀌는 상태가 속한 도메인** 기준으로 정한다 — `trip-owner-activate-api.md`가 `trip/`에 있는 이유(상태 전이가 주제, 일정 CRUD는 참조만).
+새 문서 추가 시 어느 도메인 패키지를 다루는지 먼저 정하고 그 폴더에 넣는다. 두 도메인에 걸치면(예: activate가 trip 상태 전이 + schedule 데이터를 같이 참조) **주로 바뀌는 상태가 속한 도메인** 기준으로 정한다 — `trip-activate-api.md`가 `trip/`에 있는 이유(상태 전이가 주제, 일정 CRUD는 참조만).
 
 ## 드리프트 체크리스트 — 이름은 안 바뀌어도 같은 턴에 확인
 
