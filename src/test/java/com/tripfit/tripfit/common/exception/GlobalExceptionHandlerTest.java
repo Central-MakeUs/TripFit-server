@@ -21,6 +21,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 class GlobalExceptionHandlerTest {
@@ -104,6 +105,17 @@ class GlobalExceptionHandlerTest {
             new NumberFormatException("abc"));
 
     ResponseEntity<ErrorResponse> response = handler.handleTypeMismatch(exception);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(response.getBody().code()).isEqualTo("INVALID_INPUT");
+  }
+
+  @Test
+  void handleMissingParameter_returnsCommonInvalidInput() {
+    MissingServletRequestParameterException exception =
+        new MissingServletRequestParameterException("startDate", "LocalDate");
+
+    ResponseEntity<ErrorResponse> response = handler.handleMissingParameter(exception);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(response.getBody().code()).isEqualTo("INVALID_INPUT");

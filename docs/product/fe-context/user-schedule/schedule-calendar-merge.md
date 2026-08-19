@@ -254,6 +254,16 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 - 칩을 하나도 선택하지 않은 기본 진입(이번 달 보기, 달력 스크롤)에는 트립과 무관하게 원하는 구간을 그대로 써라.
 - "방 멤버 전원 달력"이 필요한 화면(다른 화면)이라면 `GET /trips/{tripId}/members/schedule-calendar`를 써라 — 이건 트립 하나로 범위가 `startRange`~`endRange`에 고정된 완전히 다른 API다. `/users/schedule/calendar`(본인 달력, 트립 무관)와 혼동하지 마라.
 
+## 규칙 6 — 공휴일 빨간 글자 표시는 이 두 API가 아니라 별도의 `GET /api/v1/holidays`로 하라
+
+`GET .../calendar`·`GET .../members/schedule-calendar` 응답에는 "이 날짜가 공휴일이다"라는 값이 **없다.** 이 두 API의 공휴일 관련 동작은 딱 하나뿐이다 — 공휴일에 쉬기로 설정한 사용자(`holidayRest`)의 그 날짜 슬롯이 정기 일정 없이 계산될 뿐이고, 그 계산 결과(`morningStatus` 등)만으로는 "오늘이 공휴일이라 그런지" "원래 정기 일정이 없는 날이라 그런지" 구분할 수 없다.
+
+날짜 칸을 빨간 글자로 칠하는 등 "이 날짜가 공휴일인지" 자체가 필요한 화면은 별도로 `GET /api/v1/holidays?startDate=&endDate=`를 호출하라. 이 API는 사용자·트립과 무관한 순수 참조 데이터라 두 캘린더 화면(마이페이지·여행방) 모두 같은 값을 그대로 쓰면 된다.
+
+```json
+{"data": {"startDate": "2027-01-01", "endDate": "2027-01-31", "holidays": ["2027-01-01"]}}
+```
+
 ## 화면 참고 — 마이페이지 「내 일정 입력하기」
 
 | 화면 요소 | 데이터 출처 |
