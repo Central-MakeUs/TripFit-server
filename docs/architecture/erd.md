@@ -107,6 +107,7 @@ trip ||--o{ notification_history : relates_to
         uuid id PK "credential UUID"
         uuid user_id FK "사용자 UNIQUE"
         text refresh_token_ciphertext "암호화 Refresh Token"
+        string apple_client_id "로그인 시 검증된 Bundle ID 또는 Services ID"
         datetime created_at "생성일"
         datetime updated_at "수정일"
     }
@@ -345,6 +346,7 @@ User당 **1행**. 탈퇴 시 `https://appleid.apple.com/auth/revoke` 호출 용�
 | id | char(36) | N | PK | UUID v4 |
 | user_id | char(36) | N | FK → users.id, **UNIQUE** | |
 | refresh_token_ciphertext | text | N | | AES-256-GCM 암호문 (Base64) — `GoogleCalendarTokenCrypto` 재사용, 별도 AES 키 없음 |
+| apple_client_id | varchar | N | | 로그인 시 검증된 client_id 원문(`APPLE_BUNDLE_ID` 또는 `APPLE_SERVICE_ID`) — iOS 네이티브 앱과 모바일 브라우저 로그인이 서로 다른 client_id를 쓰므로, 탈퇴 시 revoke 호출에 이 값을 그대로 재사용([`apple-oauth-multi-audience.md`](../specs/apple-oauth-multi-audience.md)) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 

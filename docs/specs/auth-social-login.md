@@ -457,7 +457,7 @@ Authorization: Bearer <accessToken>
 - 앱에서 `id_token` (identity token) 전달
 - JWK endpoint: `https://appleid.apple.com/auth/keys` — `kid` rotation 대응 (캐시 + miss 시 재fetch)
 - **`sub` → `social_id` (email·nickname·실명 아님)** — TripFit 사용자 식별의 SSOT. Apple은 동일 Apple ID에 대해 항상 동일한 `sub`를 발급하므로, 표시 이름이 없어도 `(provider, social_id)`로 upsert·재로그인 매칭 가능
-- `aud` = Apple Services ID (또는 앱 bundle ID — 프론트·백엔드 합의 필요)
+- `aud` = **확정(2026-07-31)**: Bundle ID(iOS 네이티브 앱, 예: `com.tripfit.app`) 또는 Services ID(모바일 브라우저) 중 하나 — 두 값 다 허용 목록에 두고 하나만 맞아도 통과(Google `id_token` `aud` 멀티 client ID 검증과 동일 패턴). 상세: [`apple-oauth-multi-audience.md`](apple-oauth-multi-audience.md)
 - email: 최초 1회만 올 수 있음 → nullable 저장 (**UNIQUE 키로 사용 금지**)
 - nickname·profileImageUrl: id_token에 **없음** → `nickname` null, profileImageUrl null. 이름은 유저 입력(`first_name`/`last_name`) — [`user-onboarding.md`](user-onboarding.md)
 
@@ -505,7 +505,8 @@ com.tripfit.tripfit
 | `GOOGLE_CLIENT_ID_IOS` | Google id_token `aud` 검증 |
 | `GOOGLE_CLIENT_ID_ANDROID` | Google id_token `aud` 검증 |
 | `KAKAO_REST_API_KEY` | (Kakao Admin Key는 서버 검증에 불필요 — access_token으로 profile API 호출) |
-| `APPLE_CLIENT_ID` | Apple id_token `aud` 검증 (Services ID) |
+| `APPLE_BUNDLE_ID` | Apple id_token `aud` 검증 — iOS 네이티브 앱 경로 (App ID/Bundle ID) |
+| `APPLE_SERVICE_ID` | Apple id_token `aud` 검증 — 모바일 브라우저 경로 (Services ID) |
 
 `deploy/app/.env.example`에 placeholder 추가.
 
@@ -554,7 +555,7 @@ com.tripfit.tripfit
 |------|------|------|
 | 앱 패키징 (RN / Capacitor / Expo) | `[미정]` | SDK별 token 획득 방식은 프론트 결정 — `docs/decisions/` 확정 후 스펙 보완 |
 | Google client ID (iOS vs Android) | `[미정]` | login 요청에 `platform` 필드 추가 여부 — 프론트 합의 |
-| Apple `aud` 값 (bundle ID vs Services ID) | `[미정]` | 프론트 Sign In with Apple 설정과 일치 필요 |
+| Apple `aud` 값 (bundle ID vs Services ID) | **확정 (2026-07-31)** | 둘 다(멀티 client ID 허용) — [`apple-oauth-multi-audience.md`](apple-oauth-multi-audience.md) |
 | nickname 정책 | **확정 (amend)** | 소셜 prefill만, **fallback 폐기** — [`007`](../decisions/007-user-profile-onboarding.md) |
 | 온보딩 상태 | **확정** | boolean 3개 + first/last null — [`user-onboarding.md`](user-onboarding.md) |
 | profileImageUrl 저장 | **확정 (wave 1 A안)** | provider URL passthrough — [`006`](../decisions/006-profile-image-url-storage.md) |

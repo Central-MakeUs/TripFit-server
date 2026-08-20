@@ -105,7 +105,7 @@ Apple의 outer JWT는 `{ "iss": "https://appleid.apple.com", "aud": "<client_id>
 ```json
 {
   "iss": "https://appleid.apple.com",
-  "aud": "<APPLE_CLIENT_ID>",
+  "aud": "<APPLE_BUNDLE_ID 또는 APPLE_SERVICE_ID>",
   "exp": 1234567890,
   "iat": 1234567890,
   "jti": "...",
@@ -124,7 +124,7 @@ Apple의 outer JWT는 `{ "iss": "https://appleid.apple.com", "aud": "<client_id>
 | 200 | — | 수신·처리 완료 — 존재하지 않는 `sub`, 미인식 `type`도 200(no-op)으로 응답해 Apple 재시도 폭주 방지 |
 | 400 | `AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD` | outer JWT 파싱 실패·`events` JSON 파싱 실패·`type` 누락·`sub`가 필요한 이벤트(`consent-revoked`/`account-delete`)에서 `sub` 누락 |
 | 401 | `AUTH_APPLE_NOTIFICATION_ISSUER_INVALID` | `iss` ≠ `https://appleid.apple.com` |
-| 401 | `AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID` | `aud` ≠ `APPLE_CLIENT_ID` |
+| 401 | `AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID` | `aud`가 `APPLE_BUNDLE_ID`·`APPLE_SERVICE_ID` 어느 쪽과도 불일치 |
 | 401 | `AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID` | 서명 자체 불일치·만료 |
 | 500 | `INTERNAL_ERROR` | Apple JWKS 조회 실패, 그 외 예상치 못한 서버 오류 — Apple이 5xx에 재시도하도록 400/401로 숨기지 않음 |
 
@@ -146,11 +146,12 @@ MVP login 스펙의 `user`, `refresh_token`을 **수정·삭제**한다. 신규 
 
 ## 환경 변수
 
-login 스펙과 완전히 공유 — **신규 env 없음**. outer JWT는 Apple JWKS(공개키)로 서명 검증하고 `aud`만 `APPLE_CLIENT_ID`와 비교하면 되므로 `.p8`/Team ID/Key ID로 만드는 client_secret JWT(발신용)는 필요 없다 — 이 webhook은 수신 전용.
+login 스펙과 완전히 공유 — **신규 env 없음**. outer JWT는 Apple JWKS(공개키)로 서명 검증하고 `aud`가 허용 목록(Bundle ID·Services ID) 중 하나인지만 비교하면 되므로 `.p8`/Team ID/Key ID로 만드는 client_secret JWT(발신용)는 필요 없다 — 이 webhook은 수신 전용. 2026-07-31부터 로그인 경로가 Bundle ID/Services ID 둘 다 허용하도록 amend됨(`apple-oauth-multi-audience.md`) — 이 webhook의 `aud` 검증도 동일 목록을 그대로 재사용.
 
 | 변수 | 용도 |
 |------|------|
-| `APPLE_CLIENT_ID` | outer JWT `aud` 검증 (login 스펙과 동일 값) |
+| `APPLE_BUNDLE_ID` | outer JWT `aud` 검증 — iOS 네이티브 앱 경로 (login 스펙과 동일 값) |
+| `APPLE_SERVICE_ID` | outer JWT `aud` 검증 — 모바일 브라우저 경로 (login 스펙과 동일 값) |
 
 > `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY`는 `#64`(탈퇴 시 Apple revoke — client_secret JWT **발신** 필요)에서만 쓰인다. 이 스펙(#5)과는 무관.
 
