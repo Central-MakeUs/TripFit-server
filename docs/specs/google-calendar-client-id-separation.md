@@ -1,6 +1,6 @@
 # Google Calendar 전용 OAuth Client ID 분리
 
-> 상태: Draft (백엔드 코드 배선 완료 — GCP 콘솔 Client ID 발급·FE 전환 대기)
+> 상태: Draft (백엔드 코드 배선 + GCP 콘솔 Client ID 발급 완료 — FE 전환 대기)
 > MVP: 해당 없음 (Google Calendar 자체가 Wave 4 Out of scope)
 > 관련 BR: 해당 없음
 > Issue: [#78](https://github.com/Central-MakeUs/TripFit-server/issues/78)
@@ -13,7 +13,7 @@ Google 로그인용 OAuth Client ID와 Google Calendar 연동용 OAuth Client ID
 
 ## 배경
 
-- **(2026-08-22 해소, 코드 레벨)** 로그인(`google-login-revoke.md`)과 Calendar 연동(`google-calendar-oauth.md`)이 코드상으로는 이제 별도 env(`GOOGLE_CALENDAR_CLIENT_ID`/`GOOGLE_CALENDAR_CLIENT_SECRET`)를 쓰도록 분리됨. 다만 GCP 콘솔에서 실제 Calendar 전용 Client ID를 아직 발급하지 않아 값이 비어 있고, FE도 아직 로그인과 같은 Client ID로 Calendar 연동을 요청 중이라 아래 리스크는 여전히 유효하다.
+- **(2026-08-22 해소, 코드 레벨)** 로그인(`google-login-revoke.md`)과 Calendar 연동(`google-calendar-oauth.md`)이 코드상으로는 이제 별도 env(`GOOGLE_CALENDAR_CLIENT_ID`/`GOOGLE_CALENDAR_CLIENT_SECRET`)를 쓰도록 분리됨. GCP 콘솔에서 Calendar 전용 Client ID도 2026-07-31에 발급 완료해 GitHub Actions secrets(`GOOGLE_CALENDAR_CLIENT_ID`/`GOOGLE_CALENDAR_CLIENT_SECRET`)에 등록돼 있다. 다만 FE는 아직 로그인과 같은 Client ID로 Calendar 연동을 요청 중이라(Calendar 자체가 Wave 4 FE 미착수) 아래 리스크는 여전히 유효하다.
 - Google Calendar 연동은 **KAKAO/APPLE/GOOGLE 로그인 유저 전부**가 쓸 수 있는, TripFit 로그인 provider와 무관한 기능이다(`google-calendar-oauth.md` "Google 로그인과 Calendar 연동은 별 scope·별 API·별 토큰 저장"). "인증"과 "외부 캘린더 연동"은 개념적으로 서로 다른 관심사인데 지금은 우연히 같은 Client ID 설정을 공유하고 있다.
 - 근거 두 가지:
   1. **기술적**: Google이 동의(consent)를 client_id 단위로 묶는다면, 같은 Google 계정으로 로그인도 하고 캘린더도 연동한 유저가 "캘린더만 연동 해제"해도 로그인 쪽 grant까지 같이 revoke될 수 있음
@@ -22,15 +22,15 @@ Google 로그인용 OAuth Client ID와 Google Calendar 연동용 OAuth Client ID
 
 ## Must Have (Calendar 실제 구현 착수 시)
 
-- [ ] Google Cloud Console에서 Calendar 전용 OAuth Client ID(Web application 타입) 신규 발급 — 아래 "GCP 콘솔 가이드" 절 참고
+- [x] Google Cloud Console에서 Calendar 전용 OAuth Client ID(Web application 타입) 신규 발급 — 2026-07-31, GitHub Actions secrets(`GOOGLE_CALENDAR_CLIENT_ID`/`GOOGLE_CALENDAR_CLIENT_SECRET`)에 등록 완료
 - [x] `OAuthProperties`에 `googleCalendarClientId`/`googleCalendarClientSecret` 필드 추가(기존 `googleClientId`/`googleClientSecret`은 로그인 전용으로 유지) — 2026-08-22
 - [x] `GoogleCalendarOAuthClient`가 신규 Calendar 전용 client_id/secret을 사용하도록 변경 — 2026-08-22
-- [x] env 4곳 배선(`.env.example`·`ci-cd.yml`·`docker-compose.yml`·`OAuthProperties`/`application.yml`) — 2026-08-22, Apple/Kakao 때와 동일 패턴. 값은 아직 빈 문자열(GCP 콘솔 발급 전)
+- [x] env 4곳 배선(`.env.example`·`ci-cd.yml`·`docker-compose.yml`·`OAuthProperties`/`application.yml`) — 2026-08-22, Apple/Kakao 때와 동일 패턴. `.env.example`은 관례상 빈 값 placeholder, 실값은 GitHub Actions secrets에만 등록
 - [ ] FE가 Calendar 연동(`POST /api/v1/users/google-calendar`) 시 로그인과 다른 Client ID로 OAuth 요청을 보내도록 변경(FE 작업)
 
-## GCP 콘솔 가이드 (콘솔 담당자용)
+## GCP 콘솔 가이드 (콘솔 담당자용, 참고 — 2026-07-31 발급 완료)
 
-Google Cloud Console에서 직접 진행하는 절차. 승인·검수 없이 즉시 발급 가능한 부분과, Google 쪽 검증이 필요할 수 있는 부분을 구분해뒀다.
+Google Cloud Console에서 직접 진행하는 절차. 승인·검수 없이 즉시 발급 가능한 부분과, Google 쪽 검증이 필요할 수 있는 부분을 구분해뒀다. Client ID 자체는 이미 발급·secrets 등록됐으므로, 재발급이 필요해지는 경우를 위한 참고용으로 남겨둔다.
 
 1. **프로젝트 확인**: 기존 로그인용 Client ID를 발급한 것과 **같은 GCP 프로젝트**를 그대로 사용(새 프로젝트 불필요) — API·Services 좌측 메뉴에서 현재 프로젝트가 맞는지 확인
 2. **OAuth 동의 화면(consent screen) 확인**: `APIs & Services → OAuth consent screen` — 이미 로그인용으로 등록돼 있을 것. 여기에 **Calendar scope**(`https://www.googleapis.com/auth/calendar.readonly` 등, 실제 요청 scope는 `google-calendar-oauth.md` 참고)가 아직 없으면 "Scopes" 섹션에 추가
@@ -45,24 +45,24 @@ Google Cloud Console에서 직접 진행하는 절차. 승인·검수 없이 즉
 
 ## Out of Scope (이번 문서에서 하지 않음)
 
-- GCP Console에서 실제 Calendar 전용 Client ID 발급 — 콘솔 담당자 액션, 코드로 대신할 수 없음
 - FE의 Calendar 연동 화면 실제 OAuth 연결(로그인과 다른 Client ID로 요청 전환) — `google-calendar-oauth.md`(Wave 4) 본연의 범위, 별도 저장소
 
 ## 완료 기준
 
 - [x] 백엔드 코드 배선(`OAuthProperties`·`GoogleCalendarOAuthClient`·env 4곳) — 2026-08-22
-- [ ] GCP 콘솔에서 실제 Client ID 발급 + FE 전환 — Calendar 실제 FE 구현 착수 시점에 진행
+- [x] GCP 콘솔에서 실제 Calendar 전용 Client ID 발급 + secrets 등록 — 2026-07-31
+- [ ] FE 전환(Calendar 연동 요청을 Calendar 전용 Client ID로) — Calendar 실제 FE 구현 착수 시점에 진행
 
 ## 리스크·미결정
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 분리 착수 시점 | `[미정]` | Calendar Wave 4 FE 착수와 함께 진행 |
+| FE 전환 시점 | `[미정]` | Calendar Wave 4 FE 착수와 함께 진행 |
 | Calendar scope Google 검증 필요 여부·소요 기간 | `[미정]` | Production 모드 전환 시 확인 필요 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-07-31 | 초안 — `google-login-revoke.md` 리스크 절에서 분리 |
-| 2026-08-22 | 백엔드 코드 배선 완료(`OAuthProperties`·`GoogleCalendarOAuthClient`·env 4곳) — GCP 콘솔 발급·FE 전환은 Calendar FE 착수 시로 유지 |
+| 2026-07-31 | 초안 — `google-login-revoke.md` 리스크 절에서 분리. GCP 콘솔에서 Calendar 전용 Client ID 발급, GitHub Actions secrets 등록 완료 |
+| 2026-08-22 | 백엔드 코드 배선 완료(`OAuthProperties`·`GoogleCalendarOAuthClient`·env 4곳). "GCP 콘솔 발급 전" 서술이 7/31 발급 완료 사실을 놓쳐 stale했던 것을 8/23 재확인 후 정정 |
