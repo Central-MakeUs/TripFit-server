@@ -76,7 +76,7 @@ class GoogleCalendarServiceTest {
   @Test
   void connect_setsFlagAndSyncs() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code"))
+    when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", null))
         .thenReturn(
             new GoogleOAuthTokenResponse(
                 "access", "refresh", Instant.now().plusSeconds(3600)));
@@ -110,7 +110,7 @@ class GoogleCalendarServiceTest {
                 false,
                 true));
 
-    googleCalendarService.connect(USER_ID, "auth-code");
+    googleCalendarService.connect(USER_ID, "auth-code", null);
 
     assertThat(user.isGoogleCalendarConnected()).isTrue();
     verify(credentialRepository, atLeastOnce()).save(any(GoogleCalendarCredential.class));
@@ -120,6 +120,62 @@ class GoogleCalendarServiceTest {
     verify(credentialRepository, atLeastOnce()).save(captor.capture());
     assertThat(captor.getAllValues().getFirst().getGoogleAccountEmail())
         .isEqualTo("calendar@gmail.com");
+  }
+
+  // 브라우저 리다이렉트 경로 — Controller가 받은 redirectUri를 그대로 OAuthClient까지 전달하는지 검증
+  @Test
+  void connect_whenRedirectUriPresent_forwardsToOAuthClient() {
+    String redirectUri = "https://tripfit.online/settings/google-calendar/callback";
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", redirectUri))
+        .thenReturn(
+            new GoogleOAuthTokenResponse(
+                "access", "refresh", Instant.now().plusSeconds(3600)));
+    when(tokenCrypto.encrypt("refresh")).thenReturn("enc-refresh");
+    when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
+    when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access")).thenReturn(null);
+    when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
+    when(credentialRepository.save(any(GoogleCalendarCredential.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
+    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any())).thenReturn(List.of());
+    when(
+        busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            eq(USER_ID),
+            any(),
+            any()))
+        .thenReturn(List.of());
+    when(userSummaryService.toSummary(user))
+        .thenReturn(
+            new UserSummaryResponse(
+                USER_ID,
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getNickname(),
+                user.getProfileImageUrl(),
+                user.getProvider(),
+                true,
+                false,
+                false,
+                true));
+
+    googleCalendarService.connect(USER_ID, "auth-code", redirectUri);
+
+    verify(googleCalendarOAuthClient).exchangeAuthorizationCode("auth-code", redirectUri);
+  }
+
+  // code 교환 실패(잘못된 redirect_uri·invalid_grant 등) 시 원인을 로그로 남기고 502로 변환하는지 검증
+  @Test
+  void connect_whenExchangeFails_throwsConnectFailed() {
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", null))
+        .thenThrow(new GoogleCalendarAuthException("token endpoint error: 400 BAD_REQUEST"));
+
+    assertThatThrownBy(() -> googleCalendarService.connect(USER_ID, "auth-code", null))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(GoogleCalendarErrorCode.GOOGLE_CALENDAR_CONNECT_FAILED);
   }
 
   @Test

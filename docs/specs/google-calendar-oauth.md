@@ -169,7 +169,7 @@ Approved 시 `erd.md` 반영.
 
 | Method | Path | 범위 | 설명 |
 |--------|------|------|------|
-| `POST` | `/api/v1/users/google-calendar` | **Must** | body `{ "authorizationCode" }` → flag=true + `google_account_email` 저장 + 즉시 1회 sync |
+| `POST` | `/api/v1/users/google-calendar` | **Must** | body `{ "authorizationCode", "redirectUri"(옵션, 브라우저 리다이렉트 전용) }` → flag=true + `google_account_email` 저장 + 즉시 1회 sync |
 | `DELETE` | `/api/v1/users/google-calendar` | **Must** | 의도적 해제 · revoke · credential·busy_day 삭제 · flag=false |
 | `POST` | `/api/v1/users/google-calendar/sync` | **Nice** | 수동 즉시 sync (기획 없음) |
 | — | `/me`의 `isGoogleCalendarConnected` | **Must** | 상태 SSOT |
@@ -211,3 +211,4 @@ Approved 시 `erd.md` 반영.
 | 2026-07-22 | 읽기 Must / Merge / A안 / C1 / API / 환경 A/B / 폴링 30분 / AES-256 |
 | 2026-07-22 | **Approved** — Must 블로커 없음 · env 키 확정 · 구현 착수 |
 | 2026-07-22 | Must — `google_account_email` credential 저장 (API 미노출) |
+| 2026-08-01 | **정정** — `GoogleCalendarOAuthClient.exchangeAuthorizationCode()`가 `redirect_uri=""` 고정이라 브라우저 리다이렉트(hybrid flow) 경로에서 실패하는 걸 FE 착수 전 선제 발견(`google-login-revoke.md` 정정 2와 동일 원인). `ConnectGoogleCalendarRequest`에 `redirectUri`(옵션, 브라우저 전용) 필드 추가해 네이티브(null→`""`)/브라우저(실제 URL)를 구분. 동시에 `GoogleCalendarService.connect()`가 code 교환 실패 원인을 로그 없이 삼키던 관측성 gap도 `log.warn`으로 보강. `./gradlew test` 통과 |
