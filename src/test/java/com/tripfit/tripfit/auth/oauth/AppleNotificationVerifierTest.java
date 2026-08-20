@@ -15,7 +15,8 @@ class AppleNotificationVerifierTest {
   @BeforeEach
   void setUp() {
     OAuthProperties oAuthProperties = new OAuthProperties();
-    oAuthProperties.setAppleClientId("test-apple-client-id");
+    oAuthProperties.setAppleBundleId("test-apple-bundle-id");
+    oAuthProperties.setAppleServiceId("test-apple-service-id");
     appleNotificationVerifier =
         new AppleNotificationVerifier(oAuthProperties, new AppleJwkVerifier());
   }

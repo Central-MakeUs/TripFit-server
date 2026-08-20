@@ -55,7 +55,8 @@ class AppleOAuthClientTest {
     RestClient.Builder builder = RestClient.builder();
     serverHolder[0] = MockRestServiceServer.bindTo(builder).build();
     OAuthProperties properties = new OAuthProperties();
-    properties.setAppleClientId("com.tripfit.app");
+    properties.setAppleBundleId("com.tripfit.app");
+    properties.setAppleServiceId("com.tripfit.service");
     properties.setAppleTeamId("TEAM123456");
     properties.setAppleKeyId("KEY123456");
     properties.setApplePrivateKey(TEST_PRIVATE_KEY_PEM);
@@ -69,7 +70,7 @@ class AppleOAuthClientTest {
     AppleOAuthClient client = newClient(serverHolder);
     serverHolder[0]
         .expect(requestTo(TOKEN_URL))
-        .andExpect(this::assertValidClientSecretJwt)
+        .andExpect(request -> assertValidClientSecretJwt(request, "com.tripfit.app"))
         .andRespond(
             withSuccess(
                 """
@@ -77,7 +78,31 @@ class AppleOAuthClientTest {
                     """,
                 MediaType.APPLICATION_JSON));
 
-    String refreshToken = client.exchangeAuthorizationCodeForRefreshToken("auth-code-123");
+    String refreshToken =
+        client.exchangeAuthorizationCodeForRefreshToken("auth-code-123", "com.tripfit.app");
+
+    assertThat(refreshToken).isEqualTo("rt-value");
+    serverHolder[0].verify();
+  }
+
+  // Services ID(모바일 브라우저 경로)로 교환할 때도 그 값 그대로 client_id·client_secret sub에 실려야 함
+  @Test
+  void exchangeAuthorizationCodeForRefreshToken_withServiceId_usesServiceIdAsClientId()
+      throws Exception {
+    MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
+    AppleOAuthClient client = newClient(serverHolder);
+    serverHolder[0]
+        .expect(requestTo(TOKEN_URL))
+        .andExpect(request -> assertValidClientSecretJwt(request, "com.tripfit.service"))
+        .andRespond(
+            withSuccess(
+                """
+                    {"access_token": "at", "refresh_token": "rt-value", "token_type": "Bearer", "expires_in": 3600}
+                    """,
+                MediaType.APPLICATION_JSON));
+
+    String refreshToken =
+        client.exchangeAuthorizationCodeForRefreshToken("auth-code-123", "com.tripfit.service");
 
     assertThat(refreshToken).isEqualTo("rt-value");
     serverHolder[0].verify();
@@ -96,7 +121,8 @@ class AppleOAuthClientTest {
                     """)
                 .contentType(MediaType.APPLICATION_JSON));
 
-    assertThatThrownBy(() -> client.exchangeAuthorizationCodeForRefreshToken("bad-code"))
+    assertThatThrownBy(
+        () -> client.exchangeAuthorizationCodeForRefreshToken("bad-code", "com.tripfit.app"))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -108,7 +134,7 @@ class AppleOAuthClientTest {
         .expect(requestTo(REVOKE_URL))
         .andRespond(withSuccess());
 
-    client.revokeRefreshToken("rt-value");
+    client.revokeRefreshToken("rt-value", "com.tripfit.app");
 
     serverHolder[0].verify();
   }
@@ -124,12 +150,15 @@ class AppleOAuthClientTest {
               throw new IOException("connection refused");
             });
 
-    assertThatCode(() -> client.revokeRefreshToken("rt-value")).doesNotThrowAnyException();
+    assertThatCode(() -> client.revokeRefreshToken("rt-value", "com.tripfit.app"))
+        .doesNotThrowAnyException();
   }
 
-  // client_secret 폼 필드를 꺼내 ES256 서명·클레임(iss/sub/aud/kid)이 올바른지 검증
+  // client_secret 폼 필드를 꺼내 ES256 서명·클레임(iss/sub/aud/kid)이 올바른지 검증. sub은 호출부가 넘긴
+  // clientId(Bundle ID 또는 Services ID)와 일치해야 함
   private void assertValidClientSecretJwt(
-      org.springframework.http.client.ClientHttpRequest request) {
+      org.springframework.http.client.ClientHttpRequest request,
+      String expectedClientId) {
     try {
       String body = ((MockClientHttpRequest) request).getBodyAsString();
       Map<String, String> form = parseForm(body);
@@ -138,7 +167,7 @@ class AppleOAuthClientTest {
       assertThat(jwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.ES256);
       assertThat(jwt.getHeader().getKeyID()).isEqualTo("KEY123456");
       assertThat(jwt.getJWTClaimsSet().getIssuer()).isEqualTo("TEAM123456");
-      assertThat(jwt.getJWTClaimsSet().getSubject()).isEqualTo("com.tripfit.app");
+      assertThat(jwt.getJWTClaimsSet().getSubject()).isEqualTo(expectedClientId);
       assertThat(jwt.getJWTClaimsSet().getAudience()).contains("https://appleid.apple.com");
       assertThat(jwt.verify(new ECDSAVerifier(parsePublicKey(TEST_PUBLIC_KEY_PEM)))).isTrue();
     } catch (Exception exception) {

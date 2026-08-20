@@ -74,7 +74,8 @@ class AuthServiceTest {
             "google-sub",
             "user@example.com",
             "홍길동",
-            "https://example.com/profile.png");
+            "https://example.com/profile.png",
+            null);
     lenient()
         .when(userSummaryService.toSummary(any(User.class)))
         .thenAnswer(
@@ -156,7 +157,12 @@ class AuthServiceTest {
   void login_whenNicknameMissing_storesNullWithoutFallback() {
     OAuthProfile appleProfile =
         new OAuthProfile(
-            SocialProvider.APPLE, "apple-sub", "relay@privaterelay.appleid.com", null, null);
+            SocialProvider.APPLE,
+            "apple-sub",
+            "relay@privaterelay.appleid.com",
+            null,
+            null,
+            "com.tripfit.app");
     when(verifierRegistry.getVerifier(SocialProvider.APPLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(appleProfile);
     when(userRepository.findByProviderAndSocialId(SocialProvider.APPLE, "apple-sub"))
@@ -199,7 +205,13 @@ class AuthServiceTest {
   @Test
   void login_whenAppleWithAuthorizationCode_savesCredential() {
     OAuthProfile appleProfile =
-        new OAuthProfile(SocialProvider.APPLE, "apple-sub", "user@example.com", "닉네임", null);
+        new OAuthProfile(
+            SocialProvider.APPLE,
+            "apple-sub",
+            "user@example.com",
+            "닉네임",
+            null,
+            "com.tripfit.service");
     when(verifierRegistry.getVerifier(SocialProvider.APPLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(appleProfile);
     when(userRepository.findByProviderAndSocialId(SocialProvider.APPLE, "apple-sub"))
@@ -217,7 +229,11 @@ class AuthServiceTest {
 
     authService.login(SocialProvider.APPLE, "id-token", "auth-code");
 
-    verify(appleCredentialService).saveIfAuthorizationCodePresent(any(User.class), eq("auth-code"));
+    verify(appleCredentialService)
+        .saveIfAuthorizationCodePresent(
+            any(User.class),
+            eq("auth-code"),
+            eq("com.tripfit.service"));
   }
 
   @Test
@@ -240,7 +256,7 @@ class AuthServiceTest {
     authService.login(SocialProvider.GOOGLE, "id-token", null);
 
     verify(appleCredentialService, org.mockito.Mockito.never())
-        .saveIfAuthorizationCodePresent(any(), any());
+        .saveIfAuthorizationCodePresent(any(), any(), any());
   }
 
   @Test

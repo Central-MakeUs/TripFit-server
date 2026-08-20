@@ -45,66 +45,79 @@ class AppleCredentialServiceTest {
   void saveIfAuthorizationCodePresent_whenCodeBlank_doesNothing() {
     User user = user();
 
-    appleCredentialService.saveIfAuthorizationCodePresent(user, "  ");
+    appleCredentialService.saveIfAuthorizationCodePresent(user, "  ", "com.tripfit.app");
 
-    verify(appleOAuthClient, never()).exchangeAuthorizationCodeForRefreshToken(any());
+    verify(appleOAuthClient, never()).exchangeAuthorizationCodeForRefreshToken(any(), any());
     verify(appleCredentialRepository, never()).save(any());
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenNewUser_createsCredential() {
     User user = user();
-    when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code"))
+    when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", "com.tripfit.app"))
         .thenReturn("plain-refresh");
     when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
     when(appleCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
 
-    appleCredentialService.saveIfAuthorizationCodePresent(user, "auth-code");
+    appleCredentialService.saveIfAuthorizationCodePresent(user, "auth-code", "com.tripfit.app");
 
     verify(appleCredentialRepository)
         .save(
             org.mockito.ArgumentMatchers.argThat(
-                credential -> "encrypted-refresh".equals(credential.getRefreshTokenCiphertext())));
+                credential -> "encrypted-refresh".equals(credential.getRefreshTokenCiphertext())
+                    && "com.tripfit.app".equals(credential.getAppleClientId())));
   }
 
   @Test
-  void saveIfAuthorizationCodePresent_whenExistingCredential_overwritesRefreshToken() {
+  void saveIfAuthorizationCodePresent_whenExistingCredential_overwritesRefreshTokenAndClientId() {
     User user = user();
-    AppleCredential existing = AppleCredential.create(user, "old-ciphertext");
-    when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("new-code"))
+    AppleCredential existing = AppleCredential.create(user, "old-ciphertext", "com.tripfit.app");
+    when(
+        appleOAuthClient.exchangeAuthorizationCodeForRefreshToken(
+            "new-code",
+            "com.tripfit.service"))
         .thenReturn("new-plain-refresh");
     when(tokenCrypto.encrypt("new-plain-refresh")).thenReturn("new-ciphertext");
     when(appleCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(existing));
 
-    appleCredentialService.saveIfAuthorizationCodePresent(user, "new-code");
+    appleCredentialService.saveIfAuthorizationCodePresent(
+        user,
+        "new-code",
+        "com.tripfit.service");
 
     verify(appleCredentialRepository).save(existing);
     org.assertj.core.api.Assertions.assertThat(existing.getRefreshTokenCiphertext())
         .isEqualTo("new-ciphertext");
+    org.assertj.core.api.Assertions.assertThat(existing.getAppleClientId())
+        .isEqualTo("com.tripfit.service");
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenExchangeFails_doesNotThrowAndSkipsSave() {
     User user = user();
-    when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("bad-code"))
+    when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("bad-code", "com.tripfit.app"))
         .thenThrow(new IllegalStateException("Apple token endpoint error"));
 
-    assertThatCode(() -> appleCredentialService.saveIfAuthorizationCodePresent(user, "bad-code"))
+    assertThatCode(
+        () -> appleCredentialService.saveIfAuthorizationCodePresent(
+            user,
+            "bad-code",
+            "com.tripfit.app"))
         .doesNotThrowAnyException();
 
     verify(appleCredentialRepository, never()).save(any());
   }
 
   @Test
-  void revokeAndDeleteIfPresent_whenCredentialExists_decryptsRevokesThenDeletes() {
+  void revokeAndDeleteIfPresent_whenCredentialExists_decryptsRevokesWithStoredClientIdThenDeletes() {
     User user = user();
-    AppleCredential credential = AppleCredential.create(user, "ciphertext");
+    AppleCredential credential = AppleCredential.create(user, "ciphertext", "com.tripfit.service");
     when(appleCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(credential));
     when(tokenCrypto.decrypt("ciphertext")).thenReturn("plain-refresh");
 
     appleCredentialService.revokeAndDeleteIfPresent(USER_ID);
 
-    verify(appleOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(appleOAuthClient).revokeRefreshToken("plain-refresh", "com.tripfit.service");
     verify(appleCredentialRepository).deleteByUser_Id(USER_ID);
   }
 
@@ -114,14 +127,15 @@ class AppleCredentialServiceTest {
 
     appleCredentialService.revokeAndDeleteIfPresent(USER_ID);
 
-    verify(appleOAuthClient, never()).revokeRefreshToken(any());
+    verify(appleOAuthClient, never()).revokeRefreshToken(any(), any());
     verify(appleCredentialRepository).deleteByUser_Id(USER_ID);
   }
 
   @Test
   void revokeAndDeleteIfPresent_whenDecryptThrows_doesNotThrowAndStillDeletes() {
     User user = user();
-    AppleCredential credential = AppleCredential.create(user, "corrupt-ciphertext");
+    AppleCredential credential =
+        AppleCredential.create(user, "corrupt-ciphertext", "com.tripfit.app");
     when(appleCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(credential));
     when(tokenCrypto.decrypt("corrupt-ciphertext"))
         .thenThrow(new IllegalStateException("decrypt failed"));
