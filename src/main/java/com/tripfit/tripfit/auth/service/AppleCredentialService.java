@@ -32,26 +32,27 @@ public class AppleCredentialService {
     this.tokenCrypto = tokenCrypto;
   }
 
-  // authorizationCode를 refresh token으로 교환해 암호화 저장 — 재로그인마다 최신 code로 덮어씀. 실패해도 로그인 자체는 계속
-  // 진행(best-effort)
+  // authorizationCode를 refresh token으로 교환해 암호화 저장 — 재로그인마다 최신 code·client_id로 덮어씀. 실패해도
+  // 로그인 자체는 계속 진행(best-effort). clientId는 로그인 aud 검증에서 실제로 매칭된 값(Bundle ID/Services ID)이라야
+  // 함 — authorizationCode를 발급한 것과 다른 client_id로 교환하면 Apple이 거부함
   @Transactional
-  public void saveIfAuthorizationCodePresent(User user, String authorizationCode) {
+  public void saveIfAuthorizationCodePresent(User user, String authorizationCode, String clientId) {
     if (authorizationCode == null || authorizationCode.isBlank()) {
       return;
     }
     try {
       String refreshToken =
-          appleOAuthClient.exchangeAuthorizationCodeForRefreshToken(authorizationCode);
+          appleOAuthClient.exchangeAuthorizationCodeForRefreshToken(authorizationCode, clientId);
       String ciphertext = tokenCrypto.encrypt(refreshToken);
       AppleCredential credential =
           appleCredentialRepository
               .findByUser_Id(user.getId())
               .map(
                   existing -> {
-                    existing.updateRefreshToken(ciphertext);
+                    existing.update(ciphertext, clientId);
                     return existing;
                   })
-              .orElseGet(() -> AppleCredential.create(user, ciphertext));
+              .orElseGet(() -> AppleCredential.create(user, ciphertext, clientId));
       appleCredentialRepository.save(credential);
     } catch (Exception exception) {
       log.warn("Apple authorization code exchange failed — skipping credential save", exception);
@@ -59,7 +60,7 @@ public class AppleCredentialService {
   }
 
   // 탈퇴 시 저장된 refresh token으로 Apple revoke 호출 후 credential row 삭제 — revoke 실패해도 삭제는 항상
-  // 진행(best-effort)
+  // 진행(best-effort). revoke는 로그인 시점에 저장해둔 client_id를 그대로 재사용(교환 때와 달라지면 Apple이 거부)
   @Transactional
   public void revokeAndDeleteIfPresent(UUID userId) {
     appleCredentialRepository
@@ -68,7 +69,7 @@ public class AppleCredentialService {
             (AppleCredential credential) -> {
               try {
                 String refreshToken = tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
-                appleOAuthClient.revokeRefreshToken(refreshToken);
+                appleOAuthClient.revokeRefreshToken(refreshToken, credential.getAppleClientId());
               } catch (Exception exception) {
                 log.warn("Apple credential revoke failed", exception);
               }

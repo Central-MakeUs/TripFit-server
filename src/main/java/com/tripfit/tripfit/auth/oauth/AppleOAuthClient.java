@@ -48,11 +48,14 @@ public class AppleOAuthClient {
     this.oAuthProperties = oAuthProperties;
   }
 
-  // authorization code → refresh token 교환 — 실패는 예외로 던짐(호출부가 best-effort로 감쌈)
-  public String exchangeAuthorizationCodeForRefreshToken(String authorizationCode) {
+  // authorization code → refresh token 교환 — 실패는 예외로 던짐(호출부가 best-effort로 감쌈). clientId는
+  // authorizationCode를 발급한 것과 반드시 동일해야 함(Bundle ID로 받은 code를 Services ID로 교환하면 Apple이 거부)
+  public String exchangeAuthorizationCodeForRefreshToken(
+      String authorizationCode,
+      String clientId) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-    form.add("client_id", oAuthProperties.getAppleClientId());
-    form.add("client_secret", buildClientSecretJwt());
+    form.add("client_id", clientId);
+    form.add("client_secret", buildClientSecretJwt(clientId));
     form.add("code", authorizationCode);
     form.add("grant_type", "authorization_code");
     JsonNode response =
@@ -75,11 +78,12 @@ public class AppleOAuthClient {
     return response.get("refresh_token").asText();
   }
 
-  // refresh token revoke (best-effort — 실패해도 탈퇴 트랜잭션을 막지 않음)
-  public void revokeRefreshToken(String refreshToken) {
+  // refresh token revoke (best-effort — 실패해도 탈퇴 트랜잭션을 막지 않음). clientId는 로그인 시점에 저장해둔
+  // AppleCredential.appleClientId를 그대로 넘겨받아야 함(교환 때와 동일한 값)
+  public void revokeRefreshToken(String refreshToken, String clientId) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-    form.add("client_id", oAuthProperties.getAppleClientId());
-    form.add("client_secret", buildClientSecretJwt());
+    form.add("client_id", clientId);
+    form.add("client_secret", buildClientSecretJwt(clientId));
     form.add("token", refreshToken);
     form.add("token_type_hint", "refresh_token");
     try {
@@ -95,14 +99,15 @@ public class AppleOAuthClient {
     }
   }
 
-  // Team ID·Key ID·.p8 개인키로 ES256 서명한 client_secret JWT를 매 호출마다 새로 발급함(캐싱 없음 — 호출 빈도가 낮아 불필요)
-  private String buildClientSecretJwt() {
+  // Team ID·Key ID·.p8 개인키로 ES256 서명한 client_secret JWT를 매 호출마다 새로 발급함(캐싱 없음 — 호출 빈도가 낮아 불필요).
+  // sub는 호출부가 넘긴 clientId(교환·revoke 각각의 client_id와 항상 동일해야 함)
+  private String buildClientSecretJwt(String clientId) {
     try {
       Instant now = Instant.now();
       JWTClaimsSet claims =
           new JWTClaimsSet.Builder()
               .issuer(oAuthProperties.getAppleTeamId())
-              .subject(oAuthProperties.getAppleClientId())
+              .subject(clientId)
               .audience(AUDIENCE)
               .issueTime(Date.from(now))
               .expirationTime(Date.from(now.plus(CLIENT_SECRET_TTL)))

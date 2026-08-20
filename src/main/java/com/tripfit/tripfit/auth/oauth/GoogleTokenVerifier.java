@@ -78,7 +78,8 @@ public class GoogleTokenVerifier implements SocialTokenVerifier {
           subject,
           claims.getStringClaim("email"),
           claims.getStringClaim("name"),
-          claims.getStringClaim("picture"));
+          claims.getStringClaim("picture"),
+          null);
     } catch (TripFitException exception) {
       // 비즈니스 검증에서 만든 인증 예외는 그대로 상위로 전달함
       throw exception;

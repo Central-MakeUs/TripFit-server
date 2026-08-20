@@ -39,10 +39,11 @@ public class AppleNotificationVerifier {
     this.appleJwkVerifier = appleJwkVerifier;
   }
 
-  // outer JWT(payload) 서명·iss·aud를 검증하고 events 클레임(JSON 문자열)을 파싱해 반환함
+  // outer JWT(payload) 서명·iss·aud를 검증하고 events 클레임(JSON 문자열)을 파싱해 반환함 — aud는 Bundle
+  // ID·Services ID 중 하나만 맞아도 통과(docs/specs/apple-oauth-multi-audience.md)
   public AppleNotificationEvent verify(String payload) {
-    String appleClientId = oAuthProperties.getAppleClientId();
-    if (appleClientId == null || appleClientId.isBlank()) {
+    List<String> allowedAudiences = oAuthProperties.getAppleAudiences();
+    if (allowedAudiences.isEmpty()) {
       throw new TripFitException(
           CommonErrorCode.INTERNAL_ERROR, "Apple client ID is not configured");
     }
@@ -55,9 +56,10 @@ public class AppleNotificationVerifier {
         throw new TripFitException(AuthErrorCode.AUTH_APPLE_NOTIFICATION_ISSUER_INVALID);
       }
 
-      // 3. aud가 우리 client_id인지 확인함 — 다른 서비스 앞으로 발급된 알림의 오배달 차단
+      // 3. aud가 우리 client_id(Bundle ID 또는 Services ID) 중 하나인지 확인함 — 다른 서비스 앞으로 발급된 알림의
+      // 오배달 차단
       List<String> audiences = claims.getAudience();
-      if (audiences == null || !audiences.contains(appleClientId)) {
+      if (audiences == null || audiences.stream().noneMatch(allowedAudiences::contains)) {
         throw new TripFitException(AuthErrorCode.AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID);
       }
 

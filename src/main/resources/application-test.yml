@@ -18,7 +18,8 @@ tripfit:
     google-client-secret: test-google-client-secret
     google-client-id-ios: test-google-ios-client-id
     google-client-id-android: test-google-android-client-id
-    apple-client-id: test-apple-client-id
+    apple-bundle-id: test-apple-bundle-id
+    apple-service-id: test-apple-service-id
     apple-team-id: test-apple-team-id
     apple-key-id: test-apple-key-id
     apple-private-key: test-apple-private-key

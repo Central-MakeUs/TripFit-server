@@ -41,7 +41,8 @@ public enum AuthErrorCode implements ErrorCode {
   @Schema(description = "Apple S2S notification outer JWT의 iss가 https://appleid.apple.com이 아님")
   AUTH_APPLE_NOTIFICATION_ISSUER_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_APPLE_NOTIFICATION_ISSUER_INVALID", "Apple 알림 발급자 검증에 실패했습니다."),
 
-  @Schema(description = "Apple S2S notification outer JWT의 aud가 APPLE_CLIENT_ID와 불일치")
+  @Schema(
+      description = "Apple S2S notification outer JWT의 aud가 APPLE_BUNDLE_ID·APPLE_SERVICE_ID 어느 쪽과도 불일치")
   AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID", "Apple 알림 대상(audience) 검증에 실패했습니다."),
 
   @Schema(description = "Apple S2S notification outer JWT 서명 불일치·만료 등 서명 자체 검증 실패")

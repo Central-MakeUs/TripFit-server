@@ -47,15 +47,26 @@ public class AppleCredential extends BaseTimeEntity {
   @Column(name = "refresh_token_ciphertext", nullable = false, columnDefinition = "TEXT")
   private String refreshTokenCiphertext;
 
-  public static AppleCredential create(User user, String refreshTokenCiphertext) {
+  @Schema(
+      description = "로그인 시 검증된 Apple client_id 원문(Bundle ID 또는 Services ID) — iOS 네이티브 앱과 모바일 브라우저 로그인 경로가 서로 다른 client_id를 쓰기 때문에, 탈퇴 시 revoke 호출에 반드시 이 값을 그대로 재사용해야 함")
+  @Column(name = "apple_client_id", nullable = false)
+  private String appleClientId;
+
+  public static AppleCredential create(
+      User user,
+      String refreshTokenCiphertext,
+      String appleClientId) {
     AppleCredential credential = new AppleCredential();
     credential.user = user;
     credential.refreshTokenCiphertext = refreshTokenCiphertext;
+    credential.appleClientId = appleClientId;
     return credential;
   }
 
-  // 재로그인마다 새로 오는 authorizationCode로 교환한 refresh token으로 덮어씀 — 이전 값은 폐기
-  public void updateRefreshToken(String refreshTokenCiphertext) {
+  // 재로그인마다 새로 오는 authorizationCode로 교환한 refresh token·client_id로 함께 덮어씀 — 두 값은 항상 같은
+  // 로그인 시도에서 나온 짝이어야 하므로 따로 갱신하지 않음(불일치 시 이후 revoke가 실패함)
+  public void update(String refreshTokenCiphertext, String appleClientId) {
     this.refreshTokenCiphertext = refreshTokenCiphertext;
+    this.appleClientId = appleClientId;
   }
 }

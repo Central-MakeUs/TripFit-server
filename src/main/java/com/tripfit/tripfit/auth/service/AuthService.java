@@ -72,9 +72,13 @@ public class AuthService {
     User user = upsertUser(profile);
 
     // 4. APPLE이면 탈퇴 시 revoke용 refresh token을 교환·저장(best-effort — token 교환 자체가 실패해도 로그인 흐름은 계속
-    // 진행)
+    // 진행). client_id는 방금 aud 검증에서 매칭된 값(Bundle ID/Services ID)을 그대로 재사용 — 로그인 경로와 이후
+    // revoke가 항상 같은 client_id를 쓰도록 보장
     if (provider == SocialProvider.APPLE) {
-      appleCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode);
+      appleCredentialService.saveIfAuthorizationCodePresent(
+          user,
+          authorizationCode,
+          profile.appleMatchedClientId());
     }
 
     // 5. 액세스·리프레시 발급 — user.hasPreSchedule은 toSummary()가 일정 EXISTS로 파생 (user 컬럼 아님)

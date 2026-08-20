@@ -86,7 +86,7 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
         }
       }
       return new OAuthProfile(
-          SocialProvider.KAKAO, providerUserId, email, nickname, profileImageUrl);
+          SocialProvider.KAKAO, providerUserId, email, nickname, profileImageUrl, null);
     } catch (TripFitException exception) {
       // 비즈니스 검증에서 만든 인증 예외는 그대로 상위로 전달함
       throw exception;

@@ -24,6 +24,12 @@ public record OAuthProfile(
     @Schema(
         description = "provider 프로필 이미지 URL (A안 passthrough). Apple null",
         nullable = true,
-        example = "https://lh3.googleusercontent.com/a/example") String profileImageUrl
+        example = "https://lh3.googleusercontent.com/a/example") String profileImageUrl,
+
+    @Schema(
+        description = "APPLE 전용 — id_token aud 검증 시 실제로 매칭된 client_id(Bundle ID 또는 Services ID). "
+            + "탈퇴 시 revoke 호출에 동일 client_id를 재사용하기 위해 credential 저장까지 전달됨. GOOGLE/KAKAO는 항상 null",
+        nullable = true,
+        example = "com.tripfit.app") String appleMatchedClientId
 ) {
 }

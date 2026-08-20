@@ -17,7 +17,9 @@ public class OAuthProperties {
 
   private String googleClientIdAndroid = "";
 
-  private String appleClientId = "";
+  private String appleBundleId = "";
+
+  private String appleServiceId = "";
 
   private String appleTeamId = "";
 
@@ -29,6 +31,13 @@ public class OAuthProperties {
 
   public List<String> getGoogleClientIds() {
     return Arrays.stream(new String[] {googleClientId, googleClientIdIos, googleClientIdAndroid})
+        .filter(id -> id != null && !id.isBlank())
+        .toList();
+  }
+
+  // iOS 네이티브 앱(Bundle ID)·모바일 브라우저(Services ID) 두 경로 중 하나만 맞아도 통과시키기 위한 허용 audience 목록
+  public List<String> getAppleAudiences() {
+    return Arrays.stream(new String[] {appleBundleId, appleServiceId})
         .filter(id -> id != null && !id.isBlank())
         .toList();
   }

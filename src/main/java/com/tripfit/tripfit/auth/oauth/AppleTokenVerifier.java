@@ -34,14 +34,15 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
     return SocialProvider.APPLE;
   }
 
-  // 애플 ID 토큰의 서명과 audience를 검증해 사용자 프로필을 추출함
+  // 애플 ID 토큰의 서명과 audience를 검증해 사용자 프로필을 추출함 — Bundle ID(iOS 네이티브)·Services ID(모바일
+  // 브라우저) 중 하나만 맞아도 통과시킴(docs/specs/apple-oauth-multi-audience.md)
   // TODO: iss(https://appleid.apple.com) 명시 검증 추가 — JWKS 소스가 애플 전용이라 실질 위험은 낮지만,
   // AppleNotificationVerifier처럼 iss까지 명시 검증하는 편이 일관적
   @Override
   public OAuthProfile verify(String token) {
-    // 1. 애플 서비스 ID가 설정돼 있는지 확인함
-    String appleClientId = oAuthProperties.getAppleClientId();
-    if (appleClientId == null || appleClientId.isBlank()) {
+    // 1. 허용된 애플 client_id 목록(Bundle ID·Services ID)이 설정돼 있는지 확인함
+    List<String> allowedAudiences = oAuthProperties.getAppleAudiences();
+    if (allowedAudiences.isEmpty()) {
       // 클라이언트 잘못이 아니라 서버 배포 설정 누락 — 500으로 구분
       throw new TripFitException(
           CommonErrorCode.INTERNAL_ERROR, "Apple client ID is not configured");
@@ -49,7 +50,8 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
     try {
       // 2. 토큰 서명을 검증하고 클레임을 파싱함
       JWTClaimsSet claims = processToken(token);
-      if (!hasValidAudience(claims, appleClientId)) {
+      String matchedClientId = findMatchedAudience(claims, allowedAudiences);
+      if (matchedClientId == null) {
         throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
       }
       String subject = claims.getSubject();
@@ -57,7 +59,12 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
         throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
       }
       return new OAuthProfile(
-          SocialProvider.APPLE, subject, claims.getStringClaim("email"), null, null);
+          SocialProvider.APPLE,
+          subject,
+          claims.getStringClaim("email"),
+          null,
+          null,
+          matchedClientId);
     } catch (TripFitException exception) {
       // 비즈니스 검증에서 만든 인증 예외는 그대로 상위로 전달함
       throw exception;
@@ -97,9 +104,14 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
     return appleJwkVerifier.verify(token);
   }
 
-  private boolean hasValidAudience(JWTClaimsSet claims, String appleClientId)
+  // 토큰의 aud 클레임과 허용 목록을 대조해 실제로 매칭된 client_id를 반환함(없으면 null) — 이후 credential 저장·revoke에
+  // 재사용하기 위해 매칭값 자체가 필요함
+  private String findMatchedAudience(JWTClaimsSet claims, List<String> allowedAudiences)
       throws ParseException {
     List<String> audiences = claims.getAudience();
-    return audiences != null && audiences.contains(appleClientId);
+    if (audiences == null) {
+      return null;
+    }
+    return audiences.stream().filter(allowedAudiences::contains).findFirst().orElse(null);
   }
 }
