@@ -143,6 +143,37 @@ class ScheduleCalendarResolverTest {
   }
 
   @Test
+  void resolve_personalSlotStatusesNullFromHibernate_fallsBackToRegularInsteadOfNpe() {
+    // 재현: 실제 DB에서 morning/afternoon/evening_status 3개 컬럼이 전부 NULL이면 Hibernate가
+    // 임베디드 자체를 null로 되돌린다(all-null composite) — in-memory SlotStatuses(null,null,null)과
+    // 달리 getSlotStatuses()가 진짜 null이 됨. 이 상태에서 NPE 없이 정기 일정으로 폴백해야 한다
+    RegularSchedule work =
+        RegularSchedule.create(
+            user,
+            "출근",
+            "MON,TUE,WED,THU,FRI",
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            2,
+            null,
+            false,
+            true);
+    LocalDate thursday = LocalDate.of(2026, 8, 6);
+    PersonalSchedule personal =
+        PersonalSchedule.create(user, thursday, null, null, null, true);
+    personal.setSlotStatuses(null);
+
+    List<CalendarDayResponse> days =
+        ScheduleCalendarResolver.resolve(List.of(work), List.of(personal), thursday, thursday);
+
+    assertThat(days).hasSize(1);
+    assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+    assertThat(days.getFirst().eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
+    assertThat(days.getFirst().uncertain()).isTrue();
+  }
+
+  @Test
   void resolve_multipleRegularsSameWeekday_impossibleWins() {
     RegularSchedule work =
         RegularSchedule.create(

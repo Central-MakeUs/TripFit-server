@@ -70,7 +70,14 @@ public final class ScheduleCalendarResolver {
       PersonalSchedule personal,
       GoogleCalendarBusyDay googleBusy) {
     SlotStatuses regular = combineImpossibleWins(matched);
-    SlotStatuses override = personal != null ? personal.getSlotStatuses() : SlotStatuses.empty();
+    // personal이 있어도 getSlotStatuses()가 null일 수 있다 — @Embeddable 3개
+    // 컬럼(morning/afternoon/evening_status)이
+    // 전부 NULL이면 Hibernate가 임베디드 자체를 null로 되돌리는 all-null composite 동작 때문. "불확실만 체크,
+    // 슬롯 미선택"으로 저장된 개별 일정이 이 케이스라 empty()로 폴백해야 함(override 없음과 동일하게 처리)
+    SlotStatuses override =
+        personal != null && personal.getSlotStatuses() != null
+            ? personal.getSlotStatuses()
+            : SlotStatuses.empty();
     return new CalendarDayResponse(
         date,
         resolveSlot(
