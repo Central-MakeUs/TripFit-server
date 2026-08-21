@@ -2,7 +2,7 @@
 
 > wave: 4
 > implements: (온보딩 `is_google_calendar_connected` 실연동 — BR 번호 N/A · decisions/007)
-> deferred: 네이버 캘린더 · 소셜 계정 다중 연결 → [#6](https://github.com/Central-MakeUs/TripFit-server/issues/6)
+> deferred: 네이버 캘린더 · 소셜 계정 다중 연결 → [#6](https://github.com/Central-MakeUs/TripFit-server/issues/6) · Calendar 전용 OAuth Client ID 분리(현재 로그인과 공유) → [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)
 > 상태: **Approved**
 > MVP: Out of scope (Wave 4)
 > Issue: [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44)

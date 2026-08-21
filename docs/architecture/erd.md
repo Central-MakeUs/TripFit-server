@@ -22,6 +22,7 @@ users ||--o{ personal_schedule : owns
 users ||--|| google_calendar_credential : has
 users ||--o{ google_calendar_busy_day : caches
 users ||--|| apple_credential : has
+users ||--|| google_login_credential : has
 users ||--o{ trip_member : participates
 users ||--o{ trip : owns
 trip ||--o{ trip_member : has
@@ -108,6 +109,14 @@ trip ||--o{ notification_history : relates_to
         uuid user_id FK "사용자 UNIQUE"
         text refresh_token_ciphertext "암호화 Refresh Token"
         string apple_client_id "로그인 시 검증된 Bundle ID 또는 Services ID"
+        datetime created_at "생성일"
+        datetime updated_at "수정일"
+    }
+
+    google_login_credential {
+        uuid id PK "credential UUID"
+        uuid user_id FK "사용자 UNIQUE"
+        text refresh_token_ciphertext "암호화 Refresh Token"
         datetime created_at "생성일"
         datetime updated_at "수정일"
     }
@@ -347,6 +356,18 @@ User당 **1행**. 탈퇴 시 `https://appleid.apple.com/auth/revoke` 호출 용�
 | user_id | char(36) | N | FK → users.id, **UNIQUE** | |
 | refresh_token_ciphertext | text | N | | AES-256-GCM 암호문 (Base64) — `GoogleCalendarTokenCrypto` 재사용, 별도 AES 키 없음 |
 | apple_client_id | varchar | N | | 로그인 시 검증된 client_id 원문(`APPLE_BUNDLE_ID` 또는 `APPLE_SERVICE_ID`) — iOS 네이티브 앱과 모바일 브라우저 로그인이 서로 다른 client_id를 쓰므로, 탈퇴 시 revoke 호출에 이 값을 그대로 재사용([`apple-oauth-multi-audience.md`](../specs/apple-oauth-multi-audience.md)) |
+| created_at | timestamptz | N | | |
+| updated_at | timestamptz | N | | |
+
+### `google_login_credential` (Google 로그인 revoke용 refresh token)
+
+User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용도로만 보관 — `google_calendar_credential`과 별개(목적·라이프사이클이 다름). client_id 컬럼은 두지 않음(현재 로그인·Calendar가 같은 단일 Web Client ID를 공유하고, Google revoke 엔드포인트 자체가 client_id를 요구하지 않기 때문 — [`google-login-revoke.md`](../specs/google-login-revoke.md) 설계 노트). 로그인 시 `authorizationCode`를 교환해 refresh_token이 응답에 있을 때만 덮어쓰고(Google은 최초 동의 시에만 내려줌), 탈퇴 시 revoke 호출 후 row 자체를 삭제한다.
+
+| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
+|------|------|----------|-------|------|
+| id | char(36) | N | PK | UUID v4 |
+| user_id | char(36) | N | FK → users.id, **UNIQUE** | |
+| refresh_token_ciphertext | text | N | | AES-256-GCM 암호문 (Base64) — `GoogleCalendarTokenCrypto` 재사용, 별도 AES 키 없음 |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
