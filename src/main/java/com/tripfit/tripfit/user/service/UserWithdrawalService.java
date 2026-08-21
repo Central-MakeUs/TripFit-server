@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.user.service;
 
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
+import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
@@ -47,6 +48,8 @@ public class UserWithdrawalService {
 
   private final AppleCredentialService appleCredentialService;
 
+  private final GoogleLoginCredentialService googleLoginCredentialService;
+
   private final RefreshTokenService refreshTokenService;
 
   public UserWithdrawalService(
@@ -60,6 +63,7 @@ public class UserWithdrawalService {
       GoogleCalendarTokenCrypto googleCalendarTokenCrypto,
       KakaoUnlinkClient kakaoUnlinkClient,
       AppleCredentialService appleCredentialService,
+      GoogleLoginCredentialService googleLoginCredentialService,
       RefreshTokenService refreshTokenService) {
     this.userLookupService = userLookupService;
     this.tripService = tripService;
@@ -71,6 +75,7 @@ public class UserWithdrawalService {
     this.googleCalendarTokenCrypto = googleCalendarTokenCrypto;
     this.kakaoUnlinkClient = kakaoUnlinkClient;
     this.appleCredentialService = appleCredentialService;
+    this.googleLoginCredentialService = googleLoginCredentialService;
     this.refreshTokenService = refreshTokenService;
   }
 
@@ -89,6 +94,7 @@ public class UserWithdrawalService {
 
     // 2. 소셜 provider revoke·unlink (best-effort — 실패해도 탈퇴 자체는 계속 진행)
     revokeGoogleCalendarIfConnected(userId);
+    googleLoginCredentialService.revokeAndDeleteIfPresent(userId);
     unlinkKakaoIfProvider(user);
     appleCredentialService.revokeAndDeleteIfPresent(userId);
 
