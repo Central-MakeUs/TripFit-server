@@ -25,9 +25,13 @@ schema_config:
         period: 24h
 
 limits_config:
-  # 잠정값(7일) — EC2 C 디스크가 작아(6.7GB) 보수적으로 설정.
-  # docs/decisions/009-observability-logging.md "로그 보존 기간 정책" 확정 시 갱신.
-  retention_period: 168h
+  # 확정값(3일, 2026-08-01) — EC2 C 디스크가 6.7GB뿐이라(현재 71% 사용, 2GB 여유) 보수적으로 설정.
+  # docs/decisions/009-observability-logging.md "로그 보존 기간 정책" 참고.
+  retention_period: 72h
+
+query_scheduler:
+  # 대시보드 다중 패널 동시 조회 시 기본값(100)으로는 "too many outstanding requests"(HTTP 429) 발생 — 여유값으로 상향.
+  max_outstanding_requests_per_tenant: 2048
 
 compactor:
   working_directory: /loki/compactor
