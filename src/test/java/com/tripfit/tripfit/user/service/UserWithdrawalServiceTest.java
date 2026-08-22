@@ -169,6 +169,42 @@ class UserWithdrawalServiceTest {
     verify(kakaoUnlinkClient).unlink("kakao-sub");
   }
 
+  // #78 검증 — Kakao 로그인 유저가 Google Calendar만 연동한 상태로 탈퇴해도 Calendar revoke는 provider와 무관하게 항상 실행됨
+  @Test
+  void withdraw_whenKakaoProviderWithGoogleCalendarConnected_revokesCalendarAndUnlinksKakao() {
+    User user = kakaoUser();
+    GoogleCalendarCredential credential =
+        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(credential));
+    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(kakaoUnlinkClient).unlink("kakao-sub");
+    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
+  }
+
+  // #78 검증 — Apple 로그인 유저가 Google Calendar만 연동한 상태로 탈퇴해도 Calendar revoke는 provider와 무관하게 항상 실행됨
+  @Test
+  void withdraw_whenAppleProviderWithGoogleCalendarConnected_revokesCalendarAndAppleCredential() {
+    User user = appleUser();
+    GoogleCalendarCredential credential =
+        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(credential));
+    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
+
+    userWithdrawalService.withdraw(USER_ID);
+
+    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
+    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
+  }
+
   @Test
   void withdraw_whenNotKakaoProvider_doesNotCallKakaoUnlink() {
     User user = user();
@@ -234,6 +270,18 @@ class UserWithdrawalServiceTest {
         new User(
             "kakao-sub",
             SocialProvider.KAKAO,
+            "user@example.com",
+            "닉네임",
+            "https://example.com/profile.png");
+    user.setId(USER_ID);
+    return user;
+  }
+
+  private static User appleUser() {
+    User user =
+        new User(
+            "apple-sub",
+            SocialProvider.APPLE,
             "user@example.com",
             "닉네임",
             "https://example.com/profile.png");
