@@ -60,7 +60,7 @@ tripfit:
     apple-key-id: ${APPLE_KEY_ID:}
     apple-private-key: ${APPLE_PRIVATE_KEY:}
     kakao-admin-key: ${KAKAO_ADMIN_KEY:}
-  google-calendar:
-    token-aes-key: ${GOOGLE_CALENDAR_TOKEN_AES_KEY:}
+  security:
+    token-aes-key: ${SOCIAL_TOKEN_AES_KEY:}
   fcm:
     credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}

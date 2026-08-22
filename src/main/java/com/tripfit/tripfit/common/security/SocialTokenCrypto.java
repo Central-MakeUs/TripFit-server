@@ -1,6 +1,5 @@
-package com.tripfit.tripfit.user.googlecalendar.service;
+package com.tripfit.tripfit.common.security;
 
-import com.tripfit.tripfit.user.googlecalendar.config.GoogleCalendarProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
@@ -13,7 +12,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
-public class GoogleCalendarTokenCrypto {
+public class SocialTokenCrypto {
 
   private static final String ALGORITHM = "AES/GCM/NoPadding";
 
@@ -21,7 +20,7 @@ public class GoogleCalendarTokenCrypto {
 
   private static final int GCM_TAG_LENGTH_BITS = 128;
 
-  private final GoogleCalendarProperties googleCalendarProperties;
+  private final SocialTokenCryptoProperties socialTokenCryptoProperties;
 
   private final Environment environment;
 
@@ -29,14 +28,13 @@ public class GoogleCalendarTokenCrypto {
 
   private SecretKeySpec secretKey;
 
-  public GoogleCalendarTokenCrypto(
-      GoogleCalendarProperties googleCalendarProperties,
-      Environment environment) {
-    this.googleCalendarProperties = googleCalendarProperties;
+  public SocialTokenCrypto(
+      SocialTokenCryptoProperties socialTokenCryptoProperties, Environment environment) {
+    this.socialTokenCryptoProperties = socialTokenCryptoProperties;
     this.environment = environment;
   }
 
-  // 평문 OAuth token → IV+암호문 Base64
+  // 평문 소셜 OAuth refresh token → IV+암호문 Base64
   public String encrypt(String plaintext) {
     if (plaintext == null) {
       return null;
@@ -53,11 +51,11 @@ public class GoogleCalendarTokenCrypto {
       System.arraycopy(ciphertext, 0, combined, iv.length, ciphertext.length);
       return Base64.getEncoder().encodeToString(combined);
     } catch (GeneralSecurityException exception) {
-      throw new IllegalStateException("Failed to encrypt Google Calendar token", exception);
+      throw new IllegalStateException("Failed to encrypt social OAuth token", exception);
     }
   }
 
-  // IV+암호문 Base64 → 평문 OAuth token
+  // IV+암호문 Base64 → 평문 소셜 OAuth refresh token
   public String decrypt(String ciphertextBase64) {
     if (ciphertextBase64 == null) {
       return null;
@@ -72,7 +70,7 @@ public class GoogleCalendarTokenCrypto {
       byte[] plaintext = cipher.doFinal(ciphertext);
       return new String(plaintext, StandardCharsets.UTF_8);
     } catch (GeneralSecurityException exception) {
-      throw new IllegalStateException("Failed to decrypt Google Calendar token", exception);
+      throw new IllegalStateException("Failed to decrypt social OAuth token", exception);
     }
   }
 
@@ -84,10 +82,10 @@ public class GoogleCalendarTokenCrypto {
       if (secretKey != null) {
         return secretKey;
       }
-      String encodedKey = googleCalendarProperties.getTokenAesKey();
+      String encodedKey = socialTokenCryptoProperties.getTokenAesKey();
       if (!isTestProfile() && (encodedKey == null || encodedKey.isBlank())) {
         throw new IllegalStateException(
-            "GOOGLE_CALENDAR_TOKEN_AES_KEY is required for Google Calendar token encryption");
+            "SOCIAL_TOKEN_AES_KEY is required for social OAuth token encryption");
       }
       secretKey = decodeKey(encodedKey);
       return secretKey;
@@ -101,8 +99,7 @@ public class GoogleCalendarTokenCrypto {
   private static SecretKeySpec decodeKey(String encodedKey) {
     byte[] keyBytes = Base64.getDecoder().decode(encodedKey);
     if (keyBytes.length != 32) {
-      throw new IllegalStateException(
-          "GOOGLE_CALENDAR_TOKEN_AES_KEY must decode to 32 bytes for AES-256");
+      throw new IllegalStateException("SOCIAL_TOKEN_AES_KEY must decode to 32 bytes for AES-256");
     }
     return new SecretKeySpec(keyBytes, "AES");
   }

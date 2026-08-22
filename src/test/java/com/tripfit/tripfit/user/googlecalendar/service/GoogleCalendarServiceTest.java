@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
@@ -44,7 +45,7 @@ class GoogleCalendarServiceTest {
   private GoogleCalendarOAuthClient googleCalendarOAuthClient;
 
   @Mock
-  private GoogleCalendarTokenCrypto tokenCrypto;
+  private SocialTokenCrypto tokenCrypto;
 
   @Mock
   private GoogleCalendarCredentialRepository credentialRepository;

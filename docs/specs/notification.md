@@ -44,7 +44,7 @@
 - [x] `UserDeviceToken` 엔티티 + Repository — 유저별 다중 기기 토큰(`ANDROID`/`IOS`/`WEB`), `token` UNIQUE
 - [x] 토큰 등록 시 **기존 토큰이 다른 `user_id` 소유면 재할당**(D7) — 단순 upsert 아님, 소유자 갱신 로직 필요
 - [x] `NotificationHistory` 엔티티 + Repository — 발송 이력 + 읽음 상태(D5), `sent_at` 기준 최근 7일 조회 메서드
-- [x] `FirebaseConfig` — 서비스 계정 키 env 로드, `FirebaseMessaging` Bean (D4). 키 미설정 로컬·테스트에서도 부팅되도록 `@Lazy` 지연 초기화(`GoogleCalendarTokenCrypto`와 동일 패턴)
+- [x] `FirebaseConfig` — 서비스 계정 키 env 로드, `FirebaseMessaging` Bean (D4). 키 미설정 로컬·테스트에서도 부팅되도록 `@Lazy` 지연 초기화(`SocialTokenCrypto`와 동일 패턴)
 - [x] `FcmService` — 단일/멀티캐스트 발송 + 무효 토큰(`UNREGISTERED`/`INVALID_ARGUMENT`) 자동 삭제, 멀티캐스트 500건 배치 분할(D6)
 - [x] `POST /api/v1/notifications/device-tokens` — 디바이스 토큰 등록/갱신(JWT)
 - [x] `DELETE /api/v1/notifications/device-tokens` — 로그아웃 시 토큰 해제(JWT)

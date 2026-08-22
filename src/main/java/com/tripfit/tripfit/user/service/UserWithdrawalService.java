@@ -3,6 +3,7 @@ package com.tripfit.tripfit.user.service;
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
 import com.tripfit.tripfit.user.domain.SocialProvider;
@@ -11,7 +12,6 @@ import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
@@ -42,7 +42,7 @@ public class UserWithdrawalService {
 
   private final GoogleCalendarOAuthClient googleCalendarOAuthClient;
 
-  private final GoogleCalendarTokenCrypto googleCalendarTokenCrypto;
+  private final SocialTokenCrypto tokenCrypto;
 
   private final KakaoUnlinkClient kakaoUnlinkClient;
 
@@ -60,7 +60,7 @@ public class UserWithdrawalService {
       GoogleCalendarCredentialRepository googleCalendarCredentialRepository,
       GoogleCalendarBusyDayRepository googleCalendarBusyDayRepository,
       GoogleCalendarOAuthClient googleCalendarOAuthClient,
-      GoogleCalendarTokenCrypto googleCalendarTokenCrypto,
+      SocialTokenCrypto tokenCrypto,
       KakaoUnlinkClient kakaoUnlinkClient,
       AppleCredentialService appleCredentialService,
       GoogleLoginCredentialService googleLoginCredentialService,
@@ -72,7 +72,7 @@ public class UserWithdrawalService {
     this.googleCalendarCredentialRepository = googleCalendarCredentialRepository;
     this.googleCalendarBusyDayRepository = googleCalendarBusyDayRepository;
     this.googleCalendarOAuthClient = googleCalendarOAuthClient;
-    this.googleCalendarTokenCrypto = googleCalendarTokenCrypto;
+    this.tokenCrypto = tokenCrypto;
     this.kakaoUnlinkClient = kakaoUnlinkClient;
     this.appleCredentialService = appleCredentialService;
     this.googleLoginCredentialService = googleLoginCredentialService;
@@ -124,7 +124,7 @@ public class UserWithdrawalService {
             (GoogleCalendarCredential credential) -> {
               try {
                 String refreshToken =
-                    googleCalendarTokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
+                    tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
                 googleCalendarOAuthClient.revokeRefreshToken(refreshToken);
               } catch (Exception exception) {
                 log.warn("Google Calendar credential revoke failed", exception);

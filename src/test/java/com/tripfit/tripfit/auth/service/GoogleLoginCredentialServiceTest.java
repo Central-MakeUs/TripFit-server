@@ -9,9 +9,9 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.auth.domain.GoogleLoginCredential;
 import com.tripfit.tripfit.auth.oauth.GoogleOAuthClient;
 import com.tripfit.tripfit.auth.repository.GoogleLoginCredentialRepository;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ class GoogleLoginCredentialServiceTest {
   private GoogleOAuthClient googleOAuthClient;
 
   @Mock
-  private GoogleCalendarTokenCrypto tokenCrypto;
+  private SocialTokenCrypto tokenCrypto;
 
   private GoogleLoginCredentialService googleLoginCredentialService;
 

@@ -16,8 +16,8 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarTokenCrypto;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
@@ -55,7 +55,7 @@ class UserWithdrawalServiceTest {
   private GoogleCalendarOAuthClient googleCalendarOAuthClient;
 
   @Mock
-  private GoogleCalendarTokenCrypto googleCalendarTokenCrypto;
+  private SocialTokenCrypto tokenCrypto;
 
   @Mock
   private KakaoUnlinkClient kakaoUnlinkClient;
@@ -82,7 +82,7 @@ class UserWithdrawalServiceTest {
             googleCalendarCredentialRepository,
             googleCalendarBusyDayRepository,
             googleCalendarOAuthClient,
-            googleCalendarTokenCrypto,
+            tokenCrypto,
             kakaoUnlinkClient,
             appleCredentialService,
             googleLoginCredentialService,
@@ -140,7 +140,7 @@ class UserWithdrawalServiceTest {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
         .thenReturn(Optional.of(credential));
-    when(googleCalendarTokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
+    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
     userWithdrawalService.withdraw(USER_ID);
 

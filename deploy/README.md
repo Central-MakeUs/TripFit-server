@@ -143,7 +143,7 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 | `GOOGLE_CLIENT_SECRET` | | Google web client secret (Calendar authorization code·refresh token 교환) |
 | `GOOGLE_CLIENT_ID_IOS` | | Google iOS client ID |
 | `GOOGLE_CLIENT_ID_ANDROID` | | Google Android client ID |
-| `GOOGLE_CALENDAR_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
+| `SOCIAL_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
 | `APPLE_BUNDLE_ID` | | Apple App ID(Bundle ID, 예: `com.tripfit.app`) — iOS 네이티브 앱 로그인 `aud` 검증·토큰교환/revoke `client_id` |
 | `APPLE_SERVICE_ID` | | Apple Services ID — 모바일 브라우저 로그인 경로 `aud` 검증·토큰교환/revoke `client_id` (`docs/specs/apple-oauth-multi-audience.md`) |
 | `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
@@ -153,7 +153,7 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 기존 SSH·이미지 Secrets(`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_DEPLOY_PATH`, `GHCR_PAT`, `GHCR_USERNAME`)와 함께 사용한다.
 `deploy/app/docker-compose.yml`의 `app.environment`가 위 변수를 Spring Boot 컨테이너로 넘긴다.
 
-`MYSQL_HOST`·`MYSQL_DATABASE`·`SPRING_DATASOURCE_*`·`JWT_SECRET`·`GOOGLE_CALENDAR_TOKEN_AES_KEY`(Calendar 연동 시)는 **필수** — 미등록 상태로 push하면 CI/CD 배포 단계가 즉시 실패한다(fail-fast). 나머지는 비어 있으면 `docker-compose.yml`에 박힌 기본값을 그대로 쓴다.
+`MYSQL_HOST`·`MYSQL_DATABASE`·`SPRING_DATASOURCE_*`·`JWT_SECRET`·`SOCIAL_TOKEN_AES_KEY`(Calendar 연동 시)는 **필수** — 미등록 상태로 push하면 CI/CD 배포 단계가 즉시 실패한다(fail-fast). 나머지는 비어 있으면 `docker-compose.yml`에 박힌 기본값을 그대로 쓴다.
 
 `FRONTEND_IMAGE` **사용하지 않음** — 프론트는 Vercel.
 
