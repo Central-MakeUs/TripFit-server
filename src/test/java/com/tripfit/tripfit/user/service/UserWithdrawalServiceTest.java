@@ -144,7 +144,7 @@ class UserWithdrawalServiceTest {
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
   }
 
@@ -156,7 +156,7 @@ class UserWithdrawalServiceTest {
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient, never()).revokeRefreshToken(any());
+    verify(googleCalendarOAuthClient, never()).revokeRefreshToken(any(), any());
   }
 
   @Test
@@ -182,7 +182,7 @@ class UserWithdrawalServiceTest {
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(kakaoUnlinkClient).unlink("kakao-sub");
     verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
   }
@@ -200,7 +200,7 @@ class UserWithdrawalServiceTest {
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient).revokeRefreshToken("plain-refresh");
+    verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
     verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
   }

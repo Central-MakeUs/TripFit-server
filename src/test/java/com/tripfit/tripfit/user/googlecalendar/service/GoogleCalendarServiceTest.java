@@ -80,7 +80,7 @@ class GoogleCalendarServiceTest {
     when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", null))
         .thenReturn(
             new GoogleOAuthTokenResponse(
-                "access", "refresh", Instant.now().plusSeconds(3600)));
+                "access", "refresh", Instant.now().plusSeconds(3600), null));
     when(tokenCrypto.encrypt("refresh")).thenReturn("enc-refresh");
     when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
     when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access"))
@@ -89,7 +89,7 @@ class GoogleCalendarServiceTest {
     when(credentialRepository.save(any(GoogleCalendarCredential.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
-    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any())).thenReturn(List.of());
+    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any())).thenReturn(List.of());
     when(
         busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
             eq(USER_ID),
@@ -131,7 +131,7 @@ class GoogleCalendarServiceTest {
     when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", redirectUri))
         .thenReturn(
             new GoogleOAuthTokenResponse(
-                "access", "refresh", Instant.now().plusSeconds(3600)));
+                "access", "refresh", Instant.now().plusSeconds(3600), null));
     when(tokenCrypto.encrypt("refresh")).thenReturn("enc-refresh");
     when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
     when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access")).thenReturn(null);
@@ -139,7 +139,7 @@ class GoogleCalendarServiceTest {
     when(credentialRepository.save(any(GoogleCalendarCredential.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
-    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any())).thenReturn(List.of());
+    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any())).thenReturn(List.of());
     when(
         busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
             eq(USER_ID),
@@ -175,7 +175,7 @@ class GoogleCalendarServiceTest {
     when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", null))
         .thenReturn(
             new GoogleOAuthTokenResponse(
-                "access", "refresh", Instant.now().plusSeconds(3600)));
+                "access", "refresh", Instant.now().plusSeconds(3600), null));
     when(tokenCrypto.encrypt("refresh")).thenReturn("enc-refresh");
     when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
     when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access"))
@@ -184,7 +184,7 @@ class GoogleCalendarServiceTest {
     when(credentialRepository.save(any(GoogleCalendarCredential.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
-    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any()))
+    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any()))
         .thenThrow(new RuntimeException("freeBusy failed: 429 TOO_MANY_REQUESTS"));
     when(userSummaryService.toSummary(user))
         .thenReturn(
@@ -259,7 +259,7 @@ class GoogleCalendarServiceTest {
     when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(credential));
     when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(extendedEnd);
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
-    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any())).thenReturn(List.of());
+    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any())).thenReturn(List.of());
     when(
         busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
             eq(USER_ID),
