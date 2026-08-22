@@ -2,6 +2,9 @@ package com.tripfit.tripfit.auth.oauth;
 
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,10 +54,14 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
                   (request, clientResponse) -> {
                     // 카카오 원본 에러 응답을 남겨 만료/무효/앱 설정 오류를 사후에 구분 가능하게 함
                     String body = readBodySafely(clientResponse);
-                    log.warn(
-                        "Kakao user/me verification failed: status={}, body={}",
-                        clientResponse.getStatusCode(),
-                        body);
+                    SocialIntegrationLog.warn(
+                        log,
+                        SocialLogContext.of(
+                            SocialProvider.KAKAO,
+                            SocialIntegrationAction.LOGIN_USERINFO_FETCH)
+                            .withHttpStatus(clientResponse.getStatusCode().value())
+                            .withProviderError(null, body),
+                        "Kakao user/me verification failed");
                     throw new TripFitException(
                         isExpiredMessage(body)
                             ? AuthErrorCode.AUTH_SOCIAL_TOKEN_EXPIRED
@@ -92,11 +99,19 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
       throw exception;
     } catch (RestClientException exception) {
       // 카카오 API 자체에 응답을 못 받은 경우(타임아웃·연결 실패) — 토큰 문제가 아니라 provider 장애
-      log.warn("Kakao user/me API unreachable", exception);
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.KAKAO, SocialIntegrationAction.LOGIN_USERINFO_FETCH),
+          "Kakao user/me API unreachable",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE);
     } catch (Exception exception) {
       // JSON 파싱 등 그 외 실패 원인을 로그로 남기고 무효 토큰으로 통일
-      log.warn("Kakao token verification failed unexpectedly", exception);
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.KAKAO, SocialIntegrationAction.LOGIN_TOKEN_VERIFY),
+          "Kakao token verification failed unexpectedly",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
     }
   }

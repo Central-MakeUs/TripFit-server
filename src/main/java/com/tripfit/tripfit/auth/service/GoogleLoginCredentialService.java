@@ -3,7 +3,11 @@ package com.tripfit.tripfit.auth.service;
 import com.tripfit.tripfit.auth.domain.GoogleLoginCredential;
 import com.tripfit.tripfit.auth.oauth.GoogleOAuthClient;
 import com.tripfit.tripfit.auth.repository.GoogleLoginCredentialRepository;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.common.security.SocialTokenCrypto;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -64,7 +68,14 @@ public class GoogleLoginCredentialService {
               .orElseGet(() -> GoogleLoginCredential.create(user, ciphertext));
       googleLoginCredentialRepository.save(credential);
     } catch (Exception exception) {
-      log.warn("Google authorization code exchange failed — skipping credential save", exception);
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(
+              SocialProvider.GOOGLE,
+              SocialIntegrationAction.LOGIN_CREDENTIAL_EXCHANGE)
+              .withUserId(user.getId()),
+          "Google authorization code exchange failed — skipping credential save",
+          exception);
     }
   }
 
@@ -80,7 +91,14 @@ public class GoogleLoginCredentialService {
                 String refreshToken = tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
                 googleOAuthClient.revokeRefreshToken(refreshToken);
               } catch (Exception exception) {
-                log.warn("Google login credential revoke failed", exception);
+                SocialIntegrationLog.warn(
+                    log,
+                    SocialLogContext.of(
+                        SocialProvider.GOOGLE,
+                        SocialIntegrationAction.LOGIN_CREDENTIAL_REVOKE)
+                        .withUserId(userId),
+                    "Google login credential revoke failed",
+                    exception);
               }
             });
     googleLoginCredentialRepository.deleteByUser_Id(userId);

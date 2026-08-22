@@ -5,6 +5,7 @@ import java.time.Instant;
 public record GoogleOAuthTokenResponse(
     String accessToken,
     String refreshToken,
-    Instant accessTokenExpiresAt
+    Instant accessTokenExpiresAt,
+    String scope
 ) {
 }

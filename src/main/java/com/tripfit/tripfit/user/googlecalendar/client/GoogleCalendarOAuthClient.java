@@ -2,6 +2,10 @@ package com.tripfit.tripfit.user.googlecalendar.client;
 
 import com.tripfit.tripfit.auth.oauth.OAuthProperties;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarAuthException;
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode;
 import java.nio.charset.StandardCharsets;
@@ -10,6 +14,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -43,6 +50,11 @@ public class GoogleCalendarOAuthClient {
   // Google freeBusy.query가 한 번에 너무 긴 range를 거부한다(문서화 안 된 제한, "timeRangeTooLong" 확인됨) —
   // C1 윈도우(최대 today+2년)를 이 단위로 잘라 여러 번 호출 후 병합한다
   private static final long FREE_BUSY_CHUNK_DAYS = 90;
+
+  // Google 에러 응답 JSON의 "reason" 필드 — errors[].reason(범용, 예: insufficientPermissions)보다
+  // details[].reason(세분화, 예: ACCESS_TOKEN_SCOPE_INSUFFICIENT)이 뒤에 나오므로 마지막 매칭을 채택
+  private static final Pattern ERROR_REASON_PATTERN =
+      Pattern.compile("\"reason\"\\s*:\\s*\"([^\"]+)\"");
 
   private final RestClient restClient;
 
@@ -96,6 +108,7 @@ public class GoogleCalendarOAuthClient {
   // primary 캘린더 freeBusy 조회 — FREE_BUSY_CHUNK_DAYS 단위로 여러 번 호출해 병합(단일 호출은 아래
   // queryFreeBusyChunk). 한 청크라도 실패하면 전체를 예외로 던짐(부분 sync 반영 안 함, 다음 스케줄에서 통째로 재시도)
   public List<GoogleFreeBusyInterval> queryFreeBusy(
+      UUID userId,
       String accessToken,
       Instant timeMin,
       Instant timeMax) {
@@ -106,7 +119,7 @@ public class GoogleCalendarOAuthClient {
       if (chunkEnd.isAfter(timeMax)) {
         chunkEnd = timeMax;
       }
-      merged.addAll(queryFreeBusyChunk(accessToken, chunkStart, chunkEnd));
+      merged.addAll(queryFreeBusyChunk(userId, accessToken, chunkStart, chunkEnd));
       chunkStart = chunkEnd;
     }
     return merged;
@@ -117,6 +130,7 @@ public class GoogleCalendarOAuthClient {
   // 흘러가게 한다 — 여기서도 GoogleCalendarAuthException을 쓰면 connect() 직후 1회 sync가 일시적 오류(429·5xx 등)
   // 만 만나도 방금 저장한 credential이 같은 트랜잭션에서 즉시 삭제돼버린다
   private List<GoogleFreeBusyInterval> queryFreeBusyChunk(
+      UUID userId,
       String accessToken,
       Instant timeMin,
       Instant timeMax) {
@@ -152,19 +166,62 @@ public class GoogleCalendarOAuthClient {
                         StreamUtils.copyToString(
                             clientResponse.getBody(),
                             StandardCharsets.UTF_8);
-                    throw new RuntimeException(
-                        "freeBusy failed: "
-                            + clientResponse.getStatusCode()
-                            + " body="
-                            + errorBody);
+                    throw new FreeBusyHttpException(clientResponse.getStatusCode().value(),
+                        errorBody);
                   })
               .body(JsonNode.class);
       return parseFreeBusyIntervals(response);
     } catch (GoogleCalendarAuthException exception) {
       throw exception;
+    } catch (FreeBusyHttpException exception) {
+      // onStatus에서 잡은 4xx/5xx(401 제외) — httpStatus·body를 그대로 구조화 필드로 남긴 뒤 기존 메시지 포맷으로 재포장
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_SYNC)
+              .withUserId(userId)
+              .withHttpStatus(exception.httpStatus)
+              .withProviderError(extractReason(exception.body), exception.body),
+          "Google Calendar freeBusy request failed");
+      throw new RuntimeException(
+          "freeBusy failed: " + exception.httpStatus + " body=" + exception.body);
     } catch (Exception exception) {
+      // 네트워크·파싱 등 HTTP 상태를 못 얻은 실패 — httpStatus 없이 기록
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_SYNC)
+              .withUserId(userId),
+          "Google Calendar freeBusy request failed unexpectedly",
+          exception);
       throw new RuntimeException("freeBusy request failed", exception);
     }
+  }
+
+  // onStatus 핸들러가 4xx/5xx(401 제외)를 httpStatus·body 그대로 바깥 catch까지 전달하기 위한 내부 전용 타입
+  private static final class FreeBusyHttpException extends RuntimeException {
+
+    private final int httpStatus;
+
+    private final String body;
+
+    private FreeBusyHttpException(int httpStatus, String body) {
+      super("freeBusy failed: " + httpStatus + " body=" + body);
+      this.httpStatus = httpStatus;
+      this.body = body;
+    }
+  }
+
+  // Google 에러 응답 JSON에서 가장 세분화된 reason 값을 뽑음 — errors[].reason보다 details[].reason이 뒤에
+  // 나오므로 마지막 매칭을 채택(예: ACCESS_TOKEN_SCOPE_INSUFFICIENT)
+  private String extractReason(String errorBody) {
+    if (errorBody == null) {
+      return null;
+    }
+    Matcher matcher = ERROR_REASON_PATTERN.matcher(errorBody);
+    String last = null;
+    while (matcher.find()) {
+      last = matcher.group(1);
+    }
+    return last;
   }
 
   // 연동 Google 계정 이메일 조회 — userinfo 우선, 실패 시 primary calendar id fallback (없으면 null)
@@ -177,7 +234,7 @@ public class GoogleCalendarOAuthClient {
   }
 
   // refresh token revoke (best-effort)
-  public void revokeRefreshToken(String refreshToken) {
+  public void revokeRefreshToken(UUID userId, String refreshToken) {
     try {
       restClient
           .post()
@@ -186,7 +243,12 @@ public class GoogleCalendarOAuthClient {
           .toBodilessEntity();
     } catch (Exception exception) {
       // best-effort — disconnect·탈퇴는 로컬 정리가 SSOT라 예외를 삼키되, 실패 자체는 로그로 남김(토큰 값은 남기지 않음)
-      log.warn("Google Calendar refresh token revoke failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_TOKEN_REVOKE)
+              .withUserId(userId),
+          "Google Calendar refresh token revoke failed",
+          exception);
     }
   }
 
@@ -277,7 +339,8 @@ public class GoogleCalendarOAuthClient {
     }
     long expiresIn = response.has("expires_in") ? response.get("expires_in").asLong(3600) : 3600;
     Instant expiresAt = Instant.now().plusSeconds(Math.max(0, expiresIn - 60));
-    return new GoogleOAuthTokenResponse(accessToken, refreshToken, expiresAt);
+    String scope = response.hasNonNull("scope") ? response.get("scope").asText() : null;
+    return new GoogleOAuthTokenResponse(accessToken, refreshToken, expiresAt, scope);
   }
 
   private List<GoogleFreeBusyInterval> parseFreeBusyIntervals(JsonNode response) {

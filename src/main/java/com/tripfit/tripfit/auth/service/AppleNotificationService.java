@@ -1,6 +1,9 @@
 package com.tripfit.tripfit.auth.service;
 
 import com.tripfit.tripfit.auth.oauth.AppleNotificationEvent;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
@@ -42,14 +45,27 @@ public class AppleNotificationService {
     switch (event.type()) {
       case EMAIL_ENABLED, EMAIL_DISABLED -> {
         // MVP에 user.email 미보유 — 로그만 (wave 4 email 컬럼 추가 시 반영)
-        log.info("Apple notification {} received (email 컬럼 미보유 — 로그만)", event.type());
+        SocialIntegrationLog.info(
+            log,
+            notificationContext(),
+            "Apple notification " + event.type() + " received (email 컬럼 미보유 — 로그만)");
       }
       case CONSENT_REVOKED ->
         findUser(event.sub()).ifPresentOrElse(this::revokeSession, this::logUnknownSub);
       case ACCOUNT_DELETE ->
         findUser(event.sub()).ifPresentOrElse(this::softDelete, this::logUnknownSub);
-      default -> log.info("Unrecognized Apple notification type: {}", event.type());
+      default ->
+        SocialIntegrationLog.info(
+            log,
+            notificationContext(),
+            "Unrecognized Apple notification type: " + event.type());
     }
+  }
+
+  private SocialLogContext notificationContext() {
+    return SocialLogContext.of(
+        SocialProvider.APPLE,
+        SocialIntegrationAction.APPLE_NOTIFICATION_PROCESS);
   }
 
   private Optional<User> findUser(String sub) {
@@ -68,6 +84,9 @@ public class AppleNotificationService {
   }
 
   private void logUnknownSub() {
-    log.info("Apple notification sub does not match any user — no-op");
+    SocialIntegrationLog.info(
+        log,
+        notificationContext(),
+        "Apple notification sub does not match any user — no-op");
   }
 }

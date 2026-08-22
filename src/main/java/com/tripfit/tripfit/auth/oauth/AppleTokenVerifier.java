@@ -7,6 +7,9 @@ import com.nimbusds.jwt.proc.BadJWTException;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.text.ParseException;
 import java.util.List;
@@ -70,28 +73,53 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
       throw exception;
     } catch (BadJWTException exception) {
       // 만료(exp)·아직 유효하지 않음(nbf) 등 시간 클레임 검증 실패 — 메시지로 만료만 구분
-      log.warn("Apple ID token claims verification failed", exception);
+      boolean expired = isExpiredMessage(exception.getMessage());
+      SocialIntegrationLog.warn(
+          log,
+          verifyContext()
+              .withProviderError(expired ? "token_expired" : "token_claims_invalid", null),
+          "Apple ID token claims verification failed",
+          exception);
       throw new TripFitException(
-          isExpiredMessage(exception.getMessage())
-              ? AuthErrorCode.AUTH_SOCIAL_TOKEN_EXPIRED
+          expired ? AuthErrorCode.AUTH_SOCIAL_TOKEN_EXPIRED
               : AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
     } catch (BadJOSEException exception) {
       // 서명 불일치 등 그 외 JWT 자체 검증 실패 원인을 로그로 남김
-      log.warn("Apple ID token signature verification failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          verifyContext().withProviderError("signature_invalid", null),
+          "Apple ID token signature verification failed",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
     } catch (ParseException exception) {
       // 토큰 형식 파싱 실패 원인을 로그로 남김
-      log.warn("Apple ID token parsing failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          verifyContext().withProviderError("token_malformed", null),
+          "Apple ID token parsing failed",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
     } catch (JOSEException exception) {
       // RemoteJWKSet 조회 실패 등 provider 접근 자체가 안 되는 경우 — 토큰 문제가 아님
-      log.warn("Apple JWK retrieval failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          verifyContext().withProviderError("jwk_unavailable", null),
+          "Apple JWK retrieval failed",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE);
     } catch (Exception exception) {
       // 그 외 예상치 못한 실패 원인을 로그로 남기고 무효 토큰으로 통일
-      log.warn("Apple token verification failed unexpectedly", exception);
+      SocialIntegrationLog.warn(
+          log,
+          verifyContext(),
+          "Apple token verification failed unexpectedly",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
     }
+  }
+
+  private SocialLogContext verifyContext() {
+    return SocialLogContext.of(SocialProvider.APPLE, SocialIntegrationAction.LOGIN_TOKEN_VERIFY);
   }
 
   // nimbus 예외 메시지에 만료 문구가 포함됐는지 확인함 — nimbus가 만료를 별도 예외 타입으로 노출하지 않아 문자열로 판별

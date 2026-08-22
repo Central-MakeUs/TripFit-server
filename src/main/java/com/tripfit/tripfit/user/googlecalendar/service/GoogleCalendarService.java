@@ -1,8 +1,13 @@
 package com.tripfit.tripfit.user.googlecalendar.service;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.logging.PiiMasker;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
@@ -36,6 +41,12 @@ public class GoogleCalendarService {
   private static final Logger log = LoggerFactory.getLogger(GoogleCalendarService.class);
 
   private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+
+  // syncUserInternal 실패 로그의 trigger 필드 — 어느 경로로 sync가 시작됐는지
+  // 구분(docs/specs/social-integration-structured-logging.md)
+  private static final String TRIGGER_MANUAL_CONNECT = "MANUAL_CONNECT";
+
+  private static final String TRIGGER_SCHEDULED = "SCHEDULED";
 
   private final GoogleCalendarOAuthClient googleCalendarOAuthClient;
 
@@ -79,21 +90,32 @@ public class GoogleCalendarService {
     } catch (GoogleCalendarAuthException exception) {
       // 원인(HTTP status·Google 에러 body)을 로그로 남겨야 진단 가능 — GlobalExceptionHandler는
       // TripFitException을 로깅하지 않으므로 여기서 남기지 않으면 실패 원인이 완전히 유실된다
-      log.warn(
-          "Google Calendar connect failed — authorization code exchange error (userId={}, hasRedirectUri={})",
-          userId,
-          hasRedirectUri,
+      SocialIntegrationLog.warn(
+          log,
+          connectContext(userId),
+          "Google Calendar connect failed — authorization code exchange error (hasRedirectUri="
+              + hasRedirectUri
+              + ")",
           exception);
       throw new TripFitException(GoogleCalendarErrorCode.GOOGLE_CALENDAR_CONNECT_FAILED);
     } catch (TripFitException exception) {
       // exchangeAuthorizationCode()가 토큰 응답에 refresh_token이 없을 때 여기로 온다(같은 Google 계정을
       // 다른 client_id 재동의 없이 재연동하면 Google이 refresh_token을 생략) — 이 분기도 로그 없이 삼켜지고
       // 있었음. hasRedirectUri로 네이티브(false)/브라우저(true) 경로를 구분해 재현 조건을 좁힐 수 있게 한다
-      log.warn(
-          "Google Calendar connect failed — token response missing refresh_token (userId={}, hasRedirectUri={})",
-          userId,
-          hasRedirectUri);
+      SocialIntegrationLog.warn(
+          log,
+          connectContext(userId),
+          "Google Calendar connect failed — token response missing refresh_token (hasRedirectUri="
+              + hasRedirectUri
+              + ")");
       throw exception;
+    }
+    if (tokens.scope() != null) {
+      // 콘솔·FE 설정이 맞다고 확인돼도 실제 발급된 토큰의 스코프를 재현 없이 확인할 수 있게 함
+      SocialIntegrationLog.info(
+          log,
+          connectContext(userId).withGrantedScope(tokens.scope()),
+          "Google Calendar connect token exchange succeeded");
     }
 
     String refreshCiphertext = tokenCrypto.encrypt(tokens.refreshToken());
@@ -123,7 +145,7 @@ public class GoogleCalendarService {
 
     credentialRepository.save(credential);
     user.setGoogleCalendarConnected(true);
-    syncUserInternal(user, credential);
+    syncUserInternal(user, credential, TRIGGER_MANUAL_CONNECT);
     return userSummaryService.toSummary(user);
   }
 
@@ -139,7 +161,7 @@ public class GoogleCalendarService {
         .ifPresent(
             credential -> {
               String refreshToken = tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
-              googleCalendarOAuthClient.revokeRefreshToken(refreshToken);
+              googleCalendarOAuthClient.revokeRefreshToken(userId, refreshToken);
             });
     clearGoogleLayer(userId);
     user.setGoogleCalendarConnected(false);
@@ -164,7 +186,7 @@ public class GoogleCalendarService {
     if (credential == null) {
       return;
     }
-    syncUserInternal(user, credential);
+    syncUserInternal(user, credential, TRIGGER_SCHEDULED);
   }
 
   // 달력 Merge용 busy_day 조회 — userId·기간
@@ -211,7 +233,7 @@ public class GoogleCalendarService {
     return byDate;
   }
 
-  private void syncUserInternal(User user, GoogleCalendarCredential credential) {
+  private void syncUserInternal(User user, GoogleCalendarCredential credential, String trigger) {
     LocalDate windowStart = LocalDate.now(SEOUL);
     LocalDate windowEnd =
         ScheduleService.resolveCalendarWindowEnd(
@@ -222,24 +244,41 @@ public class GoogleCalendarService {
       Instant timeMin = windowStart.atStartOfDay(SEOUL).toInstant();
       Instant timeMax = windowEnd.plusDays(1).atStartOfDay(SEOUL).toInstant();
       List<GoogleFreeBusyInterval> intervals =
-          googleCalendarOAuthClient.queryFreeBusy(accessToken, timeMin, timeMax);
+          googleCalendarOAuthClient.queryFreeBusy(user.getId(), accessToken, timeMin, timeMax);
       replaceBusyDays(user, windowStart, windowEnd, intervals);
       credential.markSynced();
       credentialRepository.save(credential);
     } catch (GoogleCalendarAuthException exception) {
       // 401·invalid_grant 등 진짜 권한 실패만 이 분기로 온다(client가 분류) — connect() 직후 1회 sync도 이
       // 메서드를 타므로, 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 같은 트랜잭션에서 삭제된다
+      SocialIntegrationLog.warn(
+          log,
+          syncContext(user.getId(), trigger),
+          "Google Calendar sync failed permanently — disconnecting",
+          exception);
       handlePermanentAuthFailure(user);
     } catch (Exception exception) {
       // freeBusy·refresh 등 일시적 오류 — 30분 폴링이 자동 재시도하므로 credential은 보존하지만, 원인 없이
       // markSyncError 메시지만 DB에 남으면 재현 없이는 언제·누구에게 발생했는지 알 수 없다
-      log.warn(
-          "Google Calendar sync failed — freeBusy/refresh error (userId={})",
-          user.getId(),
+      SocialIntegrationLog.warn(
+          log,
+          syncContext(user.getId(), trigger),
+          "Google Calendar sync failed",
           exception);
-      credential.markSyncError(exception.getMessage());
+      credential.markSyncError(PiiMasker.mask(exception.getMessage()));
       credentialRepository.save(credential);
     }
+  }
+
+  private SocialLogContext connectContext(UUID userId) {
+    return SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_CONNECT)
+        .withUserId(userId);
+  }
+
+  private SocialLogContext syncContext(UUID userId, String trigger) {
+    return SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_SYNC)
+        .withUserId(userId)
+        .withTrigger(trigger);
   }
 
   private String resolveAccessToken(GoogleCalendarCredential credential) {

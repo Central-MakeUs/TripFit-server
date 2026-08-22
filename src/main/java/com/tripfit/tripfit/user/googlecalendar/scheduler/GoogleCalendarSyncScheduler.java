@@ -1,5 +1,9 @@
 package com.tripfit.tripfit.user.googlecalendar.scheduler;
 
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
@@ -44,7 +48,14 @@ public class GoogleCalendarSyncScheduler {
       try {
         googleCalendarService.syncUser(user.getId());
       } catch (Exception exception) {
-        log.warn("Google Calendar sync failed for user {}", user.getId(), exception);
+        // syncUser 내부에서 이미 대부분의 실패를 삼키므로, 여기까지 오는 건 requireUser 등 예상 밖 오류
+        SocialIntegrationLog.warn(
+            log,
+            SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_SYNC)
+                .withUserId(user.getId())
+                .withTrigger("SCHEDULED"),
+            "Google Calendar scheduled sync failed unexpectedly",
+            exception);
       }
       sleepJitter();
     }

@@ -1,5 +1,9 @@
 package com.tripfit.tripfit.auth.oauth;
 
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +14,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import tools.jackson.databind.JsonNode;
 
 // Google 로그인 authorization code → refresh token 교환·revoke — 탈퇴 시 로그인 동의 자체를 revoke하기 위한
@@ -60,6 +65,14 @@ public class GoogleOAuthClient {
                 (request, clientResponse) -> {
                   String body =
                       StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
+                  SocialIntegrationLog.warn(
+                      log,
+                      SocialLogContext.of(
+                          SocialProvider.GOOGLE,
+                          SocialIntegrationAction.LOGIN_CREDENTIAL_EXCHANGE)
+                          .withHttpStatus(clientResponse.getStatusCode().value())
+                          .withProviderError(null, body),
+                      "Google login authorization code exchange failed");
                   throw new IllegalStateException(
                       "Google token endpoint error: "
                           + clientResponse.getStatusCode()
@@ -69,6 +82,14 @@ public class GoogleOAuthClient {
             .body(JsonNode.class);
     if (response == null) {
       throw new IllegalStateException("Google token response missing body");
+    }
+    if (response.hasNonNull("scope")) {
+      SocialIntegrationLog.info(
+          log,
+          SocialLogContext
+              .of(SocialProvider.GOOGLE, SocialIntegrationAction.LOGIN_CREDENTIAL_EXCHANGE)
+              .withGrantedScope(response.get("scope").asText()),
+          "Google login authorization code exchange succeeded");
     }
     if (!response.hasNonNull("refresh_token")) {
       return null;
@@ -85,7 +106,16 @@ public class GoogleOAuthClient {
           .retrieve()
           .toBodilessEntity();
     } catch (Exception exception) {
-      log.warn("Google login refresh token revoke failed", exception);
+      SocialLogContext context =
+          SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.LOGIN_TOKEN_REVOKE);
+      if (exception instanceof RestClientResponseException restException) {
+        context =
+            context
+                .withHttpStatus(restException.getStatusCode().value())
+                .withProviderError(null, restException.getResponseBodyAsString());
+      }
+      SocialIntegrationLog
+          .warn(log, context, "Google login refresh token revoke failed", exception);
     }
   }
 }

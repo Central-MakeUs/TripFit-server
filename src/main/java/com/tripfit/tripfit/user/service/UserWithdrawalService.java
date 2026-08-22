@@ -125,7 +125,7 @@ public class UserWithdrawalService {
               try {
                 String refreshToken =
                     tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
-                googleCalendarOAuthClient.revokeRefreshToken(refreshToken);
+                googleCalendarOAuthClient.revokeRefreshToken(userId, refreshToken);
               } catch (Exception exception) {
                 log.warn("Google Calendar credential revoke failed", exception);
               }

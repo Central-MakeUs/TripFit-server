@@ -1,0 +1,20 @@
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/base.xml" />
+
+	<!-- 소셜 로그인·Google Calendar 연동 실패를 Loki에서 필드 기반으로 바로 조회하기 위한 구조화 JSON 출력.
+	     provider/action/httpStatus/providerErrorReason 등은 SocialIntegrationLog가 MDC로 채운다.
+	     다른 패키지는 base.xml의 기본 CONSOLE appender·텍스트 패턴을 그대로 쓴다(docs/specs/social-integration-structured-logging.md). -->
+	<appender name="STRUCTURED_JSON" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+	</appender>
+
+	<logger name="com.tripfit.tripfit.auth.oauth" level="INFO" additivity="false">
+		<appender-ref ref="STRUCTURED_JSON" />
+	</logger>
+	<logger name="com.tripfit.tripfit.auth.service" level="INFO" additivity="false">
+		<appender-ref ref="STRUCTURED_JSON" />
+	</logger>
+	<logger name="com.tripfit.tripfit.user.googlecalendar" level="INFO" additivity="false">
+		<appender-ref ref="STRUCTURED_JSON" />
+	</logger>
+</configuration>

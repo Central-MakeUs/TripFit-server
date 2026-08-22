@@ -3,7 +3,11 @@ package com.tripfit.tripfit.auth.service;
 import com.tripfit.tripfit.auth.domain.AppleCredential;
 import com.tripfit.tripfit.auth.oauth.AppleOAuthClient;
 import com.tripfit.tripfit.auth.repository.AppleCredentialRepository;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.common.security.SocialTokenCrypto;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -55,7 +59,13 @@ public class AppleCredentialService {
               .orElseGet(() -> AppleCredential.create(user, ciphertext, clientId));
       appleCredentialRepository.save(credential);
     } catch (Exception exception) {
-      log.warn("Apple authorization code exchange failed — skipping credential save", exception);
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext
+              .of(SocialProvider.APPLE, SocialIntegrationAction.LOGIN_CREDENTIAL_EXCHANGE)
+              .withUserId(user.getId()),
+          "Apple authorization code exchange failed — skipping credential save",
+          exception);
     }
   }
 
@@ -71,7 +81,14 @@ public class AppleCredentialService {
                 String refreshToken = tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
                 appleOAuthClient.revokeRefreshToken(refreshToken, credential.getAppleClientId());
               } catch (Exception exception) {
-                log.warn("Apple credential revoke failed", exception);
+                SocialIntegrationLog.warn(
+                    log,
+                    SocialLogContext.of(
+                        SocialProvider.APPLE,
+                        SocialIntegrationAction.LOGIN_CREDENTIAL_REVOKE)
+                        .withUserId(userId),
+                    "Apple credential revoke failed",
+                    exception);
               }
             });
     appleCredentialRepository.deleteByUser_Id(userId);

@@ -8,6 +8,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Set;
@@ -85,19 +89,41 @@ public class AppleNotificationVerifier {
       throw exception;
     } catch (BadJOSEException exception) {
       // 서명 불일치·만료(BadJWTException은 BadJOSEException의 하위 타입) 등 서명 자체 검증 실패
-      log.warn("Apple notification signature verification failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          notificationContext().withProviderError("signature_invalid", null),
+          "Apple notification signature verification failed",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID);
     } catch (ParseException | JsonProcessingException exception) {
-      log.warn("Apple notification payload parsing failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          notificationContext().withProviderError("payload_malformed", null),
+          "Apple notification payload parsing failed",
+          exception);
       throw new TripFitException(AuthErrorCode.AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD);
     } catch (JOSEException exception) {
       // RemoteJWKSet 조회 실패 등 Apple JWK 접근 자체가 안 되는 경우 — 500으로 구분해 Apple 재시도를 유도함
-      log.warn("Apple JWK retrieval failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          notificationContext().withProviderError("jwk_unavailable", null),
+          "Apple JWK retrieval failed",
+          exception);
       throw new TripFitException(CommonErrorCode.INTERNAL_ERROR, "Apple JWK 조회에 실패했습니다.");
     } catch (Exception exception) {
       // Apple payload 문제가 아니라 우리 쪽 예상치 못한 버그일 수 있어 400으로 숨기지 않고 500으로 노출·로그 남김
-      log.error("Apple notification verification failed unexpectedly", exception);
+      SocialIntegrationLog.error(
+          log,
+          notificationContext(),
+          "Apple notification verification failed unexpectedly",
+          exception);
       throw new TripFitException(CommonErrorCode.INTERNAL_ERROR, "Apple 알림 처리 중 오류가 발생했습니다.");
     }
+  }
+
+  private SocialLogContext notificationContext() {
+    return SocialLogContext.of(
+        SocialProvider.APPLE,
+        SocialIntegrationAction.APPLE_NOTIFICATION_VERIFY);
   }
 }

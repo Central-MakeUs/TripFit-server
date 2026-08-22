@@ -6,6 +6,10 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.interfaces.ECPrivateKey;
@@ -68,6 +72,13 @@ public class AppleOAuthClient {
             .onStatus(
                 HttpStatusCode::isError,
                 (request, clientResponse) -> {
+                  SocialIntegrationLog.warn(
+                      log,
+                      SocialLogContext.of(
+                          SocialProvider.APPLE,
+                          SocialIntegrationAction.LOGIN_CREDENTIAL_EXCHANGE)
+                          .withHttpStatus(clientResponse.getStatusCode().value()),
+                      "Apple login authorization code exchange failed");
                   throw new IllegalStateException(
                       "Apple token endpoint error: " + clientResponse.getStatusCode());
                 })
@@ -95,7 +106,11 @@ public class AppleOAuthClient {
           .retrieve()
           .toBodilessEntity();
     } catch (Exception exception) {
-      log.warn("Apple refresh token revoke failed", exception);
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.APPLE, SocialIntegrationAction.LOGIN_TOKEN_REVOKE),
+          "Apple refresh token revoke failed",
+          exception);
     }
   }
 
