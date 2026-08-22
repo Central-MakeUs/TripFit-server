@@ -34,8 +34,8 @@
 | [`trip-home-schedulers.md`](trip-home-schedulers.md) | **Implemented** (#27) · S1~S4 | EXPIRED DB·Pin batch · 00:05 KST | #12 |
 | [`trip-member-remove.md`](trip-member-remove.md) | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
 | [`trip-member-leave.md`](trip-member-leave.md) | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관(ONGOING/CONFIRMED/EXPIRED) | #12 · #20 · #26 |
-| [`user-account-withdrawal.md`](user-account-withdrawal.md) | cascade·soft delete는 **Implemented**(`#47` 브랜치) · `#64` 소셜 provider revoke는 **Draft**(미구현, Release Gate) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · 차단 없이 자동 cascade · User soft delete + PII 스크럽 · Google/Kakao/Apple revoke | trip-member-leave · user-my-page |
-| [`google-login-revoke.md`](google-login-revoke.md) | **Implemented** (`#64` 재오픈 후속, 코드·테스트 완료 · PR 대기) · Release Gate | Google 로그인 시 authorization code 확보·저장 → 탈퇴 시 revoke. `GoogleLoginCredential` 신규, Apple 패턴 재사용 | auth-social-login · user-account-withdrawal |
+| [`user-account-withdrawal.md`](user-account-withdrawal.md) | cascade·soft delete는 **Implemented**(`#47` 브랜치) · `#64` 소셜 provider revoke도 **Implemented**(Closed, 구 Release Gate) · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · 차단 없이 자동 cascade · User soft delete + PII 스크럽 · Google/Kakao/Apple revoke | trip-member-leave · user-my-page |
+| [`google-login-revoke.md`](google-login-revoke.md) | **Implemented** (`#64` 재오픈 후속, 완료·Closed) · 구 Release Gate | Google 로그인 시 authorization code 확보·저장 → 탈퇴 시 revoke. `GoogleLoginCredential` 신규, Apple 패턴 재사용 | auth-social-login · user-account-withdrawal |
 | [`trip-recommendation.md`](trip-recommendation.md) | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
 | [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) | Draft (#50) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 | #13 · #17 |
 | [`trip-member-status-derive.md`](trip-member-status-derive.md) | **Implemented** (#54) | `TripMember.status` 컬럼 제거 → `respondedAt` null 여부로 파생 계산 (내부 리팩터, API 계약 불변) | #12 |
@@ -61,6 +61,12 @@
 | [`auth-dev-stub-verifier.md`](auth-dev-stub-verifier.md) | Draft (#52) | `/auth/login` 계약 유지형 dev 스텁 검증기 — `dev-mock-login` 엔드포인트 대체 예정 | dev-mock-login |
 | [`auth-error-code-granularity.md`](auth-error-code-granularity.md) | **Approved** (#57) · 구현 중 | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` · `auth-social-login.md` 에러 표 amend | auth-social-login |
 
+## wave 미정 (Backlog #29~#32 확인 필요)
+
+| 스펙 | 상태 | 범위 | 선행 |
+|------|------|------|------|
+| [`trip-thumbnail-image.md`](trip-thumbnail-image.md) | Draft (#62) | 여행방 확정 기간을 베이스 이미지에 합성해 카카오 공유용 동적 썸네일 자동 생성 · S3 등 오브젝트 스토리지 신규 구축 필요 | kakao-invite-share (#19) |
+
 ## 도구 (Wave 무관)
 
 | 스펙 | 상태 | 범위 | 선행 |
@@ -70,6 +76,7 @@
 | [`api-contract-diff-ci.md`](api-contract-diff-ci.md) | **Approved** (이슈 미생성) | oasdiff CLI로 breaking change 감지 + Discord `#frontend` push 알림(커밋 트레일러로 사유 전달), 별도 프론트 저장소 동기화 보조 | — |
 | [`google-login-native-sdk-decision.md`](google-login-native-sdk-decision.md) | **Resolved** (#77, 결정 불필요 — 이미 네이티브 SDK로 구현됨, 2026-07-31 정정) | WebView 앱에서 Google 로그인 방식 — FE 확인 결과 네이티브 SDK 이미 구현·배포 완료 | google-login-revoke |
 | [`openapi-response-schema-generics.md`](openapi-response-schema-generics.md) | **Approved** (이슈 미생성) | `SuccessResponse<T>` 응답 스키마가 스펙에 필드 노출 안 되는 문제 — `useReturnTypeSchema = true`로 해결, oasdiff 응답 필드 변경 감지 복구 | api-contract-diff-ci |
+| [`social-integration-structured-logging.md`](social-integration-structured-logging.md) | Draft (`#65`) | 소셜 로그인(Google/Kakao/Apple)·Google Calendar 연동 구조화 JSON 로깅 — provider/action/httpStatus/providerErrorReason 필드, PII 마스킹, `scope` 필드 로깅 | google-calendar-oauth · auth-social-login |
 
 **구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
@@ -96,9 +103,12 @@
 | **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
 | **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |
 | **#52** | auth-dev-stub-verifier (`dev-mock-login` 후속, wave 4) | Open |
-| **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT · Google 부분은 `google-login-revoke` | Open · **Release Gate**(Wave 아님) |
+| **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT · Google 부분은 `google-login-revoke` | **Closed** · 구 Release Gate(2026-08-03 완료 확인) |
+| **#65** | social-integration-structured-logging — 과거 Release Gate 메타 트래커(전부 Closed)를 이 스펙 이슈로 재사용(2026-08-03) | Open |
 | **#77** | google-login-native-sdk-decision (Resolved, 결정 불필요로 정정) | Open — 클로즈 검토 필요 |
 | **#78** | google-calendar-client-id-separation (백엔드 배선 완료, GCP 콘솔 발급·FE 전환 대기, Wave 4) | Open |
+| **#62** | trip-thumbnail-image (Draft) — 2026-08-02 재작성, 구 "OAuth 콘솔 설정값" 내용은 `#86`으로 이관 | Open |
+| **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
 
 ## 완료 후
 

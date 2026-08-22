@@ -212,39 +212,6 @@ def domain($p):
   end;
 EOF
 
-# Release Gate #65 대상 엔드포인트 — 로그인·탈퇴는 앱 스토어 심사(Apple S2S #5·OAuth 콘솔 #62·
-# 탈퇴 시 provider revoke #64)와 직결돼 프론트와 사전 논의가 필요하다. 도메인 태그(Auth/User)만으론
-# 이 둘을 다른 auth/user 변경과 구분하지 못하므로 path+method로 별도 표시한다.
-read -r -d '' JQ_GATE_DEF << 'EOF' || true
-def is_gate_critical($p; $op):
-  ($p == "/api/v1/auth/login") or
-  ($p == "/api/v1/users/me" and ($op | ascii_upcase) == "DELETE");
-EOF
-
-# 소셜 로그인/탈퇴 변경 텍스트에서 어떤 provider(GOOGLE/KAKAO/APPLE)와 관련 있는지 뽑아
-# Discord에서 "이거 카카오만 영향 있나 전체 다 영향 있나"를 필드명만으론 알 수 없는 문제를 보완한다.
-gate_callout_field() {
-  local translated_json="$1" label="$2"
-  local gate_json gate_count providers
-  gate_json="$(jq "$JQ_DOMAIN_DEF"$'\n'"$JQ_GATE_DEF"'
-    [.[] | select(is_gate_critical(.path; .operation))]
-  ' <<< "$translated_json")"
-  gate_count="$(jq 'length' <<< "$gate_json")"
-  if [[ "$gate_count" -eq 0 ]]; then
-    echo '[]'
-    return
-  fi
-  providers="$(jq -r '[.[].text] | join(" ") | [scan("GOOGLE|KAKAO|APPLE")] | unique | join(", ")' <<< "$gate_json")"
-  if [[ -z "$providers" ]]; then
-    providers="특정 provider 한정 아님(전체 영향)"
-  fi
-  jq -n --arg providers "$providers" --arg label "$label" '[{
-    name: "⚠️ Release Gate #65 관련 — 프론트 사전 논의 필요",
-    value: ("로그인/탈퇴 API " + $label + " — 앱 스토어 심사에 영향, 병합 전 프론트와 논의 권장.\n관련 provider: " + $providers + "\n관련 이슈: #5(Apple S2S webhook) · #62(OAuth 콘솔 설정) · #64(탈퇴 시 provider revoke)"),
-    inline: false
-  }]'
-}
-
 # oasdiff가 breaking·필드 추가 어느 쪽도 못 찾았는데(BREAKING_COUNT=0 && ADDITIONS_COUNT=0) 트레일러나
 # 신규 ErrorCode가 있는 경우 — 스키마 diff에 안 잡히는 변경(필드 조건부 필수화·ErrorResponse.code
 # 신규 값 등, #64 사고 참고). 엔드포인트별 상세는 oasdiff가 준 게 없어 만들 수 없으므로, 사람이 남긴
@@ -349,12 +316,9 @@ if [[ "$BREAKING_COUNT" -gt 0 ]]; then
       })
   ' <<< "$TRANSLATED_BREAKING_JSON")"
 
-  BREAKING_GATE_FIELDS_JSON="$(gate_callout_field "$TRANSLATED_BREAKING_JSON" "변경")"
-
   BREAKING_EMBED="$(jq -n \
     --arg url "$TITLE_URL" \
     --arg domains "$BREAKING_DOMAINS" \
-    --argjson gateFields "$BREAKING_GATE_FIELDS_JSON" \
     --argjson fields "$BREAKING_FIELDS_JSON" \
     --arg reason "$REASON" \
     --arg footer "$FOOTER_TEXT" \
@@ -362,7 +326,7 @@ if [[ "$BREAKING_COUNT" -gt 0 ]]; then
       title: "🚨 API Breaking Change",
       url: $url,
       color: 15158332,
-      fields: ([{ name: "영향 도메인", value: $domains, inline: false }] + $gateFields + $fields + [
+      fields: ([{ name: "영향 도메인", value: $domains, inline: false }] + $fields + [
         { name: "왜 변경했는가", value: $reason, inline: false },
       ]),
       footer: { text: $footer }
@@ -432,19 +396,16 @@ if [[ "$ADDITIONS_COUNT" -gt 0 ]]; then
       })
   ' <<< "$TRANSLATED_ADDITIONS_JSON")"
 
-  ADDITIONS_GATE_FIELDS_JSON="$(gate_callout_field "$TRANSLATED_ADDITIONS_JSON" "필드 추가")"
-
   ADDITIONS_EMBED="$(jq -n \
     --arg url "$TITLE_URL" \
     --arg domains "$ADDITIONS_DOMAINS" \
-    --argjson gateFields "$ADDITIONS_GATE_FIELDS_JSON" \
     --argjson fields "$ADDITIONS_FIELDS_JSON" \
     --arg footer "$FOOTER_TEXT" \
     '{
       title: "ℹ️ API 필드 추가 (non-breaking)",
       url: $url,
       color: 3447003,
-      fields: ([{ name: "영향 도메인", value: $domains, inline: false }] + $gateFields + $fields + [
+      fields: ([{ name: "영향 도메인", value: $domains, inline: false }] + $fields + [
         { name: "프론트 작업", value: "기존 클라이언트는 영향 없음 — 새 기능에서 이 필드를 쓰려면 orval 재생성 후 반영", inline: false }
       ]),
       footer: { text: $footer }

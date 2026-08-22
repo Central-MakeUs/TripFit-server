@@ -400,7 +400,7 @@ Nice 이슈는 **Wave Backlog Nice 섹션**과 Issue **비고**(`분류: Wave N 
 | **2** | **#30** | #13·#50 (#11·#12·#17·#37·#38 ✓) | #20, #26✓, #27✓ | #21·#19 → Wave 3 |
 | **3** | **#31** | #21 · **#19** | — | NOTI-005 → Wave 4 |
 | **4** | **#32** | **#44**(확정) · (팀 합의 시) #4 · #6 · #9 | — | — |
-| **Release Gate** | **#65** | #5 · #62 · #64 (Wave 아님 — §7) | — | — |
+| **Release Gate** | — (전부 Closed, `#65`는 재사용됨 — §7) | #5✓ · #86✓(구 #62) · #64✓ (Wave 아님 — §7) | — | — |
 
 ---
 
@@ -434,27 +434,13 @@ Agent·개발자 **시작 체크:**
 > - Yes → Release Gate (`release: blocking` 라벨, Milestone 없음 — Wave와 독립)
 > - No, 그냥 나중에 하면 좋은 개선 → Wave 4
 
-### 현재 목록 (SSOT: [#65](https://github.com/Central-MakeUs/TripFit-server/issues/65))
+### 현재 상태 (2026-08-03)
 
-| 이슈 | 내용 | 왜 Release Gate인가 |
-|------|------|----------------------|
-| [#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) | Apple S2S Notification webhook | Sign in with Apple 지원 시 Apple이 요구하는 서버 연동 |
-| [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) | 스토어 제출 전 OAuth 콘솔 설정값 (리다이렉션 URI·자바스크립트 원본·App Store ID) | 미등록 시 로그인 자체가 `redirect_uri_mismatch` 등으로 실패 |
-| [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) | 탈퇴 시 소셜 provider revoke 호출 (Google/Kakao/Apple) | Apple: App Store Review Guideline 5.1.1(v) — 계정 삭제 지원 시 Sign in with Apple 토큰 revoke 필수 |
-
-### 담당 구분 (2026-07-28, 이슈별 상세는 각 이슈 "담당 구분" 절)
-
-Release Gate 항목은 백엔드 단독으로 끝나지 않는 것이 많다 — 프론트 계약 변경·외부 계정 콘솔 접근이 선행돼야 하는 항목을 놓치지 않도록 정리.
-
-| 이슈 | 백엔드 | 프론트 | 외부(계정 담당자) |
-|------|--------|--------|---------------------|
-| #5 | 엔드포인트·JWT 검증·이벤트 처리 전부 구현(`.p8` 불필요) | 없음 | Apple Developer Console에 웹훅 URL 등록(구현 완료 후) |
-| #62 | 콘솔 값 입력(코드 변경 없음) | 최종 도메인·콜백 라우트 확정해서 전달 | App Store ID는 앱 게시 담당자가 게시 후 전달 |
-| #64 | Google·Kakao는 바로 구현 가능, Apple은 신규 토큰 저장·revoke 인프라 필요 | **Apple만** — 로그인 요청(#1)에 `authorizationCode` 필드 추가 필요(현재 `idToken`만 전송) | Kakao Admin Key 발급, Apple `.p8`·Team ID·Key ID 발급 |
+**열려 있는 Release Gate 항목 없음.** 과거 항목 3개([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#86](https://github.com/Central-MakeUs/TripFit-server/issues/86)(구 `#62`) OAuth 콘솔 설정값 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke) 전부 Closed. 메타 트래커였던 `#65`는 그동안 연 항목이 없었고, 관측성 개선 스펙([`social-integration-structured-logging.md`](../specs/social-integration-structured-logging.md))으로 재사용됐다 — 더 이상 Release Gate 트래커가 아니다.
 
 **규칙:**
 
-- 새 Release Gate 항목 발견 시 **`#65`(메타 트래커) + 이 표 + `waves.md`**에 동시 추가 — `#2`([미정] 트래커)와 동일한 패턴.
+- 새 Release Gate 항목 발견 시 **새 이슈를 만들어** 이 절 + `waves.md`에 동시 추가 — `#2`([미정] 트래커)와 동일한 패턴, 단 트래커 이슈 번호는 그때 새로 발급.
 - `release: blocking` 라벨만 부여, **Milestone은 지정하지 않음**(Wave 컨테이너가 아니므로 — §5.1 "Milestone=Wave 컨테이너" 원칙의 의도적 예외).
 - Wave 4 후보 이슈를 만들기 **전** 위 판단 기준으로 먼저 걸러본다.
 

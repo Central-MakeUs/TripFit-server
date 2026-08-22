@@ -63,10 +63,6 @@ oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** �
 
 이런 변경은 **`Breaking-Change-Reason` 트레일러를 다는 것**이 유일한 안전장치입니다 — 자동 탐지를 더 늘리기보다 트레일러 습관을 지키는 게 우선입니다.
 
-## Release Gate #65 관련 엔드포인트 콜아웃
-
-`POST /api/v1/auth/login`(로그인)·`DELETE /api/v1/users/me`(탈퇴)는 앱 스토어 심사([`harness-wave.md`](../../.claude/rules/harness-wave.md) Release Gate 표 — [#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) OAuth 콘솔 설정 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke)와 직결돼 일반 API 변경보다 프론트와의 사전 논의가 중요하다. 이 두 엔드포인트에 breaking change·필드 추가가 생기면 Discord embed에 별도 "⚠️ Release Gate #65 관련" 필드가 추가되고, 변경 텍스트에서 `GOOGLE`/`KAKAO`/`APPLE` 언급을 스캔해 어떤 provider와 관련 있는지(특정 provider 언급이 없으면 "전체 영향") 함께 보여준다.
-
 ## "왜 변경했는가" — 커밋 트레일러 컨벤션
 
 **프론트가 조금이라도 대응해야 하는 API 계약 변경**(필드 추가·삭제·이름변경·타입변경·필수화, enum 값 추가·삭제, ErrorCode 신규·변경·삭제, 경로·메서드 변경 등 — optional 필드 추가도 포함)에는 본문에 `Breaking-Change-Reason:` 트레일러를 추가하세요. "필드 하나 추가일 뿐"이라는 이유로 생략하지 않습니다 — CI가 `oasdiff breaking`으로 잡아내는 것은 좁은 스키마 파괴적 변경뿐이라, 그보다 넓은 실제 영향 범위는 사람이 직접 기록해야 합니다. 상세 기준: [`harness-workflow.md`](../../.claude/rules/harness-workflow.md) STOP §5.

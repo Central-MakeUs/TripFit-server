@@ -68,7 +68,7 @@
 
 **활성 Wave (2026-07-24):** Wave 2 Must Open = **#13 · #50**(#13에서 계산 로직 분리) (Closed Must: #11 · #12 · #17 · #37 · #38). Nice: #20 · #26✓ · #27✓. Wave 3 Must: **#21** · **#19**. Wave 4: **#44** Google Calendar.
 
-**Release Gate (2026-07-28, Wave와 무관):** #5 · #62 · #64 — 아래 절 참고.
+**Release Gate (Wave와 무관):** 현재 열려 있는 항목 없음(#5·#86(구 #62)·#64 전부 Closed) — 아래 절 참고.
 
 > **용어:** 이슈 `## Must Have` ≠ Wave Must. `MVP: In scope` ≠ Wave Must. SSOT: [`development-wave.md`](development-wave.md) · harness `Wave Must / Nice / Out`.
 
@@ -86,15 +86,9 @@
 
 **Wave 4("운영·확장", 출시 이후 개선)와 혼동 금지.** 이 항목들은 **스토어 제출·심사를 통과하기 위해 반드시 필요** — 없어도 되는 개선이 아니다. 상세·판단 기준: [`development-wave.md` §7](development-wave.md#7-앱-배포심사-release-gate--wave와-무관).
 
-| 이슈 | 내용 |
-|------|------|
-| [#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) | Apple S2S Notification webhook — Sign in with Apple 지원 시 Apple 요구사항 |
-| [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) | 스토어 제출 전 OAuth 콘솔 설정값 (리다이렉션 URI·자바스크립트 원본·App Store ID) |
-| [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) | 탈퇴 시 소셜 provider revoke 호출 (Google/Kakao/Apple) — Apple은 App Store Review Guideline 5.1.1(v) |
+**현재 상태(2026-08-03):** 열려 있는 Release Gate 항목 없음. 과거 항목([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#86](https://github.com/Central-MakeUs/TripFit-server/issues/86)(구 `#62`) OAuth 콘솔 설정값 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke) 전부 Closed. 과거 메타 트래커였던 `#65`는 관측성 개선 스펙([`social-integration-structured-logging.md`](../specs/social-integration-structured-logging.md))으로 재사용됐다.
 
-**담당 구분(백엔드/프론트/외부):** [`development-wave.md` §7](development-wave.md#7-앱-배포심사-release-gate--wave와-무관) 표 참고 — 특히 #64는 Apple 로그인 요청에 `authorizationCode` 필드 추가가 필요해 **프론트 API 계약 변경**이 걸려 있음.
-
-**메타 트래커(SSOT):** [#65](https://github.com/Central-MakeUs/TripFit-server/issues/65) — 새 항목 발견 시 여기 + 위 표 + `development-wave.md` §7에 동시 추가. 라벨 `release: blocking`, Milestone 없음(Wave 컨테이너 아님).
+**새 항목 발견 시:** 새 이슈를 만들어 여기 + `development-wave.md` §7에 동시 추가. 라벨 `release: blocking`, Milestone 없음(Wave 컨테이너 아님).
 
 ## 리뷰 등급 (wave와 무관)
 

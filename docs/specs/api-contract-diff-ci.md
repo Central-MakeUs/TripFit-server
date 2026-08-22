@@ -64,7 +64,6 @@ api-contract-check ─────▶ Discord 알림만 (job은 항상 통과, �
   2. Discord embed 조립 후 `curl -X POST`로 `${{ secrets.DISCORD_WEBHOOK_URL }}`에 전송(이미 등록된 secret, 새 secret 불필요)
   3. job은 항상 통과(`exit 0`) — Discord 알림만으로 충분하다는 판단(2026-07-29 amend, "실패 처리 범위" 절)
 - [ ] **Discord 메시지 구성**(embed): 제목 `🚨 API Breaking Change` · Repository/Branch/Commit/PR(있을 때만) · 발견된 변경(endpoint·method별 breaking 설명 목록) · 왜 변경했는가(트레일러, 없으면 안내문) · 프론트 작업 체크리스트(고정 텍스트: orval 재생성 / 타입 오류 확인 / 영향받는 API 수정) · GitHub 링크(PR 또는 커밋 + Actions 실행 링크)
-- [ ] **Release Gate #65 관련 엔드포인트 콜아웃**: `POST /api/v1/auth/login`·`DELETE /api/v1/users/me`는 앱 스토어 심사([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) OAuth 콘솔 설정 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke)와 직결돼 프론트와 사전 논의가 필요 — 이 두 엔드포인트에 breaking change·non-breaking 필드 추가가 감지되면 breaking/추가 embed 모두에 별도 "⚠️ Release Gate #65 관련" 필드를 추가하고, 변경 텍스트에서 `GOOGLE`/`KAKAO`/`APPLE` 언급을 스캔해 관련 provider(없으면 "전체 영향")를 표시
 - [ ] non-breaking 변경만 있으면 Discord 알림 없이 조용히 통과
 - [ ] `push`(main)에서만: 위 단계 통과 후 `docs/api/openapi.json`을 최신 스펙으로 갱신·커밋(`git commit -m "Chore: OpenAPI 스펙 스냅샷 갱신 [skip ci]"`) — `[skip ci]`로 재트리거 방지
 - [ ] `docs/api/openapi.json` 최초 시딩 커밋 (구현 브랜치 첫 커밋)
@@ -132,12 +131,12 @@ API 없음 — CI 인프라 변경.
 | `oasdiff breaking --format json`의 정확한 필드명 | [미정] | 공식 문서에 예시가 없음 — 구현 착수 시 실제 실행 결과로 확정(검증 시나리오 "수동/통합" 항목) |
 | oasdiff의 "필드명 변경(rename)" 표현 가능 여부 | [미정] | OpenAPI 스키마 diff는 구조적으로 rename을 감지하지 못하고 delete+add 두 변경으로 보고하는 게 일반적 — `name → nickname`처럼 명시적 화살표 표기가 항상 가능한지는 미검증, 불가능하면 "속성 A 삭제 + 속성 B 추가" 형태로 메시지 포맷 조정 |
 | GitHub 이슈 번호 | [미정] | 스펙 Approved 후 `gh issue create`로 생성, 브랜치명에 사용 |
-| Release Gate 콜아웃 대상 엔드포인트 확장 | [미정] | 현재 `is_gate_critical`(`notify-api-breaking-change.sh`)은 `/api/v1/auth/login`·`DELETE /api/v1/users/me`만 하드코딩. #64(소셜 provider revoke) 구현 시 별도 엔드포인트가 생기면 같이 추가 필요 — 아직 미구현이라 지금은 코드 변경 대상 아님 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-03 | **Release Gate #65 콜아웃 제거** — `#5`·`#64`·`#86`(구 `#62`) 전부 Closed로 열려 있는 Release Gate 항목이 없어졌고, 메타 트래커 `#65`는 관측성 개선 스펙(`social-integration-structured-logging.md`)으로 재사용됨. `notify-api-breaking-change.sh`의 `is_gate_critical`·`gate_callout_field`·관련 embed 필드 전부 제거, `docs/api/README.md` 콜아웃 절도 삭제 |
 | 2026-07-29 | **Amend #2** — 실제 알림에서 발견된 2가지 버그 수정: (1) breaking 문구 한글 템플릿 매핑을 전부 제거하고 oasdiff 원문(영어)만 노출 — 매핑 안 된 id가 많아 한 필드 안에서 한글·영어가 뒤섞이던 문제. (2) `Breaking-Change-Reason:` 트레일러가 여러 줄로 wrap된 커밋에서 사유가 중간에 잘려 다른 커밋 사유와 뒤섞이던 버그 수정 — 커밋별로 순회하며 wrap된 값을 접어 합치고 짧은 SHA를 붙여 나열하도록 재구현 |
 | 2026-07-29 | **Amend** — breaking change 감지 시 `api-contract-check` job을 실패(`exit 1`) 처리하던 로직 제거, 항상 통과(`exit 0`)로 변경. Discord `#frontend` 알림만으로 충분하다는 판단(job 실패로 인한 CI 빨간불이 실질적 이득 없이 혼란만 유발). `notify-api-breaking-change.sh`·`docs/api/README.md` 동기화 |
 | 2026-07-28 | 초안 |

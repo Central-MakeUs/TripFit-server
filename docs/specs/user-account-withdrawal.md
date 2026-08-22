@@ -50,7 +50,7 @@
 
 ### Must Have — `#64` 소셜 provider revoke (2026-07-31 amend, Kakao/Apple Implemented · Google 로그인 revoke는 [`google-login-revoke.md`](google-login-revoke.md) 참고)
 
-탈퇴 시 TripFit 내부 데이터 삭제와 별개로, 로그인에 쓴 소셜 provider 쪽에도 revoke·unlink를 호출한다. Apple은 App Store Review Guideline 5.1.1(v) 요건이라 Release Gate(`#65`). `#6`(계정 유지 상태의 다중 소셜 연결·개별 해제)과는 트리거가 다른 별개 흐름 — 혼동 금지.
+탈퇴 시 TripFit 내부 데이터 삭제와 별개로, 로그인에 쓴 소셜 provider 쪽에도 revoke·unlink를 호출한다. Apple은 App Store Review Guideline 5.1.1(v) 요건이라 Release Gate였음(`#64`, Closed — 완료). `#6`(계정 유지 상태의 다중 소셜 연결·개별 해제)과는 트리거가 다른 별개 흐름 — 혼동 금지.
 
 Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리한다.
 
