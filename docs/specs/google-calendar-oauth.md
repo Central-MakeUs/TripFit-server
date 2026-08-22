@@ -2,7 +2,7 @@
 
 > wave: 4
 > implements: (온보딩 `is_google_calendar_connected` 실연동 — BR 번호 N/A · decisions/007)
-> deferred: 네이버 캘린더 · 소셜 계정 다중 연결 → [#6](https://github.com/Central-MakeUs/TripFit-server/issues/6) · Calendar 전용 OAuth Client ID 분리(현재 로그인과 공유) → [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)
+> deferred: 네이버 캘린더 · 소셜 계정 다중 연결 → [#6](https://github.com/Central-MakeUs/TripFit-server/issues/6) · Calendar 전용 OAuth Client ID 분리(백엔드 배선 완료, GCP 콘솔 발급·FE 전환 대기) → [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)
 > 상태: **Approved**
 > MVP: Out of scope (Wave 4)
 > Issue: [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44)
@@ -17,8 +17,8 @@
 
 | 키 | 용도 |
 |----|------|
-| `GOOGLE_CLIENT_ID` (기존) | token 교환 client_id (웹/서버) — 로그인 `aud` 검증과 공유 |
-| `GOOGLE_CLIENT_SECRET` | token 교환 client_secret (웹 타입 OAuth 클라이언트 전용 — iOS/Android 클라이언트는 secret 없음) |
+| `GOOGLE_CALENDAR_CLIENT_ID` | Calendar 전용 token 교환 client_id (웹/서버) — 로그인용 `GOOGLE_CLIENT_ID`와 분리(`google-calendar-client-id-separation.md`). 실제 값은 GCP 콘솔에서 Calendar FE 착수 시 발급 |
+| `GOOGLE_CALENDAR_CLIENT_SECRET` | 위 Calendar 전용 client의 secret (웹 타입 OAuth 클라이언트 전용) |
 | `SOCIAL_TOKEN_AES_KEY` | Base64 인코딩 **32바이트** AES-256 키 |
 
 환경 B 복귀 URL은 **프론트 범위** (백엔드 Must 아님).

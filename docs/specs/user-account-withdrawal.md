@@ -152,7 +152,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - soft delete + 스크럽 대상: `users` (row 유지, PII 컬럼만 null)
 - cascade 대상: 호출자가 MEMBER인 `trip_member` row(soft delete, [`trip-member-leave.md`](trip-member-leave.md) 재사용) · 호출자가 OWNER인 `trip` row(soft delete, `deleteTrip()` 재사용 — 해당 방의 다른 멤버 `trip_member` row도 함께 soft delete됨)
 - **`apple_credential` (신규 테이블, 확정)**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, 평문 저장 금지 — `SocialTokenCrypto` 재사용) · `apple_client_id`(varchar, 2026-07-31 추가 — 로그인 시 매칭된 Bundle ID/Services ID 원문, 탈퇴 revoke에 재사용) · `BaseTimeEntity`(생성·수정 시각)만 있는 최소 구조(`google_calendar_credential`의 access token 캐시·동기화 필드는 Apple에 해당 사항 없어 제외). PK는 프로젝트 컨벤션대로 UUID v4(`docs/specs/uuid-primary-key.md`). `docs/architecture/erd.md` 반영 완료
-- **`google_login_credential` (신규 테이블, [`google-login-revoke.md`](google-login-revoke.md))**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, `SocialTokenCrypto` 재사용) · `BaseTimeEntity`만 있는 최소 구조. Apple과 달리 client_id 컬럼 없음(Google revoke 엔드포인트가 client_id를 요구하지 않고, 현재 로그인·Calendar가 단일 Client ID를 공유하기 때문 — 상세 근거는 해당 스펙 설계 노트). PK는 UUID v4. `docs/architecture/erd.md` 반영 완료
+- **`google_login_credential` (신규 테이블, [`google-login-revoke.md`](google-login-revoke.md))**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, `SocialTokenCrypto` 재사용) · `BaseTimeEntity`만 있는 최소 구조. Apple과 달리 client_id 컬럼 없음(Google revoke 엔드포인트가 client_id를 요구하지 않아 저장할 필요 자체가 없음 — 상세 근거는 해당 스펙 설계 노트). PK는 UUID v4. `docs/architecture/erd.md` 반영 완료
 
 ## 비즈니스 규칙
 

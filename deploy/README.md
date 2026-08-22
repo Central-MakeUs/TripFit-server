@@ -139,10 +139,12 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 | `JWT_SECRET` | ✅ | Access JWT 서명 키 (256bit+ random) |
 | `JWT_ACCESS_EXPIRATION` | | 기본 7200초(2h) |
 | `JWT_REFRESH_EXPIRATION_DAYS` | | 기본 30일 |
-| `GOOGLE_CLIENT_ID` | | Google web client ID (`aud` 검증 · Calendar token 교환 client_id) |
-| `GOOGLE_CLIENT_SECRET` | | Google web client secret (Calendar authorization code·refresh token 교환) |
+| `GOOGLE_CLIENT_ID` | | Google 로그인 web client ID (`aud` 검증 · authorization code 교환) |
+| `GOOGLE_CLIENT_SECRET` | | Google 로그인 web client secret (authorization code 교환) |
 | `GOOGLE_CLIENT_ID_IOS` | | Google iOS client ID |
 | `GOOGLE_CLIENT_ID_ANDROID` | | Google Android client ID |
+| `GOOGLE_CALENDAR_CLIENT_ID` | | Google Calendar 연동 전용 client ID — 로그인과 분리(`docs/specs/google-calendar-client-id-separation.md`), Calendar FE 착수 전까지는 미등록 상태 |
+| `GOOGLE_CALENDAR_CLIENT_SECRET` | | 위 Calendar 전용 client의 secret — authorization code·refresh token 교환 |
 | `SOCIAL_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
 | `APPLE_BUNDLE_ID` | | Apple App ID(Bundle ID, 예: `com.tripfit.app`) — iOS 네이티브 앱 로그인 `aud` 검증·토큰교환/revoke `client_id` |
 | `APPLE_SERVICE_ID` | | Apple Services ID — 모바일 브라우저 로그인 경로 `aud` 검증·토큰교환/revoke `client_id` (`docs/specs/apple-oauth-multi-audience.md`) |
