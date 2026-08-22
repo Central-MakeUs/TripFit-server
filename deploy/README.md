@@ -149,7 +149,7 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
   docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
   ```
   (이미 `deploy/app/docker-compose.yml`, `deploy/mysql/docker-compose.yml` 상단 주석에도 동일 안내가 있음.)
-- 로그 보존: `deploy/monitoring/loki-config.yaml`의 `retention_period`(잠정 7일) + compactor가 자동 삭제 — 별도 cron 불필요.
+- 로그 보존: `deploy/monitoring/loki-config.yaml`의 `retention_period`(확정 3일, 디스크 6.7GB 제약) + compactor가 자동 삭제 — 별도 cron 불필요.
 - **프론트 공유 계정**: IP 제한 대신 Grafana Viewer role 읽기 전용 계정을 발급했다(재택·카페 등 IP가 매번 바뀌는 프론트 환경에 IP 화이트리스트는 맞지 않음). 계정 추가 발급은 admin으로 로그인 후 **Administration → Users** 또는:
   ```bash
   curl -u admin:$GRAFANA_ADMIN_PASSWORD -X POST https://grafana.tripfit.online/api/admin/users \
@@ -159,7 +159,7 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
   curl -u admin:$GRAFANA_ADMIN_PASSWORD -X PATCH https://grafana.tripfit.online/api/org/users/<id> \
     -H 'Content-Type: application/json' -d '{"role":"Viewer"}'
   ```
-- Grafana 기본 대시보드 구성은 아직 없음 — Explore 탭에서 Loki datasource로 직접 LogQL 조회.
+- 기본 대시보드 "TripFit 서비스 로그 개요"(`uid: tripfit-overview`)가 홈 대시보드로 설정되어 있다 — 에러/경고 건수, nginx 4xx/5xx, app 에러·경고·전체 로그 스트림, nginx 오류 응답 로그. Explore 탭에서 직접 LogQL 조회도 가능.
 - **CI/CD 대상 아님** — `main` push 자동 배포는 EC2 A(app)만 다룬다. EC2 C는 위 명령으로 수동 배포·갱신.
 - 이 서버는 A/B와 달리 git 체크아웃이 아니라 `~/monitoring`·`~/scripts`에 파일을 직접 올린 상태 — 향후 git 체크아웃으로 전환 권장(009 후속 작업).
 

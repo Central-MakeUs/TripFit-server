@@ -45,9 +45,9 @@
 - [x] EC2 C 프로비저닝 (t3.micro, A/B와 동일 VPC·서브넷·키페어) — `TP-monitoring`, 2026-08-01
 - [x] `docker-compose.yml`(`deploy/monitoring/`)에 `loki`, `grafana` 서비스 추가
 - [x] A/B 각 컨테이너의 docker logging driver를 Loki로 전환
-- [ ] Grafana 기본 대시보드 구성 (앱 로그 검색용) — 현재는 Loki datasource만 프로비저닝, 대시보드 없음
+- [x] Grafana 기본 대시보드 구성 (앱 로그 검색용) — `uid: tripfit-overview`, 2026-08-01. 에러/경고 건수·nginx 4xx/5xx 통계 + app 에러/경고 로그 스트림 + nginx 오류 응답 로그 + app 전체 로그. 그라파나 HTTP API로 즉석 구성(레포에 provisioning JSON으로 커밋되진 않음 — 필요 시 UI/API로 계속 편집하거나 `deploy/monitoring/`에 파일 기반 provisioning으로 전환)
 - [x] 프론트 공유용 접근 방법 결정 — 읽기 전용(Viewer) 계정 채택(IP 제한 대신). 이유: 프론트 인원이 고정 IP 없이 다양한 환경(집·카페·모바일)에서 접속하므로 IP 화이트리스트는 접속할 때마다 갱신이 필요해 "백엔드 개발자 없이도 확인 가능"이라는 목표에 안 맞음. `frontend` 계정(Viewer role) 2026-08-01 생성
-- [ ] 로그 보존 기간 정책 확정 (`loki-config.yaml` 현재 잠정 7일)
+- [x] 로그 보존 기간 정책 확정 — **3일**로 확정(2026-08-01). EC2 C 디스크가 6.7GB뿐이고 확정 시점 기준 71%(2GB 여유) 사용 중이라, 아직 실사용자 없는 개발 단계임을 감안해 로그 보존보다 디스크 여유 확보를 우선. 이슈 재현엔 보통 수 시간~1일이면 충분하다고 판단
 - [x] `deploy/README.md`·`deploy/ec2-split-deployment.md`에 EC2 C 및 운영 절차 반영
 - [x] EC2 C Elastic IP — `54.116.62.227` 할당(2026-08-01), `grafana.tripfit.online` A 레코드 연결
 - [x] EC2 C HTTPS — nginx+certbot 추가(EC2 A와 동일 패턴), Let's Encrypt 발급 완료. Grafana는 `127.0.0.1:3000`만 바인딩, 공개 3000 포트는 닫음
