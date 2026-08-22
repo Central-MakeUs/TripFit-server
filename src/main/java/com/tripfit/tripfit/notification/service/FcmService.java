@@ -86,8 +86,11 @@ public class FcmService {
     try {
       BatchResponse response = firebaseMessaging.sendEach(messages);
       deleteInvalidTokens(tokens, response);
-    } catch (FirebaseMessagingException exception) {
-      // 배치 전체 실패는 다음 이벤트 재시도로 흡수 — 예외를 위로 던지지 않아 이력 저장 흐름을 막지 않음
+    } catch (Exception exception) {
+      // FirebaseMessagingException(배치 전송 실패)뿐 아니라 지연 초기화된 firebaseMessaging 빈 생성
+      // 실패(BeanCreationException 등 RuntimeException)까지 전부 흡수한다 — 여기서 예외가 위로
+      // 전파되면 호출자(dispatch)의 REQUIRES_NEW 트랜잭션이 롤백되어 이미 저장한
+      // NotificationHistory까지 함께 사라진다. FCM 발송 실패가 알림 이력 저장을 막아서는 안 됨.
       log.warn("FCM 멀티캐스트 발송 실패", exception);
     }
   }
