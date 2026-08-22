@@ -1,13 +1,13 @@
 # 회원 탈퇴
 
-> 상태: Implemented (기존 cascade·soft delete 범위) + `#64` Provider Revoke는 Kakao/Apple Implemented(코드) — Google 로그인 자체 revoke는 [`google-login-revoke.md`](google-login-revoke.md)로 구현(Draft), 캘린더 revoke는 기존 Implemented. Apple·Google 모두 프론트 공지·실계정 수동 검증 별도 진행
+> 상태: Implemented (기존 cascade·soft delete 범위) + `#64` Provider Revoke는 Kakao/Apple Implemented(코드) — Google 로그인 자체 revoke는 [`google-login-revoke.md`](../auth/google-login-revoke.md)로 구현(Draft), 캘린더 revoke는 기존 Implemented. Apple·Google 모두 프론트 공지·실계정 수동 검증 별도 진행
 > MVP: In scope
 > 관련 BR: BR-USER-004
 > wave: 2 (Nice) · `#64`(Provider Revoke)는 Release Gate — Wave와 무관, 앱스토어 심사 필수(`harness-wave.md` 🚨)
 > implements: BR-USER-004 `[미정]` 해소 — "진행 중 방" 처리 정책 확정
 > deferred: (해당 없음)
 > GitHub: 정책 근거 `#47`(hotfix, 확정) · 구현도 `#47` 브랜치(`docs/47-trip-status-policy-alignment`)에서 완료(별도 구현 이슈 없이 진행) · `#64`(소셜 provider revoke, Release Gate — 이번 amend로 Must Have 편입)
-> 선행: [`trip-member-leave.md`](trip-member-leave.md) · [`user-my-page.md`](user-my-page.md) · `trip-room-api.md`(여행방 삭제) · `#64` Apple 부분은 Apple Developer Console `.p8`·Team ID·Key ID 발급 + CI/CD·docker-compose·application.yml 배선까지 완료(2026-07-31) — `authorizationCode` 누락 시 로그인 자체를 400으로 막도록(B안) 강제해뒀으므로, **프론트가 이 필드를 보내기 시작한 뒤에 배포**해야 함(순서 바뀌면 배포 즉시 Apple 로그인 전체 실패)
+> 선행: [`trip-member-leave.md`](../trip/trip-member-leave.md) · [`user-my-page.md`](user-my-page.md) · `trip-room-api.md`(여행방 삭제) · `#64` Apple 부분은 Apple Developer Console `.p8`·Team ID·Key ID 발급 + CI/CD·docker-compose·application.yml 배선까지 완료(2026-07-31) — `authorizationCode` 누락 시 로그인 자체를 400으로 막도록(B안) 강제해뒀으므로, **프론트가 이 필드를 보내기 시작한 뒤에 배포**해야 함(순서 바뀌면 배포 즉시 Apple 로그인 전체 실패)
 
 ## 목표
 
@@ -15,7 +15,7 @@
 
 ## 배경
 
-- Figma: [`figma-wireframe-v1.md`](../product/design/figma-wireframe-v1.md) — 마이페이지(설정·탈퇴·캘린더 연동)
+- Figma: [`figma-wireframe-v1.md`](../../product/design/figma-wireframe-v1.md) — 마이페이지(설정·탈퇴·캘린더 연동)
 - `docs/product/business-rules/user.md` BR-USER-004: "확인 후 탈퇴 / `[미정]` 진행 중 방" — 본 스펙으로 확정
 - `user-my-page.md`: 탈퇴 API를 명시적으로 Out of Scope로 남겨둠 — 본 스펙이 후속
 
@@ -26,7 +26,7 @@
 **정책 전면 수정(2026-07-24, `#47` hotfix, 기획자 확인 완료)**: 방 나가기·참여자 내보내기(`#20`)·방 삭제·회원 탈퇴 네 액션의 상태별 허용 조건을 정합성 있게 재정리하면서, 탈퇴 정책도 **차단 → 자동 cascade**로 뒤집힘.
 
 1. **진행 중 방 처리(확정)**: 탈퇴를 차단하지 않는다.
-   - **참여자(MEMBER)**: 참여 중인 모든 방(상태 무관, `ONGOING` 포함)에서 자동으로 나가기 처리([`trip-member-leave.md`](trip-member-leave.md) 로직 내부 재사용) 후 탈퇴 진행.
+   - **참여자(MEMBER)**: 참여 중인 모든 방(상태 무관, `ONGOING` 포함)에서 자동으로 나가기 처리([`trip-member-leave.md`](../trip/trip-member-leave.md) 로직 내부 재사용) 후 탈퇴 진행.
    - **방장(OWNER)**: 소유한 모든 방(상태 무관, `ONGOING` 포함)을 자동으로 삭제(`deleteTrip()` 로직 재사용, soft delete) 후 탈퇴 진행. 기획자 근거: "방장이 탈퇴를 누르는 건 여행이 무산됐거나 더 이상 방을 유지할 필요가 없는 상황으로 볼 수 있다 — 탈퇴 전에 방 삭제를 유도하면 번거로운 절차만 추가된다."
    - `CANCELED` 상태는 `#48`에서 **enum 자체가 삭제 완료** — 더 이상 별도로 고려할 상태가 아님.
 2. **데이터 처리(확정, 변경 없음)**: 최초 "Hard delete"로 검토했으나, `Trip.owner_id`/`TripMember.user_id`가 `nullable=false` FK이고 `deleteTrip()`이 soft delete만 하므로(row 존속), User row를 진짜 hard delete하면 그 사람이 방장이었던 Trip(다른 참여자 포함)까지 연쇄 삭제해야 하는 충돌이 발견됨. 사용자 결정: **User도 다른 엔티티와 동일하게 Soft Delete 사용** — Trip·TripMember는 FK 그대로 두어 다른 참여자의 이력을 보존하고, 개인 전용 테이블(일정·구글 캘린더·리프레시 토큰)만 실제로 hard delete.
@@ -37,7 +37,7 @@
 ### Must Have
 
 - [x] `DELETE /api/v1/users/me` — JWT 필수
-- [x] 차단 없이 항상 진행. 호출자가 활성(`deleted_at IS NULL`) `TripMember` row로 역할이 `MEMBER`인 것이 있으면(상태 무관) 전부 [`trip-member-leave.md`](trip-member-leave.md) 로직으로 자동 나가기 처리
+- [x] 차단 없이 항상 진행. 호출자가 활성(`deleted_at IS NULL`) `TripMember` row로 역할이 `MEMBER`인 것이 있으면(상태 무관) 전부 [`trip-member-leave.md`](../trip/trip-member-leave.md) 로직으로 자동 나가기 처리
 - [x] 호출자가 활성 `TripMember` row로 역할이 `OWNER`인 것이 있으면(상태 무관) 소유한 해당 Trip을 전부 `deleteTrip()` 로직으로 자동 삭제 처리
 - [x] 위 cascade 완료 후 탈퇴 진행:
   - [x] 개인 전용 데이터 **hard delete**: `PersonalSchedule`, `RegularSchedule`, `GoogleCalendarCredential`, `GoogleCalendarBusyDay`, `RefreshToken` (전부 `userId` 기준)
@@ -48,17 +48,17 @@
 - [x] 성공 시 `204 No Content`
 - [x] `./gradlew test` 통과, OpenAPI 반영
 
-### Must Have — `#64` 소셜 provider revoke (2026-07-31 amend, Kakao/Apple Implemented · Google 로그인 revoke는 [`google-login-revoke.md`](google-login-revoke.md) 참고)
+### Must Have — `#64` 소셜 provider revoke (2026-07-31 amend, Kakao/Apple Implemented · Google 로그인 revoke는 [`google-login-revoke.md`](../auth/google-login-revoke.md) 참고)
 
 탈퇴 시 TripFit 내부 데이터 삭제와 별개로, 로그인에 쓴 소셜 provider 쪽에도 revoke·unlink를 호출한다. Apple은 App Store Review Guideline 5.1.1(v) 요건이라 Release Gate였음(`#64`, Closed — 완료). `#6`(계정 유지 상태의 다중 소셜 연결·개별 해제)과는 트리거가 다른 별개 흐름 — 혼동 금지.
 
 Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리한다.
 
-**Google — 캘린더 revoke (2026-07-31 Implemented) + 로그인 자체 revoke (신규, [`google-login-revoke.md`](google-login-revoke.md))**
+**Google — 캘린더 revoke (2026-07-31 Implemented) + 로그인 자체 revoke (신규, [`google-login-revoke.md`](../auth/google-login-revoke.md))**
 
 - [x] `UserWithdrawalService.withdraw()`에서 `GoogleCalendarCredentialRepository.deleteByUser_Id()` 호출 **전에**, credential이 존재하면 기존 `GoogleCalendarOAuthClient.revokeRefreshToken()`을 먼저 호출(best-effort, `GoogleCalendarService.disconnect()`와 동일 패턴 재사용 — 신규 클라이언트 코드 없음)
-- **🔴 재발견 (2026-07-31) — 위만으로는 불충분**: 위 항목은 Google Calendar를 **연동한 유저에게만** 적용된다. 그런데 Calendar 연동은 아직 FE에 구현된 적이 없어(목업, Wave 4 미착수), 실제로는 **Google로 로그인한 유저 전원**이 탈퇴해도 Google 쪽에 revoke가 전혀 호출되지 않는 gap이었다. 원인: 로그인이 `id_token` 검증만 하고 Google 서버로 토큰 교환을 하지 않아, 서버가 애초에 revoke할 토큰을 가져본 적이 없음. `#64` 재오픈, 상세 Before/After는 이슈 코멘트 참고
-- [x] **해결 (Implemented)** — Apple과 동일한 패턴 적용: `LoginRequest.authorizationCode`를 GOOGLE도 소비하도록 확장(신규 `auth/oauth/GoogleOAuthClient`가 code→refresh token 교환, `auth/domain/GoogleLoginCredential`에 암호화 저장), 탈퇴 시 `GoogleLoginCredentialService.revokeAndDeleteIfPresent()`가 `GoogleCalendarOAuthClient`와 별개로 로그인 refresh token을 revoke. 상세 설계·리스크: [`google-login-revoke.md`](google-login-revoke.md)
+- **🔴 재발견 (2026-07-31) — 위만으로는 불충분**: 위 항목은 Google Calendar를 **연동한 유저에게만** 적용된다. 그런데 Calendar 연동은 아직 FE에 구현된 적이 없어(목업, Wave 3 미착수), 실제로는 **Google로 로그인한 유저 전원**이 탈퇴해도 Google 쪽에 revoke가 전혀 호출되지 않는 gap이었다. 원인: 로그인이 `id_token` 검증만 하고 Google 서버로 토큰 교환을 하지 않아, 서버가 애초에 revoke할 토큰을 가져본 적이 없음. `#64` 재오픈, 상세 Before/After는 이슈 코멘트 참고
+- [x] **해결 (Implemented)** — Apple과 동일한 패턴 적용: `LoginRequest.authorizationCode`를 GOOGLE도 소비하도록 확장(신규 `auth/oauth/GoogleOAuthClient`가 code→refresh token 교환, `auth/domain/GoogleLoginCredential`에 암호화 저장), 탈퇴 시 `GoogleLoginCredentialService.revokeAndDeleteIfPresent()`가 `GoogleCalendarOAuthClient`와 별개로 로그인 refresh token을 revoke. 상세 설계·리스크: [`google-login-revoke.md`](../auth/google-login-revoke.md)
 
 **Kakao — 신규 Admin Key 기반 unlink (2026-07-31 Implemented)**
 
@@ -75,7 +75,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - [x] `UserWithdrawalService.withdraw()`에서 `AppleCredentialService.revokeAndDeleteIfPresent(userId)` 호출 — credential 존재 시 저장된 refresh token으로 `https://appleid.apple.com/auth/revoke` 호출(best-effort) 후 credential row 삭제(존재 여부 무관 항상 delete 시도)
 - [x] 신규 env `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY` — `.env.example`(루트·`deploy/app/`) + `.github/workflows/ci-cd.yml`(secrets 참조·`envs:` 목록·export) + `deploy/app/docker-compose.yml`(environment 매핑) + `application.yml`/`OAuthProperties.java`(바인딩) 전부 배선 완료
 - [x] `AuthService.login()`에서 `provider == APPLE`인데 `authorizationCode`가 없으면 소셜 토큰 검증 전 즉시 `AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`(400)로 거부(B안, 2026-07-31 사용자 결정 — 아래 "세부 정책" 절 참고). 조건부 필수화라 `Breaking-Change-Reason` 트레일러 **필요** — **프론트 배포와 조율 후 배포할 것**, 안 그러면 배포 즉시 Apple 로그인 전체 실패
-- [x] **(2026-07-31 amend — `#64` 재오픈)** `APPLE_CLIENT_ID` 단일값 → `APPLE_BUNDLE_ID`(iOS 네이티브)/`APPLE_SERVICE_ID`(모바일 브라우저) 이원화. `AppleCredential`에 `apple_client_id` 컬럼 추가해 로그인 시 매칭된 client_id를 저장하고, 탈퇴 revoke 호출에 그대로 재사용 — 상세: [`apple-oauth-multi-audience.md`](apple-oauth-multi-audience.md)
+- [x] **(2026-07-31 amend — `#64` 재오픈)** `APPLE_CLIENT_ID` 단일값 → `APPLE_BUNDLE_ID`(iOS 네이티브)/`APPLE_SERVICE_ID`(모바일 브라우저) 이원화. `AppleCredential`에 `apple_client_id` 컬럼 추가해 로그인 시 매칭된 client_id를 저장하고, 탈퇴 revoke 호출에 그대로 재사용 — 상세: [`apple-oauth-multi-audience.md`](../auth/apple-oauth-multi-audience.md)
 
 **Apple 구현 시 확정한 세부 정책 (2026-07-31, 사용자 위임 — "앱스토어 심사 통과에 가장 유리한 방향"으로 결정)**
 
@@ -127,7 +127,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 | 항목 | 값 |
 |------|-----|
 | Auth | 불필요 |
-| 용도 | 소셜 로그인. `#64`는 이 API의 **기존** `authorizationCode` 필드(원래 APPLE 전용, optional)를 실제로 소비하게 만들고, **provider가 APPLE 또는 GOOGLE이면 이 필드를 필수로 강제**한다(GOOGLE 확장은 [`google-login-revoke.md`](google-login-revoke.md)) |
+| 용도 | 소셜 로그인. `#64`는 이 API의 **기존** `authorizationCode` 필드(원래 APPLE 전용, optional)를 실제로 소비하게 만들고, **provider가 APPLE 또는 GOOGLE이면 이 필드를 필수로 강제**한다(GOOGLE 확장은 [`google-login-revoke.md`](../auth/google-login-revoke.md)) |
 
 `LoginRequest.authorizationCode`는 신규 필드가 아니라 `cb5a23f`에서 이미 계약에 추가된 필드다. 지금까지는 `AuthService.login(provider, token)`이 이 값을 그대로 버려서 아무 동작도 하지 않았다 — `#64` Apple Must Have 구현이 이 필드를 처음으로 실제 소비하는 지점이다.
 
@@ -137,7 +137,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - 기존 optional 필드를 조건부 필수로 바꾸는 계약 변경이라 이 커밋에 `Breaking-Change-Reason` 트레일러 필요(STOP §5) — **프론트가 이미 authorizationCode를 보내고 있지 않다면 이 커밋 배포와 동시에 Apple 로그인이 전부 실패한다.** 반드시 프론트 배포와 조율 후 배포할 것
 - Kakao는 영향 없음(이 필드 자체를 안 씀)
 
-**GOOGLE amend ([`google-login-revoke.md`](google-login-revoke.md), 2026-07-31)**: 처음부터 강제(Apple의 "best-effort → 나중에 강제" 2단계를 반복하지 않기로 결정) — provider가 GOOGLE인데 `authorizationCode`가 없거나 공백이면 즉시 `AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400)를 던진다. 마찬가지로 FE가 Google OAuth 요청을 hybrid flow(`response_type=code id_token`)로 전환해 이 필드를 보내기 시작한 뒤에 배포해야 함 — 순서가 바뀌면 배포 즉시 Google 로그인 전체 실패.
+**GOOGLE amend ([`google-login-revoke.md`](../auth/google-login-revoke.md), 2026-07-31)**: 처음부터 강제(Apple의 "best-effort → 나중에 강제" 2단계를 반복하지 않기로 결정) — provider가 GOOGLE인데 `authorizationCode`가 없거나 공백이면 즉시 `AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400)를 던진다. 마찬가지로 FE가 Google OAuth 요청을 hybrid flow(`response_type=code id_token`)로 전환해 이 필드를 보내기 시작한 뒤에 배포해야 함 — 순서가 바뀌면 배포 즉시 Google 로그인 전체 실패.
 
 | HTTP | code | 상황 |
 |------|------|------|
@@ -146,13 +146,13 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 ## 데이터 모델
 
-- ERD 참조: `docs/architecture/erd.md` — 기존 cascade·soft delete 범위는 스키마 컬럼 변경 없음. `#64` Apple 부분은 **신규 테이블 1개**(`apple_credential`) 추가 완료, Google 로그인 부분은 **신규 테이블 1개**(`google_login_credential`, [`google-login-revoke.md`](google-login-revoke.md)) 추가(아래)
+- ERD 참조: `docs/architecture/erd.md` — 기존 cascade·soft delete 범위는 스키마 컬럼 변경 없음. `#64` Apple 부분은 **신규 테이블 1개**(`apple_credential`) 추가 완료, Google 로그인 부분은 **신규 테이블 1개**(`google_login_credential`, [`google-login-revoke.md`](../auth/google-login-revoke.md)) 추가(아래)
 - 탈퇴 API(`DELETE /api/v1/users/me`) 자체엔 신규 에러 코드 없음(`AUTH_WITHDRAWN_ACCOUNT`는 재가입 정책 확정으로 폐기, provider revoke는 전부 best-effort). 단 로그인 API(`POST /api/v1/auth/login`)에는 `AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`/`AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400) 신규 추가 — 위 API 절 참고
 - hard delete 대상 테이블: `personal_schedule`, `regular_schedule`, `google_calendar_credential`, `google_calendar_busy_day`, `refresh_token`, `apple_credential`, `google_login_credential`(모두 `user_id` 단독 소유, 타 사용자 참조 없음)
 - soft delete + 스크럽 대상: `users` (row 유지, PII 컬럼만 null)
-- cascade 대상: 호출자가 MEMBER인 `trip_member` row(soft delete, [`trip-member-leave.md`](trip-member-leave.md) 재사용) · 호출자가 OWNER인 `trip` row(soft delete, `deleteTrip()` 재사용 — 해당 방의 다른 멤버 `trip_member` row도 함께 soft delete됨)
-- **`apple_credential` (신규 테이블, 확정)**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, 평문 저장 금지 — `SocialTokenCrypto` 재사용) · `apple_client_id`(varchar, 2026-07-31 추가 — 로그인 시 매칭된 Bundle ID/Services ID 원문, 탈퇴 revoke에 재사용) · `BaseTimeEntity`(생성·수정 시각)만 있는 최소 구조(`google_calendar_credential`의 access token 캐시·동기화 필드는 Apple에 해당 사항 없어 제외). PK는 프로젝트 컨벤션대로 UUID v4(`docs/specs/uuid-primary-key.md`). `docs/architecture/erd.md` 반영 완료
-- **`google_login_credential` (신규 테이블, [`google-login-revoke.md`](google-login-revoke.md))**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, `SocialTokenCrypto` 재사용) · `BaseTimeEntity`만 있는 최소 구조. Apple과 달리 client_id 컬럼 없음(Google revoke 엔드포인트가 client_id를 요구하지 않아 저장할 필요 자체가 없음 — 상세 근거는 해당 스펙 설계 노트). PK는 UUID v4. `docs/architecture/erd.md` 반영 완료
+- cascade 대상: 호출자가 MEMBER인 `trip_member` row(soft delete, [`trip-member-leave.md`](../trip/trip-member-leave.md) 재사용) · 호출자가 OWNER인 `trip` row(soft delete, `deleteTrip()` 재사용 — 해당 방의 다른 멤버 `trip_member` row도 함께 soft delete됨)
+- **`apple_credential` (신규 테이블, 확정)**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, 평문 저장 금지 — `SocialTokenCrypto` 재사용) · `apple_client_id`(varchar, 2026-07-31 추가 — 로그인 시 매칭된 Bundle ID/Services ID 원문, 탈퇴 revoke에 재사용) · `BaseTimeEntity`(생성·수정 시각)만 있는 최소 구조(`google_calendar_credential`의 access token 캐시·동기화 필드는 Apple에 해당 사항 없어 제외). PK는 프로젝트 컨벤션대로 UUID v4(`docs/specs/cross-cutting/uuid-primary-key.md`). `docs/architecture/erd.md` 반영 완료
+- **`google_login_credential` (신규 테이블, [`google-login-revoke.md`](../auth/google-login-revoke.md))**: `user_id`(FK, UNIQUE, user당 1행) · `refresh_token_ciphertext`(AES-256-GCM, TEXT, `SocialTokenCrypto` 재사용) · `BaseTimeEntity`만 있는 최소 구조. Apple과 달리 client_id 컬럼 없음(Google revoke 엔드포인트가 client_id를 요구하지 않아 저장할 필요 자체가 없음 — 상세 근거는 해당 스펙 설계 노트). PK는 UUID v4. `docs/architecture/erd.md` 반영 완료
 
 ## 비즈니스 규칙
 
@@ -160,7 +160,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 |----|-----------|------------------|
 | BR-USER-004 | 확인 후 탈퇴, 차단 없이 자동 cascade(참여 방 자동 나가기 · 소유 방 자동 삭제) | `UserWithdrawalService`(신규) |
 | (BR 없음, 외부 요건) | Apple App Store Review Guideline 5.1.1(v) — Sign in with Apple 지원 + 앱 내 계정 삭제 지원 시 삭제 시점에 Apple revoke 엔드포인트 호출 필수 | `UserWithdrawalService` + `AppleCredentialService` + `AppleOAuthClient`(client_secret JWT 서명) |
-| (BR 없음, `#64` 재발견 gap) | Google 로그인 자체에 대한 동의도 탈퇴 시 revoke — 캘린더 연동 여부와 무관 | `UserWithdrawalService` + `GoogleLoginCredentialService` + `GoogleOAuthClient` ([`google-login-revoke.md`](google-login-revoke.md)) |
+| (BR 없음, `#64` 재발견 gap) | Google 로그인 자체에 대한 동의도 탈퇴 시 revoke — 캘린더 연동 여부와 무관 | `UserWithdrawalService` + `GoogleLoginCredentialService` + `GoogleOAuthClient` ([`google-login-revoke.md`](../auth/google-login-revoke.md)) |
 
 ## 검증 시나리오
 
@@ -175,7 +175,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - [x] **(`#64`)** Google Calendar 연동돼 있던 사용자가 탈퇴 → `GoogleCalendarOAuthClient.revokeRefreshToken()` 호출 후 credential hard delete(mock으로 `verify()` — 실제 호출 자체가 일어나는지 확인) — `UserWithdrawalServiceTest#withdraw_whenGoogleCalendarConnected_revokesRefreshTokenBeforeDeletingCredential`
 - [x] **(`#64`)** Kakao로 로그인한 사용자가 탈퇴 → Kakao unlink 호출(mock `verify()`) 후 탈퇴 정상 완료 — `UserWithdrawalServiceTest#withdraw_whenKakaoProvider_callsKakaoUnlink`
 - [x] **(`#64`)** Apple로 로그인(`authorizationCode` 포함)한 사용자가 탈퇴 → 저장된 refresh token으로 Apple revoke 호출(mock `verify()`) 후 credential hard delete — `AppleCredentialServiceTest#revokeAndDeleteIfPresent_whenCredentialExists_decryptsRevokesThenDeletes`
-- [x] **(`#64` 재발견, [`google-login-revoke.md`](google-login-revoke.md))** Google로 로그인(`authorizationCode` 포함, refresh_token 응답)한 사용자가 탈퇴 → 저장된 refresh token으로 Google revoke 호출(mock `verify()`) 후 credential hard delete — `GoogleLoginCredentialServiceTest#revokeAndDeleteIfPresent_whenCredentialExists_decryptsRevokesThenDeletes`, `UserWithdrawalServiceTest#withdraw_callsGoogleLoginCredentialRevokeAndDelete`
+- [x] **(`#64` 재발견, [`google-login-revoke.md`](../auth/google-login-revoke.md))** Google로 로그인(`authorizationCode` 포함, refresh_token 응답)한 사용자가 탈퇴 → 저장된 refresh token으로 Google revoke 호출(mock `verify()`) 후 credential hard delete — `GoogleLoginCredentialServiceTest#revokeAndDeleteIfPresent_whenCredentialExists_decryptsRevokesThenDeletes`, `UserWithdrawalServiceTest#withdraw_callsGoogleLoginCredentialRevokeAndDelete`
 - [x] **(`#64` 재발견)** 캘린더 연동 상태에서 탈퇴한 Google 유저 → 캘린더 revoke·로그인 revoke **둘 다** 호출됨(각 credential이 독립적으로 존재·삭제)
 
 ### 엣지 · 실패
@@ -198,7 +198,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 - [x] Must Have 전부 (기존 cascade·soft delete 범위)
 - [x] **(`#64`)** Must Have — Kakao/Apple revoke 전부 (2026-07-31 Implemented, 코드 기준)
-- [x] **(`#64` 재발견, [`google-login-revoke.md`](google-login-revoke.md))** Google 로그인 자체 revoke — 코드 기준 Implemented
+- [x] **(`#64` 재발견, [`google-login-revoke.md`](../auth/google-login-revoke.md))** Google 로그인 자체 revoke — 코드 기준 Implemented
 - [x] `docs/product/business-rules/user.md` BR-USER-004 `[미정]` 해소 반영
 - [x] `user-my-page.md` Out of Scope에 본 스펙 deferred 링크 추가
 - [x] `docs/specs/README.md` wave 2 표·이슈 매핑 갱신
@@ -229,7 +229,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-07-31 | `#64` 재오픈 — Apple `APPLE_CLIENT_ID` 단일값을 `APPLE_BUNDLE_ID`(iOS 네이티브)/`APPLE_SERVICE_ID`(모바일 브라우저)로 이원화. `apple_credential`에 `apple_client_id` 컬럼 추가, 로그인 시 매칭된 값을 저장해 탈퇴 revoke에 재사용. 상세: [`apple-oauth-multi-audience.md`](apple-oauth-multi-audience.md) |
+| 2026-07-31 | `#64` 재오픈 — Apple `APPLE_CLIENT_ID` 단일값을 `APPLE_BUNDLE_ID`(iOS 네이티브)/`APPLE_SERVICE_ID`(모바일 브라우저)로 이원화. `apple_credential`에 `apple_client_id` 컬럼 추가, 로그인 시 매칭된 값을 저장해 탈퇴 revoke에 재사용. 상세: [`apple-oauth-multi-audience.md`](../auth/apple-oauth-multi-audience.md) |
 | 2026-07-31 | `#64` Apple authorizationCode 누락 처리를 best-effort(조용히 skip)에서 **강제(400 거부, B안)** 로 amend — 신규 `AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED` 추가, `AuthService.login()`이 provider==APPLE인데 authorizationCode 없으면 소셜 토큰 검증 전 즉시 거부. `LoginRequest`·`AuthController` Swagger(`@Schema`·`@Operation`·`@ApiResponses`) 갱신. 조건부 필수화라 `Breaking-Change-Reason` 트레일러 필요 — **프론트 배포 순서 조율 필수** |
 | 2026-07-31 | `#64` Apple Implemented(코드) — `authorizationCode`를 `AuthService.login()`이 소비하도록 시그니처 변경(`AuthController`도 동일 전달). 신규 `auth/domain/AppleCredential`(최소 구조, user당 1행) · `auth/repository/AppleCredentialRepository` · `auth/oauth/AppleOAuthClient`(ES256 client_secret JWT 서명 — nimbus-jose-jwt, token exchange·revoke, 둘 다 호출마다 신규 JWT 발급) · `auth/service/AppleCredentialService`(로그인 시 저장 best-effort, 탈퇴 시 revoke+delete best-effort). `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY` env 전체 배선(.env.example 2곳·ci-cd.yml·docker-compose.yml·application.yml/OAuthProperties). `docs/architecture/erd.md`에 `apple_credential` 테이블 반영. `UserWithdrawalService.revokeGoogleCalendarIfConnected()`에도 복호화 실패 흡수 try/catch 보강. 세부 정책 3건(credential 컬럼 범위·token exchange 실패 시 로그인 처리·재로그인 갱신 정책) 사용자 위임으로 확정. 남은 것은 프론트 `authorizationCode` 전송 공지·실계정 수동 검증(코드 밖) |
 | 2026-07-31 | `#64` Google/Kakao Implemented — `UserWithdrawalService`에 `revokeGoogleCalendarIfConnected()`/`unlinkKakaoIfProvider()` 추가(둘 다 best-effort). 신규 `user/client/KakaoUnlinkClient` + `KAKAO_ADMIN_KEY` env 4곳(.env.example·ci-cd.yml·docker-compose.yml·application.yml/OAuthProperties) 배선. `UserWithdrawalServiceTest`·신규 `KakaoUnlinkClientTest`로 revoke 호출·provider 실패 시 best-effort 검증. Apple은 테이블명 확정·프론트 공지가 남아 있어 이번 범위에서 제외(별도 진행) |

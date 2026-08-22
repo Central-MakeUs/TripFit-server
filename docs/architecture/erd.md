@@ -9,7 +9,7 @@
 - **설계 원칙:**
     - **snake_case**, **단수형** 테이블명 (`users`만 복수 — MySQL 예약어 `user` 회피)
     - **Soft delete:** `users`, `trip`, `trip_member` — `deleted_at`
-    - **UUID v4 PK** (`char(36)`), BR-* 및 백엔드 확정 사항 반영 — [`uuid-primary-key.md`](../specs/uuid-primary-key.md)
+    - **UUID v4 PK** (`char(36)`), BR-* 및 백엔드 확정 사항 반영 — [`uuid-primary-key.md`](../specs/cross-cutting/uuid-primary-key.md)
     - **User 전역 일정:** `regular_schedule`(정기) + `personal_schedule`(개별) — 모든 여행방에 자동 반영 (BR-USER-008)
 - **대상 DB:** MySQL 8.0 (예약어 `rank` 등 — JPA `@Column` 명시. 구 `user` 테이블 → **`users`**)
 
@@ -263,11 +263,11 @@ trip ||--o{ notification_history : relates_to
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
 
-**API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`users.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
+**API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`users.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
 
 ### `refresh_token`
 
-wave 1+. [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](../specs/auth-token-rotation.md)
+wave 1+. [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
@@ -307,7 +307,7 @@ User 소유. 출근·수업·회의 등 **복수 행**. **trip FK 없음** (BR-U
 
 ### `personal_schedule` (개인 일정 — 슬롯 단위 오버라이드, O1.4)
 
-User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라이드(`null`=오버라이드 없음, 정기+구글 계산값을 그대로 씀) + 날짜 단위 불확실. **trip FK 없음.** 병합 규칙: [`schedule-slot-override.md`](../specs/schedule-slot-override.md)(O1.4, #67) — 구 S1(그 날 전체 대체)은 폐기.
+User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라이드(`null`=오버라이드 없음, 정기+구글 계산값을 그대로 씀) + 날짜 단위 불확실. **trip FK 없음.** 병합 규칙: [`schedule-slot-override.md`](../specs/user-schedule/schedule-slot-override.md)(O1.4, #67) — 구 S1(그 날 전체 대체)은 폐기.
 
 - **관련 BR:** BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-008
 
@@ -331,7 +331,7 @@ User 소유. **날짜당 1행** — 오전/오후/저녁 슬롯 단위 오버라
 
 ### `google_calendar_credential` (Google Calendar OAuth)
 
-User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-calendar-oauth.md`](../specs/google-calendar-oauth.md)
+User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-calendar-oauth.md`](../specs/user/google-calendar-oauth.md)
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
@@ -348,20 +348,20 @@ User당 **1행**. refresh·access token AES-256-GCM 암호화 저장. [`google-c
 
 ### `apple_credential` (Apple Sign In revoke용 refresh token)
 
-User당 **1행**. 탈퇴 시 `https://appleid.apple.com/auth/revoke` 호출 용도로만 보관 — Google Calendar처럼 주기적 동기화를 하지 않으므로 access token 캐시·동기화 시각·에러 필드는 두지 않는다. 로그인 시 `authorizationCode`를 교환할 때마다 최신 refresh token으로 덮어쓰고, 탈퇴 시 revoke 호출 후 row 자체를 삭제한다. [`user-account-withdrawal.md`](../specs/user-account-withdrawal.md)
+User당 **1행**. 탈퇴 시 `https://appleid.apple.com/auth/revoke` 호출 용도로만 보관 — Google Calendar처럼 주기적 동기화를 하지 않으므로 access token 캐시·동기화 시각·에러 필드는 두지 않는다. 로그인 시 `authorizationCode`를 교환할 때마다 최신 refresh token으로 덮어쓰고, 탈퇴 시 revoke 호출 후 row 자체를 삭제한다. [`user-account-withdrawal.md`](../specs/user/user-account-withdrawal.md)
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
 | id | char(36) | N | PK | UUID v4 |
 | user_id | char(36) | N | FK → users.id, **UNIQUE** | |
 | refresh_token_ciphertext | text | N | | AES-256-GCM 암호문 (Base64) — `SocialTokenCrypto` 재사용, 별도 AES 키 없음 |
-| apple_client_id | varchar | N | | 로그인 시 검증된 client_id 원문(`APPLE_BUNDLE_ID` 또는 `APPLE_SERVICE_ID`) — iOS 네이티브 앱과 모바일 브라우저 로그인이 서로 다른 client_id를 쓰므로, 탈퇴 시 revoke 호출에 이 값을 그대로 재사용([`apple-oauth-multi-audience.md`](../specs/apple-oauth-multi-audience.md)) |
+| apple_client_id | varchar | N | | 로그인 시 검증된 client_id 원문(`APPLE_BUNDLE_ID` 또는 `APPLE_SERVICE_ID`) — iOS 네이티브 앱과 모바일 브라우저 로그인이 서로 다른 client_id를 쓰므로, 탈퇴 시 revoke 호출에 이 값을 그대로 재사용([`apple-oauth-multi-audience.md`](../specs/auth/apple-oauth-multi-audience.md)) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 
 ### `google_login_credential` (Google 로그인 revoke용 refresh token)
 
-User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용도로만 보관 — `google_calendar_credential`과 별개(목적·라이프사이클이 다름). client_id 컬럼은 두지 않음(현재 로그인·Calendar가 같은 단일 Web Client ID를 공유하고, Google revoke 엔드포인트 자체가 client_id를 요구하지 않기 때문 — [`google-login-revoke.md`](../specs/google-login-revoke.md) 설계 노트). 로그인 시 `authorizationCode`를 교환해 refresh_token이 응답에 있을 때만 덮어쓰고(Google은 최초 동의 시에만 내려줌), 탈퇴 시 revoke 호출 후 row 자체를 삭제한다.
+User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용도로만 보관 — `google_calendar_credential`과 별개(목적·라이프사이클이 다름). client_id 컬럼은 두지 않음(현재 로그인·Calendar가 같은 단일 Web Client ID를 공유하고, Google revoke 엔드포인트 자체가 client_id를 요구하지 않기 때문 — [`google-login-revoke.md`](../specs/auth/google-login-revoke.md) 설계 노트). 로그인 시 `authorizationCode`를 교환해 refresh_token이 응답에 있을 때만 덮어쓰고(Google은 최초 동의 시에만 내려줌), 탈퇴 시 revoke 호출 후 row 자체를 삭제한다.
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
@@ -412,7 +412,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | confirmed_attend_count | int | Y | | 확정 시점 참석 인원수(전체+부분참석), 1회 계산 후 고정. unconfirm 시 null |
 | confirmed_vacation_member_count | int | Y | | 확정 시점 연차 필요 인원수. unconfirm 시 null |
 | confirmed_uncertain_count | int | Y | | 확정 시점 불확실 일정 인원수. unconfirm 시 null |
-| last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·**confirm**·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip-room-api.md) D5 · #39) |
+| last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·**confirm**·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip/trip-room-api.md) D5 · #39) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |
@@ -424,7 +424,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 방별 **참여·일정 확인** 상태. 일정 데이터는 User `personal_schedule`/`regular_schedule`에 있음 (BR-USER-007 · #39).
 
 - **관련 BR:** BR-USER-002, BR-USER-007
-- **관련 스펙:** [`trip-room-api.md`](../specs/trip-room-api.md) D1 (#39), [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md)
+- **관련 스펙:** [`trip-room-api.md`](../specs/trip/trip-room-api.md) D1 (#39), [`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md)
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
@@ -444,13 +444,13 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 
 동명이인 `(2)` 표시: **DB 컬럼 없음** — BR-USER-009 조회 로직
 
-**카운트:** 내부적으로는 `joinedMemberCount`(soft-delete 제외 전 멤버, SCHEDULE_PENDING 포함)와 `activeMemberCount`(`ACTIVE`만)를 둘 다 집계하지만, **API로는 `activeMemberCount`만 노출**(`joinedMemberCount`는 응답 필드 아님 — 참여 인원이 필요하면 `membersPreview.size() + membersPreviewOverflow` 또는 멤버 목록 배열 크기로 유도). `memberFillRate`(응답률) = `activeMemberCount ÷ memberCount`. 상세: [`trip-member-fill-rate-refactor.md`](../specs/trip-member-fill-rate-refactor.md)
+**카운트:** 내부적으로는 `joinedMemberCount`(soft-delete 제외 전 멤버, SCHEDULE_PENDING 포함)와 `activeMemberCount`(`ACTIVE`만)를 둘 다 집계하지만, **API로는 `activeMemberCount`만 노출**(`joinedMemberCount`는 응답 필드 아님 — 참여 인원이 필요하면 `membersPreview.size() + membersPreviewOverflow` 또는 멤버 목록 배열 크기로 유도). `memberFillRate`(응답률) = `activeMemberCount ÷ memberCount`. 상세: [`trip-member-fill-rate-refactor.md`](../specs/trip/trip-member-fill-rate-refactor.md)
 
 ### `trip_member_schedule_snapshot` (#38)
 
 완료(CONFIRMED)·만료(EXPIRED) 방의 **멤버×날짜 정기+개별 합친 값** 고정본. 희망 기간·sparse. live `regular`/`personal`과 분리 (BR-USER-008).
 
-- **관련 스펙:** [`trip-schedule-snapshot.md`](../specs/trip-schedule-snapshot.md)
+- **관련 스펙:** [`trip-schedule-snapshot.md`](../specs/trip/trip-schedule-snapshot.md)
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
@@ -485,7 +485,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | partial_attend_count | int | N | | 부분 참석 인원 수 |
 | uncertain_count | int | N | | 불확실 일정이 있는 인원 수 |
 | total_vacation_days | float | N | | 총 연차 일수(반차=0.5) |
-| score | float | N | | 순위·동점 비교(내부용, 응답 미노출) ([`trip-recommendation.md`](../specs/trip-recommendation.md)) |
+| score | float | N | | 순위·동점 비교(내부용, 응답 미노출) ([`trip-recommendation.md`](../specs/trip/trip-recommendation.md)) |
 | created_at | timestamptz | N | | |
 
 **정책:** 모드 변경·trip 기간/일수 변경·trip soft delete → 해당 trip `recommendation` **hard DELETE**. `trip.last_recommendation_mode` 갱신.
@@ -602,19 +602,18 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 |------|------|
 | `[미정]` | EXPIRED **전환 시점**(lazy vs 배치) · `attendRate`(카드 참석률 %) 계산식 최종 확정(현재 화면 역산 추론값) |
 | wave 2 | **완료** — `#12` trip CRUD·members schedule-calendar, `#13`·`#50` 추천 4모드·확정·확정취소(BR-TRIP-005 가중치·BR-TRIP-012 동점 포함) 전부 구현 |
-| wave 4 | 여행방 **삭제** 시 VOC 사유 API·UI (unconfirm 사유와 별개) |
 
 ## 기획 메모 (NotebookLM + 확정)
 
 1. **MVP 핵심:** `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation` + `refresh_token`
 2. **2026-07-08:** TERMINATED, Pin(`is_pinned`), cancel_reason wave 4, 전역 연동
 3. **2026-07-13:** A안 폐기 → 정기/개별 2테이블, 정기 N행·title·범용 시간 필드
-4. **2026-07-20:** 홈 D5 — `trip.last_activity_at`, `trip_member.pinned_at` ([`trip-room-api.md`](../specs/trip-room-api.md))
+4. **2026-07-20:** 홈 D5 — `trip.last_activity_at`, `trip_member.pinned_at` ([`trip-room-api.md`](../specs/trip/trip-room-api.md))
 5. **2026-07-21:** `#39` — `trip_member.status` **SCHEDULE_PENDING|ACTIVE** 부활 (방장 create=`SCHEDULE_PENDING` → confirm=`ACTIVE`)
 6. **2026-07-21:** `trip.duration_days` **nullable**(일정 미정) · 희망 기간 생성 후 불변 · API n박+m일
 6. **2026-07-21:** ERD 개선 반영 — `users` rename · `responded_at` · active UNIQUE(app) · `score`=#13 유지
 7. ~~알림 이력 테이블 — ERD 범위 외 (wave 3)~~ — 2026-07-30 `#21` 구현으로 아래 11번 참고
-8. **2026-07-26:** `trip.duration_nights` 파생값 → 컬럼 영속화, 박/일 검증 범위 `nights+1~min(nights+2,T)`로 확장 ([`trip-duration-range.md`](../specs/trip-duration-range.md))
-9. **2026-08-01:** `TripMemberStatus` 개명(`JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE`, [`trip-member-status-derive.md`](../specs/trip-member-status-derive.md))에서 빠졌던 후속 정리 — `trip_member.responded_at`→`activated_at`, `markResponded()`→`activate()`, API 필드 `respondedCount`→`activeMemberCount`로 일괄 개명(이름을 상태 enum과 일치시켜 혼동 제거, 네이밍 우선 원칙)
-10. **2026-07-28 (#60):** `memberFillRate` 공식을 `joinedMemberCount ÷ memberCount` → `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출로 전환 · 여행방 상세에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](../specs/trip-member-fill-rate-refactor.md))
-11. **2026-07-30 (#21):** 알림 — `user_device_token`·`notification_history` 신규, `users.notification_enabled`(default true, BR-USER-005) 추가 ([`notification.md`](../specs/notification.md))
+8. **2026-07-26:** `trip.duration_nights` 파생값 → 컬럼 영속화, 박/일 검증 범위 `nights+1~min(nights+2,T)`로 확장 ([`trip-duration-range.md`](../specs/trip/trip-duration-range.md))
+9. **2026-08-01:** `TripMemberStatus` 개명(`JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE`, [`trip-member-status-derive.md`](../specs/trip/trip-member-status-derive.md))에서 빠졌던 후속 정리 — `trip_member.responded_at`→`activated_at`, `markResponded()`→`activate()`, API 필드 `respondedCount`→`activeMemberCount`로 일괄 개명(이름을 상태 enum과 일치시켜 혼동 제거, 네이밍 우선 원칙)
+10. **2026-07-28 (#60):** `memberFillRate` 공식을 `joinedMemberCount ÷ memberCount` → `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출로 전환 · 여행방 상세에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](../specs/trip/trip-member-fill-rate-refactor.md))
+11. **2026-07-30 (#21):** 알림 — `user_device_token`·`notification_history` 신규, `users.notification_enabled`(default true, BR-USER-005) 추가 ([`notification.md`](../specs/notification/notification.md))

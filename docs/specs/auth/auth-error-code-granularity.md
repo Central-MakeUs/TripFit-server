@@ -97,7 +97,7 @@
 
 - [ ] `./gradlew test` 통과
 - [ ] `AppleTokenVerifierTest` 기존 케이스 갱신 + Kakao/Google 신규 테스트 추가
-- [ ] `docs/specs/auth-social-login.md` 에러 표 amend
+- [ ] `docs/specs/auth/auth-social-login.md` 에러 표 amend
 - [ ] `AuthController` Swagger `@ApiResponse`/예시 갱신
 - [ ] `/v3/api-docs`에 신규 enum 값 반영 확인
 

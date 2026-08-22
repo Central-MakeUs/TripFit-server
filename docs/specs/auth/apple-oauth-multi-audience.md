@@ -10,7 +10,7 @@ Apple 로그인이 **iOS 네이티브 앱(Bundle ID)** 과 **모바일 웹브라
 
 ## 배경
 
-- `docs/specs/auth-social-login.md`에 `Apple aud 값 (bundle ID vs Services ID)`가 `[미정]`으로 남아 있었음. `.env.example`이 `APPLE_CLIENT_ID` 단일 값에서 `APPLE_BUNDLE_ID`+`APPLE_SERVICE_ID`로 분리되면서 이 결정이 실질적으로 시작됨 — 이 스펙이 그 결정을 확정하고 코드에 반영한다.
+- `docs/specs/auth/auth-social-login.md`에 `Apple aud 값 (bundle ID vs Services ID)`가 `[미정]`으로 남아 있었음. `.env.example`이 `APPLE_CLIENT_ID` 단일 값에서 `APPLE_BUNDLE_ID`+`APPLE_SERVICE_ID`로 분리되면서 이 결정이 실질적으로 시작됨 — 이 스펙이 그 결정을 확정하고 코드에 반영한다.
 - 2026-07-31 프론트 확인 결과:
   - **iOS 네이티브**: `expo-apple-authentication`의 `AppleAuthentication.signInAsync()`(`ASAuthorizationAppleIDProvider` 래핑) — `app.json`의 `bundleIdentifier: "com.tripfit.app"`가 자동으로 id_token `aud`에 찍힘.
   - **모바일 웹브라우저(RN WebView 아님)**: `AppleID.auth.init()`(Apple JS SDK) — `clientId`가 Services ID(`NEXT_PUBLIC_APPLE_CLIENT_ID`)여야만 동작. 이 경로의 id_token `aud`는 Services ID.
@@ -37,9 +37,9 @@ Apple 로그인이 **iOS 네이티브 앱(Bundle ID)** 과 **모바일 웹브라
 - [x] `AppleOAuthClient.exchangeAuthorizationCodeForRefreshToken/revokeRefreshToken/buildClientSecretJwt` — 내부에서 항상 `oAuthProperties.getAppleClientId()`를 읽던 것을 **호출부가 넘기는 `clientId` 파라미터**로 변경
 - [x] `AppleCredentialService.saveIfAuthorizationCodePresent` — `AuthService.login()`이 넘긴 매칭 client_id를 받아 교환 호출·`AppleCredential` 저장에 사용
 - [x] `AppleCredentialService.revokeAndDeleteIfPresent` — 저장된 `apple_client_id` 컬럼 값을 읽어 revoke 호출에 사용(로그인 시점과 항상 동일한 값 재사용 — Bundle ID로 로그인했으면 Bundle ID로, Services ID로 로그인했으면 Services ID로 revoke)
-- [x] `docs/specs/auth-social-login.md` — `[미정]` 항목(Apple aud) 확정 반영 + env 표 갱신(`APPLE_CLIENT_ID` → `APPLE_BUNDLE_ID`/`APPLE_SERVICE_ID`)
-- [x] `docs/specs/user-account-withdrawal.md` — `#64` Apple 섹션에 이 amend 반영(멀티 client_id 대응)
-- [x] `docs/specs/auth-apple-server-notifications.md` — `APPLE_CLIENT_ID` 참조를 멀티 audience 검증으로 갱신
+- [x] `docs/specs/auth/auth-social-login.md` — `[미정]` 항목(Apple aud) 확정 반영 + env 표 갱신(`APPLE_CLIENT_ID` → `APPLE_BUNDLE_ID`/`APPLE_SERVICE_ID`)
+- [x] `docs/specs/user/user-account-withdrawal.md` — `#64` Apple 섹션에 이 amend 반영(멀티 client_id 대응)
+- [x] `docs/specs/auth/auth-apple-server-notifications.md` — `APPLE_CLIENT_ID` 참조를 멀티 audience 검증으로 갱신
 - [x] `deploy/README.md` env 표 — `APPLE_CLIENT_ID` 행 제거, `APPLE_BUNDLE_ID`/`APPLE_SERVICE_ID` 행 추가
 - [x] `.github/workflows/ci-cd.yml` — secrets 참조·`envs:` 목록·export 스크립트에서 `APPLE_CLIENT_ID` → `APPLE_BUNDLE_ID`+`APPLE_SERVICE_ID`로 교체(레거시 이름 잔존 금지 — harness STOP §4). 추가로 root `docker-compose.yml`·`deploy/app/docker-compose.yml`·`deploy/app/.env.example`·`AuthErrorCode.java` `@Schema`도 동일하게 갱신
 - [x] 테스트 갱신: `AppleTokenVerifierTest`, `AppleOAuthClientTest`, `AppleNotificationVerifierTest`, `AppleCredentialServiceTest`, `AuthServiceTest`, `application-test.yml`

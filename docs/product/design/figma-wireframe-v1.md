@@ -32,7 +32,7 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 | **추천 결과** | 4모드, TOP 3, 근거 | `recommendation`, `last_recommendation_mode` (wave 2) |
 | **확정·공유** | 확정, 카카오 공유, 확정 취소 | `CONFIRMED`; 확정 취소(`unconfirm`) 사유 wave 2(#13) |
 | **알림센터** | 알림 목록 | BR-NOTI-* (wave 3) |
-| **마이페이지** | 설정, 탈퇴, 캘린더 | BR-USER-004/005, wave 4 연동 |
+| **마이페이지** | 설정, 탈퇴, 캘린더 | BR-USER-004/005, wave 3 연동 |
 
 ---
 
@@ -77,15 +77,11 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 
 - 소셜 로그인 필수 — **BR-USER-001/002**
 - `hasPreSchedule` — regular OR personal ≥1 **파생** (입장 단독 게이트 아님 — D-JOIN-ENTRY)
-- 프로필 이미지: wave 1 provider CDN — [`006`](../decisions/006-profile-image-url-storage.md)
+- 프로필 이미지: wave 1 provider CDN — [`006`](../../decisions/006-profile-image-url-storage.md)
 
 ### 5. 알림
 
-BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-rules/notification.md)가 SSOT. 요지: 참여·응답·공유 알림은 wave 3, 정기 스케줄러(BR-NOTI-005)는 wave 4.
-
-### 6. wave 4 (문서만 — MVP Out)
-
-- 여행방 **삭제** 시 VOC 사유 — 별개 항목, 미구현 wave 4 (Figma 플로우 있음)
+BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-rules/notification.md)가 SSOT. 요지: 참여·응답·공유 알림·정기 스케줄러(BR-NOTI-005) 전부 wave 3 (FCM/Firebase 외부 연동).
 
 ---
 
@@ -104,7 +100,6 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 | Pin 토글 | `trip_member.is_pinned` + `pinned_at` | D5 | 2 |
 | 알림센터 | 알림 이력 | BR-NOTI-* | 3 |
 | 확정 취소 사유 | unconfirmReason | wave 2 (#13) | 2 |
-| 삭제 사유 | — | `[wave 4]` | 4 |
 
 ---
 
@@ -121,7 +116,7 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 
 ## 관련 문서
 
-- ERD: [`docs/architecture/erd.md`](../architecture/erd.md)
+- ERD: [`docs/architecture/erd.md`](../../architecture/erd.md)
 - BR: [`docs/product/business-rules/`](../product/business-rules/)
 - 플로우: [`docs/product/flows/`](../product/flows/)
-- 에이전트 규칙: [`.claude/rules/figma-product.md`](../../.claude/rules/figma-product.md)
+- 에이전트 규칙: [`.claude/rules/figma-product.md`](../../../.claude/rules/figma-product.md)

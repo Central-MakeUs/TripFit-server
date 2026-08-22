@@ -5,7 +5,7 @@
 > deferred: 공휴일 API 연동 (주말만 우선, static table/외부 API 방식은 `[미정]`)
 > 상태: **Approved** (2026-07-30 — `scoring_draft.md` 확정본 반영 후 확정)
 > GitHub: **#50**
-> 선행: [`trip-recommendation.md`](trip-recommendation.md) (#13, `Recommendation` 엔티티·Repository·Controller stub) · [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17, Closed)
+> 선행: [`trip-recommendation.md`](trip-recommendation.md) (#13, `Recommendation` 엔티티·Repository·Controller stub) · [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17, Closed)
 
 ## 목표
 

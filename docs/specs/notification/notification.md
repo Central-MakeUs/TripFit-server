@@ -8,7 +8,7 @@
 > deferred: BR-NOTI-008(카카오 공유) → `#19`(Approved)
 > GitHub: **#21**
 > 선행: `#12`(여행방 CRUD, Implemented) · `#13`(추천·확정·취소, **Closed/Implemented** — `TripRecommendationService.confirmSchedule`/`unconfirm`에 BR-NOTI-004/009 이벤트 발행 완료) · 참여 완료 정의(`#22`/`#39`, 확정됨)
-> amend 대상(다른 스펙): [`user-my-page.md`](user-my-page.md) — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환 (D8, 별도 승인·changelog 완료)
+> amend 대상(다른 스펙): [`user-my-page.md`](../user/user-my-page.md) — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환 (D8, 별도 승인·changelog 완료)
 
 ## 목표
 
@@ -16,9 +16,9 @@
 
 ## 배경
 
-- 기획자 전달 알림 명세 표(2026-07-23)를 [`docs/product/business-rules/notification.md`](../product/business-rules/notification.md)에 반영 완료
+- 기획자 전달 알림 명세 표(2026-07-23)를 [`docs/product/business-rules/notification.md`](../../product/business-rules/notification.md)에 반영 완료
 - 이슈 `#21` Must Have: FCM 연동, 알림 이력 테이블, NOTI-001~005·009 트리거, 알림 설정, 알림센터
-- [`client-platform.md`](../../.claude/rules/client-platform.md): "푸시(FCM/APNs)는 wave 3 — **스펙 없으면** 엔티티·발송 API 추가 금지" — 본 스펙이 그 게이트 역할
+- [`client-platform.md`](../../../.claude/rules/client-platform.md): "푸시(FCM/APNs)는 wave 3 — **스펙 없으면** 엔티티·발송 API 추가 금지" — 본 스펙이 그 게이트 역할
 
 ### 확정 사항 (2026-07-23, 사용자 승인) — 전부 임의 결정 아님
 
@@ -31,7 +31,7 @@
 | **D5** | 알림 이력 테이블 범위 | **알림센터 조회 API까지 포함** |
 | **D6** | NOTI-005 발송 방식 — 토픽 vs DB조회 배치 | **DB 조회(`notification_enabled=true`) + 배치(500개) 멀티캐스트.** 토픽 방식은 클라이언트가 구독을 관리해야 해 서버가 게이트를 강제할 수 없어 기각 |
 | **D7** | 동일 기기 재로그인 시 FCM 토큰 재등록 처리 | **`user_id` 재할당.** 토큰이 이미 있으면 소유자를 새 유저로 갱신 — 이전 계정에 오발송 방지 |
-| **D8** | 알림 설정 API 위치 | **기존 `PATCH /users/profile`(마이페이지)에 `notificationEnabled` 필드 추가.** `/users/me/...` 새 경로 대신 기존 컨벤션 재사용 — 단, 한 필드만 보내는 호출을 지원해야 하므로 **`user-my-page.md`의 firstName/lastName도 optional로 전환**(partial update). 상세: [`user-my-page.md`](user-my-page.md) 변경 이력 |
+| **D8** | 알림 설정 API 위치 | **기존 `PATCH /users/profile`(마이페이지)에 `notificationEnabled` 필드 추가.** `/users/me/...` 새 경로 대신 기존 컨벤션 재사용 — 단, 한 필드만 보내는 호출을 지원해야 하므로 **`user-my-page.md`의 firstName/lastName도 optional로 전환**(partial update). 상세: [`user-my-page.md`](../user/user-my-page.md) 변경 이력 |
 | **D9** | 알림센터 목록 범위 | **최근 7일 윈도우** — 와이어프레임이 "오늘/어제/최근 7일" 3그룹으로 구성돼 있어, API도 `sent_at >= now-7d`만 반환(페이지네이션 불필요). DB 이력 자체는 그대로 보존 |
 | **D10** | NOTI-001/002(수신자=방장)에도 게이트 적용 여부 | **적용.** 예외 없이 전체 이벤트가 `notification_enabled`를 따름 |
 | **D11** | NOTI-002 "마지막 참여자" 판정 기준 | **여행방 정원(BR-TRIP-001, 1~10) 도달 순간.** 멤버는 join 즉시 ACTIVE라 "제출 대기" 상태가 따로 없어, 정원 도달만이 유의미한 판정 시점 |
@@ -76,7 +76,7 @@
 | GET | `/api/v1/notifications` | JWT | 본인 알림 이력, 최근 7일, 최신순 |
 | PATCH | `/api/v1/notifications/{id}/read` | JWT | 알림 읽음 처리 |
 
-> 알림 on/off는 별도 엔드포인트 없음 — [`user-my-page.md`](user-my-page.md)의 `PATCH /users/profile` 참고 (D8).
+> 알림 on/off는 별도 엔드포인트 없음 — [`user-my-page.md`](../user/user-my-page.md)의 `PATCH /users/profile` 참고 (D8).
 
 ### 에러
 
@@ -147,7 +147,7 @@ com.tripfit.tripfit.notification
 └── exception/      NotificationErrorCode
 ```
 
-- `User.notificationEnabled` 필드·API는 `user/` 도메인([`user-my-page.md`](user-my-page.md))에 둔다 — 알림 발송 로직과 소유 분리
+- `User.notificationEnabled` 필드·API는 `user/` 도메인([`user-my-page.md`](../user/user-my-page.md))에 둔다 — 알림 발송 로직과 소유 분리
 - Java 21 / Spring Boot 4.1.0 (프로젝트 실제 스택)
 - ErrorCode: `NotificationErrorCode implements ErrorCode`, 상수당 `@Schema` 필수
 - Service/Listener/Scheduler/Config public 메서드: 역할 `//` 한 줄 필수 (harness Comments 절)

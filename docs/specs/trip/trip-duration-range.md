@@ -13,7 +13,7 @@
 - 문의: POST `/api/v1/trips`에서 `durationNights=3, durationDays=5`(3박5일, n+2)를 보내면 400 `INVALID_INPUT`이 발생. 요청자는 "n박 기준 (n+1)일·(n+2)일 모두 유효해야 한다"는 정책을 전제로 문의.
 - 조사 결과 **현재 구현은 버그가 아니라 기존 문서와 정확히 일치**한다 — 아래 3곳 모두 `nights == days - 1` 정확한 등식만 명시:
   - `docs/product/business-rules/trip.md` BR-TRIP-001 (line 7): "`nights == days - 1`·`days ≥ 1`·`nights ≥ 0`"
-  - `docs/specs/trip-room-api.md` D9 + `POST /trips` 필드 표(line 56, 205): "`nights == days - 1`"
+  - `docs/specs/trip/trip-room-api.md` D9 + `POST /trips` 필드 표(line 56, 205): "`nights == days - 1`"
   - `docs/product/glossary.md` "여행 일수"
   - 구현 `TripServiceSupport.resolveDurationDays()` (`durationNights != durationDays - 1`이면 400)
 - 사용자 확인 결과, `n+2`까지 허용은 **확정된 정책 변경**(기존 문서가 아직 반영 못 한 상태)이며, 당일치기(`nights=0`)도 예외 없이 동일 규칙(`days ∈ {1,2}`)을 적용하기로 확정.
@@ -30,7 +30,7 @@
 - [x] `TripCommandService.createTrip`/`patchTrip` — 검증 통과한 `durationNights`도 함께 엔티티에 저장 (`Trip.setDurationNights`)
 - [x] `TripServiceSupport.durationNights(Integer durationDays)` 파생 헬퍼 삭제, `toHomeCard`/`toDetail` 호출부(`TripServiceSupport.java:75, 107`)를 `trip.getDurationNights()` 조회로 교체 (레거시 삭제 — 같은 PR)
 - [x] DTO `@Schema` 문구 갱신 — `CreateTripRequest`/`PatchTripRequest`(`nights==days-1` 문구) · `TripHomeCardResponse`/`TripDetailResponse`(`durationDays-1 파생(DB 저장 없음)` 문구, `TripDetailResponse.java:33` 등)를 새 규칙·영속화 사실에 맞게 수정
-- [x] `docs/specs/trip-room-api.md` — D9 갱신, `POST /trips` 필드 표(line 205)·`PATCH` 절, 완료 기준 체크리스트(line 106), 변경 이력 추가
+- [x] `docs/specs/trip/trip-room-api.md` — D9 갱신, `POST /trips` 필드 표(line 205)·`PATCH` 절, 완료 기준 체크리스트(line 106), 변경 이력 추가
 - [x] `docs/product/glossary.md` "여행 일수" 항목 갱신
 - [x] `docs/architecture/erd.md` — `trip` 표에 `duration_nights` 컬럼 추가, 하단 제약 문구(line 324) 갱신
 - [x] 단위 테스트 — `resolveDurationDays`(또는 개명된 검증 메서드) 경계값: `n+1`/`n+2` 통과, `n+3` 실패, `n=0`일 때 `days=1`/`2` 통과, `days > T` 실패

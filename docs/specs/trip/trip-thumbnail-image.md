@@ -15,7 +15,7 @@
 - 요청 계기: 카카오톡 공유 썸네일도 방마다 확정 날짜에 맞춰 동적으로 바뀌었으면 좋겠다는 요구 (2026-08-02)
 - 참고 링크(요청자 제공): [메시지 템플릿 공통](https://developers.kakao.com/docs/latest/ko/message-template/common) · [커스텀 템플릿](https://developers.kakao.com/docs/latest/ko/message-template/custom)
 - **기존 계약과의 관계 — 충돌 아님, 확장:** [`kakao-invite-share.md`](kakao-invite-share.md)(Approved)는 "카카오 SDK·템플릿 조립·발송은 프론트, 서버는 공유용 **데이터만**"이 원칙이고 Out of Scope에 "템플릿 DB·카카오 서버 대행"이 명시돼 있다. 이 스펙은 그 원칙을 깨지 않는다 — 서버가 카카오 API를 직접 호출해 발송하거나 템플릿을 저장하는 게 아니라, `confirmedStartDate`/`confirmedEndDate`처럼 **상세 API에 이미지 URL 필드 하나를 추가로 노출**하는 것뿐이다. 그 URL을 카카오 SDK 템플릿(`imageUrl` 등)에 넣는 조립은 여전히 프론트가 한다.
-- 반대로 **인프라 관점에서는 이 저장소에 완전히 새로운 축**이다. 이미지 파일을 만들어 공개 URL로 서빙해야 하는데, 오브젝트 스토리지(S3 등) 연동이 현재 **전혀 없다** — 유일하게 근접한 문서인 [`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md)도 Wave 4 **Draft**(미구현) 상태이고 `build.gradle`에 AWS SDK 의존성도 없다.
+- 반대로 **인프라 관점에서는 이 저장소에 완전히 새로운 축**이다. 이미지 파일을 만들어 공개 URL로 서빙해야 하는데, 오브젝트 스토리지(S3 등) 연동이 현재 **전혀 없다** — 유일하게 근접한 문서인 [`user-profile-image-s3-mirror.md`](../user/user-profile-image-s3-mirror.md)도 Wave 4 **Draft**(미구현) 상태이고 `build.gradle`에 AWS SDK 의존성도 없다.
 
 ## 카카오 이미지 요구사항 (공식 문서 확인, 2026-08-02)
 

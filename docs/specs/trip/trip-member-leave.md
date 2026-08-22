@@ -11,12 +11,12 @@
 
 ## 목표
 
-일반 참여자(MEMBER)가 스스로 여행방에서 나갈 수 있게 한다. `trip-member-remove.md`(#20)가 "멤버 자진 탈퇴"를 명시적으로 Out of Scope로 남겨둔 이후 지금까지 이 기능이 없었고, [`user-account-withdrawal.md`](user-account-withdrawal.md)(회원 탈퇴)가 참여 중인 방을 자동으로 정리하는 cascade 단계로 이 로직을 그대로 재사용한다.
+일반 참여자(MEMBER)가 스스로 여행방에서 나갈 수 있게 한다. `trip-member-remove.md`(#20)가 "멤버 자진 탈퇴"를 명시적으로 Out of Scope로 남겨둔 이후 지금까지 이 기능이 없었고, [`user-account-withdrawal.md`](../user/user-account-withdrawal.md)(회원 탈퇴)가 참여 중인 방을 자동으로 정리하는 cascade 단계로 이 로직을 그대로 재사용한다.
 
 ## 배경
 
 - `trip-member-remove.md`(#20): 방장이 멤버를 내보내는 기능만 있고, 멤버 자진 탈퇴는 Out of Scope
-- 회원 탈퇴([`user-account-withdrawal.md`](user-account-withdrawal.md))를 구현하려면 참여자가 참여 중인 방을 정리할 방법이 있어야 함
+- 회원 탈퇴([`user-account-withdrawal.md`](../user/user-account-withdrawal.md))를 구현하려면 참여자가 참여 중인 방을 정리할 방법이 있어야 함
 - **정책 전면 수정(2026-07-24, `#47` hotfix, 기획자 확인 완료)**: 방 나가기·참여자 내보내기(`#20`)·방 삭제·회원 탈퇴 네 액션의 상태별 허용 조건이 서로 다르게 설계돼 있던 걸 정합성 있게 재정리. 방 나가기는 `#20`(내보내기)과 달리 **상태 무관**으로 확정(자진 나가기 vs 강제 내보내기의 차이) — 이전(2026-07-23)의 "`ONGOING`만 허용" 결정은 **폐기**
 
 ## 요구사항

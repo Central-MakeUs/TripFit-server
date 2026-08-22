@@ -16,10 +16,10 @@ body:
       label: wave (개발 물결)
       description: 우선순위·마일스톤 정렬용. 해당 없으면 가장 가까운 wave.
       options:
-        - "1 — 준비"
-        - "2 — 핵심 MVP"
-        - "3 — 출시 UX"
-        - "4 — 운영·확장"
+        - "1 — 소셜 로그인"
+        - "2 — MVP 로직"
+        - "3 — 외부 API 연동"
+        - "4 — 리팩토링·성능·런칭 후 UX"
         - "미정"
     validations:
       required: true
@@ -102,5 +102,5 @@ body:
     attributes:
       label: 관련
       placeholder: |
-        - **Spec:** docs/specs/trip-room-api.md §Pin
+        - **Spec:** docs/specs/trip/trip-room-api.md §Pin
         - **related:** #12 · PR #n

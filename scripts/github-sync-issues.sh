@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Open·Closed issues → wave labels + milestones (재실행 가능)
 # SSOT: docs/product/waves.md · 이슈 본문 wave·선행은 GitHub issue
+# wave별 이슈 조회: gh issue list --label wave:N --state all
 set -euo pipefail
 
 REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"

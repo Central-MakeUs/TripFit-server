@@ -10,10 +10,10 @@
 
 ## 배경
 
-- 프론트는 이 저장소와 완전히 분리된 별도 저장소(Vercel, `tripfit.online`)다 — [`docs/decisions/002-domain-split-vercel-api.md`](../decisions/002-domain-split-vercel-api.md). 모바일도 별도 코드가 아니라 같은 React 화면을 WebView로 감싸는 방식([`platform.md`](../product/platform.md))이라 프론트 동기화 대상은 사실상 1곳.
+- 프론트는 이 저장소와 완전히 분리된 별도 저장소(Vercel, `tripfit.online`)다 — [`docs/decisions/002-domain-split-vercel-api.md`](../../decisions/002-domain-split-vercel-api.md). 모바일도 별도 코드가 아니라 같은 React 화면을 WebView로 감싸는 방식([`platform.md`](../../product/platform.md))이라 프론트 동기화 대상은 사실상 1곳.
 - 개발자가 DTO 변경 시 프론트에 알려야 하는데, "바이브 코딩" 특성상 변경 사항을 손으로 다 기억해서 전달하기 어렵다는 문제 제기(대화 2026-07-28)에서 출발.
 - `springdoc-openapi-starter-webmvc-ui:3.0.3`가 이미 의존성에 있어(`build.gradle:29`) `/v3/api-docs`에서 OpenAPI 스펙이 별도 설정 없이 자동 생성되는 중이지만, 이 스펙을 PR 리뷰·프론트 codegen에 실제로 활용하는 장치는 없음.
-- `docs/specs/swagger-openapi-docs.md`(Implemented)는 Swagger UI **가독성**(설명·예시·태그 문구) 개선이 목적이라 이 스펙과 범위가 다름 — 이 스펙은 스펙 **diff 자동 감지**(CI)가 목적.
+- `docs/specs/cross-cutting/swagger-openapi-docs.md`(Implemented)는 Swagger UI **가독성**(설명·예시·태그 문구) 개선이 목적이라 이 스펙과 범위가 다름 — 이 스펙은 스펙 **diff 자동 감지**(CI)가 목적.
 - `client-platform.md` "프론트 협업" 절이 이미 "API 변경은 OpenAPI(springdoc) 반영 권장"이라고 명시하고 있어, 이 스펙은 그 권장을 CI 강제로 한 단계 끌어올리는 것.
 - **설계 변경 이력(2026-07-28 대화, 순서대로):**
   1. 최초안 "PR 인라인 코멘트 + fail"만으로는 프론트가 이 repo PR을 능동적으로 열어봐야 아는 **pull 방식**이라 놓칠 수 있다는 지적 → Discord `#frontend` **push 알림**을 Must Have로 승격, 수동 "PR 체크리스트" 항목 제거

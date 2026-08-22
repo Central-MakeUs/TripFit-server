@@ -1,6 +1,6 @@
 # 추천 → 확정 → 취소 흐름 (방장 뷰) — API 레퍼런스
 
-> 근거: `docs/specs/trip-recommendation.md`(#13, Approved), `docs/specs/trip-recommendation-algorithm.md`(#50, Approved). 2026-07-30 화면 확인·구현 기반.
+> 근거: `docs/specs/trip/trip-recommendation.md`(#13, Approved), `docs/specs/trip/trip-recommendation-algorithm.md`(#50, Approved). 2026-07-30 화면 확인·구현 기반.
 >
 > 핵심 전제: 추천 후보·근거·피드백은 **방장 전용**이고, 참여자는 **확정된 일정만** 볼 수 있다.
 

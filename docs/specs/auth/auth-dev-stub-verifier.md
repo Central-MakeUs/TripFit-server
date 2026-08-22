@@ -57,7 +57,7 @@
 
 - [ ] `./gradlew test` 통과
 - [ ] `dev-mock-login.md` 경로(`DevAuthController` 등) 삭제 완료
-- [ ] `docs/specs/dev-mock-login.md` 상태를 Superseded로 갱신
+- [ ] `docs/specs/auth/dev-mock-login.md` 상태를 Superseded로 갱신
 
 ## 리스크·미결정
 

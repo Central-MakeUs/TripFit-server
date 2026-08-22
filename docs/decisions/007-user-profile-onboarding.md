@@ -3,8 +3,8 @@
 - **상태:** 확정
 - **날짜:** 2026-07-08
 - **관련:**
-  - [`docs/specs/user-onboarding.md`](../specs/user-onboarding.md) — wave 1 API·UI SSOT
-  - [`docs/specs/auth-social-login.md`](../specs/auth-social-login.md) — 소셜 login·JWT
+  - [`docs/specs/user/user-onboarding.md`](../specs/user/user-onboarding.md) — wave 1 API·UI SSOT
+  - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — 소셜 login·JWT
   - [`docs/decisions/006-profile-image-url-storage.md`](006-profile-image-url-storage.md)
 
 ## 맥락
@@ -124,7 +124,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 
 ## 후속 작업
 
-- [ ] `docs/specs/user-onboarding.md` 구현
+- [ ] `docs/specs/user/user-onboarding.md` 구현
 - [ ] `erd.md`·`auth-social-login.md` 동기화
 - [ ] 코드: User 엔티티·AuthService fallback 제거·PATCH API
 
@@ -132,7 +132,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-07-28 | API 경로 리네이밍 — `PATCH /users/profile`(온보딩) → `PATCH /users/onboarding/name`. 마이페이지 수정 API가 `/users/profile`을 대신 사용(`user-my-page.md`) — 상세: [`user-onboarding.md`](../specs/user-onboarding.md) 변경 이력 |
+| 2026-07-28 | API 경로 리네이밍 — `PATCH /users/profile`(온보딩) → `PATCH /users/onboarding/name`. 마이페이지 수정 API가 `/users/profile`을 대신 사용(`user-my-page.md`) — 상세: [`user-onboarding.md`](../specs/user/user-onboarding.md) 변경 이력 |
 | 2026-07-20 | **Amend D-REENTRY-2** — 재진입 SSOT = 이름 완료 → 메인; `isOptionalOnboardingCompleted` 역할 축소. **D-NAME-1** — Kakao=Google=Apple 이름 게이트·클라/서버 guard |
 | 2026-07-08 | 초안 — boolean 3개 + 이름, 네이버 제외, JWT login 직후 |
 | 2026-07-17 | BR-USER-006 게이트·personal/calendar → **#22 `[미정]`** · OpenAPI Hidden |
@@ -140,7 +140,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 ## Amend (2026-07-17) — #22
 
 `isScheduleRegistered`·사전 일정 skip·trip submit(BR-USER-007)과의 정합이 깨져 **사전 일정 단계 정책을 `[미정]`으로 되돌림**.  
-재설계 SSOT: [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md) · GitHub **#22**.
+재설계 SSOT: [`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md) · GitHub **#22**.
 
 ## Amend (2026-07-20) — #22 부분 확정
 
@@ -149,4 +149,4 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 | **D-NAME-1** | 소셜 login JWT 후 이름 필수 (Kakao=Google=Apple). 핵심 API 403 `PROFILE_NAME_REQUIRED`. login/refresh/me/온보딩 이름 PATCH 차단 금지. 클라 Routing Guard + 전역 403 → `/onboarding/name` |
 | **D-REENTRY-2** | **이전:** `isOptionalOnboardingCompleted=false` → 재진입 시 선택 온보딩 재노출. **변경:** 이름 완료 → 재진입 시 **메인 직행**. 선택 온보딩 = 첫 세션 soft prompt만 |
 
-trip join 게이트(D-JOIN-ENTRY · CLEAR · TRIP-FLOW)는 본 decisions가 아닌 [`schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md) SSOT.
+trip join 게이트(D-JOIN-ENTRY · CLEAR · TRIP-FLOW)는 본 decisions가 아닌 [`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md) SSOT.

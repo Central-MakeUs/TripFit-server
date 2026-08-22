@@ -189,16 +189,16 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 | `GOOGLE_CLIENT_SECRET` | | Google 로그인 web client secret (authorization code 교환) |
 | `GOOGLE_CLIENT_ID_IOS` | | Google iOS client ID |
 | `GOOGLE_CLIENT_ID_ANDROID` | | Google Android client ID |
-| `GOOGLE_CALENDAR_CLIENT_ID` | | Google Calendar 연동 전용 client ID — 로그인과 분리(`docs/specs/google-calendar-client-id-separation.md`), Calendar FE 착수 전까지는 미등록 상태 |
+| `GOOGLE_CALENDAR_CLIENT_ID` | | Google Calendar 연동 전용 client ID — 로그인과 분리(`docs/specs/user/google-calendar-client-id-separation.md`), Calendar FE 착수 전까지는 미등록 상태 |
 | `GOOGLE_CALENDAR_CLIENT_SECRET` | | 위 Calendar 전용 client의 secret — authorization code·refresh token 교환 |
 | `SOCIAL_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
 | `APPLE_BUNDLE_ID` | | Apple App ID(Bundle ID, 예: `com.tripfit.app`) — iOS 네이티브 앱 로그인 `aud` 검증·토큰교환/revoke `client_id` |
-| `APPLE_SERVICE_ID` | | Apple Services ID — 모바일 브라우저 로그인 경로 `aud` 검증·토큰교환/revoke `client_id` (`docs/specs/apple-oauth-multi-audience.md`) |
+| `APPLE_SERVICE_ID` | | Apple Services ID — 모바일 브라우저 로그인 경로 `aud` 검증·토큰교환/revoke `client_id` (`docs/specs/auth/apple-oauth-multi-audience.md`) |
 | `APPLE_TEAM_ID` | ✅ (Apple 로그인 시) | Apple Developer Team ID — client_secret JWT `iss` |
 | `APPLE_KEY_ID` | ✅ (Apple 로그인 시) | Sign in with Apple용 `.p8` 키의 Key ID — client_secret JWT `kid` |
 | `APPLE_PRIVATE_KEY` | ✅ (Apple 로그인 시) | 위 `.p8` 키 원문 — client_secret JWT ES256 서명 |
 | `KAKAO_ADMIN_KEY` | ✅ (Kakao 로그인 시) | Kakao Developers 앱 Admin Key — 탈퇴 시 unlink 호출 전용(로그인 검증 자체에는 불필요) |
-| `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
+| `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
 
 **`LOKI_HOST`**: EC2 A는 위 Secret으로 관리(값 `172.31.38.217` — TP-monitoring private IP). EC2 C를 재생성해 private IP가 바뀌면 **이 Secret만 갱신**하면 된다. `deploy/app/docker-compose.yml`·`deploy/mysql/docker-compose.yml`의 `${LOKI_HOST:-172.31.38.217}` 기본값은 Secret 미설정 시에도 컨테이너가 죽지 않게 하는 fail-safe 용도로 남겨뒀다 — IP가 실제로 바뀌면 이 기본값도 함께 갱신해 두 값이 계속 일치하도록 한다. **EC2 B(MySQL)는 CI/CD 대상이 아니라 이 Secret이 적용되지 않음** — B의 `deploy/mysql/.env`에 `LOKI_HOST`를 직접 수정해야 한다.
 
@@ -213,13 +213,22 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 
 **`deploy/app/.env`는 이제 필수 아님** — CI/CD 자동 배포는 위 Secrets만으로 완결된다. 다만 `scripts/ec2-deploy-app.sh`로 **수동** 배포하거나 로컬에서 직접 `docker compose`를 띄울 때는 여전히 `.env` 또는 `export`로 값을 넘겨야 한다 (`deploy/app/.env.example` 참고). `CERTBOT_EMAIL`은 최초 1회 `init-letsencrypt.sh`/`setup-api-https.sh` 수동 실행 시에만 필요해 CI/CD 화이트리스트에는 포함하지 않았다.
 
-로컬: 루트 `.env` 또는 `deploy/app/.env.example` 참고. 상세 스펙: `docs/specs/auth-social-login.md`
+로컬: 루트 `.env` 또는 `deploy/app/.env.example` 참고. 상세 스펙: `docs/specs/auth/auth-social-login.md`
 
 ### 스토어 제출 전 OAuth 콘솔 설정 체크리스트
 
-위 `GOOGLE_CLIENT_ID`류·`KAKAO_ADMIN_KEY`는 env(GitHub Secrets)에 값만 등록하면 되지만, **각 소셜 로그인 콘솔(Google Cloud Console·Kakao Developers 등) 쪽 설정은 별도로 채워야** 실제 로그인이 동작한다. 코드·검증 로직(`GoogleTokenVerifier`·`KakaoTokenVerifier` 등)은 이미 완료된 상태 — 아래는 **콘솔 담당자가 콘솔 화면에서 직접 등록**하면 되는 항목. Apple은 [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62) Must Have 참고.
+위 `GOOGLE_CLIENT_ID`류·`KAKAO_ADMIN_KEY`는 env(GitHub Secrets)에 값만 등록하면 되지만, **각 소셜 로그인 콘솔(Google Cloud Console·Apple Developer·Kakao Developers 등) 쪽 설정은 별도로 채워야** 실제 로그인이 동작한다. 코드·검증 로직(`GoogleTokenVerifier`·`AppleTokenVerifier`·`KakaoTokenVerifier`·`OAuthProperties`)은 이미 완료된 상태 — 아래는 **콘솔 담당자가 콘솔 화면에서 직접 등록**하면 되는 항목뿐이다.
 
-미등록 상태로는 `redirect_uri_mismatch`·`DEVELOPER_ERROR` 등으로 로그인 자체가 실패하므로 **스토어 심사 제출 전 반드시 확인** — 추적: [#62](https://github.com/Central-MakeUs/TripFit-server/issues/62)
+미등록 상태로는 `redirect_uri_mismatch`·`DEVELOPER_ERROR` 등으로 로그인 자체가 실패하므로 **스토어 심사 제출 전 반드시 확인**. (과거 GitHub Issue `#62`로 추적하던 체크리스트였으나 2026-08-02부로 이슈를 닫고 이 문서를 SSOT로 통합했다 — 아래가 최신 상태.)
+
+**담당 구분:**
+
+| 담당 | 필요한 것 |
+|------|-----------|
+| 백엔드 | 코드 변경 없음 — 각 콘솔에 실제 값 입력만(계정 접근 권한 필요) |
+| 프론트 | 최종 서비스 도메인·콜백 라우트(리다이렉션 URI로 등록될 경로) 확정해서 전달 — Google/Kakao Redirect URI·네이티브 앱 키·패키지명은 이미 코드 확인으로 전달 완료 |
+| 빌드 환경 담당자 | Android 디버그·릴리즈 keystore의 SHA-1(Google)·키 해시(Kakao) 추출 — 리포에 keystore가 없어 콘솔 담당자가 대신할 수 없음 |
+| Apple/Google 계정 담당자 | App Store ID는 App Store Connect 앱 등록 완료 후에만 발급 — 게시 담당자가 값 전달 |
 
 #### Google Cloud Console
 
@@ -241,7 +250,7 @@ keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -sto
 
 **값 일치 확인**: `apps/app`(네이티브 앱)의 `GOOGLE_WEB_CLIENT_ID`, `apps/web`의 `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, 백엔드 `GOOGLE_CLIENT_ID` 세 값이 전부 같은 Web Client ID를 가리켜야 한다 — 하나라도 다르면 그 경로만 `aud` mismatch로 로그인이 실패한다.
 
-Calendar 전용 Client(`GOOGLE_CALENDAR_CLIENT_ID`) 발급은 지금 안 해도 된다 — Calendar FE 착수 시점에 [`google-calendar-client-id-separation.md`](../docs/specs/google-calendar-client-id-separation.md) "GCP 콘솔 가이드" 절 참고.
+Calendar 전용 Client(`GOOGLE_CALENDAR_CLIENT_ID`) 발급은 지금 안 해도 된다 — Calendar FE 착수 시점에 [`google-calendar-client-id-separation.md`](../docs/specs/user/google-calendar-client-id-separation.md) "GCP 콘솔 가이드" 절 참고.
 
 #### Kakao Developers Console
 

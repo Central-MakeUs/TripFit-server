@@ -1,11 +1,12 @@
 # Google Calendar 전용 OAuth Client ID 분리
 
 > 상태: Draft (Must Have 전항목 완료 — 백엔드 배선·GCP 콘솔 Client ID 발급·FE 전환 2026-08-08 확인. 잔여: Calendar scope Google 검증 필요 여부)
-> MVP: 해당 없음 (Google Calendar 자체가 Wave 4 Out of scope)
+> wave: 3
+> MVP: 해당 없음 (Google Calendar 자체가 Wave 3 Out of scope)
 > 관련 BR: 해당 없음
 > Issue: [#78](https://github.com/Central-MakeUs/TripFit-server/issues/78)
-> deferred from: [`google-login-revoke.md`](google-login-revoke.md) 리스크 절
-> 선행: [`google-calendar-oauth.md`](google-calendar-oauth.md)(Wave 4, FE 미착수)
+> deferred from: [`google-login-revoke.md`](../auth/google-login-revoke.md) 리스크 절
+> 선행: [`google-calendar-oauth.md`](google-calendar-oauth.md)(Wave 3, FE 미착수)
 
 ## 목표
 
@@ -18,7 +19,7 @@ Google 로그인용 OAuth Client ID와 Google Calendar 연동용 OAuth Client ID
 - 근거 두 가지:
   1. **기술적**: Google이 동의(consent)를 client_id 단위로 묶는다면, 같은 Google 계정으로 로그인도 하고 캘린더도 연동한 유저가 "캘린더만 연동 해제"해도 로그인 쪽 grant까지 같이 revoke될 수 있음
   2. **개념적**: 캘린더는 로그인 provider와 무관한 기능이라 애초에 로그인용 Client ID에 얹혀갈 이유가 약함
-- Calendar가 아직 FE에 구현된 적이 없어(목업, Wave 4 미착수) 지금 당장 급한 작업은 아니다 — Calendar를 실제로 FE에 붙이는 시점에 이 분리를 함께 진행한다.
+- Calendar가 아직 FE에 구현된 적이 없어(목업, Wave 3 미착수) 지금 당장 급한 작업은 아니다 — Calendar를 실제로 FE에 붙이는 시점에 이 분리를 함께 진행한다.
 
 ## Must Have (Calendar 실제 구현 착수 시)
 
@@ -45,7 +46,7 @@ Google Cloud Console에서 직접 진행하는 절차. 승인·검수 없이 즉
 
 ## Out of Scope (이번 문서에서 하지 않음)
 
-- FE의 Calendar 연동 화면 실제 OAuth 연결(로그인과 다른 Client ID로 요청 전환) — `google-calendar-oauth.md`(Wave 4) 본연의 범위, 별도 저장소
+- FE의 Calendar 연동 화면 실제 OAuth 연결(로그인과 다른 Client ID로 요청 전환) — `google-calendar-oauth.md`(Wave 3) 본연의 범위, 별도 저장소
 
 ## 완료 기준
 

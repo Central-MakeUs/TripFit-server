@@ -4,9 +4,9 @@
 > 상태: **Approved** (2026-07-21)  
 > MVP: In scope · **Wave 2 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))  
 > GitHub: **[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**  
-> 선행: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12)  
+> 선행: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12)  
 > related: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (#38)  
-> 용어: [`glossary.md`](../product/glossary.md)
+> 용어: [`glossary.md`](../../product/glossary.md)
 
 ## 목표
 

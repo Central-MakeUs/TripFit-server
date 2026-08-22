@@ -4,71 +4,61 @@
 > **MVP 범위:** [`mvp.md`](mvp.md)  
 > P0/P1, Phase 1/2, Foundation 등 **다른 축은 사용하지 않음.**
 
-## Wave 한 줄 (User Journey)
+## Wave 한 줄 (도메인 축)
 
-| wave | Milestone (GitHub) | 사용자가 할 수 있는 것 |
+| wave | Milestone (GitHub) | 범위 |
 |------|-------------------|------------------------|
-| **1** | Wave 1 — 준비 ** | 로그인하고 TripFit을 **쓸 준비** 완료 · **#22 Approved** |
-| **2** | Wave 2 — 핵심 MVP ** | 여행방 → 일정 수집 → 추천 → **일정 확정** ([`mvp.md`](mvp.md) DoD) |
-| **3** | Wave 3 — 출시 UX ** | 알림·카카오 공유·그룹 달력 — **베타처럼** 사용 |
-| **4** | Wave 4 — 운영·확장 ** | Redis·RTR·S3·계정연결·운영 — **새 MVP 기능 아님** |
+| **1** | Wave 1 — 소셜 로그인 | 카카오·구글·애플 로그인, JWT, 온보딩 |
+| **2** | Wave 2 — MVP 로직 | trip·recommend·member 등 서버 도메인 로직 (여행방→일정→추천→확정) |
+| **3** | Wave 3 — 외부 API 연동 | Google Calendar, Firebase(FCM), Kakao 등 3rd-party 연동 |
+| **4** | Wave 4 — 리팩토링·성능·런칭 후 UX | 백엔드 성능·인프라 개선 + 이번 MVP엔 없는 런칭 이후 추가 기능 |
 
-**판단:** Issue 만들기 **전** [`development-wave.md` §4](development-wave.md#4-새-기능--새-이슈--wave-배치-결정-트리) 결정 트리.
+**판단:** Issue 만들기 **전** [`development-wave.md` §2](development-wave.md#2-새-기능--새-이슈--wave-배치-결정-트리) 결정 트리.
 
 ## Wave DoD (한 줄)
 
 | wave | 완료 조건 |
 |------|-----------|
-| **1** | login → JWT → 온보딩 · **#22 스펙 Approved** · `./gradlew test` |
+| **1** | 소셜 로그인·JWT·온보딩 Backlog Must 전부 Closed · `./gradlew test` |
 | **2** | **MVP 완료 기준** — 방장이 추천 TOP 3로 일정 확정 |
-| **3** | 알림·공유·그룹 달력으로 내부/친구 베타 가능 |
-| **4** | 팀 합의 운영·확장 체크리스트 (Wave 1~3 이후) |
+| **3** | Google Calendar·FCM 알림·카카오 공유 Backlog Must 전부 Closed |
+| **4** | 팀 합의 체크리스트 (출시 게이트 아님) |
 
-## MVP 기능 → wave
+## 이슈 → wave
 
-| 기능 | wave | Must? |
-|------|------|-------|
-| 소셜 로그인·JWT·온보딩 | 1 | Must |
-| 일정 참여·submit·sparse (#22) | 1 | **Must (게이트)** |
-| 여행방·참여·홈 D5 | 2 | Must |
-| 일정 CRUD · calendar resolve | 2 | Must |
-| 여행방 일정 조회 윈도우 (+2년) (#37) | 2 | **Must** |
-| EXPIRED 일정 snapshot (#38) | 2 | **Must** |
-| 추천 4모드·확정 | 2 | Must |
-| `last_activity_at` hook · EXPIRED 스케줄러 (#26, #27) | 2 | **Nice** |
-| 참여자 내보내기 (#20) | 2 | **Nice** |
-| 알림(BR-NOTI-005 정기 리마인드 포함) (#21) · 카카오·링크 공유 (#19) · 그룹 달력 | 3 | Must |
-| RTR·Redis · S3 · 계정 연결 | 4 | — |
-| Google Calendar OAuth (#44) | 4 | Must |
-| join 정원 hold (#35) | 4 | — |
-| 여행방 삭제 시 VOC 사유 (unconfirm 사유와 별개) | 4 | — |
+| Wave | Must | Nice |
+|------|------|------|
+| **1** | #1 소셜로그인 · #3 JWT · #10 온보딩 · #57 AuthErrorCode | — |
+| **2** | #11·#12·#13·#17·#22·#24·#37·#38·#39·#47·#48·#50·#53·#54·#60·#67 | #20·#26·#27 |
+| **3** | #19 카카오공유 · #21 FCM 알림 · #44 Google Calendar · #56 · #78 | — |
+| **4** | #4 Redis/RTR · #6 계정연결 · #9 S3미러 · #35 join 정원 hold · #52 Dev 인증 스텁 | — |
 
-상세 Must/Nice/Out: [`development-wave.md` §3](development-wave.md#3-wave-14-재정의).
+상세 근거·"포함 안 됨" 목록: [`development-wave.md` §1](development-wave.md#1-wave-14-정의).
 
 ## GitHub (요약)
 
 | 객체 | 용도 |
 |------|------|
 | **Milestone** | Wave 컨테이너 |
-| **Backlog Issue** | Wave당 1 — Must/Nice/Out SSOT ([`development-wave.md` §5](development-wave.md#5-github-운영-방식)) |
+| **Backlog Issue** | Wave당 1 — Must/Nice/Out SSOT ([`development-wave.md` §3](development-wave.md#3-github-운영-방식)) |
 | **`wave:N`** | Milestone과 1:1 |
-| **`kind:` / `area:`** | feature/bug/docs · api/domain/… |
-| **`release: blocking`** | Release Gate 전용 — Wave 라벨과 별개, Milestone 없음 (위 절 참고) |
+| **`kind:` / `area:`** | feature/bug/chore/docs · api/domain/deploy/docs/infra |
+| **`release: blocking`** | Release Gate 전용 — Wave 라벨과 별개, Milestone 없음 (아래 절 참고) |
 
-**Nice 구분:** 라벨 없음 — Backlog [#30](https://github.com/Central-MakeUs/TripFit-server/issues/30) Nice 섹션 + Issue **비고** `분류: Wave 2 Nice` (#20 · #26 · #27). **Out**은 Backlog Out만. `Nice / Out` 혼용 금지. Wave Must 전부 Closed 전 Nice 착수 금지(팀 예외 시 Backlog에 명시).
+**Nice 구분:** 라벨 없음 — Backlog [#30](https://github.com/Central-MakeUs/TripFit-server/issues/30) Nice 섹션 + Issue **비고** `분류: Wave 2 Nice` (#20 · #26 · #27). **Out**은 Backlog Out만. `Nice / Out` 혼용 금지.
 
 ### Wave Backlog Issue (GitHub)
 
 | wave | Issue | Milestone |
 |------|-------|-----------|
-| 1 | [#29](https://github.com/Central-MakeUs/TripFit-server/issues/29) | Wave 1 — 준비 |
-| 2 | [#30](https://github.com/Central-MakeUs/TripFit-server/issues/30) | Wave 2 — 핵심 MVP |
-| 3 | [#31](https://github.com/Central-MakeUs/TripFit-server/issues/31) | Wave 3 — 출시 UX |
-| 4 | [#32](https://github.com/Central-MakeUs/TripFit-server/issues/32) | Wave 4 — 운영·확장 |
+| 1 | [#29](https://github.com/Central-MakeUs/TripFit-server/issues/29) | Wave 1 — 소셜 로그인 |
+| 2 | [#30](https://github.com/Central-MakeUs/TripFit-server/issues/30) | Wave 2 — MVP 로직 |
+| 3 | [#31](https://github.com/Central-MakeUs/TripFit-server/issues/31) | Wave 3 — 외부 API 연동 |
+| 4 | [#32](https://github.com/Central-MakeUs/TripFit-server/issues/32) | Wave 4 — 리팩토링·성능·런칭 후 UX |
 
-**활성 Wave (2026-07-24):** Wave 2 Must Open = **#13 · #50**(#13에서 계산 로직 분리) (Closed Must: #11 · #12 · #17 · #37 · #38). Nice: #20 · #26✓ · #27✓. Wave 3 Must: **#21** · **#19**. Wave 4: **#44** Google Calendar.
+**활성 Wave (2026-08-03):** Wave 2 Must Open = **#13 · #50**. Wave 3: #78 Open, 나머지 Must Closed. Wave 1·Release Gate: 전부 Closed.
 
-**Release Gate (Wave와 무관):** 현재 열려 있는 항목 없음(#5·#86(구 #62)·#64 전부 Closed) — 아래 절 참고.
+**Release Gate (Wave와 무관):** 현재 열려 있는 항목 없음(#5·#64 전부 Closed, OAuth 콘솔 설정값도 완료 확인) — 아래 절 참고.
 
 > **용어:** 이슈 `## Must Have` ≠ Wave Must. `MVP: In scope` ≠ Wave Must. SSOT: [`development-wave.md`](development-wave.md) · harness `Wave Must / Nice / Out`.
 
@@ -84,11 +74,11 @@
 
 ## 🚨 앱 배포·심사 체크리스트 (Release Gate, wave와 무관, 최우선)
 
-**Wave 4("운영·확장", 출시 이후 개선)와 혼동 금지.** 이 항목들은 **스토어 제출·심사를 통과하기 위해 반드시 필요** — 없어도 되는 개선이 아니다. 상세·판단 기준: [`development-wave.md` §7](development-wave.md#7-앱-배포심사-release-gate--wave와-무관).
+**Wave 4("리팩토링·성능·런칭 후 UX")와 혼동 금지.** 이 항목들은 **스토어 제출·심사를 통과하기 위해 반드시 필요** — 없어도 되는 개선이 아니다. 상세·판단 기준: [`development-wave.md` §5](development-wave.md#5-앱-배포심사-release-gate--wave와-무관).
 
-**현재 상태(2026-08-03):** 열려 있는 Release Gate 항목 없음. 과거 항목([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · [#86](https://github.com/Central-MakeUs/TripFit-server/issues/86)(구 `#62`) OAuth 콘솔 설정값 · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke) 전부 Closed. 과거 메타 트래커였던 `#65`는 관측성 개선 스펙([`social-integration-structured-logging.md`](../specs/social-integration-structured-logging.md))으로 재사용됐다.
+**현재 상태(2026-08-03):** 열려 있는 Release Gate 항목 없음. 과거 항목([#5](https://github.com/Central-MakeUs/TripFit-server/issues/5) Apple S2S webhook · OAuth 콘솔 설정값 채우기(완료 확인 — 추적 이슈 번호는 이후 다른 용도로 재사용돼 고정 링크 없음) · [#64](https://github.com/Central-MakeUs/TripFit-server/issues/64) 탈퇴 시 provider revoke) 전부 완료. 과거 메타 트래커였던 `#65`는 관측성 개선 스펙([`social-integration-structured-logging.md`](../specs/cross-cutting/social-integration-structured-logging.md))으로 재사용됐다.
 
-**새 항목 발견 시:** 새 이슈를 만들어 여기 + `development-wave.md` §7에 동시 추가. 라벨 `release: blocking`, Milestone 없음(Wave 컨테이너 아님).
+**새 항목 발견 시:** 새 이슈를 만들어 여기 + `development-wave.md` §5에 동시 추가. 라벨 `release: blocking`, Milestone 없음(Wave 컨테이너 아님).
 
 ## 리뷰 등급 (wave와 무관)
 

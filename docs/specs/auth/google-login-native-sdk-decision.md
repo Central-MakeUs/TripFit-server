@@ -29,7 +29,7 @@ TripFit 앱(WebView 패키징 확정, 2026-07-31)에서 Google 로그인을 열 
 ## 배경
 
 - 앱 패키징은 WebView로 확정됐다(React 화면을 네이티브 셸의 WebView에 띄움).
-- 그런데 Google은 보안상 WebView 내부에서 자신의 OAuth 로그인 화면을 여는 것을 차단한다(`403 disallowed_useragent`) — [`platform.md`](../product/platform.md) "Google 로그인 · Calendar — WebView / 인앱 차단" 절.
+- 그런데 Google은 보안상 WebView 내부에서 자신의 OAuth 로그인 화면을 여는 것을 차단한다(`403 disallowed_useragent`) — [`platform.md`](../../product/platform.md) "Google 로그인 · Calendar — WebView / 인앱 차단" 절.
 - 즉 패키징이 WebView로 정해졌다고 해서 "Google 로그인도 WebView 안에서 그냥 열면 된다"가 성립하지 않는다. Google 로그인 순간만큼은 WebView를 벗어나야 한다.
 - `google-login-revoke.md`(#64 후속)는 이 결정과 무관하게 **지금의 웹 리다이렉트 방식**(단일 Web Client ID)을 전제로 구현 가능해 별도로 진행하지만, 이 문서의 결정에 따라 **추가 스펙(client_id 이원화·PKCE)** 이 필요해질 수 있다.
 

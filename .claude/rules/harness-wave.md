@@ -4,15 +4,21 @@
 
 ## 🚨 Release Gate — 앱 배포·심사 필수 체크리스트
 
-**Wave 4("운영·확장", 출시 이후 개선)와 혼동 금지.** 스토어 제출·심사를 **통과하기 위해 반드시 필요**한 항목 — 없어도 되는 개선이 아니다. 2026-07-28 도입 계기: `#5`(Apple S2S webhook)가 심사 요건이었는데도 Wave 4로 잘못 분류돼 있었음. 상세: [`development-wave.md` §7](../../docs/product/development-wave.md#7-앱-배포심사-release-gate--wave와-무관).
+**Wave 4("리팩토링·성능·런칭 후 UX", 출시 이후 개선)와 혼동 금지.** 스토어 제출·심사를 **통과하기 위해 반드시 필요**한 항목 — 없어도 되는 개선이 아니다. 2026-07-28 도입 계기: `#5`(Apple S2S webhook)가 심사 요건이었는데도 Wave 4로 잘못 분류돼 있었음. 상세: [`development-wave.md` §5](../../docs/product/development-wave.md#5-앱-배포심사-release-gate--wave와-무관).
 
 **판단 기준:** "이게 없으면 스토어 심사를 통과 못 하는가?" → Yes면 Release Gate(`release: blocking` 라벨, Milestone 없음), No면 Wave 4.
 
-**현재 상태(2026-08-03):** 열려 있는 Release Gate 항목 없음(#5·#64·#86 전부 Closed). 과거 메타 트래커였던 `#65`는 관측성 개선 스펙(`docs/specs/social-integration-structured-logging.md`)으로 재사용됐다 — 더 이상 Release Gate 트래커가 아니다. **새 Release Gate 항목 발견 시 새 이슈를 만들어** `development-wave.md` §7 + `waves.md`에 동시 등록.
+**현재 상태(2026-08-03):** 열려 있는 Release Gate 항목 없음(#5·#64 전부 Closed, OAuth 콘솔 설정값 채우기도 완료 확인 — 추적 이슈 번호는 이후 다른 용도로 재사용되어 고정 링크 없음). 과거 메타 트래커였던 `#65`는 관측성 개선 스펙(`docs/specs/cross-cutting/social-integration-structured-logging.md`)으로 재사용됐다 — 더 이상 Release Gate 트래커가 아니다. **주의:** 이 프로젝트는 Closed 이슈 번호를 완전히 무관한 새 작업으로 재사용하는 관행이 있다(`#65`, `#86` 사례) — 다른 이슈 본문에서 과거 번호를 인용할 때 현재 제목·상태를 다시 확인할 것. **새 Release Gate 항목 발견 시 새 이슈를 만들어** `development-wave.md` §5 + `waves.md`에 동시 등록.
 
-**에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 Wave/출시 상태를 논의할 때, `development-wave.md` §7에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
+**에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 Wave/출시 상태를 논의할 때, `development-wave.md` §5에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
 
 **금지:** Release Gate 항목을 Wave 4로 분류
+
+## Wave 축 (2026-08 개편 — 도메인 축)
+
+Wave = **도메인/기술 축**: 1 소셜 로그인 · 2 MVP 로직(trip·recommend·member) · 3 외부 API 연동(Google Calendar·Firebase·Kakao) · 4 리팩토링·성능·런칭 후 UX. 상세 정의·이슈 매핑: [`development-wave.md` §1](../../docs/product/development-wave.md#1-wave-14-정의).
+
+**로그인(Wave 1) vs 외부 연동(Wave 3) 경계 주의:** "로그인 자격증명 자체"(카카오·구글·애플 로그인, JWT)는 Wave 1, "로그인이 매개하는 외부 서비스 연동"(Google Calendar, FCM)은 Wave 3 — 헷갈리기 쉬우므로 새 이슈를 이 경계로 분류할 땐 **에이전트가 스스로 확정하지 않고 사용자에게 한 줄로 확인**받는다 (2026-08 Google Calendar가 Wave 축 개편 중 재분류되며 얻은 교훈).
 
 ## `[미정]` chore 트래커 — [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)
 

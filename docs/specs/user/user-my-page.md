@@ -2,7 +2,7 @@
 
 > wave: 1 (이름 수정) · 3 (알림 설정 필드 — `#21` D8 amend)  
 > implements: — (마이페이지 UI에서 이름 변경) · BR-USER-005(알림 on/off)  
-> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md) — `first_name`/`last_name` SSOT  
+> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) — `first_name`/`last_name` SSOT  
 > 선행: [`user-onboarding.md`](user-onboarding.md) — 온보딩 필수 이름 입력  
 > 상태: Approved (2026-07-23 알림 설정 필드 amend — 아래 "변경 이력")  
 > 승인: 2026-07-09 (이름 PATCH) · 2026-07-23 (알림 설정 필드 추가 + partial update 전환)  
@@ -16,8 +16,8 @@
 
 - 온보딩 최초 입력: `PATCH /api/v1/users/onboarding/name` ([`user-onboarding.md`](user-onboarding.md))
 - 마이페이지 재수정: 별도 엔드포인트로 UI 의도를 분리 (동일 컬럼·검증 재사용)
-- Figma: [`figma-wireframe-v1.md`](../product/design/figma-wireframe-v1.md) — 마이페이지(설정·탈퇴·캘린더 연동)
-- **2026-07-23:** [`notification.md`](notification.md)(`#21`) D8 — 알림 on/off를 별도 `/users/me/...` 엔드포인트로 새로 만들지 않고, 이 스펙의 `PATCH /users/my-page`에 `notificationEnabled` 필드로 편입 (이 프로젝트가 과거 `/users/me/*` 경로를 `/users/*`로 통일한 이력과 일치). 필드 하나만 보내는 경우를 지원해야 하므로 **전 필드를 optional(partial update)로 전환**
+- Figma: [`figma-wireframe-v1.md`](../../product/design/figma-wireframe-v1.md) — 마이페이지(설정·탈퇴·캘린더 연동)
+- **2026-07-23:** [`notification.md`](../notification/notification.md)(`#21`) D8 — 알림 on/off를 별도 `/users/me/...` 엔드포인트로 새로 만들지 않고, 이 스펙의 `PATCH /users/my-page`에 `notificationEnabled` 필드로 편입 (이 프로젝트가 과거 `/users/me/*` 경로를 `/users/*`로 통일한 이력과 일치). 필드 하나만 보내는 경우를 지원해야 하므로 **전 필드를 optional(partial update)로 전환**
 
 ## 요구사항
 
@@ -34,7 +34,7 @@
 - [x] `firstName`/`lastName`/`notificationEnabled` **전부 optional로 전환** — 요청에 없는(= null) 필드는 미변경, 있는 필드만 반영(partial update)
 - [x] `firstName`/`lastName`이 **필드로 포함됐지만 값이 blank**면 기존과 동일하게 400 (`CommonErrorCode.INVALID_INPUT`)
 - [x] 세 필드 **전부 없음**(빈 patch) → 400 (`CommonErrorCode.INVALID_INPUT`, 최소 1개 필드 필요 — 이 저장소 `ErrorCode` SSOT에 `VALIDATION_ERROR`가 없어 기존 `INVALID_INPUT` 재사용)
-- [x] `User.notificationEnabled` 컬럼 반영 (default `true`) — 엔티티는 [`notification.md`](notification.md) 데이터 모델 참고
+- [x] `User.notificationEnabled` 컬럼 반영 (default `true`) — 엔티티는 [`notification.md`](../notification/notification.md) 데이터 모델 참고
 - [x] 응답 `UserSummaryResponse`에 `notificationEnabled` 포함
 - [x] 기존 이름 PATCH 테스트(둘 다 필수였던 케이스) → partial update 계약에 맞게 갱신
 
@@ -89,7 +89,7 @@
 | `PATCH /users/onboarding/name` | 온보딩 **최초** 이름 입력 | firstName, lastName |
 | `PATCH /users/profile` | 마이페이지 **이름 수정** | firstName, lastName |
 
-저장 컬럼·검증·응답 DTO는 동일. 재로그인 시 소셜 `nickname`으로 덮어쓰지 않음 ([`007`](../decisions/007-user-profile-onboarding.md)).
+저장 컬럼·검증·응답 DTO는 동일. 재로그인 시 소셜 `nickname`으로 덮어쓰지 않음 ([`007`](../../decisions/007-user-profile-onboarding.md)).
 
 ## 검증 시나리오
 
@@ -106,8 +106,8 @@
 | 문서 | 변경 |
 |------|------|
 | [`user-onboarding.md`](user-onboarding.md) | profile vs my-page 구분 참조 |
-| [`erd.md`](../architecture/erd.md) | `user.first_name`, `user.last_name`, `user.notification_enabled` |
-| [`notification.md`](notification.md) | BR-USER-005 게이트가 참조하는 컬럼 소유자 (`#21` D8) |
+| [`erd.md`](../../architecture/erd.md) | `user.first_name`, `user.last_name`, `user.notification_enabled` |
+| [`notification.md`](../notification/notification.md) | BR-USER-005 게이트가 참조하는 컬럼 소유자 (`#21` D8) |
 | GitHub #10 | 범위·완료 기준에 my-page API 추가 |
 
 ## 변경 이력

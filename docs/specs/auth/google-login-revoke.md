@@ -3,9 +3,9 @@
 > 상태: Implemented — 단, `redirect_uri` 계약 정정으로 2026-08-01 amend 진행 중(아래 "정정 2" 참고)
 > MVP: In scope (소셜 로그인은 이미 MVP In scope — 이 스펙은 그 위에 revoke를 보강)
 > 관련 BR: 해당 없음 — [`#64`](https://github.com/Central-MakeUs/TripFit-server/issues/64)(Release Gate) 후속, Wave와 무관
-> 선행: [`auth-social-login.md`](auth-social-login.md), [`user-account-withdrawal.md`](user-account-withdrawal.md)
+> 선행: [`auth-social-login.md`](auth-social-login.md), [`user-account-withdrawal.md`](../user/user-account-withdrawal.md)
 > 참고 패턴: Apple 구현(`AppleCredential`/`AppleCredentialService`/`AppleOAuthClient`) — 동일 구조 재사용
-> deferred: 로그인·캘린더 Client ID 분리 → [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)(#78)
+> deferred: 로그인·캘린더 Client ID 분리 → [`google-calendar-client-id-separation.md`](../user/google-calendar-client-id-separation.md)(#78)
 > 정정 (2026-07-31): [`google-login-native-sdk-decision.md`](google-login-native-sdk-decision.md)(#77)는 "결정 필요"가 아니라 FE 확인 결과 **이미 네이티브 SDK로 구현·배포 구조까지 완료**된 것으로 밝혀져 Resolved 처리 — 아래 "클라이언트(FE) 변경 요건" 절에 정확한 두 경로(네이티브/브라우저)를 반영
 > **정정 2 (2026-08-01)**: PR #82(`redirect_uri=""` 고정)는 네이티브 앱 경로에는 맞지만, **브라우저 경로엔 틀렸다.** EC2 prod 로그로 실제 배포된 `tripfit.online` 데스크톱 브라우저 재현 시에도 여전히 `Missing parameter: redirect_uri` 400이 재현됨. FE 확인 결과 브라우저 경로는 **postmessage가 아니라 전체 페이지 리다이렉트**(`response_type=code id_token`)이고, code 교환에는 로그인 리다이렉트에 실제로 쓴 `redirect_uri`(예: `https://tripfit.online/auth/google/callback`)를 **그대로** 보내야 한다 — 빈 문자열은 이 경로에서 "파라미터 없음"과 동일하게 취급됨. 해결책: `LoginRequest`에 `redirectUri`(옵션, GOOGLE 브라우저 전용) 필드를 추가해 클라이언트가 실제 값을 실어 보내게 한다. 네이티브 앱(serverAuthCode) 경로는 영향 없음(계속 빈 문자열).
 
@@ -16,7 +16,7 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 ## 배경
 
 - `#64` 재오픈 코멘트에서 확인된 근본 원인: 로그인 시 Google ID Token을 로컬 JWKS로만 검증(`GoogleTokenVerifier`)하고 Google 서버로 토큰 교환을 하지 않아, 서버가 revoke에 쓸 access/refresh token을 가져본 적이 없음.
-- `UserWithdrawalService.revokeGoogleCalendarIfConnected()`는 `GoogleCalendarCredential`(캘린더 연동 시에만 생기는 row)이 있을 때만 실행되는데, 캘린더 연동 자체가 FE 미구현(Wave 4)이라 이 경로를 타는 실사용자가 없음.
+- `UserWithdrawalService.revokeGoogleCalendarIfConnected()`는 `GoogleCalendarCredential`(캘린더 연동 시에만 생기는 row)이 있을 때만 실행되는데, 캘린더 연동 자체가 FE 미구현(Wave 3)이라 이 경로를 타는 실사용자가 없음.
 - 해결 방향은 이미 구현된 Apple 패턴과 동일: 로그인 시 authorization code를 받아 access/refresh token으로 교환·암호화 저장하고, 탈퇴 시 그 refresh token으로 Google `/revoke`를 호출.
 - **사용자 결정 사항 (2026-07-31)**:
   1. authorizationCode 누락 처리는 Apple의 "처음엔 best-effort → 나중에 강제"를 반복하지 않고 **처음부터 400 강제**.
@@ -27,8 +27,8 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 
 | 문서 | 내용 |
 |------|------|
-| `docs/specs/auth-social-login.md` | wave 1 로그인 계약 — Google `id_token`만 전제 (이번 스펙으로 amend 필요) |
-| `docs/specs/user-account-withdrawal.md` | `#64` provider revoke SSOT (이번 스펙으로 Google 절 amend 필요) |
+| `docs/specs/auth/auth-social-login.md` | wave 1 로그인 계약 — Google `id_token`만 전제 (이번 스펙으로 amend 필요) |
+| `docs/specs/user/user-account-withdrawal.md` | `#64` provider revoke SSOT (이번 스펙으로 Google 절 amend 필요) |
 | `docs/decisions/001-auth-mobile-token-verification.md` | 모바일 토큰 검증 결정 — Google WebView 차단·네이티브 SDK 전제 |
 | Apple 참고 구현 | `AppleCredential`(엔티티) · `AppleCredentialService`(저장/revoke) · `AppleOAuthClient`(교환/revoke HTTP) · `AuthService.login()`의 APPLE 분기 |
 
@@ -49,7 +49,7 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 - [x] `UserWithdrawalService.withdraw()` — `revokeGoogleCalendarIfConnected(userId)`와 나란히 `googleLoginCredentialService.revokeAndDeleteIfPresent(userId)` 호출 추가
 - [x] 신규 Repository `GoogleLoginCredentialRepository`(`findByUser_Id`, `deleteByUser_Id`) — 신규 네이티브 쿼리 없이 derived method만
 - [x] `docs/architecture/erd.md`에 `google_login_credential` 테이블 반영
-- [x] `docs/specs/auth-social-login.md`, `docs/specs/user-account-withdrawal.md` Google 절 amend
+- [x] `docs/specs/auth/auth-social-login.md`, `docs/specs/user/user-account-withdrawal.md` Google 절 amend
 - [x] 커밋 시 `Breaking-Change-Reason` 트레일러 — `LoginRequest.authorizationCode` 의미 확장(조건부 필수화 대상에 GOOGLE 추가) + 신규 `ErrorCode`
 - [x] **(2026-08-01 추가, 정정 2)** 신규 필드 `LoginRequest.redirectUri`(옵션, GOOGLE 브라우저 전용) — `GoogleOAuthClient.exchangeAuthorizationCodeForRefreshToken(authorizationCode, redirectUri)`가 네이티브(null→`""`)/브라우저(실제 URL 그대로)를 구분해 Google 토큰 엔드포인트에 전달. `AuthService.login()` → `GoogleLoginCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode, redirectUri)`로 관통
 
@@ -62,7 +62,7 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
 - **기존(스펙 적용 전) 가입 유저의 소급 커버** — dev 환경, 상용 데이터 없음이라 불필요(사용자 확정)
 - ~~iOS/Android 네이티브 Google Sign-In 대응(client_id 이원화·PKCE)~~ — **정정(2026-07-31): Out of Scope 아님, 이미 해당 없는 걱정이었음.** FE 확인 결과 `@react-native-google-signin/google-signin`이 이미 전 provider 네이티브 SDK로 구현·배포돼 있고(`nativeBridge.ts` 환경 분기), 이 라이브러리의 `serverAuthCode`(offlineAccess 옵션)는 iOS/Android 구분 없이 **항상 webClientId로 교환**되도록 설계돼 있어 Apple 같은 client_id 이원화·PKCE 이슈 자체가 발생하지 않는다. 이 스펙의 백엔드 구현은 수정 없이 그대로 유효 — 상세는 "클라이언트(FE) 변경 요건" 절
 - **`prompt=consent` 강제** — 사용자 결정에 따라 이번 스펙에서 채택하지 않음
-- **로그인·캘린더 Client ID 분리** — [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)로 분리(deferred). Calendar Wave 4 착수 시 진행
+- **로그인·캘린더 Client ID 분리** — [`google-calendar-client-id-separation.md`](../user/google-calendar-client-id-separation.md)로 분리(deferred). Calendar Wave 3 착수 시 진행
 - 소셜 계정 다중 연결·개별 해제 → `#6`
 
 ## 설계 노트 (구현 전 참고)
@@ -184,7 +184,7 @@ google_login_credential (신규)
 
 - [x] `./gradlew test` 통과
 - [x] `./gradlew build` 성공(Spotless 포함)
-- [x] `docs/specs/auth-social-login.md`, `docs/specs/user-account-withdrawal.md` amend
+- [x] `docs/specs/auth/auth-social-login.md`, `docs/specs/user/user-account-withdrawal.md` amend
 - [x] `docs/architecture/erd.md`에 `google_login_credential` 반영
 - [x] OpenAPI(`LoginRequest`·`AuthErrorCode`·`AuthController` `@ApiResponses`) 반영
 - [x] 커밋에 `Breaking-Change-Reason` 트레일러 (PR #79 — `authorizationCode` 조건부 필수화 + 신규 `ErrorCode`, 이번 amend 커밋 — `redirectUri` 신규 필드)
@@ -201,7 +201,7 @@ google_login_credential (신규)
 | iOS/Android 네이티브 Google Sign-In 시 client_id 이원화 | **해소(2026-07-31, FE 확인)** | `@react-native-google-signin/google-signin`의 `serverAuthCode`는 플랫폼 무관하게 항상 webClientId로 교환됨 — Apple과 달리 애초에 발생하지 않는 리스크였음. [`google-login-native-sdk-decision.md`](google-login-native-sdk-decision.md)(#77)도 Resolved로 정정 |
 | `prompt=consent` 미강제로 인해 revoke가 실패(네트워크 등)했던 유저의 재가입 시 refresh_token 재획득 실패 가능성 | 확정(수용) | best-effort 정책과 일관 — Google 쪽에서 동의가 실제로 안 지워졌으면 다음 로그인도 동의 화면 없이 code만 오고 refresh_token은 없을 수 있음 |
 | FE 배포 순서 조율 | `[진행 필요]` | Apple 때와 동일한 리스크 — FE가 hybrid flow 전환 완료 후 백엔드 강제(400) 배포 |
-| **로그인·캘린더가 같은 Client ID 공유** | 코드 분리 완료(2026-08-22) — GCP 콘솔 발급·FE 전환 대기 | [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md) — `OAuthProperties`·`GoogleCalendarOAuthClient`는 이미 분리된 env(`GOOGLE_CALENDAR_CLIENT_ID`/`SECRET`)를 쓰지만, GCP 콘솔에 실제 Calendar 전용 Client ID를 아직 발급 안 했고 FE도 로그인과 같은 Client ID로 요청 중이라 실질적 리스크(같은 client_id 동의 묶임)는 Calendar FE 착수 시점까지 유지됨 |
+| **로그인·캘린더가 같은 Client ID 공유** | 코드 분리 완료(2026-08-22) — GCP 콘솔 발급·FE 전환 대기 | [`google-calendar-client-id-separation.md`](../user/google-calendar-client-id-separation.md) — `OAuthProperties`·`GoogleCalendarOAuthClient`는 이미 분리된 env(`GOOGLE_CALENDAR_CLIENT_ID`/`SECRET`)를 쓰지만, GCP 콘솔에 실제 Calendar 전용 Client ID를 아직 발급 안 했고 FE도 로그인과 같은 Client ID로 요청 중이라 실질적 리스크(같은 client_id 동의 묶임)는 Calendar FE 착수 시점까지 유지됨 |
 
 ## 변경 이력
 

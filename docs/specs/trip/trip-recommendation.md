@@ -4,7 +4,7 @@
 > implements: BR-TRIP-007, BR-TRIP-010 (API·DTO·ERD·상태전이만 — 계산 로직은 `#50`)
 > deferred: BR-NOTI-004 확정 알림 (wave 3), **추천 계산 로직(후보 윈도우·모드별 스코어링·동점) → [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) (#50, BR-TRIP-005·011·012)**
 > 상태: **Approved** (2026-07-30 — 화면 확인·권한 정리 반영 후 확정)
-> 선행: [`schedule-unified.md`](schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (ACTIVE·sparse·submit)
+> 선행: [`schedule-unified.md`](../user-schedule/schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (ACTIVE·sparse·submit)
 > **2026-07-30 화면 확인:** 추천 결과 카드 UI 반영 — 아래 "요구사항"·"API / 인터페이스"·"데이터 모델" 절 참고. `ALL_ATTEND` 하드 필터·`NO_RECOMMENDATION_CANDIDATES` 에러는 [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) 2026-07-30 개정으로 폐기됨 — 이 스펙도 동기화
 > **2026-07-30 기획 개정(추가):** 추천 후보(TOP 3 카드)·추천 근거 상세는 **방장만** 볼 수 있음. 참여자는 후보를 전혀 볼 수 없고 **확정된 일정만**(기존 `Trip.confirmedStartDate`/`confirmedEndDate`) 볼 수 있다 — `GET .../recommendations`·`GET .../recommendations/{rank}`·`PATCH .../recommendations/{rank}/feedback` 전부 `JWT + owner`로 개정(구 "JWT + member" 폐기)
 

@@ -21,7 +21,7 @@
 
 - **현상:** `com.tripfit.tripfit.common.api.ApiResponse`(성공 envelope record)가 springdoc의 `@ApiResponse` 어노테이션과 simple name이 겹침. 문제 1 작업 초기엔 어노테이션을 FQN(`@io.swagger.v3.oas.annotations.responses.ApiResponse`)으로 우회했으나, 이는 표준 관행이 아니라 워크어라운드.
 - **결정:** 실제로 흔히 쓰이는 해법(라이브러리 어노테이션명은 고정이므로 자체 클래스명을 바꿈)을 따라 성공 envelope를 **`SuccessResponse`**로 rename — 같은 패키지의 `ErrorResponse`(실패 envelope)와 대칭. 영향 범위는 컨트롤러 7개 + 클래스 파일 자체뿐(서비스·테스트 미참조)이라 blast radius 작음.
-- **동반 변경:** `docs/architecture.md`, `docs/architecture/api-response.md`, `docs/specs/auth-social-login.md`, `.claude/rules/spring-boot-java.md`의 클래스명 표기 갱신. 어노테이션 import는 FQN 대신 정상 `import io.swagger.v3.oas.annotations.responses.ApiResponse;`로 되돌림.
+- **동반 변경:** `docs/architecture.md`, `docs/architecture/api-response.md`, `docs/specs/auth/auth-social-login.md`, `.claude/rules/spring-boot-java.md`의 클래스명 표기 갱신. 어노테이션 import는 FQN 대신 정상 `import io.swagger.v3.oas.annotations.responses.ApiResponse;`로 되돌림.
 
 ## 문제 2 — request/response 완성 예시 부재 (부분 해결)
 

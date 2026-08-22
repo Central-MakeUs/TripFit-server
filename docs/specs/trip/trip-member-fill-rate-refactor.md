@@ -17,8 +17,8 @@
   3. `joinedMemberCount` 필드는 3개 DTO(`TripDetailResponse`/`TripHomeCardResponse`/`TripMembersResponse`) 전부에서 API 노출 제거. 총 참여 인원이 필요하면 FE는 `membersPreview.size() + membersPreviewOverflow`(또는 `TripMembersResponse.members` 배열 크기)로 유도.
   4. 필드명 `memberFillRate`는 그대로 유지(개명 안 함) — FE가 이미 이 필드명을 쓰고 있어 계약 변경 최소화.
 - 스펙 조사 중 발견해 같이 amend하기로 확정한 기존 "확정"/Approved 문서 충돌:
-  - `docs/specs/kakao-invite-share.md`(Approved·종결) **C-1**: `n(미join 인원) = memberCount - joinedMemberCount`를 FE가 상세 API 필드로 직접 계산 → `joinedMemberCount` 제거로 문구 갱신 필요.
-  - `docs/specs/schedule-participation-onboarding.md` **D-MEMBER-FILL**(확정): `memberFillRate = joinedMemberCount / memberCount`로 명시돼 있어 공식·필드 노출 여부 갱신 필요.
+  - `docs/specs/trip/kakao-invite-share.md`(Approved·종결) **C-1**: `n(미join 인원) = memberCount - joinedMemberCount`를 FE가 상세 API 필드로 직접 계산 → `joinedMemberCount` 제거로 문구 갱신 필요.
+  - `docs/specs/trip/schedule-participation-onboarding.md` **D-MEMBER-FILL**(확정): `memberFillRate = joinedMemberCount / memberCount`로 명시돼 있어 공식·필드 노출 여부 갱신 필요.
 
 ## 요구사항
 
@@ -31,7 +31,7 @@
 - [x] `TripMemberQueryService.listMembers`: `memberFillRate` 계산을 `activeMemberCount` 기준으로 변경, `joinedMemberCount` 로컬 변수는 응답 조립에서 제거(내부 계산에만 필요하면 유지)
 - [x] 3개 DTO `@Schema` 설명 갱신 — `memberFillRate` 새 공식 명시("activeMemberCount 기준"으로 문구 정정), `joinedMemberCount` 필드·설명 삭제
 - [x] Swagger 200 성공 예시(JSON) 갱신 — `TripController`/`TripMemberController`
-- [x] 문서 amend: `kakao-invite-share.md`(C-1 공식), `schedule-participation-onboarding.md`(D-MEMBER-FILL 표), `docs/architecture/erd.md`(카운트 설명), `docs/product/flows/trip-create-join-guide.md`(필드 표), `docs/specs/trip-room-api.md`(응답 예시·필드 설명)
+- [x] 문서 amend: `kakao-invite-share.md`(C-1 공식), `schedule-participation-onboarding.md`(D-MEMBER-FILL 표), `docs/architecture/erd.md`(카운트 설명), `docs/product/flows/trip-create-join-guide.md`(필드 표), `docs/specs/trip/trip-room-api.md`(응답 예시·필드 설명)
 - [x] 이슈 [#60](https://github.com/Central-MakeUs/TripFit-server/issues/60) 이 스펙으로 종결(구현 완료 후 클로즈)
 
 ### Nice to Have

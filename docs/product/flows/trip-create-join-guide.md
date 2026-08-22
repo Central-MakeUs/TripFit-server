@@ -1,7 +1,7 @@
 # 여행방 생성·참여 — 플로우·정책·시나리오
 
 > **상태: Approved/Implemented** (대안 A 채택, [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)). 생성·참여 플로우의 SSOT 가이드.
-> 계약: [`trip-room-api.md`](../../specs/trip-room-api.md) · [`schedule-participation-onboarding.md`](../../specs/schedule-participation-onboarding.md)
+> 계약: [`trip-room-api.md`](../../specs/trip/trip-room-api.md) · [`schedule-participation-onboarding.md`](../../specs/trip/schedule-participation-onboarding.md)
 > 설계 대안 검토(A~D) 이력은 #39 PR 참고 — 비교 문서는 채택 후 삭제됨
 
 ---
@@ -25,7 +25,7 @@
 3. **중간 `SCHEDULE_PENDING` 없음** — "일정 넣고 join = ACTIVE 한 방"
 4. 정원 full → 409 · 이미 ACTIVE → idempotent. 방장(SCHEDULE_PENDING)이 join으로 우회 → `SCHEDULE_ACTIVATION_REQUIRED` → `activate` 사용
 
-모집 현황(응답률): `memberFillRate = activeMemberCount / memberCount`(구 공식 `joinedMemberCount / memberCount`에서 전환, `joinedMemberCount`는 API 미노출 — [`trip-member-fill-rate-refactor.md`](../../specs/trip-member-fill-rate-refactor.md)). 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
+모집 현황(응답률): `memberFillRate = activeMemberCount / memberCount`(구 공식 `joinedMemberCount / memberCount`에서 전환, `joinedMemberCount`는 API 미노출 — [`trip-member-fill-rate-refactor.md`](../../specs/trip/trip-member-fill-rate-refactor.md)). 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
 
 ---
 
@@ -39,7 +39,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 전역 `canEnterRoom`만으로는 부족하고, **해당 trip에서 `ACTIVE`** 가 추가로 필요하다.
 
 > **프론트 주의:** create 응답에 `inviteCode` 없음. 홈에 SCHEDULE_PENDING 카드가 보여도 상세/공유로 바로 가지 말고 activate 플로우로.
-> 용어·오해표: [`glossary.md`](../glossary.md) · 스펙 필독: [`trip-room-api.md`](../../specs/trip-room-api.md)
+> 용어·오해표: [`glossary.md`](../glossary.md) · 스펙 필독: [`trip-room-api.md`](../../specs/trip/trip-room-api.md)
 
 ---
 
@@ -308,13 +308,13 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 | 문서 | 역할 |
 |------|------|
-| [`../../specs/trip-room-api.md`](../../specs/trip-room-api.md) | 현행 API |
-| [`../../specs/schedule-participation-onboarding.md`](../../specs/schedule-participation-onboarding.md) | #22/#39 참여 게이트 스펙 |
+| [`../../specs/trip/trip-room-api.md`](../../specs/trip/trip-room-api.md) | 현행 API |
+| [`../../specs/trip/schedule-participation-onboarding.md`](../../specs/trip/schedule-participation-onboarding.md) | #22/#39 참여 게이트 스펙 |
 
 ## 변경 이력
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-07-28 | **Amend** — `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. 상세: [`trip-room-api.md`](../../specs/trip-room-api.md) 변경 이력 |
+| 2026-07-28 | **Amend** — `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. 상세: [`trip-room-api.md`](../../specs/trip/trip-room-api.md) 변경 이력 |
 | 2026-07-23 | 문서 정리 — `trip-create.md`/`trip-join.md`를 "빠른 요약" 절로 흡수(파일 삭제), RFC 어투("제안"·"SSOT로 승격 예정") 제거해 Approved/Implemented 사실로 명시, 자기참조 깨진 링크 제거, `trip-create-join-flow-redesign.md`(대안 비교) 삭제에 따라 참조 제거 |
 | 2026-07-21 | **#39** — 대안 A SSOT (create SCHEDULE_PENDING → confirm ACTIVE) |

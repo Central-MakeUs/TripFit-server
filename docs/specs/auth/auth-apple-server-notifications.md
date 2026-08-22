@@ -2,8 +2,8 @@
 
 > 상태: Approved (2026-07-30)  
 > 범위: **스토어 제출 전** (MVP 로그인 스펙과 별도)  
-> 관련: [`auth-social-login.md`](auth-social-login.md), [`docs/product/platform.md`](../product/platform.md)  
-> 결정: [`docs/decisions/001-auth-mobile-token-verification.md`](../decisions/001-auth-mobile-token-verification.md)
+> 관련: [`auth-social-login.md`](auth-social-login.md), [`docs/product/platform.md`](../../product/platform.md)  
+> 결정: [`docs/decisions/001-auth-mobile-token-verification.md`](../../decisions/001-auth-mobile-token-verification.md)
 
 ## 목표
 

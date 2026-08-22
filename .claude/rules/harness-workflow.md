@@ -25,7 +25,7 @@ API·BR 실패 케이스·권한 게이트·`last_activity_at` touch를 **추가
 | 변경 | 같은 턴에 필수 |
 |------|----------------|
 | 새 실패 분기·HTTP/`code` | `{Domain\|Feature}ErrorCode` + `TripFitException` throw + **스펙 에러 표** + `@Schema` |
-| L1 touch ([`trip-last-activity-at.md`](../../docs/specs/trip-last-activity-at.md)) | public 유스케이스 `@TripActivity` (create는 엔티티 초기값) |
+| L1 touch ([`trip-last-activity-at.md`](../../docs/specs/trip/trip-last-activity-at.md)) | public 유스케이스 `@TripActivity` (create는 엔티티 초기값) |
 | 멤버/방장 전용 API | `@TripMemberOnly` / `@TripOwnerOnly` + Interceptor 계약 유지 |
 | 폐기된 `code`·게이트 | enum·throw·스펙·Swagger **삭제** (아래 레거시 절) |
 

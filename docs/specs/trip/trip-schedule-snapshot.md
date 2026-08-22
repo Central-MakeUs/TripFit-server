@@ -4,7 +4,7 @@
 > 상태: **Approved** (2026-07-21) · **구현 중** `feat/38-trip-schedule-snapshot`  
 > MVP: In scope · **Wave 2 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))  
 > GitHub: **[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**  
-> 선행: [`trip-home-schedulers.md`](trip-home-schedulers.md) (#27), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17), [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (#37)  
+> 선행: [`trip-home-schedulers.md`](trip-home-schedulers.md) (#27), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (#37)  
 > related: [`trip-room-api.md`](trip-room-api.md) (#12), [`trip-recommendation.md`](trip-recommendation.md) (#13)  
 > implements: **BR-USER-008** (ONGOING만 전역 live)
 
@@ -18,7 +18,7 @@
 
 | ID | 확정 |
 |----|------|
-| **S3** | 멤버 전원 **정기+개별 합친 값** (regular⊕personal, R2=A — [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md)) — freeze 시점 값을 snapshot 테이블에 저장 |
+| **S3** | 멤버 전원 **정기+개별 합친 값** (regular⊕personal, R2=A — [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md)) — freeze 시점 값을 snapshot 테이블에 저장 |
 | **S5** | ONGOING = live (본 스펙 밖, `trip-schedule-calendar-window.md` C2) |
 
 ### Freeze 시점 (R-freeze) — 공백 없음 (R-gap)

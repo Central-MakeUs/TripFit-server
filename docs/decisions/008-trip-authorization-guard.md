@@ -2,7 +2,7 @@
 
 - **상태:** 확정
 - **날짜:** 2026-07-16
-- **관련:** [`docs/specs/trip-room-api.md`](../specs/trip-room-api.md), [`docs/specs/schedule-participation-onboarding.md`](../specs/schedule-participation-onboarding.md), Issue **#24** (구현), #22 (설계 범위), #12 (여행방 API)
+- **관련:** [`docs/specs/trip/trip-room-api.md`](../specs/trip/trip-room-api.md), [`docs/specs/trip/schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md), Issue **#24** (구현), #22 (설계 범위), #12 (여행방 API)
 
 ## 맥락
 

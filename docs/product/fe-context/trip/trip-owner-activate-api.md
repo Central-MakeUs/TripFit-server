@@ -2,7 +2,7 @@
 
 > ⚠️ 2026-07-28 업데이트: `POST .../schedule/confirm`이 `POST .../activate`로 rename됨(`TripStatus.CONFIRMED`와 이름이 겹쳐 혼동을 유발해서 변경). 에러 코드도 `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`로 바뀜. 아래는 새 이름 기준으로 갱신한 내용.
 >
-> 근거: `docs/specs/schedule-participation-onboarding.md` (D-JOIN-TRIP-FLOW, D-JOIN-MEMBER, D-PERSONAL-6)
+> 근거: `docs/specs/trip/schedule-participation-onboarding.md` (D-JOIN-TRIP-FLOW, D-JOIN-MEMBER, D-PERSONAL-6)
 
 ## 질문 1 — "일정 데이터를 저장하는 게 아니라 상태 전환 전용 API"가 맞나요?
 

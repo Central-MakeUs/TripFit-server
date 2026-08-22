@@ -1,12 +1,12 @@
 # 일정 참여·온보딩·submit 흐름 (재설계)
 
-> wave: **1**
+> wave: **2** (2026-08-03 Wave 1→2 이동 — trip 참여 흐름, 도메인축 재분류)
 > implements: BR-USER-001(이름 게이트), BR-USER-006(부분), BR-USER-007(부분)
 > deferred: BR-NOTI-001/002(wave 3), **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)
 > 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend** (방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`). submit 삭제 · `is_all_free` · canEnterRoom · hold→#35. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
 > GitHub: **#22** · amend **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)**
-> 선행: [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
-> 결정 amend: [`007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md) (D-REENTRY-2)
+> 선행: [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
+> 결정 amend: [`007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) (D-REENTRY-2)
 
 ## 목표
 
@@ -62,7 +62,7 @@
 |------|------|
 | HTTP 결합 | login과 이름 입력을 **한 HTTP 트랜잭션으로 묶지 않음** |
 | 흐름 | `POST /auth/login` → JWT 발급 → `firstName` **또는** `lastName` null이면 **이름 화면** (건너뛰기 없음) |
-| Provider | **Kakao = Google = Apple** — 이름 필수·게이트 동일 ([`007`](../decisions/007-user-profile-onboarding.md) 정렬) |
+| Provider | **Kakao = Google = Apple** — 이름 필수·게이트 동일 ([`007`](../../decisions/007-user-profile-onboarding.md) 정렬) |
 | 클라이언트 | Routing Guard (`replace` / stack reset), 뒤로가기·건너뛰기 **없음**, `BackHandler` 차단 |
 | 서버 게이트 | `requireProfileNameComplete()` — 핵심 API(trip 생성·join 등)에서 **403** `PROFILE_NAME_REQUIRED` |
 | 서버 **차단 금지** | login, refresh, `GET /auth/me`, `PATCH /users/onboarding/name` |
@@ -77,7 +77,7 @@
 | 선택 온보딩 | 건너뛰기 **전부** 완료 시 → 메인. 중간 이탈해도 재접속 시 **트랩하지 않음** |
 | SSOT | **재접속·재로그인 라우팅:** `first_name` + `last_name` 완료 → 메인. `isOptionalOnboardingCompleted`는 **재진입 SSOT 아님** |
 
-상세 amend: [`007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md) · [`user-onboarding.md`](user-onboarding.md)
+상세 amend: [`007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) · [`user-onboarding.md`](../user/user-onboarding.md)
 
 ### D-JOIN-ENTRY: 방 입장 가능 조건 (확정 — 2026-07-20 amend)
 
@@ -239,7 +239,7 @@ canEnterRoom(user) =
 
 | 필드 | 상태 |
 |------|------|
-| `isGoogleCalendarConnected` | **유지** — OAuth 연동 SSOT (Google Calendar API wave 4) |
+| `isGoogleCalendarConnected` | **유지** — OAuth 연동 SSOT (Google Calendar API wave 3) |
 | `isScheduleRegistered` | **제거** — `hasPreSchedule` 파생 (D-BR006-C) |
 | `isOptionalOnboardingCompleted` | **제거** — 재접속 SSOT = 이름 완료 (D-REENTRY-2) |
 | `PATCH /users/onboarding` | **삭제** |
@@ -298,7 +298,7 @@ canEnterRoom(user) =
 
 ### D-AUTH-8: 여행방 권한 — #22 범위 밖 (#24 완료)
 
-**초대 링크(join)와 무관.** [`decisions/008`](../decisions/008-trip-authorization-guard.md) · Issue **#24** — **이미 구현 완료**.
+**초대 링크(join)와 무관.** [`decisions/008`](../../decisions/008-trip-authorization-guard.md) · Issue **#24** — **이미 구현 완료**.
 
 | 구분 | 내용 |
 |------|------|
@@ -321,40 +321,40 @@ canEnterRoom(user) =
 |------|------|-----------|
 | **본 파일** `schedule-participation-onboarding.md` | Draft | 설계 확정 후 Approved |
 | [`trip-room-api.md`](trip-room-api.md) | D1·submit Approved | D1 → `[미정]` · submit Must Have → deferred · #12 체크리스트에서 제외 |
-| [`user-onboarding.md`](user-onboarding.md) | 사전 일정 skip Approved | ② 사전 일정 단계·`isScheduleRegistered` → `[미정]` |
-| [`schedule-unified.md`](schedule-unified.md) | BR-USER-006 personal 게이트 | 게이트 정책 → `[미정]` · API 표에 Hidden 표기 |
-| [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) | sparse omit 확정 | sparse = 가능 vs 미입력 → `[미정]` (A10 등) |
+| [`user-onboarding.md`](../user/user-onboarding.md) | 사전 일정 skip Approved | ② 사전 일정 단계·`isScheduleRegistered` → `[미정]` |
+| [`schedule-unified.md`](../user-schedule/schedule-unified.md) | BR-USER-006 personal 게이트 | 게이트 정책 → `[미정]` · API 표에 Hidden 표기 |
+| [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) | sparse omit 확정 | sparse = 가능 vs 미입력 → `[미정]` (A10 등) |
 | [`trip-recommendation.md`](trip-recommendation.md) | ACTIVE·uncertain 참조 | 입력 전제·TBD 해석 → 본 스펙 확정 후 amend |
-| [`auth-social-login.md`](auth-social-login.md) | login 응답에 onboarding boolean | boolean 의미 주석 → `[미정]` 링크 |
-| [`docs/specs/README.md`](README.md) | wave 2 인덱스 | wave 1 항목 + 이슈 매핑 추가 |
+| [`auth-social-login.md`](../auth/auth-social-login.md) | login 응답에 onboarding boolean | boolean 의미 주석 → `[미정]` 링크 |
+| [`docs/specs/README.md`](../README.md) | wave 2 인덱스 | wave 1 항목 + 이슈 매핑 추가 |
 
 ### B. 결정 (`docs/decisions/`)
 
 | 파일 | 조치 |
 |------|------|
-| [`007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md) | `isScheduleRegistered`·skip → `[미정]` amend · 본 스펙 링크 |
-| [`008-trip-authorization-guard.md`](../decisions/008-trip-authorization-guard.md) | `@TripMemberOnly`/`@TripOwnerOnly` + Interceptor 권한 설계안 (제안) — submit·members 권한과 함께 확정 |
+| [`007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) | `isScheduleRegistered`·skip → `[미정]` amend · 본 스펙 링크 |
+| [`008-trip-authorization-guard.md`](../../decisions/008-trip-authorization-guard.md) | `@TripMemberOnly`/`@TripOwnerOnly` + Interceptor 권한 설계안 (제안) — submit·members 권한과 함께 확정 |
 
 ### C. 제품 (`docs/product/`)
 
 | 파일 | 조치 |
 |------|------|
-| [`waves.md`](../product/waves.md) | wave 1에 본 재설계 항목 추가 |
-| [`mvp.md`](../product/mvp.md) | “일정 응답·참여 완료” UX → `[미정]` 또는 wave 1 선행 |
-| [`prd.md`](../product/prd.md) | BR-USER-006/007 행 → `[미정]` |
-| [`glossary.md`](../product/glossary.md) | “참여자” 정의(ACTIVE) → `[미정]` |
-| [`business-rules/user.md`](../product/business-rules/user.md) | BR-USER-006·007 → `[미정]` |
-| [`business-rules/notification.md`](../product/business-rules/notification.md) | BR-NOTI-001/002 트리거 → `[미정]` |
-| [`flows/trip-create-join-guide.md`](../product/flows/trip-create-join-guide.md) | 참여 플로우 4~7단계 submit → `[미정]` |
-| [`flows/schedule-edit.md`](../product/flows/schedule-edit.md) | submit 분기 → `[미정]` |
-| [`flows/trip-confirm.md`](../product/flows/trip-confirm.md) | “1명 이상 제출” 전제 → `[미정]` |
-| [`design/figma-wireframe-v1.md`](../product/design/figma-wireframe-v1.md) | ACTIVE·isScheduleRegistered → `[미정]` |
+| [`waves.md`](../../product/waves.md) | wave 1에 본 재설계 항목 추가 |
+| [`mvp.md`](../../product/mvp.md) | “일정 응답·참여 완료” UX → `[미정]` 또는 wave 1 선행 |
+| [`prd.md`](../../product/prd.md) | BR-USER-006/007 행 → `[미정]` |
+| [`glossary.md`](../../product/glossary.md) | “참여자” 정의(ACTIVE) → `[미정]` |
+| [`business-rules/user.md`](../../product/business-rules/user.md) | BR-USER-006·007 → `[미정]` |
+| [`business-rules/notification.md`](../../product/business-rules/notification.md) | BR-NOTI-001/002 트리거 → `[미정]` |
+| [`flows/trip-create-join-guide.md`](../../product/flows/trip-create-join-guide.md) | 참여 플로우 4~7단계 submit → `[미정]` |
+| [`flows/schedule-edit.md`](../../product/flows/schedule-edit.md) | submit 분기 → `[미정]` |
+| [`flows/trip-confirm.md`](../../product/flows/trip-confirm.md) | “1명 이상 제출” 전제 → `[미정]` |
+| [`design/figma-wireframe-v1.md`](../../product/design/figma-wireframe-v1.md) | ACTIVE·isScheduleRegistered → `[미정]` |
 
 ### D. 아키텍처
 
 | 파일 | 조치 |
 |------|------|
-| [`architecture/erd.md`](../architecture/erd.md) | `trip_member.status` **SCHEDULE_PENDING\|ACTIVE** (#39) · BR-USER-007 |
+| [`architecture/erd.md`](../../architecture/erd.md) | `trip_member.status` **SCHEDULE_PENDING\|ACTIVE** (#39) · BR-USER-007 |
 | [`docs/README.md`](../README.md) | specs 인덱스에 본 스펙 추가 |
 
 ### E. Java — Controller
@@ -436,7 +436,7 @@ canEnterRoom(user) =
 | 날짜 | 변경 |
 |------|------|
 | 2026-07-30 | **O1.4 정합 반영** — `schedule-slot-override.md` O1.4가 개별 일정 삭제 경로를 전면 제거함에 따라 D-JOIN-CLEAR·"일정 수정 API 형태" 절 갱신: 개별 일정으로 `is_all_free`를 켜는 경로는 이제 없음(정기 삭제 + 개별 미등록 조합만 유효), "개인 CLEAR" 삭제 시맨틱 문구 제거. `canEnterRoom`이 OR 조건이라 개별 일정이 있으면 애초에 `is_all_free` 전환이 불필요하다는 점을 121행 아래 `[미정]` 노트로 남김(기존 데이터를 지우지 않고 명시적으로 "전부 free" 선언하는 UX는 추후 검토 대상, [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)) |
-| 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 (상세: [`schedule-unified.md`](schedule-unified.md) 변경 이력) |
+| 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 (상세: [`schedule-unified.md`](../user-schedule/schedule-unified.md) 변경 이력) |
 | 2026-07-28 | **Amend** — 방장 멤버십 전환 API `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. activate·join 자신에게는 도달 불가능했던 `SCHEDULE_ENTRY_REQUIRED` 문서·검증 제거(상세: [`trip-room-api.md`](trip-room-api.md) 변경 이력) |
 | 2026-07-28 | 온보딩 이름 API 경로 리네이밍 반영 — `PATCH /users/profile` → `PATCH /users/onboarding/name` (`user-onboarding.md` 변경 이력 참고) |
 | 2026-07-28 | **Amend (#60)** — D-MEMBER-FILL 공식 전환(`memberFillRate = activeMemberCount / memberCount`), `joinedMemberCount` API 미노출. 상세: [`trip-member-fill-rate-refactor.md`](trip-member-fill-rate-refactor.md) |
@@ -451,4 +451,4 @@ canEnterRoom(user) =
 | 2026-07-20 | D-ONBOARD-4 · D-SPARSE-3 · D-BR006-5 · D-PERSONAL-6 · D-HIDDEN-7 · D-AUTH-8 · D-SUBMIT-2 `[미정]` |
 | 2026-07-20 | **Draft** — D-NAME-1 · D-REENTRY-2 · (구) D-JOIN-3/4 · 007 amend |
 | 2026-07-17 | `[미정]` 에스컬레이션 · OpenAPI Hidden · 수정 인벤토리 초안 |
-| 2026-07-16 | 여행방 권한 가드 설계안([decisions/008](../decisions/008-trip-authorization-guard.md)) 추가 · #22 범위 포함 |
+| 2026-07-16 | 여행방 권한 가드 설계안([decisions/008](../../decisions/008-trip-authorization-guard.md)) 추가 · #22 범위 포함 |

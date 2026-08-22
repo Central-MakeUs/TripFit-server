@@ -3,7 +3,7 @@
 > 상태: Draft (설계 확정 — 구현 착수 전 GitHub 이슈·브랜치·decision 003 amend 필요, 아래 "다음 절차" 참고)
 > 유형: 구조+의존성 리팩터 (API 응답·엔드포인트·DB 스키마 변경 없음. 단, **패키지·클래스 내부 의존 관계는 변경** — 순수 이동 리팩터 아님)
 > 관련 BR: N/A
-> 관련 결정: [`docs/decisions/003-architecture-guide.md`](../decisions/003-architecture-guide.md) (확정 — "풀 DDD 미적용·단일 모듈"). 이 스펙이 채택한 설계는 003의 일부 문구와 다르다 — **구현 착수 전 003을 amend하는 후속 커밋이 필요** (사실 확인, 아래 "다음 절차" 참고).
+> 관련 결정: [`docs/decisions/003-architecture-guide.md`](../../decisions/003-architecture-guide.md) (확정 — "풀 DDD 미적용·단일 모듈"). 이 스펙이 채택한 설계는 003의 일부 문구와 다르다 — **구현 착수 전 003을 amend하는 후속 커밋이 필요** (사실 확인, 아래 "다음 절차" 참고).
 
 ## 배경 — 이 문서가 겪은 두 번의 재검토
 

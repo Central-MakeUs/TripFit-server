@@ -1,12 +1,12 @@
 # Google Calendar OAuth 연동
 
-> wave: 4
+> wave: 3 (2026-08-03 Wave 4→3 이동 — 외부 API 연동, 도메인축 재분류)
 > implements: (온보딩 `is_google_calendar_connected` 실연동 — BR 번호 N/A · decisions/007)
 > deferred: 네이버 캘린더 · 소셜 계정 다중 연결 → [#6](https://github.com/Central-MakeUs/TripFit-server/issues/6) · Calendar 전용 OAuth Client ID 분리(백엔드 배선·GCP 콘솔 발급·FE 전환 완료, 2026-08-08) → [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)
 > 상태: **Approved**
-> MVP: Out of scope (Wave 4)
+> MVP: Out of scope (Wave 3)
 > Issue: [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44)
-> 선행: [`auth-social-login.md`](auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md)
+> 선행: [`auth-social-login.md`](../auth/auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md)
 
 ## 목표
 
@@ -31,7 +31,7 @@
 - ERD: `user.is_google_calendar_connected` — `docs/architecture/erd.md`
 - Google **로그인**(`#1`)과 Calendar **연동**은 별 scope · 별 API · 별 토큰 저장
 - 모바일 전제: decisions/001 — **서버 리다이렉트 OAuth2 Client 아님** · 앱이 토큰/code를 받아 REST로 전달
-- 런타임: [`platform.md`](../product/platform.md) 환경 A(앱) · B(카카오 인앱·모바일 웹) · **둘 다 로그인 필수**
+- 런타임: [`platform.md`](../../product/platform.md) 환경 A(앱) · B(카카오 인앱·모바일 웹) · **둘 다 로그인 필수**
 
 ## 요구사항
 
@@ -175,7 +175,7 @@ Approved 시 `erd.md` 반영.
 | — | `/me`의 `isGoogleCalendarConnected` | **Must** | 상태 SSOT |
 | — | `/me`의 `lastSyncedAt` | **Nice** | Must 미포함 |
 
-응답 envelope: [`api-response.md`](../architecture/api-response.md)
+응답 envelope: [`api-response.md`](../../architecture/api-response.md)
 
 > FE 잔여(스펙 밖·프론트): 환경 B 복귀 URL. 백엔드 Must와 무관.
 

@@ -2,9 +2,9 @@
 
 > wave: 1  
 > implements: BR-USER-001 (이름 완료 후 핵심 API)  
-> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md)  
-> 선행: [`auth-social-login.md`](auth-social-login.md)  
-> deferred: trip join 일정 게이트(D-JOIN-ENTRY/CLEAR/TRIP-FLOW) · `hasPreSchedule`/`isAllFree` 필드 SSOT → [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md)  
+> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md)  
+> 선행: [`auth-social-login.md`](../auth/auth-social-login.md)  
+> deferred: trip join 일정 게이트(D-JOIN-ENTRY/CLEAR/TRIP-FLOW) · `hasPreSchedule`/`isAllFree` 필드 SSOT → [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md)  
 > 상태: Approved (이름 API) · **재진입·이름 게이트 2026-07-20 amend** (#22 D-NAME-1, D-REENTRY-2) · **선택 온보딩 boolean(`isScheduleRegistered`/`isOptionalOnboardingCompleted`)과 `PATCH /users/onboarding`은 2026-07-20 삭제 — 대체: `hasPreSchedule`/`isAllFree` (`schedule-participation-onboarding.md` D-BR006-C)**  
 
 ## 목표
@@ -26,7 +26,7 @@
 
 ## UI 흐름
 
-> **Amend 2026-07-20:** 재진입 SSOT = 이름 완료 → 메인 ([`007`](../decisions/007-user-profile-onboarding.md) D-REENTRY-2)
+> **Amend 2026-07-20:** 재진입 SSOT = 이름 완료 → 메인 ([`007`](../../decisions/007-user-profile-onboarding.md) D-REENTRY-2)
 
 ```text
 [소셜 로그인] — Kakao / Google / Apple 동일 (D-NAME-1)
@@ -61,7 +61,7 @@ firstName 또는 lastName null?
 | 소셜 login | SDK 로그인 | user row upsert, JWT 발급, boolean 기본값 `false` |
 | 이름 | 성·이름 입력 (소셜 `nickname`은 인풋 prefill만) | `PATCH onboarding/name` → `first_name`, `last_name` |
 | 캘린더 | 연동 또는 건너뛰기 | 연동 성공 시 `isGoogleCalendarConnected=true` (별도 스펙). **건너뛰기 = `false` 유지** |
-| 사전 일정 | 근무·연차 입력 또는 건너뛰기 | 저장/skip. **join 게이트는 D-JOIN-ENTRY** (정기 OR 개별 OR 전부 free·User 전역). 사전 등록·전역 전부 free여도 **신규 trip은 수정/Skip 플로우** (D-JOIN-TRIP-FLOW). 상세·필드 SSOT: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) |
+| 사전 일정 | 근무·연차 입력 또는 건너뛰기 | 저장/skip. **join 게이트는 D-JOIN-ENTRY** (정기 OR 개별 OR 전부 free·User 전역). 사전 등록·전역 전부 free여도 **신규 trip은 수정/Skip 플로우** (D-JOIN-TRIP-FLOW). 상세·필드 SSOT: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) |
 | 온보딩 종료 | (선택) 마지막 단계 완료 | 별도 "완료" API·컬럼 없음 (`PATCH /users/onboarding` 2026-07-20 삭제). 완료 여부는 `hasPreSchedule`(파생)·`isAllFree` 값으로 판단 |
 
 > **재진입 (D-REENTRY-2):** `firstName` + `lastName` 완료 → **메인 직행**. 선택 온보딩 완료 여부와 무관하게 **재강제 없음**.
@@ -73,8 +73,8 @@ firstName 또는 lastName null?
 ### Must Have (wave 1 — 본 스펙)
 
 - [x] `user` 컬럼: `first_name`, `last_name`, `is_google_calendar_connected`
-- [x] `nickname` — 소셜 값만, **fallback 폐기** ([`007`](../decisions/007-user-profile-onboarding.md))
-- [x] login / `GET /auth/me` 응답 `user`에 위 필드 + `hasPreSchedule`/`isAllFree`(파생, SSOT: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md)) 포함
+- [x] `nickname` — 소셜 값만, **fallback 폐기** ([`007`](../../decisions/007-user-profile-onboarding.md))
+- [x] login / `GET /auth/me` 응답 `user`에 위 필드 + `hasPreSchedule`/`isAllFree`(파생, SSOT: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md)) 포함
 - [x] `PATCH /api/v1/users/onboarding/name` — `{ firstName, lastName }` (JWT 필수)
 - [x] `first_name`/`last_name` 없으면 여행방 생성·join 등 핵심 API **403** `PROFILE_NAME_REQUIRED` (D-NAME-1)
 - [x] login, refresh, `GET /auth/me`, `PATCH /users/onboarding/name` — 이름 미완료여도 **허용** (D-NAME-1)
@@ -85,7 +85,7 @@ firstName 또는 lastName null?
 ### Deferred (별도 스펙 — wave 1 본문 구현 안 함)
 
 - [x] Google Calendar OAuth 연동 API·토큰 저장 → [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](google-calendar-oauth.md) **Implemented**
-- [x] 정기·개별 일정 — [`schedule-unified.md`](schedule-unified.md) (wave 2, #11)
+- [x] 정기·개별 일정 — [`schedule-unified.md`](../user-schedule/schedule-unified.md) (wave 2, #11)
 - [ ] 마이페이지 이름 수정 — [`user-my-page.md`](user-my-page.md) (`PATCH /users/profile`)
 - [ ] 네이버 캘린더
 
@@ -114,8 +114,8 @@ firstName 또는 lastName null?
 | lastName | Y | 미입력 시 null → 이름 화면 |
 | nickname | Y | 소셜 provider 값. prefill용 |
 | isGoogleCalendarConnected | N | default `false`. **연동 성공 시만** `true` |
-| hasPreSchedule | N | DB 컬럼 없음, 조회 시 파생(정기 OR 개별 일정 ≥1). 상세: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) D-BR006-C |
-| isAllFree | N | `user.is_all_free` 저장값. 상세: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) |
+| hasPreSchedule | N | DB 컬럼 없음, 조회 시 파생(정기 OR 개별 일정 ≥1). 상세: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) D-BR006-C |
+| isAllFree | N | `user.is_all_free` 저장값. 상세: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) |
 
 ### `PATCH /api/v1/users/onboarding/name`
 
@@ -148,7 +148,7 @@ firstName 또는 lastName null?
 
 ### `PATCH /api/v1/users/onboarding` — 삭제됨 (2026-07-20, #22)
 
-선택 온보딩 boolean을 별도 API로 갱신하는 설계였으나 채택되지 않았다. `isGoogleCalendarConnected`는 Google Calendar OAuth 연동 API가 직접 갱신하고([`google-calendar-oauth.md`](google-calendar-oauth.md)), 일정 등록 여부는 `hasPreSchedule`(파생)·`isAllFree`로 대체됐다 — 상세: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) D-BR006-C. 이 엔드포인트를 참고해 구현하지 말 것.
+선택 온보딩 boolean을 별도 API로 갱신하는 설계였으나 채택되지 않았다. `isGoogleCalendarConnected`는 Google Calendar OAuth 연동 API가 직접 갱신하고([`google-calendar-oauth.md`](google-calendar-oauth.md)), 일정 등록 여부는 `hasPreSchedule`(파생)·`isAllFree`로 대체됐다 — 상세: [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) D-BR006-C. 이 엔드포인트를 참고해 구현하지 말 것.
 
 ## 데이터 모델 (`user` 추가 컬럼)
 
@@ -158,9 +158,9 @@ firstName 또는 lastName null?
 | last_name | varchar | null | 유저 입력 성 |
 | is_google_calendar_connected | boolean | false | Google Calendar 연동 |
 
-`is_all_free` 컬럼과 `hasPreSchedule` 파생 규칙은 [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md)가 SSOT — 여기서 중복 정의하지 않는다.
+`is_all_free` 컬럼과 `hasPreSchedule` 파생 규칙은 [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md)가 SSOT — 여기서 중복 정의하지 않는다.
 
-`nickname` — 소셜 전용, fallback 없음. 상세 [`erd.md`](../architecture/erd.md).
+`nickname` — 소셜 전용, fallback 없음. 상세 [`erd.md`](../../architecture/erd.md).
 
 ## AuthService upsert 정책 (구현 시)
 
@@ -176,15 +176,15 @@ firstName 또는 lastName null?
 - [x] profile PATCH → first/last 저장
 - [x] 재login → first/last non-null면 **메인 분기** (선택 온보딩 완료 여부 무관, D-REENTRY-2)
 - [x] 이름 null 상태에서 trip 생성·join 시도 → 403 `PROFILE_NAME_REQUIRED` (D-NAME-1)
-- [ ] `hasPreSchedule`/`isAllFree` 시나리오는 [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) 검증 시나리오가 SSOT
+- [ ] `hasPreSchedule`/`isAllFree` 시나리오는 [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md) 검증 시나리오가 SSOT
 
 ## 관련 문서
 
 | 문서 | 변경 |
 |------|------|
-| [`auth-social-login.md`](auth-social-login.md) | login 응답·nickname fallback 폐기·Out of Scope 정리 |
-| [`erd.md`](../architecture/erd.md) | `user` 컬럼 |
-| [`figma-wireframe-v1.md`](../product/design/figma-wireframe-v1.md) | 네이버 캘린더 제거 |
+| [`auth-social-login.md`](../auth/auth-social-login.md) | login 응답·nickname fallback 폐기·Out of Scope 정리 |
+| [`erd.md`](../../architecture/erd.md) | `user` 컬럼 |
+| [`figma-wireframe-v1.md`](../../product/design/figma-wireframe-v1.md) | 네이버 캘린더 제거 |
 
 ## 변경 이력
 

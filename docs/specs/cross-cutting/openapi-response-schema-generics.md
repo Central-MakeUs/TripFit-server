@@ -46,7 +46,7 @@
 
 - 응답 DTO 필드 자체의 재설계·추가/제거 — 이 스펙은 "스펙에 정확히 반영되게" 하는 것이지 API 계약을 바꾸는 것이 아님
 - Swagger UI(사람이 보는 화면)의 표시 개선 — `swagger-openapi-docs.md`(Draft) 별도 스펙 소관
-- `SuccessResponse` envelope 구조 자체를 바꾸는 것(예: 제네릭 대신 매 DTO를 개별 클래스로 분리) — envelope는 [`docs/architecture/api-response.md`](../architecture/api-response.md) SSOT, 이번 스펙은 스펙 **생성** 정확도만 다룸
+- `SuccessResponse` envelope 구조 자체를 바꾸는 것(예: 제네릭 대신 매 DTO를 개별 클래스로 분리) — envelope는 [`docs/architecture/api-response.md`](../../architecture/api-response.md) SSOT, 이번 스펙은 스펙 **생성** 정확도만 다룸
 
 ## API / 인터페이스
 

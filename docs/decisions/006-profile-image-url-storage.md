@@ -3,8 +3,8 @@
 - **상태:** 확정 (wave 1 = A안, wave 4 = B안 예정)
 - **날짜:** 2026-07-07
 - **관련:**
-  - [`docs/specs/auth-social-login.md`](../specs/auth-social-login.md) — wave 1 login·user upsert
-  - [`docs/specs/user-profile-image-s3-mirror.md`](../specs/user-profile-image-s3-mirror.md) — wave 4 B안 Draft
+  - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — wave 1 login·user upsert
+  - [`docs/specs/user/user-profile-image-s3-mirror.md`](../specs/user/user-profile-image-s3-mirror.md) — wave 4 B안 Draft
   - Issue #1 (wave 1 구현), Issue #9 (wave 4 B안)
 
 ## 맥락
@@ -25,7 +25,7 @@ TripFit `user.profile_image_url`에 무엇을 저장할지, MVP(wave 1)와 이�
 
 ### wave 4 — **B안: 서버 미러링 → TripFit S3 URL 저장** (예정)
 
-login/upsert 시 provider 이미지를 서버가 다운로드해 S3에 미러링하고, DB·API에는 TripFit URL만 저장·반환한다. 설계 초안·실패 정책·인프라 `[미정]` 항목은 [`user-profile-image-s3-mirror.md`](../specs/user-profile-image-s3-mirror.md)가 SSOT — 여기서 중복 정의하지 않는다.
+login/upsert 시 provider 이미지를 서버가 다운로드해 S3에 미러링하고, DB·API에는 TripFit URL만 저장·반환한다. 설계 초안·실패 정책·인프라 `[미정]` 항목은 [`user-profile-image-s3-mirror.md`](../specs/user/user-profile-image-s3-mirror.md)가 SSOT — 여기서 중복 정의하지 않는다.
 
 **이유:** provider URL 만료·핫링크 차단·외부 의존성·개인정보 URL 노출 리스크를 줄인다.
 

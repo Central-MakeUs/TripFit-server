@@ -2,7 +2,7 @@
 
 > wave: 4  
 > 선행: wave 1 [`auth-social-login.md`](auth-social-login.md)  
-> 결정: [`docs/decisions/004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md) — **RTR 확정**, **Redis 확정**, access blacklist/whitelist **`[미정]`**  
+> 결정: [`docs/decisions/004-auth-token-rotation.md`](../../decisions/004-auth-token-rotation.md) — **RTR 확정**, **Redis 확정**, access blacklist/whitelist **`[미정]`**  
 > 상태: Draft
 
 ## 목표
@@ -15,7 +15,7 @@ wave 1 이후 아래를 도입한다.
 ## 배경
 
 - wave 1: DB refresh + stateless access JWT (`jti` 포함)
-- 확정된 후속: RTR + Redis ([`004`](../decisions/004-auth-token-rotation.md))
+- 확정된 후속: RTR + Redis ([`004`](../../decisions/004-auth-token-rotation.md))
 - login API shape·단일 `POST /auth/login`은 **변경 없음**
 
 ### 관련 문서

@@ -5,7 +5,7 @@
 > deferred: **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), 여행방 삭제 시 VOC 사유(wave 4, unconfirm 사유와 별개), **카카오 초대·확정·재촉 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **EXPIRED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)
 > related Implemented: 참여자 내보내기 → [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) [`trip-member-remove.md`](trip-member-remove.md)
 > 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·참여 = #22 확정** (2026-07-21) · **D5 홈 2뷰 amend** (2026-07-19) · **D5 구현 후속 defer #26·#27** (2026-07-19)
-> 선행: [`auth-social-login.md`](auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-unified.md`](schedule-unified.md), [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)
+> 선행: [`auth-social-login.md`](../auth/auth-social-login.md), [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)
 > 후속: [`trip-recommendation.md`](trip-recommendation.md)
 
 ## 목표
@@ -29,7 +29,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 
 - **구현 상태:** D5 홈 2뷰(`scope`·필터·`last_activity_at`·`pinned_at`)·`TripHomeCardResponse`/`TripDetailResponse` 분리·`membersPreview` 배치 조회 반영. **#27** EXPIRED·Pin 배치 Implemented · **#26** `last_activity_at` AOP Implemented
 - **참여:** 소셜 로그인 필수 (BR-USER-002), 비회원 없음. **초대는 카카오·OS 링크 공유**(딥링크/Universal Link에 `inviteCode` 포함) — 코드 수동 입력은 보조
-- **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](schedule-unified.md)
+- **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](../user-schedule/schedule-unified.md)
 - **참여 완료:** 방장 — create 시 `SCHEDULE_PENDING` → `POST .../activate` 후 `ACTIVE`. 멤버 — `POST /join` 시 `ACTIVE`. 방 안 API는 `ACTIVE` ∧ `canEnterRoom` ([#39](https://github.com/Central-MakeUs/TripFit-server/issues/39))
 - **홈 UI SSOT:** 정책서 홈 — 진행 중인 여행(캐러셀) + 전체 여행 보기(리스트·필터). Pin은 **진행 중 캐러셀에만** 정렬 적용
 
@@ -381,7 +381,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 ## 데이터 모델
 
-- ERD: `trip`, `trip_member` — [`erd.md`](../architecture/erd.md)
+- ERD: `trip`, `trip_member` — [`erd.md`](../../architecture/erd.md)
 - **`invite_code`:** 6자 Crockford Base32 (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`), UNIQUE
 - **추가·보강 컬럼 (D5):**
   - `trip.last_activity_at` (timestamptz, NOT NULL) — 홈 정렬용 최근 활동

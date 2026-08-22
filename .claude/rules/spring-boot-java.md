@@ -7,29 +7,14 @@ paths:
 
 ## Package Layout (Domain-Driven Layered Architecture)
 
-최상위는 **도메인 단위**(`auth`, `trip`, `user`, `common`)로 분리하고, 각 도메인 내부는 **계층형 레이어**를 일관되게 유지한다.
+최상위는 **도메인 단위**(`auth`, `trip`, `user`, `notification`, `common`)로 분리하고, 각 도메인 내부는 **계층형 레이어**(`controller/dto/service/domain/repository`, 필요 시 `client/exception/config`)를 일관되게 유지한다. **전체 패키지 트리 SSOT는 [`docs/architecture.md`](../../docs/architecture.md)** — 여기서 중복 유지하지 않는다.
 
-```
-com.tripfit.tripfit
-├── TripfitApplication.java
-├── {domain}/                    # auth, trip, user
-│   ├── controller/              # @RestController (HTTP만)
-│   ├── dto/                     # 요청·응답 DTO (controller와 형제)
-│   ├── service/                 # @Transactional 유스케이스 조율
-│   ├── repository/              # JpaRepository
-│   ├── domain/                  # JPA @Entity, enum, 값 타입
-│   ├── client/                  # 외부 API·OAuth 검증 등 (auth 등 필요 시)
-│   ├── exception/               # 도메인별 ErrorCode (auth 등)
-│   ├── config/                  # 도메인 전용 설정 (auth 등)
-│   └── {feature}/               # 선택: 기능 단위 (예: user/schedule)
-│       ├── controller|dto|service|domain|repository|exception
-└── common/                      # api, config, domain(베이스), exception
-```
-
-가이드: `docs/decisions/003-architecture-guide.md`, `docs/architecture.md`
+가이드: `docs/decisions/003-architecture-guide.md`.
 **풀 DDD 미적용** — JPA 연관관계·객체 그래프 탐색 허용.
 
-**feature 하위 패키지:** 도메인 안 기능이 커지면 `{domain}/{feature}/`에 **동일 레이어 세트**를 둘 수 있다 (예: `user/schedule/`). 최상위 도메인으로 승격하지 않는 한 소유 도메인 안에 둔다. `controller/dto/`처럼 **레이어만 중첩**하는 것은 금지.
+**feature 하위 패키지:** 도메인 안 기능이 커지면 `{domain}/{feature}/`에 **동일 레이어 세트**를 둘 수 있다 (예: `user/schedule/`, `user/googlecalendar/`). 최상위 도메인으로 승격하지 않는 한 소유 도메인 안에 둔다. `controller/dto/`처럼 **레이어만 중첩**하는 것은 금지. recommendation은 `trip/` 안에 flat하게 있다(별도 최상위 패키지 아님) — 분리 여부는 `docs/specs/trip/package-structure-refactor.md` Draft 검토 대상.
+
+**자동 검증(ArchUnit):** 아래 규칙 중 일부는 prose가 아니라 `src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java`가 `./gradlew test`마다 실제로 검증한다 — domain이 controller/service에 의존하지 않음, controller가 repository에 직접 의존하지 않음, repository는 인터페이스만, `@Autowired` 필드 주입 금지(생성자 주입만), `@RestController`에 `@Transactional` 금지, `@Id` 필드는 UUID 타입, `*ErrorCode`는 `ErrorCode` 구현. 새 아키텍처 규칙을 추가할 때 이 테스트에도 반영을 검토할 것.
 
 ## 레이어 (최소 규칙)
 
@@ -86,8 +71,9 @@ Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap
 - 비즈니스 Entity: `{domain}/domain/`
 - Enum: `{domain}/domain/`, `@Enumerated(EnumType.STRING)`
 - JPA `@ManyToOne` 등 연관관계 사용 가능 — 기본 `LAZY`
-- 테이블·컬럼: snake_case. 예약어 컬럼은 `@Column(name = "...")` 명시
-- **PK / FK:** 모든 테이블 PK·FK는 **UUID v4**. Java `java.util.UUID`, DB `CHAR(36)`. `@GeneratedValue` + `@UuidGenerator` + `@JdbcTypeCode(SqlTypes.CHAR)` (`length = 36`). **`Long` / `IDENTITY` / `bigint` PK 금지.** SSOT: `docs/architecture/erd.md`, `docs/specs/uuid-primary-key.md`
+- 테이블·컬럼: snake_case. 예약어 컬럼은 `@Column(name = "...")` 명시 (`rank` → `recommendation_rank`). 테이블명: **`users`**(구 `user` — MySQL 예약어 회피, Java 엔티티는 `User`)
+- `globally_quoted_identifiers: true` **사용 금지** (TEXT quoting 등과 조합 시 DDL 실패 유발). 스키마 drift 원인은 보통 **단일 설정이 아니라** TEXT quoting + 예약어 + dialect + naming strategy **조합** — Docker/배포 설정은 `deployment.md` SSOT
+- **PK / FK:** 모든 테이블 PK·FK는 **UUID v4**. Java `java.util.UUID`, DB `CHAR(36)`. `@GeneratedValue` + `@UuidGenerator` + `@JdbcTypeCode(SqlTypes.CHAR)` (`length = 36`). **`Long` / `IDENTITY` / `bigint` PK 금지.** SSOT: `docs/architecture/erd.md`, `docs/specs/cross-cutting/uuid-primary-key.md`
 - **필드 설명:** Entity·enum·베이스 클래스의 **클래스·필드·enum 상수**마다 `@Schema(description = "...")` (springdoc). nullable·example·requiredMode는 ERD·스펙과 맞출 것. 상세: 아래 OpenAPI 섹션
 
 ```java
@@ -139,7 +125,7 @@ public enum VacationApplyPeriod {
 - **같은 개념 = 같은 필드명.** 같은 enum을 가리키는데 DTO마다 `status`/`memberStatus`/`myMemberStatus`처럼 이름이 흩어지면 안 된다 — "내 것" vs "타인 것" 구분만 접두사(`my`)로 통일하고 나머지는 동일한 이름을 쓴다.
 - 이름을 바꾸면 **같은 턴에** 전부 최신화한다: enum·DTO·테스트 · `docs/specs/` · `docs/architecture/erd.md` · `docs/product/glossary.md` · `docs/product/fe-context/`. 한 곳이라도 구 이름이 남으면 "구 이름 방치"로 `harness-workflow.md` STOP §4(레거시)와 동일하게 취급한다.
 - `@Schema`/`@Operation` 설명이 **3문단 넘게** 길어지거나 값별로 "의미"를 장황하게 반복해야 한다면, 우선 이름부터 다시 의심할 것 — 설명으로 이름의 결함을 메우지 않는다.
-- 예: `TripMemberStatus`의 구 `JOINED`→`SCHEDULE_PENDING`, 구 `RESPONDED`→`ACTIVE` 개명 — "방에 참여했다"로 오독되던 이름을 "일정 확인 대기중 / 방 활동 가능"으로 이름만으로 뜻이 드러나게 바꾼 사례 (`docs/specs/trip-member-status-derive.md` 변경 이력).
+- 예: `TripMemberStatus`의 구 `JOINED`→`SCHEDULE_PENDING`, 구 `RESPONDED`→`ACTIVE` 개명 — "방에 참여했다"로 오독되던 이름을 "일정 확인 대기중 / 방 활동 가능"으로 이름만으로 뜻이 드러나게 바꾼 사례 (`docs/specs/trip/trip-member-status-derive.md` 변경 이력).
 
 ## OpenAPI 설명 어노테이션 (전부)
 
@@ -347,7 +333,7 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 
 - 실제 성공 HTTP 상태로 `responseCode`(`"200"`/`"201"`/`"204"`) 지정 — 배열 **맨 앞**(에러보다 먼저)에 둔다.
 - **Body 있는 응답: `useReturnTypeSchema = true` + `content = @Content(examples = @ExampleObject(value = "..."))`** — `schema`는 명시하지 않는다. Controller 메서드의 실제 반환 타입(`ResponseEntity<SuccessResponse<XxxResponse>>`)에서 springdoc이 `SuccessResponseXxxResponse`라는 파생 스키마를 자동 생성해, 그 안의 필드·enum까지 Swagger UI Schema 탭에 전부 노출된다.
-- **`schema = @Schema(implementation = SuccessResponse.class)`로 직접 지정 금지(성공 200/201에서).** 이 raw 타입 지정은 제네릭을 지워버려 springdoc이 실제 `data` 타입(리스트·필드·enum 포함)을 전혀 못 읽는다 — `data`가 무타입 처리되고 example 문자열만 남아, 프론트가 Swagger Schema 탭에서 응답 필드·enum 값을 확인할 수 없게 된다(`NotificationController` 사고 사례, `docs/specs/notification.md` 변경 이력 참고). 에러 응답(`ErrorResponse.class`)은 제네릭이 아니므로 `schema = @Schema(implementation = ErrorResponse.class)`를 그대로 써도 된다.
+- **`schema = @Schema(implementation = SuccessResponse.class)`로 직접 지정 금지(성공 200/201에서).** 이 raw 타입 지정은 제네릭을 지워버려 springdoc이 실제 `data` 타입(리스트·필드·enum 포함)을 전혀 못 읽는다 — `data`가 무타입 처리되고 example 문자열만 남아, 프론트가 Swagger Schema 탭에서 응답 필드·enum 값을 확인할 수 없게 된다(`NotificationController` 사고 사례, `docs/specs/notification/notification.md` 변경 이력 참고). 에러 응답(`ErrorResponse.class`)은 제네릭이 아니므로 `schema = @Schema(implementation = ErrorResponse.class)`를 그대로 써도 된다.
 - `SuccessResponse`는 `@JsonInclude(NON_NULL)`이라 성공 시 `message`/`code` 키가 실제 응답 바디에 **없다** — example도 `{"data": {...}}`만 쓰고 `message`/`code`는 넣지 않는다.
 - `data` 안 값은 **실제 DTO 필드 전부**를 반영한 값으로 채운다 — DTO에 없는 필드를 지어내지 않는다.
 - `ResponseEntity<Void>`(204 No Content): `content` 없이 `@ApiResponse(responseCode = "204", description = "...")`만.
@@ -447,7 +433,7 @@ ResponseEntity<...> updateProfile(
 @Transactional
 public void generateRecommendations(...) {
   // TODO: 기존 추천 hard DELETE 후 TOP3 INSERT, lastRecommendationMode 갱신
-  // 상세: docs/specs/trip-recommendation.md (#13)
+  // 상세: docs/specs/trip/trip-recommendation.md (#13)
 }
 ```
 

@@ -74,4 +74,4 @@ ERD는 **MySQL 8.0** 기준.
 
 ## 스펙 작성
 
-큰 기능은 `docs/specs/{kebab-case}.md`에 작성합니다. 템플릿: `.claude/skills/specify/references/spec-template.md`
+큰 기능은 `docs/specs/{domain}/{kebab-case}.md`에 작성합니다(도메인 폴더: `specs/README.md` 매핑 표). 템플릿: `.claude/skills/specify/references/spec-template.md`

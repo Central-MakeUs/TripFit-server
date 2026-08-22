@@ -13,6 +13,22 @@
 - 왜 지금 필요한가
 - 관련 문서: `docs/product/...`, Figma 화면 ID
 
+## 변경 범위 (기존 Approved 스펙을 amend할 때만 — 신규 스펙이면 이 섹션 삭제)
+
+기존 계약 대비 **무엇이 바뀌는지**를 명시적으로 표시한다(OpenSpec delta 표기 — 산문으로 흩어놓지 않음). `REMOVED`에 적은 항목은 harness-workflow.md STOP §4(레거시 즉시 삭제)에 따라 **같은 PR에서 실제로 삭제**해야 하고, "완료 기준"에 삭제 확인 체크박스를 추가한다.
+
+### ADDED
+
+-
+
+### MODIFIED
+
+- (변경 전) → (변경 후)
+
+### REMOVED
+
+- (구 필드·enum·API·코드 — 삭제 대상. 같은 PR에서 제거 확인)
+
 ## 요구사항
 
 ### Must Have
@@ -34,7 +50,7 @@
 |--------|------|------|------|
 | | | | |
 
-요청/응답 예시 — envelope **초안**: [`docs/architecture/api-response.md`](../../architecture/api-response.md) (프론트 합의 전)
+요청/응답 예시 — envelope **초안**: [`docs/architecture/api-response.md`](../../../../docs/architecture/api-response.md) (프론트 합의 전)
 
 성공 (단순):
 
@@ -93,6 +109,7 @@
 - [ ] `./gradlew build` 성공
 - [ ] [기능별 수용 조건]
 - [ ] OpenAPI/Swagger 반영 (API 추가 시)
+- [ ] `REMOVED` 항목 실제 삭제 확인 (amend 스펙만 해당)
 
 ## 리스크·미결정
 

@@ -1,8 +1,8 @@
 # 프로필 이미지 S3 미러링 (B안)
 
 > wave: 4  
-> 선행: wave 1 [`auth-social-login.md`](auth-social-login.md) (A안 URL passthrough)  
-> 결정: [`docs/decisions/006-profile-image-url-storage.md`](../decisions/006-profile-image-url-storage.md) — **B안 예정**  
+> 선행: wave 1 [`auth-social-login.md`](../auth/auth-social-login.md) (A안 URL passthrough)  
+> 결정: [`docs/decisions/006-profile-image-url-storage.md`](../../decisions/006-profile-image-url-storage.md) — **B안 예정**  
 > 상태: Draft
 
 ## 목표
@@ -15,7 +15,7 @@ wave 1 A안(provider URL 그대로 DB 저장)을 **B안**으로 확장한다.
 
 ## 배경
 
-- wave 1: [`006`](../decisions/006-profile-image-url-storage.md) A안 — `AuthService`가 `OAuthProfile.profileImageUrl`을 그대로 저장
+- wave 1: [`006`](../../decisions/006-profile-image-url-storage.md) A안 — `AuthService`가 `OAuthProfile.profileImageUrl`을 그대로 저장
 - 문제: provider URL 만료, hotlink 제한, 외부 의존, URL에 민감 쿼리 포함 가능
 - Apple: id_token에 이미지 없음 → B안 적용 대상은 주로 Google·Kakao
 

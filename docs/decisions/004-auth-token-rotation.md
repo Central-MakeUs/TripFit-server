@@ -5,8 +5,8 @@
 - **날짜:** 2026-07-06
 - **관련:**
   - [`docs/decisions/001-auth-mobile-token-verification.md`](001-auth-mobile-token-verification.md) — 안 B (wave 1)
-  - [`docs/specs/auth-social-login.md`](../specs/auth-social-login.md) — wave 1 구현
-  - [`docs/specs/auth-token-rotation.md`](../specs/auth-token-rotation.md) — wave 4 구현 스펙
+  - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — wave 1 구현
+  - [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) — wave 4 구현 스펙
 
 ## 맥락
 
@@ -32,13 +32,13 @@ wave 1(MVP)은 `POST /auth/login`, `/refresh`, `/logout`과 DB 기반 opaque ref
 
 ### `[미정]` — Redis access JWT 전략
 
-블랙리스트 vs 화이트리스트는 **wave 4 구현 착수 전** 팀 합의한다. 옵션 비교·Redis 키 설계는 [`docs/specs/auth-token-rotation.md`](../specs/auth-token-rotation.md) §"[미정] — Redis access 전략"이 SSOT — 여기서 중복 정의하지 않는다.
+블랙리스트 vs 화이트리스트는 **wave 4 구현 착수 전** 팀 합의한다. 옵션 비교·Redis 키 설계는 [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) §"[미정] — Redis access 전략"이 SSOT — 여기서 중복 정의하지 않는다.
 
 **현재 가이드 (결정 전 참고):** access TTL 2h·하이브리드 앱 기준 **blacklist 우선 검토**. whitelist는 “전 기기 즉시 차단” 요구가 명확해질 때 decisions amend.
 
 ## wave 1 → wave 4 관계
 
-전환 상세(API 응답 변경·데이터 모델·환경 변수)는 [`docs/specs/auth-token-rotation.md`](../specs/auth-token-rotation.md)가 SSOT. 요지만: wave 1 코드는 wave 4를 막지 않도록 **`jti`**, **`family_id`**, **`TokenRevocationChecker` interface(NoOp)** 를 이미 포함한다 — wave 4는 RTR 로직 + Redis 연동을 **추가**할 뿐 wave 1 API 계약(`POST /auth/login`)은 바꾸지 않는다.
+전환 상세(API 응답 변경·데이터 모델·환경 변수)는 [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)가 SSOT. 요지만: wave 1 코드는 wave 4를 막지 않도록 **`jti`**, **`family_id`**, **`TokenRevocationChecker` interface(NoOp)** 를 이미 포함한다 — wave 4는 RTR 로직 + Redis 연동을 **추가**할 뿐 wave 1 API 계약(`POST /auth/login`)은 바꾸지 않는다.
 
 ## 고려한 대안
 
@@ -57,6 +57,6 @@ wave 1(MVP)은 `POST /auth/login`, `/refresh`, `/logout`과 DB 기반 opaque ref
 
 ## 후속 작업
 
-- [ ] [`auth-token-rotation.md`](../specs/auth-token-rotation.md) Draft → Approved
+- [ ] [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) Draft → Approved
 - [ ] Redis access 전략(blacklist vs whitelist) 팀 합의 → 본 decisions amend
 - [ ] wave 1 구현 완료 후 wave 4 착수 (JwtFilter + Redis + RTR)

@@ -124,10 +124,10 @@ Nice/Must 구분은 **Wave Backlog Issue** 본문 + 실행 Issue **비고** — 
 
 | 마일스톤 | wave |
 |----------|------|
-| Wave 1 — 준비 | 1 |
-| Wave 2 — 핵심 MVP | 2 |
-| Wave 3 — 출시 UX | 3 |
-| Wave 4 — 운영·확장 | 4 |
+| Wave 1 — 소셜 로그인 | 1 |
+| Wave 2 — MVP 로직 | 2 |
+| Wave 3 — 외부 API 연동 | 3 |
+| Wave 4 — 리팩토링·성능·런칭 후 UX | 4 |
 
 ## Agent 예시
 
