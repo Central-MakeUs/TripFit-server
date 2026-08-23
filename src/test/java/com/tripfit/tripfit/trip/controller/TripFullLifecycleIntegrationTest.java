@@ -18,6 +18,8 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -29,10 +31,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 // 여행방 전체 생명주기(생성→activate→참여→추천→확정→나가기/내보내기/메타수정 시도→확정취소→재확정→삭제)를
-// 실제 REST 엔드포인트 + H2 DB로 처음부터 끝까지 밟아, #13/#50 추천·확정 구현이 기존 트립 라이프사이클
+// 실제 REST 엔드포인트 + MySQL(Testcontainers) DB로 처음부터 끝까지 밟아, #13/#50 추천·확정 구현이 기존 트립 라이프사이클
 // 전이(ONGOING/CONFIRMED 게이트, join 차단, leave/remove 게이트)와 충돌하지 않는지 검증한다
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class TripFullLifecycleIntegrationTest {
 
   @Autowired

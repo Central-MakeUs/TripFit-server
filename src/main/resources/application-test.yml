@@ -1,9 +1,5 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:tripfit;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+  # datasource는 TestcontainersConfig(@ServiceConnection)가 실제 MySQL 컨테이너로 런타임에 배선 — 여기서 지정 안 함
   jpa:
     hibernate:
       ddl-auto: create-drop

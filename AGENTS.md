@@ -14,7 +14,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 - Java 21
 - Spring Boot 4.1.0
 - Gradle (wrapper 포함)
-- MySQL 8.0 (런타임) / H2 (test)
+- MySQL 8.0 (런타임 · 테스트 — Testcontainers)
 - JUnit 5 (테스트)
 - Docker + GHCR (배포)
 

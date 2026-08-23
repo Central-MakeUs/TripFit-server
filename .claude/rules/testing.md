@@ -15,8 +15,8 @@ paths:
 
 ## 프로필
 
-- 테스트는 `application-test.yml` — H2, `ddl-auto: create-drop`
-- `@ActiveProfiles("test")` 또는 `@SpringBootTest` 기본 test 프로필 사용
+- 테스트는 `application-test.yml` — `ddl-auto: create-drop`
+- `@SpringBootTest`(DB 붙는 통합 테스트)는 `@ActiveProfiles("test")` + `@Import(TestcontainersConfig.class)`로 실제 MySQL 8 컨테이너(Testcontainers `@ServiceConnection`)를 붙인다 — 로컬 Docker 필요, CI(GitHub Actions ubuntu-latest)는 기본 내장 Docker로 별도 설정 없이 동작
 - MySQL·운영 DB에 테스트가 붙지 않도록 `@DataJpaTest` 등은 test 프로필 확인
 
 ## 구조

@@ -72,7 +72,7 @@ flowchart TD
 ## Tech Stack
 
 - Java 21 · Spring Boot 4.1.0 · Gradle (wrapper 포함)
-- MySQL 8.0 (런타임) / H2 (test) · JUnit 5
+- MySQL 8.0 (런타임 · 테스트 — Testcontainers) · JUnit 5
 - Docker + GHCR (배포) · EC2 Nginx + Spring Boot
 
 ## 문서 지도

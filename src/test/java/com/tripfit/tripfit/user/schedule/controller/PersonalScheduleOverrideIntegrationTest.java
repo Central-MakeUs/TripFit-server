@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -33,11 +35,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 // docs/product/fe-context/schedule-personal-override-scenarios.md 시나리오 1~18(O1.4)을
-// 실제 H2 DB + MockMvc(JWT)로 PATCH/GET 라운드트립 검증한다. 각 @Test는 서로 다른 날짜를 써서
+// 실제 MySQL(Testcontainers) DB + MockMvc(JWT)로 PATCH/GET 라운드트립 검증한다. 각 @Test는 서로 다른 날짜를 써서
 // 실행 순서와 무관하게 독립적으로 통과하도록 설계했다(문서의 "이어지는 시나리오" 서술은
 // 관련된 @Test 메서드 하나 안에서 순차 호출로 재현).
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 @TestInstance(Lifecycle.PER_CLASS)
 class PersonalScheduleOverrideIntegrationTest {
 

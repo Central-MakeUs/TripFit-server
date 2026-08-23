@@ -469,5 +469,5 @@ public TripMembersResponse removeMember(...) {
 
 - JUnit 5, `{ClassName}Test`
 - `src/test/java/` 패키지는 main과 **동일한 도메인·레이어 구조** 유지
-- 통합: `@SpringBootTest` + `test` 프로필 (H2)
+- 통합: `@SpringBootTest` + `test` 프로필 + `@Import(TestcontainersConfig.class)` (실제 MySQL 8, Testcontainers `@ServiceConnection`)
 - 단위: service·domain — Mockito로 Repository mock

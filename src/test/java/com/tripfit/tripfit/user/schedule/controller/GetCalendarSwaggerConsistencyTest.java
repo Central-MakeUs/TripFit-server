@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.tripfit.tripfit.common.config.TestcontainersConfig;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
@@ -29,6 +31,7 @@ import org.springframework.web.context.WebApplicationContext;
 // 어긋나지 않는지 검증한다 — O1.4에서 이 API 응답 모양 자체는 안 바뀌었지만, 실제로 확인은 안 했었다
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfig.class)
 class GetCalendarSwaggerConsistencyTest {
 
   @Autowired

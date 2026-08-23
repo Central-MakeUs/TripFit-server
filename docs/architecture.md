@@ -84,7 +84,7 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 |--------|------|----------|
 | local | IDE / 로컬 MySQL | update |
 | dev | Docker·EC2 (**실제 배포 환경**) | update |
-| test | `./gradlew test` (H2) | create-drop |
+| test | `./gradlew test` (MySQL 8, Testcontainers) | create-drop |
 
 배포·검증 절차: [`deploy/README.md`](../deploy/README.md) (SSOT). 에이전트 배포 규칙: `.claude/rules/deployment.md`.
 
