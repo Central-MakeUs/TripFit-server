@@ -1,0 +1,10 @@
+# docs/** 내부 상대링크 전용 검사 — 외부 URL은 네트워크 상태에 좌우돼 CI를 flaky하게 만들어 제외
+exclude = [
+  '^https?://',
+  '^mailto:',
+]
+exclude_path = [
+  "build",
+  ".git",
+]
+accept = [200, 429]

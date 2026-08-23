@@ -117,6 +117,6 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 ## 관련 문서
 
 - ERD: [`docs/architecture/erd.md`](../../architecture/erd.md)
-- BR: [`docs/product/business-rules/`](../product/business-rules/)
-- 플로우: [`docs/product/flows/`](../product/flows/)
+- BR: [`docs/product/business-rules/`](../business-rules/)
+- 플로우: [`docs/product/flows/`](../flows/)
 - 에이전트 규칙: [`.claude/rules/figma-product.md`](../../../.claude/rules/figma-product.md)
