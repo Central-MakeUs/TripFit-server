@@ -31,7 +31,8 @@ public class SecurityConfig {
   }
 
   @Bean
-  // login/refresh/logout/dev-login/apple-notifications/error·actuator·swagger는 공개. logout은 만료·폐기
+  // login/refresh/logout/dev-login/apple-notifications/error·actuator·swagger·scalar는 공개. logout은
+  // 만료·폐기
   // 토큰도
   // body로 처리하기 위해 permitAll.
   // dev-login은 local/dev 프로필에서만 빈 존재. apple/notifications는 Apple 서버가 직접 호출 — signed JWT 자체 검증으로 보호
@@ -72,7 +73,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/apple/notifications").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                .requestMatchers(
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/v3/api-docs/**",
+                    "/scalar",
+                    "/scalar/**")
                 .permitAll()
                 .anyRequest().authenticated())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

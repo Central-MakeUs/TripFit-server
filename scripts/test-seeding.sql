@@ -73,12 +73,12 @@ SET @o1 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o1, @target_user_id, '제주도 힐링 여행', NULL, '2026-09-01', '2026-09-10', NULL, NULL,
    4, CONCAT('SEEDO1-', @run_suffix), 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -90,12 +90,12 @@ SET @o2 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o2, @target_user_id, '부산 미식 여행', '부산', '2026-09-05', '2026-09-12', 3, 2,
    4, CONCAT('SEEDO2-', @run_suffix), 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -106,12 +106,12 @@ SET @o3 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o3, @target_user_id, '강릉 바다 여행', '강릉', '2026-08-15', '2026-08-20', 3, 2,
    3, CONCAT('SEEDO3-', @run_suffix), 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -126,12 +126,12 @@ SET @o4 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o4, @target_user_id, '경주 역사 탐방', '경주', '2026-08-25', '2026-09-02', 4, 3,
    4, CONCAT('SEEDO4-', @run_suffix), 'ONGOING', NULL, NULL,
-   NULL, 'NEW_SCHEDULE_ADDED', NULL, 'BASIC',
+   'NEW_SCHEDULE_ADDED', NULL, 'BASIC',
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -144,12 +144,12 @@ SET @o5 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o5, @target_user_id, '여수 밤바다 여행', '여수', '2026-08-10', '2026-08-16', 3, 2,
    3, CONCAT('SEEDO5-', @run_suffix), 'CONFIRMED', '2026-08-12', '2026-08-14',
-   NULL, NULL, NULL, 'BASIC',
+   NULL, NULL, 'BASIC',
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -165,12 +165,12 @@ SET @o6 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@o6, @target_user_id, '전주 미식 여행', '전주', '2026-06-01', '2026-06-07', 3, 2,
    2, CONCAT('SEEDO6-', @run_suffix), 'EXPIRED', '2026-06-03', '2026-06-05',
-   NULL, NULL, NULL, 'ALL_ATTEND',
+   NULL, NULL, 'ALL_ATTEND',
    '2026-06-07 20:00:00', '2026-05-15 10:00:00', '2026-06-07 20:00:00', NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -189,12 +189,12 @@ SET @m1 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m1, @u3, '서울 벚꽃 나들이', '서울', '2026-09-10', '2026-09-15', 2, 1,
    5, CONCAT('SEEDM1-', @run_suffix), 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -207,12 +207,12 @@ SET @m2 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m2, @u4, '속초 여행', '속초', '2026-08-20', '2026-08-25', 3, 2,
    3, CONCAT('SEEDM2-', @run_suffix), 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -226,12 +226,12 @@ SET @m3 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m3, @u5, '통영 여행', '통영', '2026-09-01', '2026-09-08', 4, 3,
    4, CONCAT('SEEDM3-', @run_suffix), 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -244,12 +244,12 @@ SET @m4 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m4, @u6, '거제 바다 여행', '거제', '2026-08-05', '2026-08-10', 3, 2,
    2, CONCAT('SEEDM4-', @run_suffix), 'CONFIRMED', '2026-08-06', '2026-08-08',
-   NULL, NULL, NULL, 'CERTAIN',
+   NULL, NULL, 'CERTAIN',
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -264,12 +264,12 @@ SET @m5 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m5, @u7, '춘천 닭갈비 여행', '춘천', '2026-06-10', '2026-06-15', 3, 2,
    3, CONCAT('SEEDM5-', @run_suffix), 'EXPIRED', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    '2026-06-15 12:00:00', '2026-05-25 11:00:00', '2026-06-15 12:00:00', NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -282,12 +282,12 @@ SET @m6 = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@m6, @u8, '포항 여행', '포항', '2026-05-01', '2026-05-07', 3, 2,
    2, CONCAT('SEEDM6-', @run_suffix), 'EXPIRED', '2026-05-03', '2026-05-05',
-   NULL, NULL, NULL, 'SAVE_VACATION',
+   NULL, NULL, 'SAVE_VACATION',
    '2026-05-07 15:00:00', '2026-04-10 09:00:00', '2026-05-07 15:00:00', NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)

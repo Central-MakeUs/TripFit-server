@@ -32,13 +32,8 @@ public class NotificationController {
     this.notificationQueryService = notificationQueryService;
   }
 
-  @Operation(
-      summary = "알림센터 목록 조회",
-      description = """
-          목적: 본인이 받은 알림 이력을 확인한다.
-
-          결과: 최근 7일 이내 발송된 알림만 최신순으로 반환한다. 8일 이전 알림은 응답에서 제외된다.
-          """)
+  /** 본인이 받은 알림 이력을 최신순으로 반환한다. 최근 7일 이내 발송분만 포함되고, 8일 이전 알림은 제외된다. */
+  @Operation(summary = "알림센터 목록 조회")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
@@ -63,17 +58,8 @@ public class NotificationController {
     return ResponseEntity.ok(SuccessResponse.of(notificationQueryService.listRecent(userId)));
   }
 
-  @Operation(
-      summary = "알림 읽음 처리",
-      description = """
-          목적: 알림센터에서 알림을 열람했음을 표시한다.
-
-          전제: 본인이 받은 알림이어야 한다.
-
-          결과: 204를 반환한다. 이미 읽음 상태면 변경 없이 동일하게 처리한다(idempotent).
-
-          주요 에러: NOTIFICATION_NOT_FOUND — 존재하지 않거나 본인 것이 아닌 알림
-          """)
+  /** 알림센터에서 알림을 열람했음을 표시한다. 이미 읽음 상태면 변경 없이 동일하게 처리한다(idempotent). */
+  @Operation(summary = "알림 읽음 처리")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "읽음 처리 성공(No Content)"),
       @ApiResponse(

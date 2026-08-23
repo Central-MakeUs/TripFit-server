@@ -100,12 +100,12 @@ SET @tripJ = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@tripJ, @target_user_id, '[알림테스트] 가입완료-정원마감', NULL, '2026-09-01', '2026-09-10', NULL, NULL,
    2, '${INVITE_CODE}', 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)
@@ -118,12 +118,12 @@ SET @tripI = UUID();
 INSERT INTO trip
   (id, owner_id, name, destination, start_range, end_range, duration_days, duration_nights,
    member_count, invite_code, status, confirmed_start_date, confirmed_end_date,
-   cancel_reason, unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
+   unconfirm_reason, unconfirm_reason_detail, last_recommendation_mode,
    last_activity_at, created_at, updated_at, deleted_at)
 VALUES
   (@tripI, @owner_dummy_id, '[알림테스트] 정보수정-확정-취소', '서울', '2026-09-01', '2026-09-20', 3, 2,
    2, CONCAT('NOTIFYI', '${RUN_SUFFIX}'), 'ONGOING', NULL, NULL,
-   NULL, NULL, NULL, NULL,
+   NULL, NULL, NULL,
    NOW(), NOW(), NOW(), NULL);
 
 INSERT INTO trip_member (id, trip_id, user_id, role, joined_at, activated_at, is_pinned, pinned_at, created_at, updated_at, deleted_at)

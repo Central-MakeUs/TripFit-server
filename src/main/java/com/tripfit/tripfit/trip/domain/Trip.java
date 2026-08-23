@@ -99,10 +99,6 @@ public class Trip extends SoftDeleteEntity {
   @Column
   private LocalDate confirmedEndDate;
 
-  @Schema(description = "취소·삭제 VOC 사유. wave 4 구현", nullable = true)
-  @Column(name = "cancel_reason")
-  private String cancelReason;
-
   @Schema(description = "확정 취소(unconfirm) 사유. 최신값만 저장(덮어쓰기, 이력 아님)", nullable = true)
   @Enumerated(EnumType.STRING)
   @Column(name = "unconfirm_reason")
