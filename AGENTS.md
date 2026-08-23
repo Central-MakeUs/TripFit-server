@@ -78,7 +78,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 
 ```bash
 cp .env.example .env             # 최초 1회 — Auth env 등 채우기
-./scripts/install-git-hooks.sh   # 최초 1회 — pre-commit 훅 설치
+./scripts/install-git-hooks.sh   # 최초 1회 — pre-commit·commit-msg 훅 설치
 docker compose up -d             # MySQL만 (로컬 DB)
 ./gradlew bootRun                # Spring 로컬 실행 (local 프로필, .env 자동 로드)
 ./gradlew test                   # 테스트
