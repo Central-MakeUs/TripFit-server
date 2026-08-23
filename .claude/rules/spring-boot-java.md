@@ -129,15 +129,15 @@ public enum VacationApplyPeriod {
 
 ## OpenAPI 설명 어노테이션 (전부)
 
-springdoc OpenAPI 3. **설명 문자열이 들어가는 어노테이션은 종류와 무관하게 동일 규칙**을 쓴다.
+springdoc OpenAPI 3 + `therapi-runtime-javadoc`(build.gradle). **설명 문자열이 들어가는 어노테이션은 종류와 무관하게 동일 규칙**을 쓴다.
 
-| 어노테이션 | 위치 |
-|------------|------|
-| `@Schema(description)` | Entity · DTO · enum · ErrorCode · envelope |
-| `@Operation(summary/description)` | Controller |
-| `@Parameter(description)` | Controller 쿼리·path |
-| `@Tag(name/description)` | Controller |
-| 기타 (`@ApiResponse` description 등) | 있으면 동일 |
+| 어노테이션 | 위치 | 설명 출처 |
+|------------|------|-----------|
+| `@Schema(description)` | Entity · DTO · enum · ErrorCode · envelope | 어노테이션 문자열 (그대로 유지) |
+| `@Operation(summary)` | Controller | `summary`만 어노테이션, 상세 설명은 **메서드 Javadoc** — 아래 **OpenAPI @Operation · JWT** 절 |
+| `@Parameter(description)` | Controller 쿼리·path | 어노테이션 문자열 |
+| `@Tag(name/description)` | Controller | 어노테이션 문자열 |
+| 기타 (`@ApiResponse` description 등) | 있으면 동일 | 어노테이션 문자열 |
 
 **독자:** 프론트·신규 서버 개발자. 구현 메모·이슈 트래커용 문자열이 아니다.
 
@@ -223,45 +223,25 @@ public record LoginRequest(
 
 `OpenApiConfig`에 **`bearer-jwt`** HTTP Bearer 스키마 + **전역 `security`** 가 있다. Swagger UI 자물쇠 = JWT 필요.
 
-**독자:** 프론트·신규 서버 개발자. `description`은 구현자 메모가 아니라 **호출 가이드**다.
+**독자:** 프론트·신규 서버 개발자. Javadoc은 구현자 메모가 아니라 **호출 가이드**다.
 
 | 엔드포인트 | 코드 | Swagger |
 |------------|------|---------|
-| JWT 필요 (`@AuthorizedUser` 사용) | `@Operation(summary, description)`만 — **전역 security 유지** | 자물쇠 ON |
+| JWT 필요 (`@AuthorizedUser` 사용) | `@Operation(summary)`만 — **전역 security 유지** | 자물쇠 ON |
 | JWT 불필요 (login/refresh/logout 등) | `security = {}`로 전역 해제 | 자물쇠 OFF |
 
-**`summary`:** 한국어 한 줄 (동사+대상)
+**`summary`:** `@Operation` 어노테이션에 한국어 한 줄 (동사+대상). **`description` 속성은 쓰지 않는다** — 상세 설명은 메서드 위 Javadoc(`/** ... */`)에 쓰고 `therapi-runtime-javadoc`이 런타임에 읽어 Swagger `description`으로 자동 반영한다(springdoc이 classpath의 therapi를 자동 감지 — 별도 설정 불필요).
 
-**`description`:** text block(`"""`) 권장. 아래 **고정 헤더**만 사용한다.
+**Javadoc 내용 — Stripe/GitHub 스타일: 자유 서술, 고정 헤더 없음.** 이름·시그니처·`@ApiResponse` 예시로 이미 드러나는 건 반복하지 않고, **이름만으로는 모를 것만** 짧게 쓴다 — 전제조건, 부작용(상태 전이), idempotent 여부, 흔한 에러 원인 정도. 설명할 게 없으면(단순 CRUD 조회 등) Javadoc 자체를 생략해도 된다 — `summary`만으로 충분하면 그걸로 끝.
 
-```text
-목적: ...
-
-호출 시점: ...
-
-전제: ...
-
-결과: ...
-
-주의: ...
-
-주요 에러: CODE — 상황 (필요 시 여러 줄)
-```
-
-| API 종류 | 필수 섹션 |
-|----------|-----------|
-| 상태 변경·권한 게이트 | 6섹션 전부 |
-| 단순 조회 | `목적` + `결과` (+ 해당 시 `전제`/`주의`) |
-
-- **섹션 사이 빈 줄 필수** — Swagger UI는 CommonMark라 한 줄 `\n`만으로는 줄바꿈이 안 보인다. 문단(빈 줄)으로 구분한다.
-- 비어 있는 섹션은 **헤더째 생략** (빈 `주의:` 금지)
+- 문단 구분은 Javadoc 그대로(빈 줄) — Markdown 헤더(`목적:`, `결과:` 등)를 강제하지 않는다
 - `@Tag(name, description)` — 태그 한 줄 목적
 - 쿼리 의미가 한눈에 안 들어오면 `@Parameter(description)` 보강
 - **인증 여부는 `security`로만** (`"Bearer 필수"` 문구 금지)
 - `@AuthorizedUser` 있는 메서드에 `security = {}` 두지 말 것
 - `SecurityConfig` `permitAll`과 Controller `security = {}`를 **같이** 맞춤
 
-**Swagger `@Operation`/`@Tag`/`@Parameter` 금지**
+**Javadoc(`@Operation`/`@Tag`/`@Parameter` 설명 포함) 공통 금지**
 
 - GitHub 이슈 번호 (`#39`, `#17` …)
 - BR/스펙 ID (`BR-USER-007`, `D5`, `D-JOIN-ENTRY`, `C1` 단독 등)
@@ -270,59 +250,25 @@ public record LoginRequest(
 
 **허용:** 도메인 용어의 **의미** (`SCHEDULE_PENDING` = 멤버이지만 일정 확인 전), HTTP 상태·`ErrorCode` 상수명, idempotent/정렬/쿼리 의미
 
-**Before (금지 예 — `POST .../schedule/confirm`)**
-
-```text
-SCHEDULE_PENDING → ACTIVE. Skip+0행 시 is_all_free. 이미 ACTIVE면 idempotent. 방 입장 전 필수 (#39)
-```
-
-**After (필수 양식)**
+**예시**
 
 ```java
-@Operation(
-		summary = "여행방 일정 확인 완료",
-		description = """
-				목적: 방장의 일정 확인을 끝내고 여행방 입장을 가능하게 한다.
-
-				호출 시점: 여행방 생성 직후, 일정 확인·입력 플로우를 마친 다음.
-
-				전제: 본인이 해당 방 멤버이고, 멤버 상태가 SCHEDULE_PENDING(일정 확인 미완료)이다.
-
-				결과: 멤버 상태가 ACTIVE로 바뀌고 여행방 상세를 반환한다. 정기·개별 일정이 모두 없으면 isAllFree가 true가 된다.
-
-				주의: 이미 ACTIVE면 상태 변경 없이 동일 응답(idempotent). 방 안 API는 이 호출 이후에만 사용한다.
-
-				주요 에러: SCHEDULE_ENTRY_REQUIRED — 입장 조건(일정≥1 또는 전부 free) 미충족
-				""")
+/**
+ * 방장의 일정 확인을 끝내고 여행방 입장을 가능하게 한다. 이미 ACTIVE면 상태 변경 없이 동일 응답(idempotent).
+ * 정기·개별 일정이 모두 없으면 isAllFree가 true로 반환된다.
+ */
+@Operation(summary = "여행방 일정 확인 완료")
 @PostMapping("/{tripId}/schedule/confirm")
 ResponseEntity<?> confirmSchedule(...) { ... }
-```
 
-**JWT 통일 양식**
-
-```java
-// ✅ JWT 필요 — description에는 비즈니스만 (Bearer 문구 반복 금지)
-@Operation(
-		summary = "정기 일정 목록",
-		description = """
-				목적: 본인 정기 일정 목록을 조회한다.
-
-				결과: 생성 시각 오름차순. 슬롯은 start/end로 계산된 값.
-				""")
+// ✅ 설명할 게 없으면 Javadoc 생략 — summary만으로 충분
+@Operation(summary = "정기 일정 목록")
 @GetMapping("/regular")
 ResponseEntity<?> listRegular(@AuthorizedUser UUID userId) { ... }
 
 // ✅ JWT 불필요 — security = {} 필수
-@Operation(
-		summary = "소셜 로그인",
-		description = """
-				목적: 소셜 토큰으로 로그인하고 access·refresh를 발급한다.
-
-				호출 시점: 앱 최초 로그인·재로그인.
-
-				결과: 토큰과 사용자 요약(hasPreSchedule·isAllFree 포함).
-				""",
-		security = {})
+/** 소셜 토큰으로 로그인하고 access·refresh를 발급한다. 앱 최초 로그인·재로그인에 사용. */
+@Operation(summary = "소셜 로그인", security = {})
 @PostMapping("/login")
 ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 ```
@@ -397,10 +343,11 @@ ResponseEntity<...> updateProfile(
 
 ## Comments
 
-**독자:** 신규 서버 개발자. `//`는 구현자 메모·이슈 트래커용 약어가 아니라 **메서드가 하는 일**을 평문으로 남긴다.
+**독자:** 신규 서버 개발자. `//`는 구현자 메모·이슈 트래커용 약어가 아니라 **이름만으로 안 드러나는 것**을 평문으로 남긴다.
 필드 의미는 `@Schema`, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT.
-`//`는 **(1) 메서드 역할(평문 한 줄)** + **(2) Why·정책·다단계 How** 를 담는다. 메서드명만으로 “무엇을 하는지”가 안 보이면 주석 누락이다.
-**새 Service/Support public 메서드에 역할 `//` 없으면 미완료** — 다음 커밋으로 미루지 않는다.
+
+**원칙: 이름을 먼저 의심하고, 주석은 이름이 못 담는 것만.** 메서드명·파라미터명만 읽고 신규 개발자가 오해할 만하면 주석 누락 — 그게 아니라 이름이 이미 자명하면 **주석 없이 통과**다(`removeMember`처럼 이름이 곧 설명인 1~2줄 facade 위임 등). "이름 우선" 원칙(위 **네이밍 우선 원칙** 절)과 같은 방향 — 주석으로 이름의 결함을 메우지 않는다.
+`//`가 필요하면 **(1) 이름이 못 담는 전제·부작용(평문 한 줄)** + **(2) Why·정책·다단계 How** 를 담는다.
 
 ### 역할 줄 템플릿
 
@@ -442,7 +389,7 @@ public void generateRecommendations(...) {
 | 레이어 | 주석 대상 |
 |--------|-----------|
 | **Controller** | 접근 권한(`@AuthorizedUser`, `@TripMemberOnly` 등)·인터셉터·`@Valid` 검증. **유스케이스 역할 주석 금지**(Service에 둠) |
-| **Service / facade** | **public 메서드마다** 역할 `//` 한 줄(아래 필수). 분기 Why · 다단계 `// 1.` |
+| **Service / facade** | 이름으로 안 드러나면 역할 `//` 한 줄(아래 표). 분기 Why · 다단계 `// 1.` |
 | **Support / Helper / Resolver** | 공유 검증·매핑·가드의 **역할 `//`** + 정책·에러코드·배치 vs lazy Why |
 | **Interceptor / Aspect / Filter / ArgumentResolver / Scheduler** | 엔트리(`preHandle`·advice·`runForDate` 등) **역할 `//`** + 교차 관심사 Why |
 | **client** | Service와 동일 — 역할 `//` + 단계·catch 의도 |
@@ -450,24 +397,25 @@ public void generateRecommendations(...) {
 | **DTO / Entity / 공통 envelope** | 필드는 `@Schema` SSOT. Schema로 안 담기는 배경만 `//` |
 | **exception** | `ErrorCode` 계약·message override·Handler 범위 |
 
-### 메서드 역할 주석 (필수) — Service · Support · Interceptor · Aspect · Scheduler · client
+### 메서드 역할 주석 — Service · Support · Interceptor · Aspect · Scheduler · client
 
-**위치:** 메서드 시그니처·어노테이션 **바로 위**에 `//` 한 줄 (클래스 Javadoc·본문 `// 1.`만으로 대체 **금지**).
+**위치:** 필요하면 메서드 시그니처·어노테이션 **바로 위**에 `//` 한 줄.
 
 | 대상 | 규칙 |
 |------|------|
-| **`public` 유스케이스·엔트리** | **항상** 역할 한 줄. **1~2줄 facade 위임·stub도 생략 금지** (`TripService` → Command/Query 포함) |
+| **이름·시그니처만으로 동작이 안 드러나는 public 메서드** | 역할 한 줄 필수 — 전제·부작용·idempotent 여부 등 이름이 못 담는 것 |
+| **이름이 곧 설명인 facade 위임·1~2줄 자명한 메서드** | **생략 가능** — 억지로 채우지 않는다 (예: `removeMember`가 그대로 `tripCommandService.removeMember(...)`를 위임하면 주석 없이 통과) |
 | **비자명 `private` 헬퍼** | live/snapshot 빌더·윈도우 검증·복합 매핑 등 — 역할 `//` |
 | **생략 가능** | 생성자 · getter/setter · 이름만으로 자명한 1라이너 (`findUser`, `normalizeX`, 단순 DTO `toXxx`) |
 
-**Before (금지)**
+**Before (금지 — 여전히 약어만으로 대체는 금지)**
 
 ```java
 // #13 stub — 추천 생성 (BR-TRIP-005 hard DELETE·TOP3)
 // 방장 SCHEDULE_PENDING → ACTIVE. 이미 ACTIVE면 idempotent (#39)
 ```
 
-**After (필수 양식)**
+**After**
 
 ```java
 // 방장 일정 확인을 끝내 SCHEDULE_PENDING→ACTIVE로 바꾼다 — 이미 ACTIVE면 동일 상세 반환(idempotent)
@@ -475,10 +423,10 @@ public void generateRecommendations(...) {
 @TripActivity(tripIdParam = "tripId")
 public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) { ... }
 
-// 멤버 목록 조회 — 모집률·동명이인 displayName 포함
+// 멤버 목록 조회 — 모집률·동명이인 displayName 포함(이름만으론 안 드러남)
 public TripMembersResponse listMembers(UUID tripId, UUID userId) { ... }
 
-// facade: 참여자 내보내기 → TripCommandService
+// ✅ 이름이 곧 설명인 facade 위임 — 주석 없이 통과
 public TripMembersResponse removeMember(...) {
   return tripCommandService.removeMember(...);
 }
@@ -497,7 +445,9 @@ public TripMembersResponse removeMember(...) {
 
 ### Javadoc (`/** */`)
 
-- **메서드 역할은 `//`만.** 클래스 한 줄 요약 Javadoc은 허용하되, 메서드 위 `/** */`·`@param`/`@return` 남발 금지. 클래스 Javadoc도 `#n`·`BR-*`만으로 쓰지 말 것.
+- **Controller 메서드:** `@Operation` `description`을 대체하는 용도로 Javadoc을 쓴다 — 위 **OpenAPI @Operation · JWT** 절 참고(`therapi-runtime-javadoc`이 Swagger로 읽어감).
+- **Service/Support 등 나머지 레이어:** 역할·Why는 여전히 `//`(위 절들)를 쓴다 — Javadoc `@param`/`@return` 남발 금지, 클래스 한 줄 요약 정도만 허용.
+- 어느 쪽이든 `#n`·`BR-*`만으로 쓰지 말 것.
 
 ## API (추가 시)
 

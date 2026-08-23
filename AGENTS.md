@@ -22,7 +22,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 
 - 패키지: `com.tripfit.tripfit` — 도메인 기반 레이어드 (`{domain}/controller|dto|service|domain|repository|client`, 필요 시 `{domain}/{feature}/…`, 공통 `common/`)
 - DB/API 네이밍은 기능 추가 시 `docs/architecture.md` 기준으로 통일
-- Java 주석: Swagger·`@Schema`와 중복 금지 — **Service/Support/Interceptor/Scheduler public 유스케이스는 메서드 위 `//` 역할 한 줄 필수**(facade·stub 포함) · 다단계는 `// 1.`+Why · Controller는 권한·검증만 — `.claude/rules/spring-boot-java.md` Comments 절
+- Java 주석: Swagger·`@Schema`와 중복 금지 — **이름·시그니처만으로 안 드러나는 것만** 메서드 위 `//` 역할 한 줄(이름이 곧 설명인 facade·자명한 위임은 생략 가능) · 다단계는 `// 1.`+Why · Controller는 권한·검증만, API 설명은 `@Operation(summary)` + Javadoc(`therapi-runtime-javadoc`) — `.claude/rules/spring-boot-java.md` Comments·OpenAPI 절
 - 범위 밖 리팩터링·포맷 변경 금지 — 요청된 작업만 수정
 - 커밋은 사용자가 명시적으로 요청할 때만
 - 커밋 요청 시 주제별 **최대 3개**로 분할 (상세: `.github/CONTRIBUTING.md`, `.claude/rules/harness-workflow.md`)
