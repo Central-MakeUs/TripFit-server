@@ -13,6 +13,15 @@
             "command": ".claude/hooks/warn-breaking-change.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-db-migration.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
