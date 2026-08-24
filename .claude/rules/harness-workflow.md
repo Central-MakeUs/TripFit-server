@@ -72,13 +72,15 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 ## 작업 분류 (시작 전 30초)
 
 1. `docs/product/development-wave.md` 활성 Wave·Must · 요약 `docs/product/waves.md`
-2. GitHub 이슈 — 범위·완료 기준 확인/생성 (**브랜치용 `#n` 확정**)
+2. GitHub 이슈 — 범위·완료 기준 확인/생성 (**브랜치용 `#n` 확정**, 새 이슈 생성은 아래 ⚠️ 확인 필수)
 3. DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현
 4. 그 외 → `AGENTS.md` + 관련 `docs/product/` 후 바로 구현
 
 **Wave / `[미정]` / 일정 용어:** `harness-wave.md` (단정 금지 · #2 트래커)
 
 **브랜치:** `main`에서 `{type}/{issue-number}-{description}` — 이슈 번호 생략 금지. SSOT: [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)
+
+**⚠️ 새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인 (2026-08-04 사용자 결정):** `gh issue create` · 새 작업 브랜치 분기(`git checkout -b` 등) · `gh pr create`를 실행하기 전에는 사용자가 이미 명시적으로 요청한 경우가 아니면 **채팅으로 먼저 묻는다.** "이슈 번호 없는 브랜치 금지"(CONTRIBUTING) 같은 형식 규칙과 별개로, **만들지 여부 자체**를 임의 판단하지 않는다 — 이번 작업은 현재 브랜치에서 바로 진행하고 이슈·브랜치 생성은 생략해 달라는 요청이 계기, 이후 PR 생성까지 동일 원칙으로 확장(2026-08-05). `defer-followup` 스킬의 `gh issue create` 단계, `harness-wave.md` `[미정]` 트래커(`#2`), After Coding의 PR 생성 단계 등 이슈·브랜치·PR을 만들 수 있는 모든 지점에 동일하게 적용. **구현·커밋까지는 요청받았어도 "PR까지 올려줘"라고 별도로 확인받지 않았다면 PR 생성 전에 다시 묻는다** — 커밋 승인이 PR 승인을 자동으로 포함하지 않는다.
 
 **스펙 신호:** DB 스키마, 3파일+, BR-*, 프로필/배포, **인증·푸시·딥링크·결제** 등 클라 연동 API
 
@@ -109,7 +111,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - 변경 요약 + 검증 (`./gradlew test` 등)
 - 스펙 있으면 완료 기준 체크리스트 대조
 - **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`) + STOP §5 대상이면 커밋에 `Breaking-Change-Reason:` 트레일러 포함 확인
-- **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지
+- **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지. **`gh pr create` 실행 전 사용자에게 먼저 확인** — 위 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
 - 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
 - **PR merge 확인 후:** 작업 브랜치 삭제 (원격+로컬) — CONTRIBUTING Pull Request "merge 후" 절. merge 안 된 브랜치는 삭제 금지
 - **커밋 요청 시:** 주제별 **최대 3개** (구현/테스트/문서·하네스). 억지 분할 금지
@@ -121,6 +123,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 ## 금지 (요약)
 
+- **사용자 확인 없이 새 이슈·새 브랜치·새 PR 생성** — 위 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
 - 이슈 번호 없는 브랜치명 — CONTRIBUTING 위반
 - 문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋 — STOP §1
 - **교체 후 구 경로·상수·‘현행’ 문서 방치** — STOP §4 (dev에서 호환 레이어 불필요)

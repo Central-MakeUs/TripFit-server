@@ -6,6 +6,8 @@ Issue · PR · Milestone · CI를 TripFit 하네스(`docs/`, `.claude/`)와 연�
 
 ## 브랜치 전략
 
+**에이전트 주의:** 새 이슈·새 브랜치·새 PR을 만들지는 사용자가 명시적으로 요청하지 않는 한 항상 먼저 확인한다 — `.claude/rules/harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절.
+
 ```
 main  ←  {type}/{issue-number}-{description}
 ```
@@ -62,6 +64,8 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 분할 순서 예: (1) 핵심 구현 → (2) 테스트 → (3) 문서·규칙·설정. 각 커밋은 `{Type}: {한글}` 형식을 따른다.
 
 ## Pull Request
+
+**에이전트 주의:** `gh pr create` 실행 전 사용자에게 먼저 확인한다 — 구현·커밋까지 요청받았어도 PR 생성은 별도 승인 필요(위 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절과 동일).
 
 | 항목 | 규칙 |
 |------|------|
