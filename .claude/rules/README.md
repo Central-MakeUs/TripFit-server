@@ -19,6 +19,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 │   ├── harness-wave.md            # Wave Must/Nice/Out · [미정]#2 · 일정 용어 (always-load)
 │   ├── harness-follow-up.md       # 후속 제안 · Defer · ERD 제안 (always-load)
 │   ├── workflow-tools.md          # Claude Code 도구 매핑 (always-load)
+│   ├── plain-language-reporting.md # 비전공자용 쉬운 설명 (보고·채팅만, 코드 주석 제외, always-load)
 │   ├── spring-boot-java.md
 │   ├── figma-product.md
 │   ├── client-platform.md
@@ -26,10 +27,19 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 │   ├── testing.md
 │   └── fe-context.md
 └── skills/                ← 반복 워크플로 스킬
-    └── specify/
-        ├── SKILL.md
-        └── references/
-            └── spec-template.md
+    ├── specify/
+    │   ├── SKILL.md
+    │   └── references/
+    │       └── spec-template.md
+    ├── refactor-audit/
+    │   ├── SKILL.md
+    │   └── references/
+    │       ├── audit-template.md
+    │       └── audit-checklist.md
+    ├── verify/
+    │   └── SKILL.md
+    └── defer-followup/
+        └── SKILL.md
 ```
 
 ## 파일별 역할
@@ -54,6 +64,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `harness-wave.md` | Wave Must/Nice/Out 단정 금지 · `[미정]`→#2 · 희망기간/조회윈도우/A1 | Wave·용어 |
 | `harness-follow-up.md` | 💡 후속 제안 · ✅ Defer 이슈 분리 · 💡 ERD 적극 제안 | 완료 후·범위 미루기 |
 | `workflow-tools.md` | **도구 우선순위**(Claude Code 기본 > OMC > Superpowers > 프로젝트 문서) · Claude Code 도구 매핑 | 워크플로 도구 연동·채택 판단 |
+| `plain-language-reporting.md` | 사용자 보고(채팅·`refactor-log.md`·완료 요약)는 용어 풀어쓰기·비유 위주로 쉽게. **코드 `//` 주석은 대상 아님**(`spring-boot-java.md` Comments가 SSOT) | 사용자 대상 설명 vs 코드 주석 스타일 분리 |
 
 우선순위: `harness-workflow` ⛔ > specify > workflow-tools > 일반 관례
 
@@ -83,6 +94,9 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | 스킬 | 트리거 예시 | 산출물 |
 |------|-------------|--------|
 | `specify` | 새 기능, 리팩터 계획, 아키텍처 결정 | `docs/specs/{domain}/{feature}.md` (**스펙 SSOT**, 도메인 amend 시 `ADDED`/`MODIFIED`/`REMOVED` delta 섹션) |
+| `refactor-audit` | 기존 코드 아키텍처 감사·무손실 리팩토링 (API 계약·비즈니스 로직 불변) | `docs/audits/{domain}/audit.md`(A/B/C/D 분류) · `refactor-log.md`(반영 이력) — 도메인 1개씩 순차, 매 단계 승인 게이트 |
+| `verify` | "완료/통과" 선언 전, 특히 Must Have급·API·DB 변경 | 없음(검증 절차) — `./gradlew test` + 스펙·이슈 체크리스트 대조 + API 변경 시 `oasdiff` |
+| `defer-followup` | 「다른 이슈로 빼」·「후속 이슈로」·「wave 밖」 | Draft 스펙 + Approved 스펙 amend + `docs/specs/README.md` 갱신 + (확인 후) GitHub 이슈 |
 
 **워크플로:** `wave 확인 → (Plan Mode) → specify/Approved → 구현 → ./gradlew test → verify → (후속 제안) → gh issue/PR`
 
@@ -96,6 +110,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 |--------|------|-----------|
 | `PreToolUse` | `Bash` | `block-dangerous.sh` — force push, `rm -rf`, `git reset --hard`, `docker compose down -v` 차단(exit 2, fail-closed) |
 | `PreToolUse` | `Bash` | `warn-breaking-change.sh` — `git commit`에 DTO/ErrorCode/Controller 변경이 스테이징됐는데 `Breaking-Change-Reason:` 트레일러가 없으면 advisory 경고(항상 exit 0, 커밋을 막지 않음) |
+| `PreToolUse` | `Write\|Edit` | `block-db-migration.sh` — `db/migration/` 경로 또는 Flyway 네이밍(`V1__x.sql`, `R__x.sql`) 파일 생성 차단(exit 2, fail-closed) — `harness-workflow.md` STOP §3 |
 | `PostToolUse` | `Edit\|Write` | `format-java.sh` — Java 파일 저장 시 `spotlessApply` 자동 포맷(non-blocking) |
 
 **agent-type 훅 관련 교훈:** `warn-breaking-change.sh`는 처음엔 `agent`-type(서브에이전트가 diff를 읽고 판단)으로 시도했으나, staged 아닌 working tree 변경까지 오판해 "절대 막지 마라"는 명시적 지시에도 커밋을 막는 사고가 있었다 — non-blocking을 LLM 판단에 맡기지 않고 `command`-type(exit code로 결정론적 통제)으로 확정했다. advisory-only 훅은 command-type을 기본으로 한다.

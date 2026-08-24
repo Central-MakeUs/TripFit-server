@@ -8,7 +8,7 @@
 
 **판단 기준:** "이게 없으면 스토어 심사를 통과 못 하는가?" → Yes면 Release Gate(`release: blocking` 라벨, Milestone 없음), No면 Wave 4.
 
-**현재 상태(2026-08-03):** 열려 있는 Release Gate 항목 없음(#5·#64 전부 Closed, OAuth 콘솔 설정값 채우기도 완료 확인 — 추적 이슈 번호는 이후 다른 용도로 재사용되어 고정 링크 없음). 과거 메타 트래커였던 `#65`는 관측성 개선 스펙(`docs/specs/cross-cutting/social-integration-structured-logging.md`)으로 재사용됐다 — 더 이상 Release Gate 트래커가 아니다. **주의:** 이 프로젝트는 Closed 이슈 번호를 완전히 무관한 새 작업으로 재사용하는 관행이 있다(`#65`, `#86` 사례) — 다른 이슈 본문에서 과거 번호를 인용할 때 현재 제목·상태를 다시 확인할 것. **새 Release Gate 항목 발견 시 새 이슈를 만들어** `development-wave.md` §5 + `waves.md`에 동시 등록.
+**현재 상태·과거 항목 이력·이슈 번호 재사용 관행:** [`development-wave.md` §5](../../docs/product/development-wave.md#5-앱-배포심사-release-gate--wave와-무관)가 SSOT — 여기서 중복 서술하지 않는다. **새 Release Gate 항목 발견 시 새 이슈를 만들어**(생성 전 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용) 그 문서 §5에 등록.
 
 **에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 Wave/출시 상태를 논의할 때, `development-wave.md` §5에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
 

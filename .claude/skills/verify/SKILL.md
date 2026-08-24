@@ -1,0 +1,35 @@
+---
+name: verify
+description: "완료/통과" 선언 전에 테스트·스펙 체크리스트·API 계약 diff를 실제로 확인한다. Must Have급 변경, 특히 API·DB 변경의 완료 보고 전에 사용.
+---
+
+# Verify Workflow
+
+"테스트 통과했습니다", "이슈 완료했습니다" 같은 LLM 자기 보고를 그대로 믿지 않고, 완료 선언 전에 아래를 **기계적으로** 확인하는 스킬. `specify`가 "구현 전 스펙"을 강제하듯, 이 스킬은 "보고 전 검증"을 강제한다.
+
+## When to Use
+
+- 사용자에게 "완료", "테스트 통과", "이슈 완료"라고 보고하기 직전
+- Approved 스펙 또는 GitHub 이슈의 완료 기준을 체크할 때
+- DTO·`ErrorCode`·Controller 등 API 계약을 건드린 변경 직후
+- `refactor-audit` 스킬의 4단계(Verify)도 이 스킬과 동일한 절차를 쓴다 — 중복 정의하지 않고 여기를 SSOT로 참조
+
+**생략 가능:** 오타·문서 전용·단일 로그 문구 같은 검증 대상이 없는 변경.
+
+## Steps
+
+1. **테스트** — `./gradlew test` 실행(핵심 로직 변경 시 전체 스위트). 실패가 있으면 원인 해결 전에는 "통과"라고 보고하지 않는다.
+2. **스펙·이슈 체크리스트 대조** — 관련 `docs/specs/*.md`의 Must Have 체크박스, `gh issue view`의 완료 기준을 **실제 코드**와 대조한다. 스펙 문구만 보고 `[x]`로 단정하지 않는다(`harness-workflow.md` STOP §1.5).
+3. **API 계약 변경 시** — DTO·`ErrorCode`·Controller가 바뀌었다면:
+   - `Breaking-Change-Reason:` 트레일러가 필요한 변경인지 재확인(STOP §5)
+   - `oasdiff`로 실제 diff를 확인 — breaking 여부와 무관하게 **의도한 diff만** 있는지 (`refactor-audit`처럼 "diff 자체가 0"이 기준인 무손실 리팩터는 diff가 하나라도 나오면 실패로 간주)
+4. **레거시 재점검** — 이번 변경이 대체한 구 경로·상수·문서 '현행' 문구가 남아있지 않은지 확인(STOP §4).
+5. **규모 게이트** — Must Have급(3파일 이상, API·DB 포함) 변경이면 `code-review` 또는 `simplify` 스킬을 서브에이전트 컨텍스트에서 한 번 더 돌리는 걸 권장한다 — 방금 짠 코드를 같은 대화에서 스스로 평가하는 self-grading 편향을 피하기 위함(`workflow-tools.md`와 동일 근거).
+6. **보고** — 실제로 통과한 항목만 `[x]`로 표시하고, 실패했거나 검증하지 못한 항목은 숨기지 않고 그대로 남긴다.
+
+## 금지
+
+- `./gradlew test` 실행 없이 "통과했을 것"이라고 보고
+- 스펙 문구만 보고 구현 상태·완료 여부를 단정 (`harness-workflow.md` STOP §1.5)
+- 실패·미검증 항목을 숨기고 "완료"만 보고
+- API 계약 변경인데 `oasdiff` 확인 없이 "계약 그대로"라고 단정

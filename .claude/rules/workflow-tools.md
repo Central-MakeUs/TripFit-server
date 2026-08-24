@@ -41,11 +41,12 @@ Harness 형제: `harness-wave.md` (Wave·`[미정]`) · `harness-follow-up.md` (
 | 유형 | Claude Code | TripFit |
 |------|-------------|---------|
 | 새 기능·API·wave | `EnterPlanMode`(Plan Mode)로 탐색·설계 → 승인 | **`specify`** 스킬 → `docs/specs/` → **Approved 후** 구현 |
+| 기존 코드 아키텍처 감사·무손실 리팩토링 | `Agent`(`Explore`/`general-purpose`, 읽기 전용)로 신선한 컨텍스트 감사 | **`refactor-audit`** 스킬 → `docs/audits/{domain}/` → 도메인 1개씩, 감사·구현 각각 승인 후 진행 |
 | Approved 스펙 구현 (#12 등) | Plan Mode 없이 단계별 직접 구현 | 스펙·GitHub 이슈 완료 기준 |
 | 버그·테스트 실패 | 재현 → 원인 분리 → 수정 (전용 스킬 없음, 아래 절차 참고) | `./gradlew test`로 재현 |
-| “완료/통과” 선언 전 | `verify` 스킬 | `./gradlew test` + 이슈·스펙 체크리스트 |
+| “완료/통과” 선언 전 | **`verify`** 스킬 | `./gradlew test` + 이슈·스펙 체크리스트 + API 변경 시 `oasdiff` |
 | Must Have급 구현 완료 후 (또는 사용자 요청) | — | `harness-follow-up.md` 💡 후속 제안 |
-| 「다른 이슈로」범위 미루기 | — | `harness-follow-up.md` ✅ Defer |
+| 「다른 이슈로」범위 미루기 | **`defer-followup`** 스킬 | 이슈 생성은 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용 |
 | PR·머지 전(요청 시) · **API·DB 등 Must Have급 변경은 커밋 전 기본 권장** | `code-review` / `simplify` 스킬 — 둘 다 fresh 서브에이전트 컨텍스트에서 diff만 보고 판단 | `.github/CONTRIBUTING.md` |
 | 독립 작업 병렬 | `Agent` 툴 서브에이전트 (`Explore`, `general-purpose`) | 중복 시 하나만 사용 |
 

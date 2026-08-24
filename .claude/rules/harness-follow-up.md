@@ -52,13 +52,4 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 
 ## ✅ 후속 작업 이슈 분리 (Defer)
 
-사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「wave 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** 아래를 **같은 턴**에 수행한다.
-
-1. **`docs/specs/{kebab-case}.md`** — Draft 스펙 작성 (`specify` 템플릿 축약 가능). Must Have·완료 기준·선행·wave 밖·Out of Scope 포함
-2. **관련 Approved 스펙** — `deferred:` 헤더 또는 Out of Scope 표에 **스펙 경로 + `#n` 링크** 추가 · 본문에서 lazy/임시 구현을 **#n 위임**으로 명시
-3. **`docs/specs/README.md`** — wave 표·이슈 매핑에 행 추가
-4. **`gh issue create`** — 본문에 스펙 경로·선행 이슈·완료 기준
-5. **현재 구현** — 해당 범위 코드·Must 체크리스트에서 제거 또는 **최소 C(임시)** 로 두고 `#n`·스펙 URL 주석
-6. **사용자 보고** — 이슈 URL + 스펙 경로
-
-**금지:** 이슈만 생성하고 `docs/` 미작성 · Approved 스펙 amend 없이 lazy 동작만 남기기.
+사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「wave 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** Draft 스펙 작성 → Approved 스펙 amend → README 갱신 → 이슈 생성 → 구현 트림 → 보고까지 전체 절차는 **`defer-followup` 스킬** SSOT (이슈 생성 단계는 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용).
