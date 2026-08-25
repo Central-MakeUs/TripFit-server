@@ -75,7 +75,7 @@
 
 | 분류 | 이슈 |
 |------|------|
-| **Must** | #19(카카오·링크 공유) · #21(FCM 알림, BR-NOTI) · #44(Google Calendar OAuth — Implemented) · #56(Calendar env 버그 — Implemented) · #78(Calendar OAuth Client ID 분리) |
+| **Must** | #19(카카오·링크 공유) · #21(FCM 알림, BR-NOTI) · #44(Google Calendar OAuth — Implemented) · #56(Calendar env 버그 — Implemented) · #78(Calendar OAuth Client ID 분리 — Implemented) |
 | **포함 안 됨** | trip/recommend/member 신규 도메인 로직(→ Wave 2) · 로그인 자격증명 자체(→ Wave 1) |
 
 ---
@@ -189,7 +189,7 @@
 |------|---------------|------------|------|------------------|
 | **1** | **#29** | #1·#3·#10·#57 (전부 Closed) | — | trip·추천 → Wave 2, 외부연동 → Wave 3 |
 | **2** | **#30** | #13·#50 Open (#11·#12·#17·#22·#24·#37·#38·#39·#47·#48·#53·#54·#60·#67 Closed) | #20✓·#26✓·#27✓ | 외부연동(#19·#21·#44) → Wave 3 |
-| **3** | **#31** | #44✓·#56✓ (Closed) · #19✓·#21·#78 Open | — | trip·recommend → Wave 2 |
+| **3** | **#31** | #44✓·#56✓·#78✓ (Closed) · #19✓·#21 Open | — | trip·recommend → Wave 2 |
 | **4** | **#32** | — (팀 합의 체크리스트) | — | #4·#6·#9·#35·#52 |
 | **Release Gate** | — (Wave 무관, §5) | #5✓·#64✓ (전부 Closed) · OAuth 콘솔 설정값✓(완료, 이슈 번호 재사용됨) | — | — |
 
@@ -233,7 +233,7 @@ Wave는 "백엔드 작업이 어느 도메인인가"를 끊는 축이고, Releas
 
 **규칙:**
 
-- 새 Release Gate 항목 발견 시 **새 이슈를 만들어** 이 절 + `waves.md`에 동시 추가 — `#2`([미정] 트래커)와 동일한 패턴, 단 트래커 이슈 번호는 그때 새로 발급.
+- 새 Release Gate 항목 발견 시 **새 이슈를 만들어** 이 절에 추가 — `#2`([미정] 트래커)와 동일한 패턴, 단 트래커 이슈 번호는 그때 새로 발급. `waves.md`·`harness-wave.md`는 이 절을 링크만 하므로 별도 갱신 불필요.
 - `release: blocking` 라벨만 부여, **Milestone은 지정하지 않음**(Wave 컨테이너가 아니므로).
 - Wave 4 후보 이슈를 만들기 **전** 위 판단 기준으로 먼저 걸러본다.
 
@@ -241,8 +241,8 @@ Wave는 "백엔드 작업이 어느 도메인인가"를 끊는 축이고, Releas
 
 ## 부록 A — `waves.md`와의 관계
 
-- **운영·판단·Backlog:** 본 문서
-- **표·한 줄 정의:** `waves.md` (본 문서와 **불일치 시 본 문서 우선**, `waves.md` 갱신)
+- **운영·판단·Backlog·이슈 번호·Open/Closed 상태:** 본 문서
+- **Wave 정의·DoD 한 줄 요약만:** `waves.md` (이슈 번호·GitHub 상태는 담지 않음 — 본 문서와 **불일치 시 본 문서 우선**, `waves.md` 갱신)
 
 ## 부록 B — 마일스톤 이름 (GitHub)
 

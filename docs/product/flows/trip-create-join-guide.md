@@ -3,6 +3,8 @@
 > **상태: Approved/Implemented** (대안 A 채택, [#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)). 생성·참여 플로우의 SSOT 가이드.
 > 계약: [`trip-room-api.md`](../../specs/trip/trip-room-api.md) · [`schedule-participation-onboarding.md`](../../specs/trip/schedule-participation-onboarding.md)
 > 설계 대안 검토(A~D) 이력은 #39 PR 참고 — 비교 문서는 채택 후 삭제됨
+>
+> **이 문서는 정책·엣지 케이스 시나리오용이다.** 프론트 구현이 그대로 따를 명령형 API 호출 순서·에러 매핑은 [`fe-context/trip/trip-room-create-join.md`](../fe-context/trip/trip-room-create-join.md)가 SSOT — 아래 단계 설명과 그 문서의 STEP 표가 같은 사실을 각자 갱신하지 않도록, 호출 순서가 바뀌면 그 문서를 먼저 고치고 여기는 필요한 만큼만 따라간다.
 
 ---
 

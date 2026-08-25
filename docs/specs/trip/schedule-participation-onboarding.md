@@ -210,20 +210,7 @@ canEnterRoom(user) =
 
 ### D-HIDDEN-7: OpenAPI 공개 (확정 — 단계적 C안)
 
-| 단계 | 공개 |
-|------|------|
-| **1** | `#22` 구현 PR: `is_all_free` · join 재정의 · **submit 삭제** · personal/calendar `@Hidden` **해제** |
-| **2** | 그룹 `members/schedule-calendar` — **`@Hidden` 해제 완료** |
-| — | submit은 **공개하지 않음** (삭제) |
-
-**라우팅:**
-
-```text
-방장: [일정 플로우] → (수정 시 patch) → [방 생성 폼] → POST /trips (owner ACTIVE) → [여행방]
-
-참여자: 링크 → [일정 플로우] → (수정 시 patch) → POST /trips/join (ACTIVE) → [여행방]
-        이미 멤버 → [여행방]
-```
+상단 [OpenAPI 숨김 · 단계적 공개 (D-HIDDEN-7)](#openapi-숨김--단계적-공개-d-hidden-7) 표 참조 — 여기서 중복 서술하지 않는다. 방장·참여자 라우팅은 위 D-JOIN-TRIP-FLOW가 SSOT.
 
 ### D-ONBOARD-4: 첫 가입 세션 — 선택 온보딩 UX
 

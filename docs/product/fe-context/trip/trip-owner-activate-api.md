@@ -39,34 +39,6 @@
 
 ## API 호출 순서 — 최초 입장
 
-> 실제 컨트롤러 경로 기준 (`TripController`, `UserScheduleController`). PATCH 두 개는 **기존 전역 일정을 수정할 때만** 호출 — 그대로 유지할 거면 건너뛰어도 됨.
+방장·참여자 각각의 전체 호출 순서(엔드포인트·응답·수정 시 PATCH 경로 포함)는 [`trip-room-create-join.md`](trip-room-create-join.md) 규칙 2·규칙 3·규칙 4 표가 SSOT — 여기서 중복 서술하지 않는다.
 
-### 방장 (신규 방 생성)
-
-| # | 호출 | 결과 |
-|---|------|------|
-| 1 | `POST /api/v1/trips` | `trip` 생성, 본인 `trip_member`를 **`SCHEDULE_PENDING`**으로 INSERT. 응답에 `inviteCode` 없음 |
-| 2 | (일정 확인 화면 — 정기) `GET /api/v1/users/schedule/regular` 로 기존 정기 일정 확인 | 조회만, 상태 변화 없음 |
-| 3 | *(수정할 때만)* `POST /api/v1/users/schedule/regular` / `PATCH /regular/{id}` / `DELETE /regular/{id}` | User 전역 정기 일정 갱신 |
-| 4 | (일정 확인 화면 — 개별) `GET /api/v1/users/schedule/calendar` 로 기존 개별 일정 확인 (전용 조회 API 없음 — 정기+개별 합친 달력으로 확인, `schedule-calendar-merge.md` 규칙 1) | 조회만 |
-| 5 | *(수정할 때만)* `PATCH /api/v1/users/schedule/personal` (`items`, `slots`/`uncertain` 각각 선택) | User 전역 개별 일정 upsert — **삭제 경로 없음(O1.4)** |
-| 6 | `POST /api/v1/trips/{tripId}/activate` | `trip_member.status` **`SCHEDULE_PENDING` → `ACTIVE`**. 정기·개별 둘 다 0행이면 서버가 `is_all_free=true`로 설정 |
-| 7 | `GET /api/v1/trips/{tripId}` (방 상세) | 이제 `ACTIVE` — 방 입장·`inviteCode` 확인·공유 가능 |
-
-### 참여자 (초대 링크로 신규 참여)
-
-| # | 호출 | 결과 |
-|---|------|------|
-| 1 | 초대 링크/코드 수신 → 로그인(JWT 보유) | `trip_member` row 아직 없음 |
-| 2 | (일정 확인 화면 — 정기) `GET /api/v1/users/schedule/regular` | 조회만 |
-| 3 | *(수정할 때만)* 정기 CRUD (`POST`/`PATCH /{id}`/`DELETE /{id}`) | User 전역 갱신 |
-| 4 | (일정 확인 화면 — 개별) `GET /api/v1/users/schedule/calendar` (전용 조회 API 없음) | 조회만 |
-| 5 | *(수정할 때만)* `PATCH /api/v1/users/schedule/personal` (삭제 경로 없음, O1.4) | User 전역 갱신 |
-| 6 | `POST /api/v1/trips/join` (`{ inviteCode }`) | `trip_member`를 **바로 `ACTIVE`로 INSERT** (중간에 `SCHEDULE_PENDING` 없음). 0행이면 `is_all_free=true` 서버 설정 |
-| 7 | `GET /api/v1/trips/{tripId}` (방 상세) | 방 입장 |
-
-### 핵심 차이
-
-- 방장은 1번(`POST /trips`)에서 먼저 `SCHEDULE_PENDING` row가 생기고, 맨 마지막에 tripId를 아는 별도 API(`activate`)로 `ACTIVE` 전환.
-- 참여자는 row 생성 자체가 없다가, `POST /trips/join` **한 번**에 "row 생성 + `ACTIVE` 전환"이 동시에 일어남 — 그래서 참여자에게는 activate에 대응하는 별도 API가 필요 없음.
-- 정기/개별 PATCH는 **두 역할 모두 동일**하고 방과 무관한 User 전역 API — "수정이 있을 때만" 호출.
+**핵심 차이만 요약:** 방장은 `POST /trips`에서 먼저 `SCHEDULE_PENDING` row가 생기고, 맨 마지막에 별도 API(`activate`)로 `ACTIVE` 전환한다. 참여자는 row 생성 자체가 없다가 `POST /trips/join` **한 번**에 "row 생성 + `ACTIVE` 전환"이 동시에 일어나 activate에 대응하는 별도 API가 필요 없다.

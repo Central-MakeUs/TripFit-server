@@ -1,6 +1,6 @@
 # Google Calendar 전용 OAuth Client ID 분리
 
-> 상태: Draft (Must Have 전항목 완료 — 백엔드 배선·GCP 콘솔 Client ID 발급·FE 전환 2026-08-08 확인. 잔여: Calendar scope Google 검증 필요 여부)
+> 상태: Implemented (Must Have·리스크 전항목 완료 — 백엔드 배선·GCP 콘솔 Client ID 발급·FE 전환 2026-08-08 확인·Calendar scope Google 검증 불필요 2026-08-05 확인)
 > wave: 3
 > MVP: 해당 없음 (Google Calendar 자체가 Wave 3 Out of scope)
 > 관련 BR: 해당 없음
@@ -34,8 +34,8 @@ Google 로그인용 OAuth Client ID와 Google Calendar 연동용 OAuth Client ID
 Google Cloud Console에서 직접 진행하는 절차. 승인·검수 없이 즉시 발급 가능한 부분과, Google 쪽 검증이 필요할 수 있는 부분을 구분해뒀다. Client ID 자체는 이미 발급·secrets 등록됐으므로, 재발급이 필요해지는 경우를 위한 참고용으로 남겨둔다.
 
 1. **프로젝트 확인**: 기존 로그인용 Client ID를 발급한 것과 **같은 GCP 프로젝트**를 그대로 사용(새 프로젝트 불필요) — API·Services 좌측 메뉴에서 현재 프로젝트가 맞는지 확인
-2. **OAuth 동의 화면(consent screen) 확인**: `APIs & Services → OAuth consent screen` — 이미 로그인용으로 등록돼 있을 것. 여기에 **Calendar scope**(`https://www.googleapis.com/auth/calendar.readonly` 등, 실제 요청 scope는 `google-calendar-oauth.md` 참고)가 아직 없으면 "Scopes" 섹션에 추가
-   - ⚠️ Calendar 읽기 scope는 Google이 "민감한 scope(sensitive scope)"로 분류할 수 있다. 테스트 유저 100명 이하로 운영하는 동안은(Testing 모드) 검증 없이 바로 쓸 수 있지만, **일반 유저 전체에게 열려면(Production 모드) Google의 OAuth 앱 검증(verification) 절차**를 거쳐야 할 수 있음 — 이 과정은 며칠~몇 주 소요될 수 있으니 Calendar 기능 출시 일정에 미리 반영
+2. **OAuth 동의 화면(consent screen) 확인**: `APIs & Services → OAuth consent screen` — 이미 로그인용으로 등록돼 있을 것. 여기에 **Calendar scope**(`https://www.googleapis.com/auth/calendar.freebusy` — 실제 요청 scope, `google-calendar-oauth.md` 참고)가 아직 없으면 "Scopes" 섹션에 추가
+   - **(2026-08-05 확인)** `calendar.freebusy` scope는 GCP 콘솔에서 "민감하지 않은 scope(non-sensitive)"로 분류돼 있음을 확인 — Production 모드 전환 시 Google의 OAuth 앱 검증(verification) 절차가 필요 없다. (참고: 이벤트 상세까지 읽는 `calendar.readonly`는 별도로 "민감한 scope"로 분류되지만, TripFit은 freeBusy만 쓰므로 이 앱과는 무관)
 3. **신규 Client ID 발급**: `APIs & Services → Credentials → + Create Credentials → OAuth client ID`
    - Application type: **Web application** (지금 로그인용과 동일 타입 — 서버가 client_secret으로 코드를 교환하는 기존 `GoogleCalendarOAuthClient` 방식을 그대로 씀)
    - Name: 예) `TripFit - Calendar` (로그인용과 구분되는 이름)
@@ -59,7 +59,7 @@ Google Cloud Console에서 직접 진행하는 절차. 승인·검수 없이 즉
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | FE 전환 시점 | 완료 (2026-08-08) | FE가 Calendar 전용 Client ID로 전환했음을 확인 |
-| Calendar scope Google 검증 필요 여부·소요 기간 | `[미정]` | Production 모드 전환 시 확인 필요 |
+| Calendar scope Google 검증 필요 여부·소요 기간 | 완료 (2026-08-05) | 요청 scope가 `calendar.freebusy` 하나뿐이며 GCP 콘솔에서 non-sensitive로 확인 — 검증 불필요 |
 
 ## 변경 이력
 
@@ -68,3 +68,4 @@ Google Cloud Console에서 직접 진행하는 절차. 승인·검수 없이 즉
 | 2026-07-31 | 초안 — `google-login-revoke.md` 리스크 절에서 분리. GCP 콘솔에서 Calendar 전용 Client ID 발급, GitHub Actions secrets 등록 완료 |
 | 2026-08-22 | 백엔드 코드 배선 완료(`OAuthProperties`·`GoogleCalendarOAuthClient`·env 4곳). "GCP 콘솔 발급 전" 서술이 7/31 발급 완료 사실을 놓쳐 stale했던 것을 8/23 재확인 후 정정 |
 | 2026-08-08 | FE가 Calendar 연동 요청을 Calendar 전용 Client ID로 전환 완료했음을 FE 확인 — Must Have·완료 기준 전항목 충족. 남은 항목은 Authorized redirect URIs 등록(`#78`, FE 콜백 URL 확정 대기)과 Calendar scope Google 검증 필요 여부 확인뿐 |
+| 2026-08-05 | **`[미정]` 해소** — Authorized redirect URIs 등록을 콘솔에서 직접 확인(완료). Calendar scope Google 검증 필요 여부도 확인: 요청 scope가 이벤트 상세를 읽지 않는 `calendar.freebusy` 하나뿐이며 GCP 콘솔에서 "민감하지 않은 scope"로 분류돼 있어 Production 전환 시 Google 검증(verification) 절차가 필요 없음. 리스크·미결정 전항목 해소로 상태를 Implemented로 변경, `#78` 클로즈 |

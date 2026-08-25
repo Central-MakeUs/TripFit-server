@@ -18,7 +18,7 @@ docs/
 │   ├── development-wave.md   ← Wave 운영·판단·GitHub Backlog
 │   ├── waves.md              ← Wave 1~4 요약표
 │   ├── mvp.md · platform.md · prd.md · glossary.md
-│   ├── design/ · business-rules/ · flows/ · templates/
+│   ├── design/ · business-rules/ · flows/ · fe-context/ · templates/
 ├── specs/                    ← 기능 스펙 — 목록 SSOT: specs/README.md
 └── decisions/                ← 아키텍처 결정 — 목록: decisions/README.md
 ```
@@ -31,8 +31,9 @@ docs/
 |-------------|------|
 | [`specs/README.md`](specs/README.md) | wave별 스펙·이슈 매핑·상태 |
 | [`decisions/README.md`](decisions/README.md) | ADR 목록 |
-| [`product/flows/README.md`](product/flows/README.md) | 사용자 플로우 |
+| [`product/flows/README.md`](product/flows/README.md) | 사용자 플로우 (제품 정책·시나리오) |
 | [`product/business-rules/README.md`](product/business-rules/README.md) | BR-* |
+| [`product/fe-context/README.md`](product/fe-context/README.md) | 프론트 구현 규칙 (스펙·코드의 파생물, `flows/`와 역할 다름) |
 
 ## 읽는 순서 (기능 구현 시)
 
