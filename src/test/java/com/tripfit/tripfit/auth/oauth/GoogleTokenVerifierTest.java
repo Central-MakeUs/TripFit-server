@@ -16,7 +16,7 @@ class GoogleTokenVerifierTest {
   void setUp() {
     OAuthProperties oAuthProperties = new OAuthProperties();
     oAuthProperties.setGoogleClientId("test-google-client-id");
-    googleTokenVerifier = new GoogleTokenVerifier(oAuthProperties);
+    googleTokenVerifier = new GoogleTokenVerifier(oAuthProperties, new GoogleJwkVerifier());
   }
 
   @Test
@@ -29,7 +29,8 @@ class GoogleTokenVerifierTest {
 
   @Test
   void verify_missingClientId_throwsInternalError() {
-    GoogleTokenVerifier verifierWithoutClientId = new GoogleTokenVerifier(new OAuthProperties());
+    GoogleTokenVerifier verifierWithoutClientId =
+        new GoogleTokenVerifier(new OAuthProperties(), new GoogleJwkVerifier());
 
     assertThatThrownBy(() -> verifierWithoutClientId.verify("not-a-valid-jwt"))
         .isInstanceOf(TripFitException.class)

@@ -22,11 +22,9 @@ import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,14 +33,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// upsert(신규 생성·탈퇴 부활·필드 갱신) 자체의 세부 동작은 AuthLoginPersistenceServiceTest 담당 — 여기서는
+// login()이 검증·persist·credential 저장·토큰 발급을 올바른 순서로 조율하는지만 검증
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
+
+  private static final UUID USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
 
   @Mock
   private SocialTokenVerifierRegistry verifierRegistry;
 
   @Mock
-  private UserRepository userRepository;
+  private AuthLoginPersistenceService authLoginPersistenceService;
 
   @Mock
   private JwtService jwtService;
@@ -100,22 +102,35 @@ class AuthServiceTest {
             });
   }
 
+  // 소셜 프로필과 동일한 필드를 가진 User를 만들고, persist()가 이를 반환하도록 스텁
+  private static User persistedUser(OAuthProfile profile) {
+    User user =
+        new User(
+            profile.providerUserId(),
+            profile.provider(),
+            profile.email(),
+            profile.nickname(),
+            profile.profileImageUrl());
+    user.setId(USER_ID);
+    return user;
+  }
+
+  private static AuthLoginPersistenceService.Result persistenceResult(User user) {
+    return new AuthLoginPersistenceService.Result(
+        user,
+        new RefreshToken(
+            user.getId(), "refresh-token", UUID.randomUUID().toString(),
+            LocalDateTime.now().plusDays(30)));
+  }
+
   @Test
   void login_createsUserAndTokens() {
+    User user = persistedUser(oAuthProfile);
     when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
-        .thenReturn(Optional.empty());
-    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
+    when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
     when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
 
     LoginResponse response =
         authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
@@ -131,73 +146,13 @@ class AuthServiceTest {
   }
 
   @Test
-  void login_whenProfileNameSet_preservesNamesOnRelogin() {
-    User existing =
-        new User("google-sub", SocialProvider.GOOGLE, "user@example.com", "old-nick", null);
-    existing.setFirstName("길동");
-    existing.setLastName("홍");
-    when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
-    when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
-        .thenReturn(Optional.of(existing));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
-
-    LoginResponse response =
-        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
-
-    assertThat(existing.getFirstName()).isEqualTo("길동");
-    assertThat(existing.getLastName()).isEqualTo("홍");
-    assertThat(response.user().firstName()).isEqualTo("길동");
-    assertThat(response.user().lastName()).isEqualTo("홍");
-  }
-
-  @Test
-  void login_whenNicknameMissing_storesNullWithoutFallback() {
-    OAuthProfile appleProfile =
-        new OAuthProfile(
-            SocialProvider.APPLE,
-            "apple-sub",
-            "relay@privaterelay.appleid.com",
-            null,
-            null,
-            "com.tripfit.app");
-    when(verifierRegistry.getVerifier(SocialProvider.APPLE)).thenReturn(socialTokenVerifier);
-    when(socialTokenVerifier.verify("id-token")).thenReturn(appleProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.APPLE, "apple-sub"))
-        .thenReturn(Optional.empty());
-    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
-
-    LoginResponse response = authService.login(SocialProvider.APPLE, "id-token", "auth-code", null);
-
-    assertThat(response.user().nickname()).isNull();
-    assertThat(response.user().profileImageUrl()).isNull();
-  }
-
-  @Test
   void login_whenAppleWithoutAuthorizationCode_throwsAuthorizationCodeRequired() {
     assertThatThrownBy(() -> authService.login(SocialProvider.APPLE, "id-token", null, null))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED);
 
-    verifyNoInteractions(verifierRegistry, userRepository, appleCredentialService);
+    verifyNoInteractions(verifierRegistry, authLoginPersistenceService, appleCredentialService);
   }
 
   @Test
@@ -218,80 +173,35 @@ class AuthServiceTest {
             "닉네임",
             null,
             "com.tripfit.service");
+    User user = persistedUser(appleProfile);
     when(verifierRegistry.getVerifier(SocialProvider.APPLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(appleProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.APPLE, "apple-sub"))
-        .thenReturn(Optional.empty());
-    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(authLoginPersistenceService.persist(appleProfile)).thenReturn(persistenceResult(user));
+    when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
     when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
 
     authService.login(SocialProvider.APPLE, "id-token", "auth-code", null);
 
     verify(appleCredentialService)
         .saveIfAuthorizationCodePresent(
-            any(User.class),
+            eq(user),
             eq("auth-code"),
             eq("com.tripfit.service"));
   }
 
   @Test
   void login_whenNotApple_neverCallsAppleCredentialService() {
+    User user = persistedUser(oAuthProfile);
     when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
-        .thenReturn(Optional.empty());
-    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
+    when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
     when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
 
     authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
     verify(appleCredentialService, org.mockito.Mockito.never())
         .saveIfAuthorizationCodePresent(any(), any(), any());
-  }
-
-  @Test
-  void login_whenExistingAccountIsWithdrawn_revivesAccountAndLogsIn() {
-    User withdrawn = new User("google-sub", SocialProvider.GOOGLE, null, null, null);
-    withdrawn.setDeletedAt(LocalDateTime.now());
-    withdrawn.setAllFree(true);
-    when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
-    when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
-        .thenReturn(Optional.of(withdrawn));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
-
-    LoginResponse response =
-        authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
-
-    assertThat(withdrawn.getDeletedAt()).isNull();
-    assertThat(withdrawn.isAllFree()).isFalse();
-    assertThat(response.accessToken()).isEqualTo("access-jwt");
-    assertThat(response.user().email()).isEqualTo("user@example.com");
-    verify(userRepository, org.mockito.Mockito.never()).save(any());
   }
 
   @Test
@@ -301,7 +211,10 @@ class AuthServiceTest {
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED);
 
-    verifyNoInteractions(verifierRegistry, userRepository, googleLoginCredentialService);
+    verifyNoInteractions(
+        verifierRegistry,
+        authLoginPersistenceService,
+        googleLoginCredentialService);
   }
 
   @Test
@@ -314,44 +227,28 @@ class AuthServiceTest {
 
   @Test
   void login_whenGoogleWithAuthorizationCode_savesCredential() {
+    User user = persistedUser(oAuthProfile);
     when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
-        .thenReturn(Optional.empty());
-    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
+    when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
     when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
 
     authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
     verify(googleLoginCredentialService)
-        .saveIfAuthorizationCodePresent(any(User.class), eq("google-auth-code"), isNull());
+        .saveIfAuthorizationCodePresent(eq(user), eq("google-auth-code"), isNull());
   }
 
   // 브라우저 리다이렉트 로그인 — LoginRequest.redirectUri가 GoogleLoginCredentialService까지 그대로 전달돼야 함
   @Test
   void login_whenGoogleWithRedirectUri_passesItToCredentialService() {
+    User user = persistedUser(oAuthProfile);
     when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
-    when(userRepository.findByProviderAndSocialId(SocialProvider.GOOGLE, "google-sub"))
-        .thenReturn(Optional.empty());
-    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(jwtService.createAccessToken(any())).thenReturn("access-jwt");
+    when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
+    when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
     when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
-    when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
-                "refresh-token",
-                UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
 
     authService.login(
         SocialProvider.GOOGLE,
@@ -361,7 +258,7 @@ class AuthServiceTest {
 
     verify(googleLoginCredentialService)
         .saveIfAuthorizationCodePresent(
-            any(User.class),
+            eq(user),
             eq("google-auth-code"),
             eq("https://tripfit.online/auth/google/callback"));
   }

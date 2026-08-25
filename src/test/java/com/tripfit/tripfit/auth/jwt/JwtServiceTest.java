@@ -25,7 +25,7 @@ class JwtServiceTest {
   void createAndParseAccessToken() {
     String token =
         jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440042"));
-    UUID userId = jwtService.parseUserId(token);
+    UUID userId = jwtService.parseAccessToken(token).userId();
     assertThat(userId).isEqualTo(UUID.fromString("550e8400-e29b-41d4-a716-446655440042"));
   }
 
@@ -40,7 +40,7 @@ class JwtServiceTest {
 
   @Test
   void parseInvalidToken_throws() {
-    assertThatThrownBy(() -> jwtService.parseUserId("invalid-token"))
+    assertThatThrownBy(() -> jwtService.parseAccessToken("invalid-token"))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_INVALID_TOKEN);
