@@ -8,7 +8,6 @@ import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -63,7 +62,7 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
                             .withProviderError(null, body),
                         "Kakao user/me verification failed");
                     throw new TripFitException(
-                        isExpiredMessage(body)
+                        SocialErrorMessages.containsExpired(body)
                             ? AuthErrorCode.AUTH_SOCIAL_TOKEN_EXPIRED
                             : AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
                   })
@@ -125,8 +124,4 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
     }
   }
 
-  // 카카오 에러 메시지에 만료 문구가 포함됐는지 확인함 — 카카오가 만료를 별도 code로 문서화하지 않아 문자열로 판별
-  private boolean isExpiredMessage(String body) {
-    return body != null && body.toLowerCase(Locale.ROOT).contains("expired");
-  }
 }

@@ -13,7 +13,6 @@ import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.text.ParseException;
 import java.util.List;
-import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -52,7 +51,7 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
     }
     try {
       // 2. 토큰 서명을 검증하고 클레임을 파싱함
-      JWTClaimsSet claims = processToken(token);
+      JWTClaimsSet claims = appleJwkVerifier.verify(token);
       String matchedClientId = findMatchedAudience(claims, allowedAudiences);
       if (matchedClientId == null) {
         throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
@@ -73,7 +72,7 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
       throw exception;
     } catch (BadJWTException exception) {
       // 만료(exp)·아직 유효하지 않음(nbf) 등 시간 클레임 검증 실패 — 메시지로 만료만 구분
-      boolean expired = isExpiredMessage(exception.getMessage());
+      boolean expired = SocialErrorMessages.containsExpired(exception.getMessage());
       SocialIntegrationLog.warn(
           log,
           verifyContext()
@@ -120,16 +119,6 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
 
   private SocialLogContext verifyContext() {
     return SocialLogContext.of(SocialProvider.APPLE, SocialIntegrationAction.LOGIN_TOKEN_VERIFY);
-  }
-
-  // nimbus 예외 메시지에 만료 문구가 포함됐는지 확인함 — nimbus가 만료를 별도 예외 타입으로 노출하지 않아 문자열로 판별
-  private boolean isExpiredMessage(String message) {
-    return message != null && message.toLowerCase(Locale.ROOT).contains("expired");
-  }
-
-  private JWTClaimsSet processToken(String token)
-      throws ParseException, JOSEException, BadJOSEException {
-    return appleJwkVerifier.verify(token);
   }
 
   // 토큰의 aud 클레임과 허용 목록을 대조해 실제로 매칭된 client_id를 반환함(없으면 null) — 이후 credential 저장·revoke에

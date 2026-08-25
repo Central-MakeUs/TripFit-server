@@ -97,10 +97,6 @@ public class JwtService {
     }
   }
 
-  public UUID parseUserId(String accessToken) {
-    return parseAccessToken(accessToken).userId();
-  }
-
   public long getAccessExpirationSeconds() {
     return jwtProperties.getAccessExpirationSeconds();
   }

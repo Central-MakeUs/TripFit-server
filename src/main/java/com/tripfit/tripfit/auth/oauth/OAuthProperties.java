@@ -3,6 +3,7 @@ package com.tripfit.tripfit.auth.oauth;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Data;
+import lombok.ToString;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
@@ -11,6 +12,8 @@ public class OAuthProperties {
 
   private String googleClientId = "";
 
+  // toString에 노출되면 OAuth client secret이 로그로 유출될 수 있어 제외
+  @ToString.Exclude
   private String googleClientSecret = "";
 
   private String googleClientIdIos = "";
@@ -19,6 +22,7 @@ public class OAuthProperties {
 
   private String googleCalendarClientId = "";
 
+  @ToString.Exclude
   private String googleCalendarClientSecret = "";
 
   private String appleBundleId = "";
@@ -29,8 +33,10 @@ public class OAuthProperties {
 
   private String appleKeyId = "";
 
+  @ToString.Exclude
   private String applePrivateKey = "";
 
+  @ToString.Exclude
   private String kakaoAdminKey = "";
 
   public List<String> getGoogleClientIds() {

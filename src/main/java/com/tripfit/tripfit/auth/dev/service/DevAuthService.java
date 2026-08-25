@@ -82,7 +82,7 @@ public class DevAuthService {
     User user =
         userRepository
             .findByProviderAndSocialId(DEV_PROVIDER, socialId)
-            .map(this::reviveIfWithdrawn)
+            .map(this::revive)
             .orElseGet(() -> userRepository.save(createTestUser(key, socialId)));
 
     String accessToken = jwtService.createAccessToken(user.getId());
@@ -112,11 +112,8 @@ public class DevAuthService {
   }
 
   // 테스트 계정이 탈퇴 상태면 실제 로그인과 동일하게 부활시켜 재로그인 진행
-  private User reviveIfWithdrawn(User user) {
-    if (user.getDeletedAt() != null) {
-      user.setDeletedAt(null);
-      user.setAllFree(false);
-    }
+  private User revive(User user) {
+    user.reviveIfWithdrawn();
     return user;
   }
 }

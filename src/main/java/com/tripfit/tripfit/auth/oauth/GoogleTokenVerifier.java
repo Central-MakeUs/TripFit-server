@@ -1,17 +1,9 @@
 package com.tripfit.tripfit.auth.oauth;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.BadJOSEException;
-import com.nimbusds.jose.proc.JWSKeySelector;
-import com.nimbusds.jose.proc.JWSVerificationKeySelector;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.BadJWTException;
-import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
-import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
@@ -19,11 +11,8 @@ import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
 import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
 import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.ParseException;
 import java.util.List;
-import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -33,20 +22,13 @@ public class GoogleTokenVerifier implements SocialTokenVerifier {
 
   private static final Logger log = LoggerFactory.getLogger(GoogleTokenVerifier.class);
 
-  private static final URL GOOGLE_JWK_URL;
-
-  static {
-    try {
-      GOOGLE_JWK_URL = new URL("https://www.googleapis.com/oauth2/v3/certs");
-    } catch (MalformedURLException exception) {
-      throw new IllegalStateException("Invalid Google JWK URL", exception);
-    }
-  }
-
   private final OAuthProperties oAuthProperties;
 
-  public GoogleTokenVerifier(OAuthProperties oAuthProperties) {
+  private final GoogleJwkVerifier googleJwkVerifier;
+
+  public GoogleTokenVerifier(OAuthProperties oAuthProperties, GoogleJwkVerifier googleJwkVerifier) {
     this.oAuthProperties = oAuthProperties;
+    this.googleJwkVerifier = googleJwkVerifier;
   }
 
   @Override
@@ -68,7 +50,7 @@ public class GoogleTokenVerifier implements SocialTokenVerifier {
     }
     try {
       // 2. 토큰 서명을 검증하고 클레임을 파싱함
-      JWTClaimsSet claims = processToken(token);
+      JWTClaimsSet claims = googleJwkVerifier.verify(token);
       if (!hasValidAudience(claims, allowedAudiences)) {
         throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
       }
@@ -88,7 +70,7 @@ public class GoogleTokenVerifier implements SocialTokenVerifier {
       throw exception;
     } catch (BadJWTException exception) {
       // 만료(exp)·아직 유효하지 않음(nbf) 등 시간 클레임 검증 실패 — 메시지로 만료만 구분
-      boolean expired = isExpiredMessage(exception.getMessage());
+      boolean expired = SocialErrorMessages.containsExpired(exception.getMessage());
       SocialIntegrationLog.warn(
           log,
           verifyContext()
@@ -135,21 +117,6 @@ public class GoogleTokenVerifier implements SocialTokenVerifier {
 
   private SocialLogContext verifyContext() {
     return SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.LOGIN_TOKEN_VERIFY);
-  }
-
-  // nimbus 예외 메시지에 만료 문구가 포함됐는지 확인함 — nimbus가 만료를 별도 예외 타입으로 노출하지 않아 문자열로 판별
-  private boolean isExpiredMessage(String message) {
-    return message != null && message.toLowerCase(Locale.ROOT).contains("expired");
-  }
-
-  private JWTClaimsSet processToken(String token)
-      throws ParseException, JOSEException, BadJOSEException, java.net.MalformedURLException {
-    ConfigurableJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
-    JWKSource<SecurityContext> keySource = new RemoteJWKSet<>(GOOGLE_JWK_URL);
-    JWSKeySelector<SecurityContext> keySelector =
-        new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, keySource);
-    processor.setJWSKeySelector(keySelector);
-    return processor.process(token, null);
   }
 
   private boolean hasValidAudience(JWTClaimsSet claims, List<String> allowedAudiences)
