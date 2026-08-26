@@ -19,7 +19,6 @@ import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarAuthExcep
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarBusyMapper.SlotBusyFlags;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
@@ -62,6 +61,8 @@ public class GoogleCalendarService {
 
   private final TripMemberRepository tripMemberRepository;
 
+  private final GoogleCalendarSyncPersistenceService persistenceService;
+
   public GoogleCalendarService(
       GoogleCalendarOAuthClient googleCalendarOAuthClient,
       SocialTokenCrypto tokenCrypto,
@@ -69,7 +70,8 @@ public class GoogleCalendarService {
       GoogleCalendarBusyDayRepository busyDayRepository,
       UserLookupService userLookupService,
       UserSummaryService userSummaryService,
-      TripMemberRepository tripMemberRepository) {
+      TripMemberRepository tripMemberRepository,
+      GoogleCalendarSyncPersistenceService persistenceService) {
     this.googleCalendarOAuthClient = googleCalendarOAuthClient;
     this.tokenCrypto = tokenCrypto;
     this.credentialRepository = credentialRepository;
@@ -77,12 +79,14 @@ public class GoogleCalendarService {
     this.userLookupService = userLookupService;
     this.userSummaryService = userSummaryService;
     this.tripMemberRepository = tripMemberRepository;
+    this.persistenceService = persistenceService;
   }
 
-  // authorization code로 연동 — credential 저장·flag=true·즉시 1회 sync
-  @Transactional
+  // authorization code로 연동 — Google 서버와의 통신(코드 교환·freeBusy 조회)을 먼저 끝내고, DB 쓰기(credential
+  // 저장·flag=true)는 persistenceService의 짧은 트랜잭션에 위임한다 (auth 도메인 AuthService 패턴과 동일 —
+  // docs/audits/user/audit.md A-1)
   public UserSummaryResponse connect(UUID userId, String authorizationCode, String redirectUri) {
-    User user = userLookupService.requireUser(userId);
+    userLookupService.requireUser(userId);
     GoogleOAuthTokenResponse tokens;
     boolean hasRedirectUri = redirectUri != null && !redirectUri.isBlank();
     try {
@@ -123,29 +127,15 @@ public class GoogleCalendarService {
     String googleAccountEmail =
         googleCalendarOAuthClient.fetchGoogleAccountEmail(tokens.accessToken());
 
-    GoogleCalendarCredential credential =
-        credentialRepository
-            .findByUser_Id(userId)
-            .map(
-                existing -> {
-                  existing.updateTokens(
-                      refreshCiphertext,
-                      accessCiphertext,
-                      tokens.accessTokenExpiresAt(),
-                      googleAccountEmail);
-                  return existing;
-                })
-            .orElseGet(
-                () -> GoogleCalendarCredential.create(
-                    user,
-                    refreshCiphertext,
-                    accessCiphertext,
-                    tokens.accessTokenExpiresAt(),
-                    googleAccountEmail));
+    persistenceService.saveConnectedCredential(
+        userId,
+        refreshCiphertext,
+        accessCiphertext,
+        tokens.accessTokenExpiresAt(),
+        googleAccountEmail);
+    syncUserInternal(userId, TRIGGER_MANUAL_CONNECT);
 
-    credentialRepository.save(credential);
-    user.setGoogleCalendarConnected(true);
-    syncUserInternal(user, credential, TRIGGER_MANUAL_CONNECT);
+    User user = userLookupService.requireUser(userId);
     return userSummaryService.toSummary(user);
   }
 
@@ -168,25 +158,19 @@ public class GoogleCalendarService {
     return userSummaryService.toSummary(user);
   }
 
-  // freeBusy → busy_day 갱신 (C1 윈도우) — 권한 영구 실패 시 flag=false·Google 레이어 정리
-  @Transactional
+  // freeBusy → busy_day 갱신 (C1 윈도우) — 권한 영구 실패 시 flag=false·Google 레이어 정리. Google 서버와의
+  // 통신은 트랜잭션 밖에서 수행 (syncUserInternal 참고 — A-1)
   public void syncUser(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
       return;
     }
-    GoogleCalendarCredential credential =
-        credentialRepository
-            .findByUser_Id(userId)
-            .orElseGet(
-                () -> {
-                  user.setGoogleCalendarConnected(false);
-                  return null;
-                });
-    if (credential == null) {
+    if (credentialRepository.findByUser_Id(userId).isEmpty()) {
+      // credential row는 없는데 flag만 true로 남은 데이터 불일치
+      persistenceService.clearConnectedFlag(userId);
       return;
     }
-    syncUserInternal(user, credential, TRIGGER_SCHEDULED);
+    syncUserInternal(userId, TRIGGER_SCHEDULED);
   }
 
   // 달력 Merge용 busy_day 조회 — userId·기간
@@ -233,40 +217,48 @@ public class GoogleCalendarService {
     return byDate;
   }
 
-  private void syncUserInternal(User user, GoogleCalendarCredential credential, String trigger) {
+  // Google 서버와의 통신(access token 갱신·freeBusy 조회)을 끝낸 뒤, 결과만 persistenceService의 짧은
+  // 트랜잭션에 반영한다 — 이 메서드 자체는 트랜잭션을 열지 않는다(A-1)
+  private void syncUserInternal(UUID userId, String trigger) {
+    GoogleCalendarCredential credential = credentialRepository.findByUser_Id(userId).orElse(null);
+    if (credential == null) {
+      // connect() 직후 disconnect()가 먼저 끝난 race — 반영할 대상 없음
+      return;
+    }
     LocalDate windowStart = LocalDate.now(SEOUL);
     LocalDate windowEnd =
         ScheduleService.resolveCalendarWindowEnd(
             windowStart,
-            tripMemberRepository.findMaxOngoingEndRangeByUserId(user.getId()));
+            tripMemberRepository.findMaxOngoingEndRangeByUserId(userId));
     try {
-      String accessToken = resolveAccessToken(credential);
+      AccessTokenResolution resolution = resolveAccessToken(credential);
       Instant timeMin = windowStart.atStartOfDay(SEOUL).toInstant();
       Instant timeMax = windowEnd.plusDays(1).atStartOfDay(SEOUL).toInstant();
       List<GoogleFreeBusyInterval> intervals =
-          googleCalendarOAuthClient.queryFreeBusy(user.getId(), accessToken, timeMin, timeMax);
-      replaceBusyDays(user, windowStart, windowEnd, intervals);
-      credential.markSynced();
-      credentialRepository.save(credential);
+          googleCalendarOAuthClient.queryFreeBusy(
+              userId,
+              resolution.accessToken(),
+              timeMin,
+              timeMax);
+      persistenceService.applySyncSuccess(userId, resolution, windowStart, windowEnd, intervals);
     } catch (GoogleCalendarAuthException exception) {
       // 401·invalid_grant 등 진짜 권한 실패만 이 분기로 온다(client가 분류) — connect() 직후 1회 sync도 이
-      // 메서드를 타므로, 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 같은 트랜잭션에서 삭제된다
+      // 메서드를 타므로, 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 곧바로 삭제된다
       SocialIntegrationLog.warn(
           log,
-          syncContext(user.getId(), trigger),
+          syncContext(userId, trigger),
           "Google Calendar sync failed permanently — disconnecting",
           exception);
-      handlePermanentAuthFailure(user);
+      persistenceService.applyPermanentAuthFailure(userId);
     } catch (Exception exception) {
       // freeBusy·refresh 등 일시적 오류 — 30분 폴링이 자동 재시도하므로 credential은 보존하지만, 원인 없이
       // markSyncError 메시지만 DB에 남으면 재현 없이는 언제·누구에게 발생했는지 알 수 없다
       SocialIntegrationLog.warn(
           log,
-          syncContext(user.getId(), trigger),
+          syncContext(userId, trigger),
           "Google Calendar sync failed",
           exception);
-      credential.markSyncError(PiiMasker.mask(exception.getMessage()));
-      credentialRepository.save(credential);
+      persistenceService.applySyncError(userId, PiiMasker.mask(exception.getMessage()));
     }
   }
 
@@ -281,56 +273,27 @@ public class GoogleCalendarService {
         .withTrigger(trigger);
   }
 
-  private String resolveAccessToken(GoogleCalendarCredential credential) {
+  // access token 캐시가 유효하면 그대로 쓰고, 만료됐으면 refresh — DB에는 쓰지 않고 결과만 반환한다(반영은
+  // persistenceService.applySyncSuccess의 짧은 트랜잭션에서, B-2)
+  private AccessTokenResolution resolveAccessToken(GoogleCalendarCredential credential) {
     if (credential.getAccessTokenCiphertext() != null
         && credential.getAccessTokenExpiresAt() != null
         && credential.getAccessTokenExpiresAt().isAfter(Instant.now())) {
-      return tokenCrypto.decrypt(credential.getAccessTokenCiphertext());
+      return new AccessTokenResolution(
+          tokenCrypto.decrypt(credential.getAccessTokenCiphertext()), null, null, null);
     }
     String refreshToken = tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
     GoogleOAuthTokenResponse refreshed = googleCalendarOAuthClient.refreshAccessToken(refreshToken);
     String accessCiphertext = tokenCrypto.encrypt(refreshed.accessToken());
-    credential.updateAccessTokenCache(accessCiphertext, refreshed.accessTokenExpiresAt());
-    if (refreshed.refreshToken() != null && !refreshed.refreshToken().isBlank()) {
-      credential.setRefreshTokenCiphertext(tokenCrypto.encrypt(refreshed.refreshToken()));
-    }
-    credentialRepository.save(credential);
-    return refreshed.accessToken();
-  }
-
-  private void replaceBusyDays(
-      User user,
-      LocalDate windowStart,
-      LocalDate windowEnd,
-      List<GoogleFreeBusyInterval> intervals) {
-    UUID userId = user.getId();
-    busyDayRepository.deleteByUser_IdAndScheduleDateBefore(userId, windowStart);
-    busyDayRepository.deleteByUser_IdAndScheduleDateAfter(userId, windowEnd);
-
-    Map<LocalDate, SlotBusyFlags> mapped = GoogleCalendarBusyMapper.mapIntervalsToDays(intervals);
-    List<GoogleCalendarBusyDay> existing =
-        busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            userId,
-            windowStart,
-            windowEnd);
-    Map<LocalDate, GoogleCalendarBusyDay> existingByDate = indexBusyDays(existing);
-
-    for (Map.Entry<LocalDate, SlotBusyFlags> entry : mapped.entrySet()) {
-      LocalDate date = entry.getKey();
-      SlotBusyFlags flags = entry.getValue();
-      GoogleCalendarBusyDay day = existingByDate.remove(date);
-      if (day == null) {
-        busyDayRepository.save(GoogleCalendarBusyMapper.toEntity(user, date, flags));
-      } else {
-        day.apply(flags.isMorningBusy(), flags.isAfternoonBusy(), flags.isEveningBusy());
-      }
-    }
-    busyDayRepository.deleteAll(existingByDate.values());
-  }
-
-  private void handlePermanentAuthFailure(User user) {
-    clearGoogleLayer(user.getId());
-    user.setGoogleCalendarConnected(false);
+    String refreshedRefreshCiphertext =
+        (refreshed.refreshToken() != null && !refreshed.refreshToken().isBlank())
+            ? tokenCrypto.encrypt(refreshed.refreshToken())
+            : null;
+    return new AccessTokenResolution(
+        refreshed.accessToken(),
+        accessCiphertext,
+        refreshed.accessTokenExpiresAt(),
+        refreshedRefreshCiphertext);
   }
 
   private void clearGoogleLayer(UUID userId) {

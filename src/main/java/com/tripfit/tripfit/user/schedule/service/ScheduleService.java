@@ -133,7 +133,7 @@ public class ScheduleService {
   public void deleteRegular(UUID userId, UUID regularId) {
     RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     regularScheduleRepository.delete(schedule);
-    userSummaryService.markAllFreeIfSchedulesCleared(userLookupService.requireUser(userId));
+    userSummaryService.markAllFreeIfNoSchedules(userLookupService.requireUser(userId));
   }
 
   // 본인 소유 정기 일정 로드 — 없거나 타인 소유면 REGULAR_SCHEDULE_NOT_FOUND

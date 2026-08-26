@@ -1,6 +1,10 @@
 package com.tripfit.tripfit.user.client;
 
 import com.tripfit.tripfit.auth.oauth.OAuthProperties;
+import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
+import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
+import com.tripfit.tripfit.common.logging.SocialLogContext;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -41,8 +45,13 @@ public class KakaoUnlinkClient {
           .retrieve()
           .toBodilessEntity();
     } catch (Exception exception) {
-      // best-effort — provider 실패가 탈퇴 트랜잭션 자체를 막으면 안 됨
-      log.warn("Kakao unlink failed for socialId={}", socialId, exception);
+      // best-effort — provider 실패가 탈퇴 트랜잭션 자체를 막으면 안 됨. GoogleOAuthClient·AppleOAuthClient의
+      // revokeRefreshToken과 동일하게 구조화 로그로 남겨야 Loki에서 provider·action 기준으로 조회할 수 있다
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.KAKAO, SocialIntegrationAction.LOGIN_TOKEN_REVOKE),
+          "Kakao unlink failed",
+          exception);
     }
   }
 }

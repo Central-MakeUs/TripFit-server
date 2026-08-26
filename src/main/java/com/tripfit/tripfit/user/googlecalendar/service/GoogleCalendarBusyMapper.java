@@ -62,9 +62,6 @@ public final class GoogleCalendarBusyMapper {
       LocalTime dayEnd =
           date.equals(end.toLocalDate()) ? end.toLocalTime()
               : LocalTime.of(23, 59, 59, 999_999_999);
-      if (date.equals(end.toLocalDate()) && dayEnd.equals(LocalTime.MIDNIGHT)) {
-        dayEnd = LocalTime.of(23, 59, 59, 999_999_999);
-      }
       SlotBusyFlags flags = byDate.computeIfAbsent(date, ignored -> new SlotBusyFlags());
       flags.mergeDayRange(dayStart, dayEnd);
       date = date.plusDays(1);

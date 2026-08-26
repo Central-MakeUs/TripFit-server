@@ -71,7 +71,7 @@ public class UserSummaryService {
     requireCanEnterRoom(userLookupService.requireUser(userId));
   }
 
-  // Skip+0행 / create·join — 일정 없으면 is_all_free=true (이미 일정이면 유지)
+  // Skip+0행 / create·join / 일정 CLEAR 후 — 일정이 없으면 is_all_free=true (이미 일정이면 유지)
   public void markAllFreeIfNoSchedules(User user) {
     if (!hasPreSchedule(user.getId())) {
       user.setAllFree(true);
@@ -82,13 +82,6 @@ public class UserSummaryService {
   public void clearAllFreeOnScheduleAdded(User user) {
     if (user.isAllFree()) {
       user.setAllFree(false);
-    }
-  }
-
-  // 일정 CLEAR 후 둘 다 0행 → is_all_free=true
-  public void markAllFreeIfSchedulesCleared(User user) {
-    if (!hasPreSchedule(user.getId())) {
-      user.setAllFree(true);
     }
   }
 }

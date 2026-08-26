@@ -17,4 +17,7 @@
 	<logger name="com.tripfit.tripfit.user.googlecalendar" level="INFO" additivity="false">
 		<appender-ref ref="STRUCTURED_JSON" />
 	</logger>
+	<logger name="com.tripfit.tripfit.user.client" level="INFO" additivity="false">
+		<appender-ref ref="STRUCTURED_JSON" />
+	</logger>
 </configuration>

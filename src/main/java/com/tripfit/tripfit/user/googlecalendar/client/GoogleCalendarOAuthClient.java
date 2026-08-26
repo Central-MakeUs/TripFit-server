@@ -10,6 +10,7 @@ import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarAuthExcep
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -46,6 +47,8 @@ public class GoogleCalendarOAuthClient {
       "https://www.googleapis.com/calendar/v3/calendars/primary";
 
   private static final DateTimeFormatter RFC3339 = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+  private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
   // Google freeBusy.query가 한 번에 너무 긴 range를 거부한다(문서화 안 된 제한, "timeRangeTooLong" 확인됨) —
   // C1 윈도우(최대 today+2년)를 이 단위로 잘라 여러 번 호출 후 병합한다
@@ -144,8 +147,8 @@ public class GoogleCalendarOAuthClient {
             }
             """
             .formatted(
-                RFC3339.format(timeMin.atZone(java.time.ZoneId.of("Asia/Seoul"))),
-                RFC3339.format(timeMax.atZone(java.time.ZoneId.of("Asia/Seoul"))));
+                RFC3339.format(timeMin.atZone(SEOUL)),
+                RFC3339.format(timeMax.atZone(SEOUL)));
     try {
       JsonNode response =
           restClient
