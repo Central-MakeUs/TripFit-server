@@ -2,6 +2,8 @@
 
 `refactor-audit` 스킬([`.claude/skills/refactor-audit/SKILL.md`](../../.claude/skills/refactor-audit/SKILL.md))의 산출물. 새 기능 스펙(`docs/specs/`)과 달리, **기존 코드**를 API 계약·비즈니스 로직 변경 없이 리팩토링한 감사·이력 기록이다.
 
+`auth` 도메인 라운드는 이 스킬을 처음으로 전체 사이클(감사→승인→구현→검증) 적용한 사례로 [`docs/harness-engineering.md`](../harness-engineering.md) §4에서 케이스 스터디로 다룬다.
+
 **폴더 = 도메인** — `docs/specs/`와 동일 축(`auth`, `user`, `user-schedule`, `trip`, `notification`, `cross-cutting`).
 
 ## 폴더당 파일

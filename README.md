@@ -4,12 +4,27 @@
 
 이 저장소는 코드뿐 아니라, **AI 코딩 에이전트의 실행 환경을 설계·통제(Harnessing)** 하는 방식을 함께 담고 있습니다. 기획·스펙·아키텍처 결정을 문서로 고정하고, AI가 그 계약 안에서만 구현하도록 규칙·스킬·훅으로 실행 경로를 제한합니다.
 
+**"바이브 코딩 대신 하네스 엔지니어링을 어떻게 했는가"를 처음부터 끝까지 정리한 문서:** [`docs/harness-engineering.md`](docs/harness-engineering.md) — 구조·실제 적용 사례·인시던트에서 규칙으로 이어진 이력·수치까지 한 파일에 있습니다. 아래는 그 요약입니다.
+
+## 관련 링크
+
+| 항목 | 링크 |
+|------|------|
+| API 서버 (운영) | https://api.tripfit.online |
+| Swagger UI | https://api.tripfit.online/swagger-ui.html |
+| OpenAPI 스펙 (JSON, 실시간) | https://api.tripfit.online/v3/api-docs |
+| OpenAPI 스냅샷 (`main`, 프론트 codegen 소스) | [`docs/api/openapi.json`](docs/api/openapi.json) |
+| 모니터링 (Grafana + Loki) | https://grafana.tripfit.online |
+| 프론트엔드 (운영) | https://tripfit.online |
+| GitHub 저장소 | https://github.com/Central-MakeUs/TripFit-server |
+
 ## AI Harness — 어디부터 볼까
 
 AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되게 작업하도록, 다층 컨텍스트를 저장소에 박아 두었습니다.
 
 | 진입점 | 역할 |
 |--------|------|
+| [`docs/harness-engineering.md`](docs/harness-engineering.md) | **총정리 서술 문서** — 구조·사례·인시던트 이력·수치 (발표·질의용) |
 | [`AGENTS.md`](AGENTS.md) | **프로젝트 지도** — 무엇을 어디서 찾는지, 기술 스택, 금기사항 |
 | [`.claude/rules/README.md`](.claude/rules/README.md) | **에이전트 행동 규칙** — rules(`.md`) · skills · hooks 구조 |
 | [`.claude/rules/harness-workflow.md`](.claude/rules/harness-workflow.md) | **최우선 STOP** — 문서·스펙 정합 · ErrorCode/AOP · DB · 레거시 |
@@ -23,7 +38,7 @@ AI 에이전트(그리고 신규 합류자)가 **추측하지 않고** 일관되
 - **다층 SSOT** — 기획(`docs/product/`) → 기능 스펙(`docs/specs/`) → 아키텍처 결정(`docs/decisions/`) → 규칙(`.claude/rules/`). 값·계약이 문서와 다르면 조용히 맞추지 않고 질문한다. 기존 Approved 스펙을 amend할 땐 `ADDED`/`MODIFIED`/`REMOVED` delta 표기로 변경 범위를 명시한다(OpenSpec 패턴).
 - **승인 게이트** — DB·인증·다파일 변경은 `specify` 스킬로 Approved 스펙을 만든 뒤에만 코드를 작성한다. 예: [`docs/specs/trip/trip-room-api.md`](docs/specs/trip/trip-room-api.md) (BR·wave·미정 항목까지 명시).
 - **컨텍스트 격리** — 광범위한 탐색·리서치는 메인 대화창을 어지럽히지 않도록 `Explore`/`general-purpose` 서브에이전트로 위임하고, 방향이 불확실한 큰 변경은 Plan Mode로 먼저 설계를 굳힌다.
-- **결정론적 하한선** — `.claude/settings.json`의 훅이 프롬프트 지시만으로는 보장 안 되는 것들을 강제한다: `PreToolUse`가 `git push --force`·`rm -rf` 등 파괴적 명령을 **fail-closed**로 차단하고, `git commit` 시 agent 훅이 diff를 실제로 읽어 `Breaking-Change-Reason:` 트레일러 누락 여부를 의미 판단으로 advisory 경고하며(둘 다 커밋을 막지는 않음), `PostToolUse`가 Java 파일 저장마다 포맷을 자동 적용한다.
+- **결정론적 하한선** — `.claude/settings.json`의 훅이 프롬프트 지시만으로는 보장 안 되는 것들을 강제한다: `PreToolUse`가 `git push --force`·`rm -rf`·DB 마이그레이션 파일 생성 등을 **fail-closed**로 차단하고, `git commit` 시 command-type 스크립트가 `Breaking-Change-Reason:` 트레일러 누락 여부를 advisory 경고하며(커밋을 막지는 않음 — 처음엔 agent 훅으로 만들었다가 working tree 변경까지 오판해 커밋을 막는 사고가 있어 command-type으로 전환, [`docs/harness-engineering.md`](docs/harness-engineering.md) §5), `PostToolUse`가 Java 파일 저장마다 포맷을 자동 적용한다.
 - **실행 가능한 아키텍처 규칙(ArchUnit)** — 레이어·의존 방향·PK 전략 등 `spring-boot-java.md`의 일부 규칙은 prose가 아니라 [`ArchitectureTest.java`](src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java)가 `./gradlew test`마다 실제로 검증한다.
 
 **워크플로:** `wave 확인 → 탐색(서브에이전트/Plan Mode) → (specify/Approved) → 구현 → 검증(필수) → 리뷰 → PR`

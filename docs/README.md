@@ -5,6 +5,8 @@
 
 에이전트 행동 규칙: [`.claude/rules/README.md`](../.claude/rules/README.md) · 하네스 코어 [`harness-workflow.md`](../.claude/rules/harness-workflow.md)
 
+**"AI를 어떻게 활용했는가"에 대한 총정리 서술 문서:** [`harness-engineering.md`](harness-engineering.md) — 다층 SSOT·규칙·스킬·훅 구조와, 그 구조가 실제 인시던트를 겪으며 어떻게 보강됐는지까지 기록.
+
 ## 디렉터리 맵
 
 ```
@@ -69,6 +71,7 @@ ERD는 **MySQL 8.0** 기준.
 | 경로 | 용도 |
 |------|------|
 | [`AGENTS.md`](../AGENTS.md) | AI·개발자 프로젝트 지도 |
+| [`harness-engineering.md`](harness-engineering.md) | AI 하네스 엔지니어링 총정리 (구조·인시던트·수치) |
 | [`deploy/README.md`](../deploy/README.md) | Docker·EC2 배포 |
 | [`.dev/README.md`](../.dev/README.md) | 임시 작업 로그 (장기 문서는 여기로 이관) |
 | [`.claude/rules/README.md`](../.claude/rules/README.md) | Claude Code AI 규칙·스킬 |
