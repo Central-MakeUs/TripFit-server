@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.user.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -8,18 +7,13 @@ import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
-import com.tripfit.tripfit.auth.service.RefreshTokenService;
-import com.tripfit.tripfit.trip.service.TripService;
+import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
-import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
-import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
-import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +22,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// cascade·hard delete·soft delete(DB 쓰기)는 UserWithdrawalPersistenceService로 위임되므로(A-2), 이
+// 테스트는 UserWithdrawalService가 provider revoke 호출들을 올바른 조건으로 실행하고 persistenceService에
+// 위임하는지만 검증한다. 실제 DB 반영은 UserWithdrawalPersistenceServiceTest가 검증한다
 @ExtendWith(MockitoExtension.class)
 class UserWithdrawalServiceTest {
 
@@ -37,19 +34,7 @@ class UserWithdrawalServiceTest {
   private UserLookupService userLookupService;
 
   @Mock
-  private TripService tripService;
-
-  @Mock
-  private PersonalScheduleRepository personalScheduleRepository;
-
-  @Mock
-  private RegularScheduleRepository regularScheduleRepository;
-
-  @Mock
   private GoogleCalendarCredentialRepository googleCalendarCredentialRepository;
-
-  @Mock
-  private GoogleCalendarBusyDayRepository googleCalendarBusyDayRepository;
 
   @Mock
   private GoogleCalendarOAuthClient googleCalendarOAuthClient;
@@ -67,7 +52,7 @@ class UserWithdrawalServiceTest {
   private GoogleLoginCredentialService googleLoginCredentialService;
 
   @Mock
-  private RefreshTokenService refreshTokenService;
+  private UserWithdrawalPersistenceService persistenceService;
 
   private UserWithdrawalService userWithdrawalService;
 
@@ -76,64 +61,27 @@ class UserWithdrawalServiceTest {
     userWithdrawalService =
         new UserWithdrawalService(
             userLookupService,
-            tripService,
-            personalScheduleRepository,
-            regularScheduleRepository,
             googleCalendarCredentialRepository,
-            googleCalendarBusyDayRepository,
             googleCalendarOAuthClient,
             tokenCrypto,
             kakaoUnlinkClient,
             appleCredentialService,
             googleLoginCredentialService,
-            refreshTokenService);
+            persistenceService);
   }
 
   @Test
-  void withdraw_cascadesLeavesAndDeletesTrips() {
+  void withdraw_delegatesFinalizationToPersistenceService() {
     User user = user();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(tripService).leaveAllActiveTripsAsMember(USER_ID);
-    verify(tripService).deleteAllOwnedActiveTrips(USER_ID);
+    verify(persistenceService).finalizeWithdrawal(USER_ID);
   }
 
   @Test
-  void withdraw_hardDeletesPersonalDataAndRevokesRefreshTokens() {
-    User user = user();
-    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-
-    userWithdrawalService.withdraw(USER_ID);
-
-    verify(personalScheduleRepository).deleteByUserId(USER_ID);
-    verify(regularScheduleRepository).deleteByUserId(USER_ID);
-    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
-    verify(googleCalendarBusyDayRepository).deleteByUser_Id(USER_ID);
-    verify(refreshTokenService).revokeAllForUser(USER_ID);
-  }
-
-  @Test
-  void withdraw_softDeletesUserAndScrubsPii() {
-    User user = user();
-    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-
-    userWithdrawalService.withdraw(USER_ID);
-
-    assertThat(user.getDeletedAt()).isNotNull();
-    assertThat(user.getEmail()).isNull();
-    assertThat(user.getFirstName()).isNull();
-    assertThat(user.getLastName()).isNull();
-    assertThat(user.getNickname()).isNull();
-    assertThat(user.getProfileImageUrl()).isNull();
-    assertThat(user.isGoogleCalendarConnected()).isFalse();
-    assertThat(user.getSocialId()).isEqualTo("google-sub");
-    assertThat(user.getProvider()).isEqualTo(SocialProvider.GOOGLE);
-  }
-
-  @Test
-  void withdraw_whenGoogleCalendarConnected_revokesRefreshTokenBeforeDeletingCredential() {
+  void withdraw_whenGoogleCalendarConnected_revokesRefreshTokenBeforeFinalizing() {
     User user = user();
     GoogleCalendarCredential credential =
         GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
@@ -145,7 +93,7 @@ class UserWithdrawalServiceTest {
     userWithdrawalService.withdraw(USER_ID);
 
     verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
-    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
+    verify(persistenceService).finalizeWithdrawal(USER_ID);
   }
 
   @Test
@@ -184,7 +132,6 @@ class UserWithdrawalServiceTest {
 
     verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(kakaoUnlinkClient).unlink("kakao-sub");
-    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
   }
 
   // #78 검증 — Apple 로그인 유저가 Google Calendar만 연동한 상태로 탈퇴해도 Calendar revoke는 provider와 무관하게 항상 실행됨
@@ -202,7 +149,6 @@ class UserWithdrawalServiceTest {
 
     verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
-    verify(googleCalendarCredentialRepository).deleteByUser_Id(USER_ID);
   }
 
   @Test
@@ -243,11 +189,9 @@ class UserWithdrawalServiceTest {
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(tripService, never()).leaveAllActiveTripsAsMember(any());
-    verify(tripService, never()).deleteAllOwnedActiveTrips(any());
-    verify(personalScheduleRepository, never()).deleteByUserId(any());
     verify(appleCredentialService, never()).revokeAndDeleteIfPresent(any());
     verify(googleLoginCredentialService, never()).revokeAndDeleteIfPresent(any());
+    verify(persistenceService, never()).finalizeWithdrawal(any());
   }
 
   private static User user() {

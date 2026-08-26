@@ -3,8 +3,8 @@ package com.tripfit.tripfit.user.googlecalendar.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,10 +33,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// DB 쓰기(credential 저장·busy_day 갱신)는 GoogleCalendarSyncPersistenceService로 위임되므로(A-1), 이
+// 테스트는 GoogleCalendarService가 Google 서버와의 통신 결과를 올바른 인자로 persistenceService에 넘기는지만
+// 검증한다. 실제 DB 반영 로직은 GoogleCalendarSyncPersistenceServiceTest가 검증한다
 @ExtendWith(MockitoExtension.class)
 class GoogleCalendarServiceTest {
 
@@ -63,6 +67,9 @@ class GoogleCalendarServiceTest {
   @Mock
   private TripMemberRepository tripMemberRepository;
 
+  @Mock
+  private GoogleCalendarSyncPersistenceService persistenceService;
+
   @InjectMocks
   private GoogleCalendarService googleCalendarService;
 
@@ -72,6 +79,17 @@ class GoogleCalendarServiceTest {
   void setUp() {
     user = new User("google-sub", SocialProvider.GOOGLE, "user@example.com", "홍길동", null);
     user.setId(USER_ID);
+  }
+
+  // resolveAccessToken이 "캐시 유효" 분기를 타도록 만료 전 credential을 돌려줌 — 이후 syncUserInternal이
+  // queryFreeBusy까지 정상 진행되는지 확인하기 위함
+  private GoogleCalendarCredential validCachedCredential() {
+    return GoogleCalendarCredential.create(
+        user,
+        "enc-refresh",
+        "enc-access",
+        Instant.now().plusSeconds(3600),
+        "a@gmail.com");
   }
 
   @Test
@@ -85,17 +103,10 @@ class GoogleCalendarServiceTest {
     when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
     when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access"))
         .thenReturn("calendar@gmail.com");
-    when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
-    when(credentialRepository.save(any(GoogleCalendarCredential.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(credentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(validCachedCredential()));
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
     when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any())).thenReturn(List.of());
-    when(
-        busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            eq(USER_ID),
-            any(),
-            any()))
-        .thenReturn(List.of());
     when(userSummaryService.toSummary(user))
         .thenReturn(
             new UserSummaryResponse(
@@ -113,14 +124,16 @@ class GoogleCalendarServiceTest {
 
     googleCalendarService.connect(USER_ID, "auth-code", null);
 
-    assertThat(user.isGoogleCalendarConnected()).isTrue();
-    verify(credentialRepository, atLeastOnce()).save(any(GoogleCalendarCredential.class));
+    verify(persistenceService)
+        .saveConnectedCredential(
+            eq(USER_ID),
+            eq("enc-refresh"),
+            eq("enc-access"),
+            any(),
+            eq("calendar@gmail.com"));
     verify(googleCalendarOAuthClient).fetchGoogleAccountEmail("access");
-    org.mockito.ArgumentCaptor<GoogleCalendarCredential> captor =
-        org.mockito.ArgumentCaptor.forClass(GoogleCalendarCredential.class);
-    verify(credentialRepository, atLeastOnce()).save(captor.capture());
-    assertThat(captor.getAllValues().getFirst().getGoogleAccountEmail())
-        .isEqualTo("calendar@gmail.com");
+    verify(persistenceService)
+        .applySyncSuccess(eq(USER_ID), any(), any(), any(), eq(List.of()));
   }
 
   // 브라우저 리다이렉트 경로 — Controller가 받은 redirectUri를 그대로 OAuthClient까지 전달하는지 검증
@@ -135,17 +148,10 @@ class GoogleCalendarServiceTest {
     when(tokenCrypto.encrypt("refresh")).thenReturn("enc-refresh");
     when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
     when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access")).thenReturn(null);
-    when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
-    when(credentialRepository.save(any(GoogleCalendarCredential.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(credentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(validCachedCredential()));
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
     when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any())).thenReturn(List.of());
-    when(
-        busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            eq(USER_ID),
-            any(),
-            any()))
-        .thenReturn(List.of());
     when(userSummaryService.toSummary(user))
         .thenReturn(
             new UserSummaryResponse(
@@ -167,10 +173,10 @@ class GoogleCalendarServiceTest {
   }
 
   // 연동 직후 1회 sync가 일시적 오류(429·5xx 등, GoogleCalendarAuthException이 아닌 일반 예외)로 실패해도
-  // 방금 저장한 credential·flag가 삭제되지 않고 markSyncError만 남기는지 검증 — "연동 성공 직후 DELETE가
-  // 연동되어 있지 않음으로 실패"하던 회귀 재현 테스트
+  // persistenceService.applyPermanentAuthFailure는 호출되지 않고 applySyncError만 호출되는지 검증 —
+  // "연동 성공 직후 DELETE가 연동되어 있지 않음으로 실패"하던 회귀 재현 테스트
   @Test
-  void connect_whenInitialSyncFailsWithTransientError_keepsCredentialAndFlag() {
+  void connect_whenInitialSyncFailsWithTransientError_doesNotDisconnect() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", null))
         .thenReturn(
@@ -180,9 +186,8 @@ class GoogleCalendarServiceTest {
     when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
     when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access"))
         .thenReturn("calendar@gmail.com");
-    when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
-    when(credentialRepository.save(any(GoogleCalendarCredential.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(credentialRepository.findByUser_Id(USER_ID))
+        .thenReturn(Optional.of(validCachedCredential()));
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
     when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any()))
         .thenThrow(new RuntimeException("freeBusy failed: 429 TOO_MANY_REQUESTS"));
@@ -203,9 +208,8 @@ class GoogleCalendarServiceTest {
 
     googleCalendarService.connect(USER_ID, "auth-code", null);
 
-    assertThat(user.isGoogleCalendarConnected()).isTrue();
-    verify(credentialRepository, never()).deleteByUser_Id(USER_ID);
-    verify(busyDayRepository, never()).deleteByUser_Id(USER_ID);
+    verify(persistenceService).applySyncError(eq(USER_ID), anyString());
+    verify(persistenceService, never()).applyPermanentAuthFailure(USER_ID);
   }
 
   // code 교환 실패(잘못된 redirect_uri·invalid_grant 등) 시 원인을 로그로 남기고 502로 변환하는지 검증
@@ -219,10 +223,12 @@ class GoogleCalendarServiceTest {
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(GoogleCalendarErrorCode.GOOGLE_CALENDAR_CONNECT_FAILED);
+
+    verify(persistenceService, never()).saveConnectedCredential(any(), any(), any(), any(), any());
   }
 
   @Test
-  void syncUser_onAuthFailure_clearsFlagAndGoogleLayer() {
+  void syncUser_onAuthFailure_delegatesPermanentAuthFailure() {
     user.setGoogleCalendarConnected(true);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     GoogleCalendarCredential credential =
@@ -239,11 +245,13 @@ class GoogleCalendarServiceTest {
 
     googleCalendarService.syncUser(USER_ID);
 
-    assertThat(user.isGoogleCalendarConnected()).isFalse();
-    verify(credentialRepository).deleteByUser_Id(USER_ID);
-    verify(busyDayRepository).deleteByUser_Id(USER_ID);
+    verify(persistenceService).applyPermanentAuthFailure(USER_ID);
+    verify(persistenceService, never())
+        .applySyncSuccess(any(), any(), any(), any(), any());
   }
 
+  // 진행 중인 여행방의 희망 기간이 C1 기본 윈도우(오늘+2년)보다 길면 sync 윈도우도 그만큼 늘어나는지 검증 —
+  // 실제 DB 반영은 persistenceService가 담당하므로, 여기서는 applySyncSuccess에 넘어가는 windowEnd 인자로 확인
   @Test
   void syncUser_whenOngoingTripEndRangeBeyondWindow_extendsSyncWindowEnd() {
     user.setGoogleCalendarConnected(true);
@@ -260,16 +268,25 @@ class GoogleCalendarServiceTest {
     when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(extendedEnd);
     when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
     when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any(), any())).thenReturn(List.of());
-    when(
-        busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            eq(USER_ID),
-            any(),
-            any()))
-        .thenReturn(List.of());
 
     googleCalendarService.syncUser(USER_ID);
 
-    verify(busyDayRepository).deleteByUser_IdAndScheduleDateAfter(USER_ID, extendedEnd);
+    ArgumentCaptor<LocalDate> windowEndCaptor = ArgumentCaptor.forClass(LocalDate.class);
+    verify(persistenceService)
+        .applySyncSuccess(eq(USER_ID), any(), any(), windowEndCaptor.capture(), eq(List.of()));
+    assertThat(windowEndCaptor.getValue()).isEqualTo(extendedEnd);
+  }
+
+  @Test
+  void syncUser_whenCredentialMissing_clearsConnectedFlag() {
+    user.setGoogleCalendarConnected(true);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
+
+    googleCalendarService.syncUser(USER_ID);
+
+    verify(persistenceService).clearConnectedFlag(USER_ID);
+    verify(googleCalendarOAuthClient, never()).queryFreeBusy(any(), any(), any(), any());
   }
 
   @Test
