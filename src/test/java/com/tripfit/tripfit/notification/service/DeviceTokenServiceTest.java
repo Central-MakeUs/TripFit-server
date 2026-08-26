@@ -1,29 +1,25 @@
 package com.tripfit.tripfit.notification.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.notification.domain.DeviceType;
-import com.tripfit.tripfit.notification.domain.UserDeviceToken;
 import com.tripfit.tripfit.notification.dto.DeviceTokenRegisterRequest;
 import com.tripfit.tripfit.notification.exception.NotificationErrorCode;
 import com.tripfit.tripfit.notification.repository.UserDeviceTokenRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.service.UserLookupService;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class DeviceTokenServiceTest {
@@ -40,51 +36,17 @@ class DeviceTokenServiceTest {
   private DeviceTokenService deviceTokenService;
 
   @Test
-  void registerToken_newToken_savesToken() {
+  void registerToken_upsertsTokenForUser() {
     User user = new User("sub", SocialProvider.GOOGLE, "u@example.com", "nick", null);
-    when(userDeviceTokenRepository.findByToken("token-1")).thenReturn(Optional.empty());
+    user.setId(USER_ID);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     deviceTokenService.registerToken(
         USER_ID,
         new DeviceTokenRegisterRequest("token-1", DeviceType.ANDROID));
 
-    verify(userDeviceTokenRepository).saveAndFlush(any(UserDeviceToken.class));
-  }
-
-  @Test
-  void registerToken_raceOnNewToken_reassignsExistingInstead() {
-    User user = new User("sub", SocialProvider.GOOGLE, "u@example.com", "nick", null);
-    UserDeviceToken existing = new UserDeviceToken(user, "token-1", DeviceType.IOS);
-    when(userDeviceTokenRepository.findByToken("token-1"))
-        .thenReturn(Optional.empty())
-        .thenReturn(Optional.of(existing));
-    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(userDeviceTokenRepository.saveAndFlush(any(UserDeviceToken.class)))
-        .thenThrow(new DataIntegrityViolationException("duplicate token"));
-
-    deviceTokenService.registerToken(
-        USER_ID,
-        new DeviceTokenRegisterRequest("token-1", DeviceType.ANDROID));
-
-    assertThat(existing.getDeviceType()).isEqualTo(DeviceType.ANDROID);
-  }
-
-  @Test
-  void registerToken_existingToken_reassignsOwner() {
-    User otherOwner = new User("other-sub", SocialProvider.GOOGLE, "a@example.com", "nick", null);
-    User newOwner = new User("sub", SocialProvider.GOOGLE, "u@example.com", "nick", null);
-    UserDeviceToken existing = new UserDeviceToken(otherOwner, "token-1", DeviceType.IOS);
-    when(userDeviceTokenRepository.findByToken("token-1")).thenReturn(Optional.of(existing));
-    when(userLookupService.requireUser(USER_ID)).thenReturn(newOwner);
-
-    deviceTokenService.registerToken(
-        USER_ID,
-        new DeviceTokenRegisterRequest("token-1", DeviceType.ANDROID));
-
-    assertThat(existing.getUser()).isEqualTo(newOwner);
-    assertThat(existing.getDeviceType()).isEqualTo(DeviceType.ANDROID);
-    verify(userDeviceTokenRepository, never()).saveAndFlush(any(UserDeviceToken.class));
+    verify(userDeviceTokenRepository)
+        .upsertToken(anyString(), eq(USER_ID.toString()), eq("token-1"), eq("ANDROID"));
   }
 
   @Test
