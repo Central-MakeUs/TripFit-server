@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -163,6 +164,48 @@ class GoogleCalendarServiceTest {
     googleCalendarService.connect(USER_ID, "auth-code", redirectUri);
 
     verify(googleCalendarOAuthClient).exchangeAuthorizationCode("auth-code", redirectUri);
+  }
+
+  // 연동 직후 1회 sync가 일시적 오류(429·5xx 등, GoogleCalendarAuthException이 아닌 일반 예외)로 실패해도
+  // 방금 저장한 credential·flag가 삭제되지 않고 markSyncError만 남기는지 검증 — "연동 성공 직후 DELETE가
+  // 연동되어 있지 않음으로 실패"하던 회귀 재현 테스트
+  @Test
+  void connect_whenInitialSyncFailsWithTransientError_keepsCredentialAndFlag() {
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(googleCalendarOAuthClient.exchangeAuthorizationCode("auth-code", null))
+        .thenReturn(
+            new GoogleOAuthTokenResponse(
+                "access", "refresh", Instant.now().plusSeconds(3600)));
+    when(tokenCrypto.encrypt("refresh")).thenReturn("enc-refresh");
+    when(tokenCrypto.encrypt("access")).thenReturn("enc-access");
+    when(googleCalendarOAuthClient.fetchGoogleAccountEmail("access"))
+        .thenReturn("calendar@gmail.com");
+    when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
+    when(credentialRepository.save(any(GoogleCalendarCredential.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(tokenCrypto.decrypt("enc-access")).thenReturn("access");
+    when(googleCalendarOAuthClient.queryFreeBusy(any(), any(), any()))
+        .thenThrow(new RuntimeException("freeBusy failed: 429 TOO_MANY_REQUESTS"));
+    when(userSummaryService.toSummary(user))
+        .thenReturn(
+            new UserSummaryResponse(
+                USER_ID,
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getNickname(),
+                user.getProfileImageUrl(),
+                user.getProvider(),
+                true,
+                false,
+                false,
+                true));
+
+    googleCalendarService.connect(USER_ID, "auth-code", null);
+
+    assertThat(user.isGoogleCalendarConnected()).isTrue();
+    verify(credentialRepository, never()).deleteByUser_Id(USER_ID);
+    verify(busyDayRepository, never()).deleteByUser_Id(USER_ID);
   }
 
   // code 교환 실패(잘못된 redirect_uri·invalid_grant 등) 시 원인을 로그로 남기고 502로 변환하는지 검증
