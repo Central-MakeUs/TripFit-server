@@ -88,7 +88,10 @@ public class GoogleCalendarOAuthClient {
     }
   }
 
-  // primary 캘린더 freeBusy 조회
+  // primary 캘린더 freeBusy 조회 — 401(access token 무효)만 인증 실패로 간주해 GoogleCalendarAuthException을
+  // 던진다. 그 외 4xx/5xx·네트워크·파싱 오류는 일반 RuntimeException으로 던져 syncUserInternal의 일반 catch로
+  // 흘러가게 한다 — 여기서도 GoogleCalendarAuthException을 쓰면 connect() 직후 1회 sync가 일시적 오류(429·5xx 등)
+  // 만 만나도 방금 저장한 credential이 같은 트랜잭션에서 즉시 삭제돼버린다
   public List<GoogleFreeBusyInterval> queryFreeBusy(
       String accessToken,
       Instant timeMin,
@@ -120,7 +123,7 @@ public class GoogleCalendarOAuthClient {
                     if (clientResponse.getStatusCode().value() == 401) {
                       throw new GoogleCalendarAuthException("freeBusy unauthorized");
                     }
-                    throw new GoogleCalendarAuthException(
+                    throw new RuntimeException(
                         "freeBusy failed: " + clientResponse.getStatusCode());
                   })
               .body(JsonNode.class);
@@ -128,7 +131,7 @@ public class GoogleCalendarOAuthClient {
     } catch (GoogleCalendarAuthException exception) {
       throw exception;
     } catch (Exception exception) {
-      throw new GoogleCalendarAuthException("freeBusy request failed", exception);
+      throw new RuntimeException("freeBusy request failed", exception);
     }
   }
 

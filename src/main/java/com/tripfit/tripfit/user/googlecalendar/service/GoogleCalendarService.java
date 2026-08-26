@@ -213,6 +213,8 @@ public class GoogleCalendarService {
       credential.markSynced();
       credentialRepository.save(credential);
     } catch (GoogleCalendarAuthException exception) {
+      // 401·invalid_grant 등 진짜 권한 실패만 이 분기로 온다(client가 분류) — connect() 직후 1회 sync도 이
+      // 메서드를 타므로, 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 같은 트랜잭션에서 삭제된다
       handlePermanentAuthFailure(user);
     } catch (Exception exception) {
       credential.markSyncError(exception.getMessage());
