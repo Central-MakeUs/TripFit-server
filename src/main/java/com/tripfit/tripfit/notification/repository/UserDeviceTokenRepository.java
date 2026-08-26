@@ -14,6 +14,22 @@ public interface UserDeviceTokenRepository extends JpaRepository<UserDeviceToken
 
   Optional<UserDeviceToken> findByToken(String token);
 
+  // 토큰 등록·재할당을 단일 원자적 INSERT로 처리 — 조회 후 저장(select-then-write) 방식은 UNIQUE 제약 위반 시
+  // 실패한 flush로 세션이 오염돼 복구용 재조회마저 같은 제약 위반을 던지는 문제가 있어(운영 500 사고) upsert로 대체
+  @Modifying
+  @Query(
+      value = """
+          INSERT INTO user_device_token (id, user_id, token, device_type, created_at, updated_at)
+          VALUES (:id, :userId, :token, :deviceType, NOW(6), NOW(6))
+          ON DUPLICATE KEY UPDATE user_id = :userId, device_type = :deviceType, updated_at = NOW(6)
+          """,
+      nativeQuery = true)
+  void upsertToken(
+      @Param("id") String id,
+      @Param("userId") String userId,
+      @Param("token") String token,
+      @Param("deviceType") String deviceType);
+
   // 로그아웃 시 본인 토큰 해제 대상 — deleteByTokenIn과 동일한 이유(엔티티 단위 delete의
   // ObjectOptimisticLockingFailureException 레이스 회피)로 벌크 쿼리를 쓴다. FCM 무효 토큰 자동 정리가
   // 거의 동시에 같은 토큰을 지울 수 있다. 반환값(삭제된 행 수)으로 존재 여부를 판단

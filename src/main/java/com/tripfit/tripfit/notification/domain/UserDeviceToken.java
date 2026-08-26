@@ -55,10 +55,4 @@ public class UserDeviceToken extends BaseTimeEntity {
     this.token = token;
     this.deviceType = deviceType;
   }
-
-  // 재로그인 등으로 다른 유저가 같은 토큰을 다시 등록하면 소유자·플랫폼을 갱신한다(D7)
-  public void reassign(User user, DeviceType deviceType) {
-    this.user = user;
-    this.deviceType = deviceType;
-  }
 }
