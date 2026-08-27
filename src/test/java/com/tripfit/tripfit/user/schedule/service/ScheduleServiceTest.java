@@ -232,8 +232,12 @@ class ScheduleServiceTest {
   void upsertPersonal_slotsOnly_createsRowWithUncertainFalse() {
     LocalDate date = LocalDate.of(2026, 8, 3);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
-        .thenReturn(Optional.empty());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            date,
+            date))
+        .thenReturn(List.of());
     when(personalScheduleRepository.save(any(PersonalSchedule.class)))
         .thenAnswer(
             invocation -> {
@@ -243,24 +247,6 @@ class ScheduleServiceTest {
             });
     when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
     when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            USER_ID,
-            date,
-            date))
-        .thenAnswer(
-            inv -> {
-              PersonalSchedule saved =
-                  PersonalSchedule.create(
-                      user,
-                      date,
-                      ScheduleStatus.IMPOSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      false);
-              saved.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
-              return List.of(saved);
-            });
 
     var response =
         scheduleService.upsertPersonal(
@@ -298,16 +284,14 @@ class ScheduleServiceTest {
             false);
     existing.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
-        .thenReturn(Optional.of(existing));
-    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
-    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
             USER_ID,
             date,
             date))
         .thenReturn(List.of(existing));
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
 
     // uncertain만 보내면 slots 필드 자체가 없으므로 기존 오버라이드는 절대 안 건드려야 한다(UI 동작 확인 2·3번)
     var response =
@@ -336,16 +320,14 @@ class ScheduleServiceTest {
             false);
     existing.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
-        .thenReturn(Optional.of(existing));
-    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
-    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
             USER_ID,
             date,
             date))
         .thenReturn(List.of(existing));
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
 
     scheduleService.upsertPersonal(
         USER_ID,
@@ -366,8 +348,12 @@ class ScheduleServiceTest {
   void upsertPersonal_slotsAndUncertainTogether_bothApplied() {
     LocalDate date = LocalDate.of(2026, 8, 3);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, date))
-        .thenReturn(Optional.empty());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            date,
+            date))
+        .thenReturn(List.of());
     when(personalScheduleRepository.save(any(PersonalSchedule.class)))
         .thenAnswer(
             invocation -> {
@@ -377,24 +363,6 @@ class ScheduleServiceTest {
             });
     when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
     when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            USER_ID,
-            date,
-            date))
-        .thenAnswer(
-            inv -> {
-              PersonalSchedule saved =
-                  PersonalSchedule.create(
-                      user,
-                      date,
-                      ScheduleStatus.IMPOSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      true);
-              saved.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
-              return List.of(saved);
-            });
 
     var response =
         scheduleService.upsertPersonal(
@@ -431,8 +399,12 @@ class ScheduleServiceTest {
             false,
             true);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(personalScheduleRepository.findByUserIdAndScheduleDate(USER_ID, thursday))
-        .thenReturn(Optional.empty());
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            thursday,
+            thursday))
+        .thenReturn(List.of());
     when(personalScheduleRepository.save(any(PersonalSchedule.class)))
         .thenAnswer(
             invocation -> {
@@ -444,24 +416,6 @@ class ScheduleServiceTest {
         .thenReturn(List.of(work));
     when(googleCalendarService.findBusyDaysByUserId(USER_ID, thursday, thursday))
         .thenReturn(Map.of());
-    when(
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            USER_ID,
-            thursday,
-            thursday))
-        .thenAnswer(
-            inv -> {
-              PersonalSchedule saved =
-                  PersonalSchedule.create(
-                      user,
-                      thursday,
-                      ScheduleStatus.POSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      ScheduleStatus.POSSIBLE,
-                      false);
-              saved.setId(UUID.fromString("550e8400-e29b-41d4-a716-446655440088"));
-              return List.of(saved);
-            });
 
     var response =
         scheduleService.upsertPersonal(

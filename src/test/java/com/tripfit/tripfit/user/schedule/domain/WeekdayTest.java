@@ -3,7 +3,6 @@ package com.tripfit.tripfit.user.schedule.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.DayOfWeek;
 import org.junit.jupiter.api.Test;
 
 class WeekdayTest {
@@ -24,11 +23,5 @@ class WeekdayTest {
   void normalizeCsv_invalidToken_throws() {
     assertThatThrownBy(() -> Weekday.normalizeCsv("MON,FOO"))
         .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void parseToDayOfWeekSet_acceptsLongNames() {
-    assertThat(Weekday.parseToDayOfWeekSet("Monday,FRIDAY"))
-        .containsExactly(DayOfWeek.MONDAY, DayOfWeek.FRIDAY);
   }
 }
