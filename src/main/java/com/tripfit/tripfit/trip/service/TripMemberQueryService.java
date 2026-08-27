@@ -118,20 +118,20 @@ class TripMemberQueryService {
     List<UUID> memberUserIds = members.stream().map(m -> m.getUser().getId()).toList();
     Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser =
         googleCalendarService.findBusyDaysByUserIds(memberUserIds, startDate, endDate);
+    Map<UUID, List<CalendarDayResponse>> resolvedByUser =
+        support.resolveMergedSchedules(
+            regularScheduleRepository,
+            personalScheduleRepository,
+            memberUserIds,
+            startDate,
+            endDate,
+            googleBusyByUser);
 
     List<MemberCalendar> memberCalendars = new ArrayList<>();
     for (TripMember member : members) {
       UUID memberUserId = member.getUser().getId();
-      List<CalendarDayResponse> resolved =
-          support.resolveMergedSchedule(
-              regularScheduleRepository,
-              personalScheduleRepository,
-              memberUserId,
-              startDate,
-              endDate,
-              googleBusyByUser.getOrDefault(memberUserId, Map.of()));
       List<CalendarDay> days =
-          resolved.stream()
+          resolvedByUser.getOrDefault(memberUserId, List.of()).stream()
               .map(
                   d -> new CalendarDay(
                       d.date(),

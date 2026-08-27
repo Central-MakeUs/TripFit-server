@@ -81,11 +81,6 @@ class TripQueryService {
     return support.toDetail(membership.getTrip(), membership);
   }
 
-  // Trip·멤버십으로 상세 DTO 매핑 (command 경로에서도 재사용)
-  TripDetailResponse toDetail(com.tripfit.tripfit.trip.domain.Trip trip, TripMember membership) {
-    return support.toDetail(trip, membership);
-  }
-
   // 회원 탈퇴 cascade — 특정 role로 활성 참여 중인 tripId 목록
   List<UUID> listActiveTripIdsByRole(UUID userId, TripMemberRole role) {
     return tripMemberRepository.findByUser_IdAndRoleAndDeletedAtIsNull(userId, role).stream()

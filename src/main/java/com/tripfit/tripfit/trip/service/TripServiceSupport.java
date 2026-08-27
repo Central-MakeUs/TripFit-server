@@ -197,27 +197,35 @@ public class TripServiceSupport {
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
   }
 
-  // 정기+개별 일정을 로드해 합친 달력으로 만든다 — live 조회·snapshot freeze 공용(Google busy 조회 방식만 호출부가 다름)
-  List<CalendarDayResponse> resolveMergedSchedule(
+  // 정기+개별 일정을 로드해 합친 달력으로 만든다 — live 조회·snapshot freeze 공용. 멤버 목록을 배치 조회해 멤버 수만큼
+  // 반복 쿼리하지 않게 함(N+1 방지, RecommendationEngine.loadContext와 동일 패턴)
+  Map<UUID, List<CalendarDayResponse>> resolveMergedSchedules(
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,
-      UUID userId,
+      List<UUID> userIds,
       LocalDate startDate,
       LocalDate endDate,
-      Map<LocalDate, GoogleCalendarBusyDay> googleBusyForUser) {
-    List<RegularSchedule> regulars =
-        regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
-    List<PersonalSchedule> personals =
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            userId,
-            startDate,
-            endDate);
-    return ScheduleCalendarResolver.resolve(
-        regulars,
-        personals,
-        startDate,
-        endDate,
-        googleBusyForUser);
+      Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser) {
+    Map<UUID, List<RegularSchedule>> regularsByUser =
+        regularScheduleRepository.findByUserIdIn(userIds).stream()
+            .collect(Collectors.groupingBy(regular -> regular.getUser().getId()));
+    Map<UUID, List<PersonalSchedule>> personalsByUser =
+        personalScheduleRepository
+            .findByUserIdInAndScheduleDateBetween(userIds, startDate, endDate).stream()
+            .collect(Collectors.groupingBy(personal -> personal.getUser().getId()));
+
+    Map<UUID, List<CalendarDayResponse>> byUser = new HashMap<>();
+    for (UUID userId : userIds) {
+      byUser.put(
+          userId,
+          ScheduleCalendarResolver.resolve(
+              regularsByUser.getOrDefault(userId, List.of()),
+              personalsByUser.getOrDefault(userId, List.of()),
+              startDate,
+              endDate,
+              googleBusyByUser.getOrDefault(userId, Map.of())));
+    }
+    return byUser;
   }
 
   // 활성 멤버 전원 — joinedAt 오름차순 (멤버 목록·달력 조회·스냅샷 freeze 공용 정렬 기준)
@@ -254,6 +262,20 @@ public class TripServiceSupport {
     if (effectiveStatus(trip) != TripStatus.ONGOING) {
       throw new TripFitException(TripErrorCode.TRIP_NOT_ONGOING);
     }
+  }
+
+  // 활성 여행방 로드 + 방장 검증 — TripCommandService·TripRecommendationService의 방장 전용 유스케이스 공용
+  Trip requireOwnedTrip(UUID tripId, UUID userId) {
+    Trip trip = requireActiveTrip(tripId);
+    requireOwner(trip, userId);
+    return trip;
+  }
+
+  // requireOwnedTrip + ONGOING 검증 — 방장 전용이면서 조율 중에만 허용하는 변경 유스케이스 공용
+  Trip requireOwnedOngoingTrip(UUID tripId, UUID userId) {
+    Trip trip = requireOwnedTrip(tripId, userId);
+    requireOngoingForMutation(trip);
+    return trip;
   }
 
   // 화면용 상태 — ONGOING이어도 endRange가 지났으면 EXPIRED (배치 전이라도 UX 동일)

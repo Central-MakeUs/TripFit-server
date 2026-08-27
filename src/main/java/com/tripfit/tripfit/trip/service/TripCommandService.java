@@ -18,7 +18,6 @@ import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.repository.RecommendationRepository;
 import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
@@ -41,13 +40,11 @@ class TripCommandService {
 
   private final UserProfileService userProfileService;
 
-  private final RecommendationRepository recommendationRepository;
-
   private final TripServiceSupport support;
 
-  private final TripQueryService tripQueryService;
-
   private final TripJoinService tripJoinService;
+
+  private final TripRecommendationService tripRecommendationService;
 
   private final TripMemberQueryService tripMemberQueryService;
 
@@ -59,20 +56,18 @@ class TripCommandService {
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
       UserProfileService userProfileService,
-      RecommendationRepository recommendationRepository,
       TripServiceSupport support,
-      TripQueryService tripQueryService,
       TripJoinService tripJoinService,
+      TripRecommendationService tripRecommendationService,
       TripMemberQueryService tripMemberQueryService,
       UserSummaryService userSummaryService,
       ApplicationEventPublisher applicationEventPublisher) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
     this.userProfileService = userProfileService;
-    this.recommendationRepository = recommendationRepository;
     this.support = support;
-    this.tripQueryService = tripQueryService;
     this.tripJoinService = tripJoinService;
+    this.tripRecommendationService = tripRecommendationService;
     this.tripMemberQueryService = tripMemberQueryService;
     this.userSummaryService = userSummaryService;
     this.applicationEventPublisher = applicationEventPublisher;
@@ -136,16 +131,14 @@ class TripCommandService {
       membership.activate();
     }
 
-    return tripQueryService.toDetail(trip, membership);
+    return support.toDetail(trip, membership);
   }
 
   // 방장만 메타 수정 — 희망 박/일이 바뀌면 기존 추천 후보를 삭제한다
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, userId);
-    support.requireOngoingForMutation(trip);
+    Trip trip = support.requireOwnedOngoingTrip(tripId, userId);
 
     support.validateTripMeta(
         request.name(),
@@ -175,22 +168,20 @@ class TripCommandService {
     trip.setDestination(normalizedDestination);
 
     if (recommendationInputsChanged) {
-      // 추천 입력이 바뀌면 후보를 hard DELETE — 추천 서비스와 통합은 추후
-      recommendationRepository.deleteByTripId(tripId);
+      tripRecommendationService.deleteRecommendationsForTrip(tripId);
     }
     if (valuesChanged) {
       applicationEventPublisher.publishEvent(new TripInfoChangedEvent(tripId));
     }
 
     TripMember membership = support.requireActiveMember(tripId, userId);
-    return tripQueryService.toDetail(trip, membership);
+    return support.toDetail(trip, membership);
   }
 
   // 방장이 여행방을 soft delete — 멤버 row도 연쇄 soft delete
   @Transactional
   public void deleteTrip(UUID tripId, UUID userId) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, userId);
+    Trip trip = support.requireOwnedTrip(tripId, userId);
 
     LocalDateTime now = LocalDateTime.now();
     trip.setDeletedAt(now);
@@ -218,7 +209,7 @@ class TripCommandService {
       TripMember membership = existing.get();
       // SCHEDULE_PENDING면 join으로 상세를 우회하지 못함 — activate 필요
       support.requireActive(membership);
-      return tripQueryService.toDetail(trip, membership);
+      return support.toDetail(trip, membership);
     }
 
     TripStatus status = support.effectiveStatus(trip);
@@ -250,16 +241,14 @@ class TripCommandService {
     TripMember membership = support.requireActiveMember(tripId, userId);
     // 조회 API에서 Pin을 부수적으로 쓰지 않음 — 해제는 배치만
     membership.applyPin(Boolean.TRUE.equals(request.pinned()));
-    return tripQueryService.toDetail(membership.getTrip(), membership);
+    return support.toDetail(membership.getTrip(), membership);
   }
 
   // 방장이 MEMBER를 soft delete — 추천 후보는 건드리지 않고, 대상 일정 row는 유지
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, ownerId);
-    support.requireOngoingForMutation(trip);
+    support.requireOwnedOngoingTrip(tripId, ownerId);
 
     TripMember target =
         tripMemberRepository

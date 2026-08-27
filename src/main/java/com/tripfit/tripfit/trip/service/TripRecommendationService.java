@@ -82,9 +82,7 @@ class TripRecommendationService {
       UUID tripId,
       UUID ownerId,
       RecommendationMode mode) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, ownerId);
-    support.requireOngoingForMutation(trip);
+    Trip trip = support.requireOwnedOngoingTrip(tripId, ownerId);
     requireDurationSet(trip);
 
     List<TripMember> members = activeMembers(tripId);
@@ -112,11 +110,15 @@ class TripRecommendationService {
     return toListResponse(mode, rows);
   }
 
+  // 희망 박/일 변경 등 추천 입력이 바뀌어 기존 후보가 무효화될 때 hard DELETE — TripCommandService.patchTrip 전용
+  void deleteRecommendationsForTrip(UUID tripId) {
+    recommendationRepository.deleteByTripId(tripId);
+  }
+
   // 방장이 저장된 추천 TOP3 카드 목록을 조회 — 방장 전용(참여자는 확정 일정만 조회 가능)
   @Transactional(readOnly = true)
   public RecommendationListResponse listRecommendations(UUID tripId, UUID ownerId) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, ownerId);
+    Trip trip = support.requireOwnedTrip(tripId, ownerId);
     List<Recommendation> rows = recommendationRepository.findByTrip_IdOrderByRankAsc(tripId);
     return toListResponse(trip.getLastRecommendationMode(), rows);
   }
@@ -124,8 +126,7 @@ class TripRecommendationService {
   // 추천 근거 상세 — 참여자별 브레이크다운은 저장하지 않고 그때그때 재계산(카드 목록의 무거운 페이로드 방지)
   @Transactional(readOnly = true)
   public RecommendationDetailResponse getRecommendationDetail(UUID tripId, UUID ownerId, int rank) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, ownerId);
+    Trip trip = support.requireOwnedTrip(tripId, ownerId);
     Recommendation recommendation = requireRecommendation(tripId, rank);
 
     List<TripMember> members = activeMembers(tripId);
@@ -176,8 +177,7 @@ class TripRecommendationService {
       UUID ownerId,
       int rank,
       SaveRecommendationFeedbackRequest request) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, ownerId);
+    Trip trip = support.requireOwnedTrip(tripId, ownerId);
     Recommendation recommendation = requireRecommendation(tripId, rank);
     requireValidFeedback(request);
 
@@ -203,9 +203,7 @@ class TripRecommendationService {
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse confirmSchedule(UUID tripId, UUID ownerId, ConfirmTripRequest request) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, ownerId);
-    support.requireOngoingForMutation(trip);
+    Trip trip = support.requireOwnedOngoingTrip(tripId, ownerId);
 
     LocalDate[] resolvedDates = resolveConfirmDates(trip, tripId, request);
     LocalDate confirmedStartDate = resolvedDates[0];
@@ -240,8 +238,7 @@ class TripRecommendationService {
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public void unconfirm(UUID tripId, UUID ownerId, UnconfirmTripRequest request) {
-    Trip trip = support.requireActiveTrip(tripId);
-    support.requireOwner(trip, ownerId);
+    Trip trip = support.requireOwnedTrip(tripId, ownerId);
     if (trip.getStatus() != TripStatus.CONFIRMED) {
       throw new TripFitException(TripErrorCode.TRIP_NOT_CONFIRMED);
     }

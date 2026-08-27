@@ -19,16 +19,16 @@ class TripJoinService {
 
   private final TripMemberRepository tripMemberRepository;
 
-  private final TripQueryService tripQueryService;
+  private final TripServiceSupport support;
 
   private final UserSummaryService userSummaryService;
 
   TripJoinService(
       TripMemberRepository tripMemberRepository,
-      TripQueryService tripQueryService,
+      TripServiceSupport support,
       UserSummaryService userSummaryService) {
     this.tripMemberRepository = tripMemberRepository;
-    this.tripQueryService = tripQueryService;
+    this.support = support;
     this.userSummaryService = userSummaryService;
   }
 
@@ -47,6 +47,6 @@ class TripJoinService {
             TripMemberStatus.ACTIVE,
             LocalDateTime.now());
     tripMemberRepository.save(member);
-    return tripQueryService.toDetail(trip, member);
+    return support.toDetail(trip, member);
   }
 }

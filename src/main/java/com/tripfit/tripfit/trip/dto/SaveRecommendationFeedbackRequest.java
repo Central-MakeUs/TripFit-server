@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 @Schema(
-    description = "추천 근거 피드백 upsert 요청. PUT /trips/{tripId}/recommendations/{rank}/feedback (방장 전용)."
+    description = "추천 근거 피드백 upsert 요청. PATCH /trips/{tripId}/recommendations/{rank}/feedback (방장 전용)."
         + " status=NOT_HELPFUL이면 reason 필수, reason=OTHER면 reasonDetail 필수")
 // @formatter:off
 public record SaveRecommendationFeedbackRequest(

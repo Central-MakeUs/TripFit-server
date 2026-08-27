@@ -4,6 +4,7 @@ import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripMember;
 import com.tripfit.tripfit.trip.domain.TripMemberScheduleSnapshot;
 import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
+import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,18 +57,22 @@ public class TripScheduleSnapshotService {
     LocalDateTime frozenAt = LocalDateTime.now();
 
     List<TripMember> members = support.listActiveMembersSortedByJoinedAt(tripId);
+    List<UUID> userIds = members.stream().map(member -> member.getUser().getId()).toList();
+    Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser =
+        googleCalendarService.findBusyDaysByUserIds(userIds, startDate, endDate);
+    Map<UUID, List<CalendarDayResponse>> resolvedByUser =
+        support.resolveMergedSchedules(
+            regularScheduleRepository,
+            personalScheduleRepository,
+            userIds,
+            startDate,
+            endDate,
+            googleBusyByUser);
 
     List<TripMemberScheduleSnapshot> rows = new ArrayList<>();
     for (TripMember member : members) {
       UUID userId = member.getUser().getId();
-      List<CalendarDayResponse> days =
-          support.resolveMergedSchedule(
-              regularScheduleRepository,
-              personalScheduleRepository,
-              userId,
-              startDate,
-              endDate,
-              googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate));
+      List<CalendarDayResponse> days = resolvedByUser.getOrDefault(userId, List.of());
       for (CalendarDayResponse day : days) {
         rows.add(
             TripMemberScheduleSnapshot.create(
