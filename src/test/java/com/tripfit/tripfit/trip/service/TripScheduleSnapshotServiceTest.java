@@ -121,17 +121,17 @@ class TripScheduleSnapshotServiceTest {
             null,
             false,
             true);
-    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID))
+    when(regularScheduleRepository.findByUserIdIn(List.of(USER_ID)))
         .thenReturn(List.of(work));
     when(
-        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
-            USER_ID,
+        personalScheduleRepository.findByUserIdInAndScheduleDateBetween(
+            List.of(USER_ID),
             trip.getStartRange(),
             trip.getEndRange()))
         .thenReturn(List.of());
     when(
-        googleCalendarService.findBusyDaysByUserId(
-            USER_ID,
+        googleCalendarService.findBusyDaysByUserIds(
+            List.of(USER_ID),
             trip.getStartRange(),
             trip.getEndRange()))
         .thenReturn(java.util.Map.of());

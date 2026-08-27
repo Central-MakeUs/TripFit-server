@@ -131,26 +131,11 @@ class TripServiceTest {
             support,
             googleCalendarService);
     TripJoinService tripJoinService =
-        new TripJoinService(tripMemberRepository, tripQueryService, userSummaryService);
+        new TripJoinService(tripMemberRepository, support, userSummaryService);
     TripActivityAspect tripActivityAspect = new TripActivityAspect(tripRepository);
     AspectJProxyFactory joinProxyFactory = new AspectJProxyFactory(tripJoinService);
     joinProxyFactory.addAspect(tripActivityAspect);
     TripJoinService proxiedJoinService = joinProxyFactory.getProxy();
-    TripCommandService tripCommandServiceRaw =
-        new TripCommandService(
-            tripRepository,
-            tripMemberRepository,
-            userProfileService,
-            recommendationRepository,
-            support,
-            tripQueryService,
-            proxiedJoinService,
-            tripMemberQueryService,
-            userSummaryService,
-            applicationEventPublisher);
-    AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
-    commandProxyFactory.addAspect(tripActivityAspect);
-    TripCommandService tripCommandService = commandProxyFactory.getProxy();
 
     TripScheduleSnapshotService tripScheduleSnapshotService =
         new TripScheduleSnapshotService(
@@ -175,6 +160,21 @@ class TripServiceTest {
         new AspectJProxyFactory(tripRecommendationServiceRaw);
     recommendationProxyFactory.addAspect(tripActivityAspect);
     TripRecommendationService tripRecommendationService = recommendationProxyFactory.getProxy();
+
+    TripCommandService tripCommandServiceRaw =
+        new TripCommandService(
+            tripRepository,
+            tripMemberRepository,
+            userProfileService,
+            support,
+            proxiedJoinService,
+            tripRecommendationService,
+            tripMemberQueryService,
+            userSummaryService,
+            applicationEventPublisher);
+    AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
+    commandProxyFactory.addAspect(tripActivityAspect);
+    TripCommandService tripCommandService = commandProxyFactory.getProxy();
 
     tripService =
         new TripService(
