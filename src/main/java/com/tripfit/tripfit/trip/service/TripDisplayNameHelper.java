@@ -1,7 +1,6 @@
 package com.tripfit.tripfit.trip.service;
 
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,7 @@ final class TripDisplayNameHelper {
   private TripDisplayNameHelper() {}
 
   static Map<UUID, String> assignDisplayNames(List<User> usersInOrder) {
-    return assignDisplayNames(usersInOrder, ScheduleService::displayName);
+    return assignDisplayNames(usersInOrder, User::displayName);
   }
 
   // 홈 카드·상세 membersPreview 아바타 전용 — 성 없이 이름만("길동") 노출. 나머지 폴백(닉네임·"사용자")·동명이인 접미사는

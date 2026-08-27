@@ -18,7 +18,6 @@ import com.tripfit.tripfit.trip.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
-import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -73,7 +72,7 @@ public class NotificationEventListener {
       return;
     }
     String body =
-        ScheduleService.displayName(joinedMember) + "님이 여행방에 참여했어요! 참여 현황을 확인해보세요.";
+        joinedMember.displayName() + "님이 여행방에 참여했어요! 참여 현황을 확인해보세요.";
     dispatch(
         List.of(trip.getOwner()),
         trip,

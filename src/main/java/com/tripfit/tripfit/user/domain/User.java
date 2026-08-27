@@ -113,6 +113,17 @@ public class User extends SoftDeleteEntity {
     return firstName != null && !firstName.isBlank() && lastName != null && !lastName.isBlank();
   }
 
+  // 사용자 표시명 결정 — 성+이름 → nickname → "사용자" 기본값
+  public String displayName() {
+    if (hasProfileNameComplete()) {
+      return lastName + firstName;
+    }
+    if (nickname != null && !nickname.isBlank()) {
+      return nickname;
+    }
+    return "사용자";
+  }
+
   // 탈퇴(soft-deleted) 계정이 같은 소셜 계정으로 재로그인하면 기존 row를 그대로 부활시킴 — (provider, social_id)
   // UNIQUE 제약 때문에 신규 row를 새로 만들 수 없어 기존 row를 재사용. firstName/lastName·구글 캘린더 연동은
   // 탈퇴 시 초기화된 채로 남아 재온보딩이 필요함(신규 가입과 동일한 경험)

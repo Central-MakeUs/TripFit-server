@@ -3,7 +3,6 @@ package com.tripfit.tripfit.user.schedule.domain;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -58,26 +57,6 @@ public enum Weekday {
       case "SUN", "SUNDAY" -> SUN;
       default -> null;
     };
-  }
-
-  // CSV를 파싱해 DayOfWeek 집합으로 반환. 잘못된 토큰은 무시하지 않고 IllegalArgumentException
-  public static Set<DayOfWeek> parseToDayOfWeekSet(String daysOfWeekCsv) {
-    Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
-    if (daysOfWeekCsv == null || daysOfWeekCsv.isBlank()) {
-      return days;
-    }
-    for (String token : daysOfWeekCsv.split(",")) {
-      String trimmed = token.trim();
-      if (trimmed.isEmpty()) {
-        continue;
-      }
-      Weekday weekday = fromToken(trimmed);
-      if (weekday == null) {
-        throw new IllegalArgumentException("invalid weekday: " + trimmed);
-      }
-      days.add(weekday.toDayOfWeek());
-    }
-    return days;
   }
 
   // CSV를 검증·정규화(대문자·trim·중복 제거·등장 순). null/blank → null. 잘못된 토큰 → IllegalArgumentException

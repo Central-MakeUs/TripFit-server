@@ -38,10 +38,14 @@ public final class ScheduleCalendarResolver {
       LocalDate startDate,
       LocalDate endDate,
       Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate) {
+    Map<LocalDate, PersonalSchedule> personalsByDate = indexByDate(personals);
+    Map<DayOfWeek, List<RegularSchedule>> regularsByDayOfWeek = groupByDayOfWeek(regulars);
+
     Map<LocalDate, CalendarDayResponse> byDate = new HashMap<>();
     for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-      PersonalSchedule personal = findPersonal(personals, date);
-      List<RegularSchedule> matched = matchingRegulars(regulars, date.getDayOfWeek());
+      PersonalSchedule personal = personalsByDate.get(date);
+      List<RegularSchedule> matched =
+          regularsByDayOfWeek.getOrDefault(date.getDayOfWeek(), List.of());
       GoogleCalendarBusyDay googleBusy =
           googleBusyByDate != null ? googleBusyByDate.get(date) : null;
       if (personal == null && matched.isEmpty() && googleBusy == null) {
@@ -54,13 +58,24 @@ public final class ScheduleCalendarResolver {
         .toList();
   }
 
-  private static PersonalSchedule findPersonal(List<PersonalSchedule> personals, LocalDate date) {
+  private static Map<LocalDate, PersonalSchedule> indexByDate(List<PersonalSchedule> personals) {
+    Map<LocalDate, PersonalSchedule> byDate = new HashMap<>();
     for (PersonalSchedule personal : personals) {
-      if (personal.getScheduleDate().equals(date)) {
-        return personal;
+      byDate.put(personal.getScheduleDate(), personal);
+    }
+    return byDate;
+  }
+
+  // 정기 일정을 요일별로 미리 묶어, 날짜마다 전체 목록을 선형 탐색하지 않게 함
+  private static Map<DayOfWeek, List<RegularSchedule>> groupByDayOfWeek(
+      List<RegularSchedule> regulars) {
+    Map<DayOfWeek, List<RegularSchedule>> byDayOfWeek = new HashMap<>();
+    for (RegularSchedule regular : regulars) {
+      for (DayOfWeek dayOfWeek : parseDaysOfWeek(regular.getDaysOfWeek())) {
+        byDayOfWeek.computeIfAbsent(dayOfWeek, key -> new ArrayList<>()).add(regular);
       }
     }
-    return null;
+    return byDayOfWeek;
   }
 
   // 하루치 최종 슬롯 조립 — 슬롯마다 resolveSlot을 적용하고 uncertain은 개별 존재 여부로만 결정
@@ -156,18 +171,6 @@ public final class ScheduleCalendarResolver {
       }
     }
     return days;
-  }
-
-  private static List<RegularSchedule> matchingRegulars(
-      List<RegularSchedule> regulars,
-      DayOfWeek dayOfWeek) {
-    List<RegularSchedule> matched = new ArrayList<>();
-    for (RegularSchedule regular : regulars) {
-      if (matchesDayOfWeek(regular.getDaysOfWeek(), dayOfWeek)) {
-        matched.add(regular);
-      }
-    }
-    return matched;
   }
 
   private static ScheduleStatus mergeSlot(
