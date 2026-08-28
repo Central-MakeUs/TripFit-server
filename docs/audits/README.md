@@ -18,10 +18,10 @@
 | 도메인 | 감사 | 구현 상태 |
 |--------|------|-----------|
 | `auth` | 완료 (2026-08-04) | A/B 9건 반영 · oasdiff 검증은 샌드박스 Docker 제약으로 보류 |
-| `user` | 미시작 | — |
-| `user-schedule` | 미시작 | — |
-| `trip` | 미시작 | — |
-| `notification` | 미시작 | — |
+| `user` | 완료 (2026-08-04) | A/B 반영 완료 |
+| `user-schedule` | 완료 (2026-08-05, 2차 라운드까지) | 1차 A/B 반영 + 2차 라운드 A-1/B-1 반영, oasdiff diff 0 확인 |
+| `trip` | 완료 (2026-08-05) | A-1·A-2·B-1~B-3 반영, oasdiff diff 0 확인 |
+| `notification` | 완료 (2026-08-05) | A-1·B-1~B-3 반영, oasdiff diff 0 확인 |
 | `cross-cutting` | 미시작 | — |
 
 ## 현재 단계 (2026-08-03)
