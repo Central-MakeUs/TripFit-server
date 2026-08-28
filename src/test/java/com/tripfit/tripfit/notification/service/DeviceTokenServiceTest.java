@@ -81,7 +81,7 @@ class DeviceTokenServiceTest {
 
   @Test
   void unregisterToken_notOwned_throwsNotFound() {
-    when(userDeviceTokenRepository.existsByTokenAndUser_Id("token-1", USER_ID)).thenReturn(false);
+    when(userDeviceTokenRepository.deleteByTokenAndUser_Id("token-1", USER_ID)).thenReturn(0L);
 
     assertThatThrownBy(() -> deviceTokenService.unregisterToken(USER_ID, "token-1"))
         .isInstanceOf(TripFitException.class)
@@ -91,7 +91,7 @@ class DeviceTokenServiceTest {
 
   @Test
   void unregisterToken_owned_deletesToken() {
-    when(userDeviceTokenRepository.existsByTokenAndUser_Id("token-1", USER_ID)).thenReturn(true);
+    when(userDeviceTokenRepository.deleteByTokenAndUser_Id("token-1", USER_ID)).thenReturn(1L);
 
     deviceTokenService.unregisterToken(USER_ID, "token-1");
 
