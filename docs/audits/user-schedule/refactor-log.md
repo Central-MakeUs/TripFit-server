@@ -1,6 +1,36 @@
 # user-schedule Refactor Log
 
-## 2026-08-05 — A-1, B-1~B-4 반영
+## 2026-08-05 — 2차 감사(audit-round2.md) A-1, B-1 반영
+
+1차 반영(아래 절) 이후 재검사(`audit-round2.md`)에서 새로 찾은 A 1건, B 1건을 반영. C/D는 이번 라운드에서도 보류(스펙·API 계약 변경 필요 — `audit-round2.md` 참고).
+
+### 반영 항목
+
+- **A-1 (High, Performance)**: `upsertPersonal()`이 반영된 날짜(`items`)만 필요한데도 `ScheduleCalendarResolver.resolve()`를 `minDate~maxDate` **전체 구간**으로 호출해 그 사이 모든 날짜를 순회하던 것을 제거. `ScheduleCalendarResolver`에 연속 구간이 아니라 **요청받은 날짜 집합**(`Collection<LocalDate>`)만 순회하는 오버로드를 추가하고, 기존 `LocalDate startDate, LocalDate endDate` 오버로드는 내부적으로 그 날짜 집합을 만들어 새 오버로드로 위임하도록 재구성(로직 중복 없이 공유). `getCalendar()`(연속 구간이 실제로 필요한 API)는 기존 오버로드를 그대로 호출해 영향 없음. `upsertPersonal()`의 `googleCalendarService.findBusyDaysByUserId(userId, minDate, maxDate)` 호출은 범위 그대로 유지(이번 라운드 범위 밖 — 단일 쿼리라 순회 비용 문제와 무관).
+- **B-1 (Low, Performance/Readability)**: `upsertPersonal()`에서 항목별 값 검증(`validatePersonalItem`)이 구간 SELECT **이후** 루프 안에서 실행되던 것을, 구간 SELECT 전에 전체 항목을 먼저 검증하도록 순서 변경. 잘못된 입력(400 경로)에서 불필요한 DB 조회를 피함.
+
+### 변경 파일
+
+```
+ src/main/java/.../user/schedule/service/ScheduleCalendarResolver.java | 17 ++++++++++++++++-
+ src/main/java/.../user/schedule/service/ScheduleService.java          | 17 +++++++++++------
+ 2 files changed, 27 insertions(+), 7 deletions(-)
+```
+
+### 검증
+
+- `./gradlew test --tests "com.tripfit.tripfit.user.schedule.*"` — 통과
+- `./gradlew test` (전체, ArchitectureTest 포함) — 통과
+- `./gradlew test --tests "com.tripfit.tripfit.common.config.OpenApiSpecExportTest"` → `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` — **"No changes detected"**, API 계약 diff 0건 확인
+
+### 남겨둔 항목 (C/D — 이번 라운드 보류)
+
+- **C**: `PATCH /users/schedule/personal`의 `scheduleDate` 날짜 범위 검증 부재(`GET /calendar`와 비대칭) — API 계약 변경(신규 400)이 필요해 무손실 리팩토링 원칙과 충돌, 별도 스펙·승인 필요. 1차 C 항목(요청 record 구조 중복, resolve 4-인자 오버로드, 전역 `@Setter`)도 재검증 결과 여전히 유효.
+- **D**: `requireSlotStatus()`의 2-value enum 조건(향후 enum 확장 대비 의도적 방어 코드) 등 — `audit-round2.md` 참고. 1차 D 항목도 재검증 결과 여전히 유효.
+
+---
+
+## 2026-08-05 — A-1, B-1~B-4 반영 (1차)
 
 `audit.md`의 A(반드시 수정) 1건, B(유지보수성) 4건을 전부 반영. C/D는 이번 라운드에서 보류.
 
