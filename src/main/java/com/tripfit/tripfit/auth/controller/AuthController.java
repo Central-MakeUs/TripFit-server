@@ -19,7 +19,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -41,7 +40,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
-
   private final AuthService authService;
 
   private final AppleNotificationVerifier appleNotificationVerifier;
@@ -62,76 +60,54 @@ public class AuthController {
   }
 
   /**
-   * 소셜 토큰으로 로그인하고 access·refresh를 발급한다. provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은
-   * authorizationCode도 함께 보내야 한다({@code LoginRequest.authorizationCode} 필드 설명 참고 — GOOGLE은 네이티브 앱이냐
-   * 브라우저 리다이렉트냐에 따라 값을 받는 방법이 다름). GOOGLE 브라우저 리다이렉트 로그인이면 {@code redirectUri}도 실제 리다이렉트에 쓴 값과 정확히
-   * 일치하게 보내야 한다.
+   * [소셜 로그인]
    *
    * <p>
-   * APPLE·GOOGLE은 매번(최초·재로그인 모두) authorizationCode를 새로 발급받아 보내야 한다 — 탈퇴 시 provider revoke에 쓸
-   * refresh token을 확보하기 위함. GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고(정상 동작), redirectUri가 실제 값과 다르면
-   * 토큰 교환이 조용히 스킵된다(로그인 자체는 계속 성공, best-effort).
+   * ■ FE 유의사항 <br>
+   * - provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은 authorizationCode도 함께 보내야 합니다
+   * ({@code LoginRequest.authorizationCode} 필드 설명 참고). <br>
+   * - GOOGLE 브라우저 리다이렉트 로그인이면 {@code redirectUri}도 실제 리다이렉트에 쓴 값과 정확히 일치하게 보내야 합니다. <br>
+   * - APPLE과 GOOGLE은 매번(최초 및 재로그인 모두) authorizationCode를 새로 발급받아 보내야 합니다 (탈퇴 시 revoke용 refresh
+   * token 확보).
    *
    * <p>
-   * refresh token은 응답 바디가 아니라 HttpOnly 쿠키({@code Set-Cookie: refreshToken=...})로 내려간다 — 클라이언트
-   * JavaScript가 값을 직접 다루지 않아도 되고(탈취 표면 축소), 이후 refresh·logout 요청 시 브라우저가 자동으로 실어 보낸다.
+   * ■ BE 처리 <br>
+   * - refresh token은 응답 바디가 아니라 HttpOnly 쿠키({@code Set-Cookie: refreshToken=...})로 내려갑니다. 클라이언트
+   * JavaScript가 값을 직접 다루지 않아도 되며, 이후 refresh 및 logout 요청 시 브라우저가 자동으로 실어 보냅니다. <br>
+   * - GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고, redirectUri가 실제 값과 다르면 토큰 교환이 조용히 스킵됩니다 (로그인 자체는 계속
+   * 성공, best-effort).
    */
   @Operation(summary = "소셜 로그인")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
-          description = "로그인 성공 — Set-Cookie로 refreshToken 전달(HttpOnly)",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"accessToken": "eyJhbG...", "expiresIn": 900, "user": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasCompletedPreSchedule": false, "notificationEnabled": true}}}
-                      """))),
+          description = "로그인 성공. Set-Cookie로 refreshToken 전달(HttpOnly)",
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "token", "message": "필수 값입니다."}]}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "400",
-          description = "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED — provider가 APPLE인데 authorizationCode 누락",
+          description = "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED (provider가 APPLE인데 authorizationCode 누락)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED", "message": "Apple 로그인에는 authorizationCode가 필요합니다."}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "400",
-          description = "AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED — provider가 GOOGLE인데 authorizationCode 누락",
+          description = "AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED (provider가 GOOGLE인데 authorizationCode 누락)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED", "message": "Google 로그인에는 authorizationCode가 필요합니다."}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_SOCIAL_TOKEN_EXPIRED — 소셜 토큰 만료 · AUTH_SOCIAL_TOKEN_INVALID — 그 외 소셜 토큰 무효",
+          description = "AUTH_SOCIAL_TOKEN_EXPIRED (소셜 토큰 만료 )· AUTH_SOCIAL_TOKEN_INVALID (그 외 소셜 토큰 무효)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "AUTH_SOCIAL_TOKEN_EXPIRED", "message": "소셜 로그인 토큰이 만료되었습니다. 다시 로그인해 주세요."}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "503",
-          description = "AUTH_SOCIAL_PROVIDER_UNAVAILABLE — 소셜 provider API 접근 실패(네트워크·타임아웃)",
+          description = "AUTH_SOCIAL_PROVIDER_UNAVAILABLE (소셜 provider API 접근 실패(네트워크)·타임아웃)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "AUTH_SOCIAL_PROVIDER_UNAVAILABLE", "message": "소셜 로그인 서버에 일시적으로 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."}
-                      """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/login")
   ResponseEntity<SuccessResponse<LoginResponse>> login(
@@ -149,29 +125,30 @@ public class AuthController {
   }
 
   /**
-   * refresh token 쿠키로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되고 응답이 Set-Cookie로
-   * 내려주는 새 값으로 브라우저가 자동 교체한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를
-   * 폐기한다(401 AUTH_REFRESH_REUSE).
+   * [액세스·리프레시 토큰 재발급 (RTR)]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 기존 refresh token 쿠키를 전송해야 합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - refresh token 쿠키로 access와 refresh를 함께 재발급합니다(RTR). 기존 refresh는 이 호출과 동시에 폐기되고, 응답이
+   * Set-Cookie로 내려주는 새 값으로 브라우저가 자동 교체합니다. <br>
+   * - 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를 폐기합니다 (401
+   * AUTH_REFRESH_REUSE).
    */
   @Operation(summary = "액세스·리프레시 토큰 재발급 (RTR)")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
-          description = "재발급 성공 — Set-Cookie로 새 refreshToken 전달(HttpOnly)",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"accessToken": "eyJhbG...", "expiresIn": 900}}
-                      """))),
+          description = "재발급 성공. Set-Cookie로 새 refreshToken 전달(HttpOnly)",
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_INVALID_REFRESH — refresh 쿠키 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
+          description = "AUTH_INVALID_REFRESH (refresh 쿠키 없음)·만료 · AUTH_REFRESH_REUSE (이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요))",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_INVALID_REFRESH", "message": "유효하지 않은 리프레시 토큰입니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/refresh")
   ResponseEntity<SuccessResponse<RefreshResponse>> refresh(
@@ -189,13 +166,21 @@ public class AuthController {
   }
 
   /**
-   * refresh token 쿠키를 폐기해 재발급을 막고 브라우저에서도 쿠키를 지운다. 쿠키가 이미 없거나 만료됐어도 조용히 넘어가고 로그아웃 자체는 계속 성공한다. 액세스
-   * 토큰은 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 로그아웃 후에도 이미 발급된 액세스 토큰은 남은 수명 동안 유효할 수 있다.
+   * [로그아웃]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 액세스 토큰은 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 로그아웃 후에도 이미 발급된 액세스 토큰은 남은 수명 동안 유효할 수 있습니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - refresh token 쿠키를 폐기해 재발급을 막고 브라우저에서도 쿠키를 지웁니다. <br>
+   * - 쿠키가 이미 없거나 만료됐어도 조용히 넘어가고 로그아웃 자체는 계속 성공합니다.
    */
   @Operation(summary = "로그아웃")
   @ApiResponses({
       @ApiResponse(responseCode = "204",
-          description = "로그아웃 성공(No Content) — Set-Cookie로 refreshToken 쿠키 삭제")
+          description = "로그아웃 성공(No Content). Set-Cookie로 refreshToken 쿠키 삭제")
   })
   @PostMapping("/logout")
   ResponseEntity<Void> logout(
@@ -209,26 +194,28 @@ public class AuthController {
         .build();
   }
 
-  /** 로그인 사용자 요약을 조회한다. hasCompletedPreSchedule은 DB 컬럼이 아니라 연차·휴일 정보의 사전 신청일 저장 여부에서 파생된다. */
+  /**
+   * [현재 사용자 조회]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 로그인한 현재 사용자의 요약 정보를 조회합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - hasCompletedPreSchedule은 DB 컬럼이 아니라 연차·휴일 정보의 사전 신청일 저장 여부에서 파생됩니다.
+   */
   @Operation(summary = "현재 사용자 조회")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "user@example.com", "firstName": "길동", "lastName": "홍", "nickname": "홍길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "provider": "GOOGLE", "isGoogleCalendarConnected": false, "hasCompletedPreSchedule": false, "notificationEnabled": true}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping("/me")
   ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) {
@@ -237,35 +224,36 @@ public class AuthController {
   }
 
   /**
-   * Apple이 push하는 계정 변경 이벤트(연동 해제·계정 삭제 등)를 수신해 user·refresh_token을 동기화한다. TripFit 클라이언트·로그인 흐름과
-   * 무관하게 Apple 서버가 직접 호출한다(Apple Developer Console에 Server-to-Server Notification Endpoint로 등록됨).
+   * [Apple 계정 변경 알림 수신]
    *
    * <p>
-   * consent-revoked는 refresh_token만 폐기(계정 유지), account-delete는 user soft delete + refresh_token 폐기,
-   * email-enabled/disabled는 로그만 남긴다(user.email 미보유). 존재하지 않는 sub·미인식 type도 200(no-op)이다.
+   * ■ FE 유의사항 <br>
+   * - 이 API는 클라이언트가 아니라 Apple 서버가 직접 호출합니다 (Apple Developer Console에 Server-to-Server Notification
+   * Endpoint로 등록됨).
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - Apple이 push하는 계정 변경 이벤트(연동 해제, 계정 삭제 등)를 수신해 user 및 refresh_token을 동기화합니다 (TripFit 클라이언트의 로그인
+   * 흐름과 무관). <br>
+   * - consent-revoked는 refresh_token만 폐기(계정 유지), account-delete는 user soft delete 및 refresh_token
+   * 폐기를 수행합니다. <br>
+   * - email-enabled/disabled는 로그만 남기며(user.email 미보유), 존재하지 않는 sub나 미인식 type의 이벤트도 200(no-op)으로
+   * 응답합니다.
    */
   @Operation(summary = "Apple 계정 변경 알림 수신", security = {})
   @ApiResponses({
       @ApiResponse(responseCode = "200",
-          description = "수신·처리 완료 — no-op(존재하지 않는 sub·미인식 type)도 포함"),
+          description = "수신·처리 완료. no-op(존재하지 않는 sub·미인식 type)도 포함"),
       @ApiResponse(
           responseCode = "400",
-          description = "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD — payload·events JSON 형식 오류·필수 필드 누락",
+          description = "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD (payload)·events JSON 형식 오류·필수 필드 누락",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD", "message": "Apple 알림 payload 형식이 올바르지 않습니다."}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_APPLE_NOTIFICATION_ISSUER_INVALID — iss 불일치 · AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID — aud 불일치 · AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID — 서명 불일치·만료",
+          description = "AUTH_APPLE_NOTIFICATION_ISSUER_INVALID (iss 불일치 )· AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID (aud 불일치 )· AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID (서명 불일치)·만료",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID", "message": "Apple 알림 서명 검증에 실패했습니다."}
-                      """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/apple/notifications")
   ResponseEntity<Void> appleNotifications(

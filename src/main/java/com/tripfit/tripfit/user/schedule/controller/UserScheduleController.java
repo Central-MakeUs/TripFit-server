@@ -41,33 +41,35 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users/schedule")
 public class UserScheduleController {
-
   private final ScheduleService scheduleService;
 
   public UserScheduleController(ScheduleService scheduleService) {
     this.scheduleService = scheduleService;
   }
 
-  /** 본인 정기 일정 목록을 생성 시각 오름차순으로 조회한다. 오전·오후·저녁 슬롯은 start/end로 계산된 값이다. */
+  /**
+   * [정기 일정 목록]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 본인의 정기 일정 목록을 조회합니다. <br>
+   * - 목록은 생성 시각 오름차순으로 정렬됩니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 오전·오후·저녁 슬롯은 start/end 시각을 기준으로 계산되어 반환됩니다.
+   */
   @Operation(summary = "정기 일정 목록")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE"}]}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping("/regular")
   ResponseEntity<SuccessResponse<RegularScheduleListResponse>> listRegular(
@@ -76,36 +78,33 @@ public class UserScheduleController {
   }
 
   /**
-   * 매주 반복되는 정기 일정을 추가한다. daysOfWeek는 Weekday(MON~SUN) 콤마 CSV이고, 슬롯은 start/end로 계산된다.
+   * [정기 일정 생성]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 매주 반복되는 정기 일정을 추가합니다. <br>
+   * - daysOfWeek는 Weekday(MON~SUN)를 콤마로 구분한 CSV 형식으로 전송해야 합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 일정 데이터를 기반으로 start/end 시각을 분석해 슬롯을 계산하고 저장합니다.
    */
   @Operation(summary = "정기 일정 생성")
   @ApiResponses({
       @ApiResponse(
           responseCode = "201",
           description = "생성 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE"}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "daysOfWeek", "message": "필수 값입니다."}]}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/regular")
   ResponseEntity<SuccessResponse<RegularScheduleResponse>> createRegular(
@@ -115,43 +114,38 @@ public class UserScheduleController {
         .body(SuccessResponse.of(scheduleService.createRegular(userId, request)));
   }
 
-  /** 기존 정기 일정의 제목·요일·시각·연차 설정을 통째로 갱신한다. start/end가 바뀌면 슬롯을 다시 계산한다. */
+  /**
+   * [정기 일정 전체 수정]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 기존 정기 일정의 제목·요일·시각·연차 설정 등을 통째로 갱신합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - start/end 시각이 변경될 경우 슬롯 데이터를 다시 계산하여 업데이트합니다.
+   */
   @Operation(summary = "정기 일정 전체 수정")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "수정 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"id": "550e8400-e29b-41d4-a716-446655440000", "title": "출근", "daysOfWeek": "MON,TUE,WED,THU,FRI", "startTime": "09:00:00", "endTime": "18:00:00", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE"}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "daysOfWeek", "message": "필수 값입니다."}]}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님",
+          description = "REGULAR_SCHEDULE_NOT_FOUND (없거나 본인 소유가 아님)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "REGULAR_SCHEDULE_NOT_FOUND", "message": "정기 일정을 찾을 수 없습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PatchMapping("/regular/{id}")
   ResponseEntity<SuccessResponse<RegularScheduleResponse>> updateRegular(
@@ -162,7 +156,17 @@ public class UserScheduleController {
         SuccessResponse.of(scheduleService.updateRegular(userId, id, request)));
   }
 
-  /** 본인 정기 일정을 한 건 삭제한다. */
+  /**
+   * [정기 일정 삭제]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 본인의 정기 일정을 한 건 단위로 삭제합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 해당 id를 가진 정기 일정 데이터를 삭제합니다. 본인 소유가 아니면 404를 반환합니다.
+   */
   @Operation(summary = "정기 일정 삭제")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "삭제 성공(No Content)"),
@@ -170,18 +174,12 @@ public class UserScheduleController {
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "REGULAR_SCHEDULE_NOT_FOUND — 없거나 본인 소유가 아님",
+          description = "REGULAR_SCHEDULE_NOT_FOUND (없거나 본인 소유가 아님)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "REGULAR_SCHEDULE_NOT_FOUND", "message": "정기 일정을 찾을 수 없습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @DeleteMapping("/regular/{id}")
   ResponseEntity<Void> deleteRegular(
@@ -192,8 +190,18 @@ public class UserScheduleController {
   }
 
   /**
-   * 본인 정기 일정을 전부 삭제한다. 사전 일정 입력 플로우에서 "정기 일정이 있나요? → 없어요"를 고른 순간 호출한다. 남아 있던 정기 일정이 추천 계산에 계속 반영되는
-   * 것을 막기 위한 경로이며, 개별 일정과 연차·휴일 정보는 지우지 않는다. 삭제할 정기 일정이 없어도 204다.
+   * [정기 일정 전체 삭제]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 본인의 정기 일정을 전부 삭제합니다. <br>
+   * - 사전 일정 입력 플로우에서 "정기 일정이 있나요? → 없어요"를 선택했을 때 호출합니다. <br>
+   * - 삭제할 정기 일정이 0건이어도 정상 처리(204)됩니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 남아 있던 정기 일정이 추천 계산에 반영되지 않도록 모두 삭제합니다. <br>
+   * - 단, 개별 일정과 연차·휴일 정보는 삭제하지 않고 유지합니다.
    */
   @Operation(summary = "정기 일정 전체 삭제")
   @ApiResponses({
@@ -202,10 +210,7 @@ public class UserScheduleController {
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @DeleteMapping("/regular")
   ResponseEntity<Void> deleteAllRegular(@AuthorizedUser UUID userId) {
@@ -214,28 +219,28 @@ public class UserScheduleController {
   }
 
   /**
-   * 본인 연차·휴일 정보를 조회한다. 정기 일정과 별개로 사람 1명에게 하나만 존재한다. 사전 신청일이 null이면 아직 사전 일정 입력을 완료하지 않은 사용자다(최초
-   * 입력).
+   * [연차·휴일 정보 조회]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 본인의 연차·휴일 정보를 조회합니다. 정기 일정과 무관하게 한 명당 하나의 데이터만 가집니다. <br>
+   * - 사전 신청일(advanceLeaveDays) 값이 null이면, 아직 사전 일정 입력을 완료하지 않은 최초 입력 대상 사용자임을 의미합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 사용자의 휴일 정책 정보를 DB에서 조회하여 반환합니다.
    */
   @Operation(summary = "연차·휴일 정보 조회")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping("/vacation-policy")
   ResponseEntity<SuccessResponse<VacationPolicyResponse>> getVacationPolicy(
@@ -244,37 +249,34 @@ public class UserScheduleController {
   }
 
   /**
-   * 본인 연차·휴일 정보를 전체 교체한다. 부분 수정이 아니라 4개 필드를 매번 전부 보내야 하고, 하나라도 빠지면 400이다. 정기 일정 행이 하나도 없어도 저장할 수
-   * 있다. 저장에 성공하면 사전 신청일이 채워져 사용자가 "갱신 입력" 상태가 되고, 이후 여행방 입장 시 다시 최초 입력 플로우를 타지 않는다.
+   * [연차·휴일 정보 전체 교체]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 본인의 연차·휴일 정보를 전체 교체(저장)합니다. 4개 필드를 모두 보내야 하며 누락 시 400 에러가 발생합니다. <br>
+   * - 정기 일정 내역이 하나도 없더라도 저장 가능합니다. <br>
+   * - 이 호출을 완료하면 "갱신 입력" 상태가 되어 이후 여행방 입장 시 최초 입력 플로우를 건너뜁니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 요청된 4개 필드 데이터를 DB에 저장(교체)하고 사전 신청일 값을 채웁니다.
    */
   @Operation(summary = "연차·휴일 정보 전체 교체")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "저장 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"maxVacationDays": 2, "vacationApplyPeriod": "ONE_WEEK_BEFORE", "halfVacationAvailable": false, "holidayRest": true}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "필수 필드 누락 또는 값 검증 실패 (INVALID_INPUT) — 4개 필드 중 하나라도 빠지면 여기에 해당",
+          description = "필수 필드 누락 또는 값 검증 실패 (INVALID_INPUT). 4개 필드 중 하나라도 빠지면 여기에 해당",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다."}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PatchMapping("/vacation-policy")
   ResponseEntity<SuccessResponse<VacationPolicyResponse>> updateVacationPolicy(
@@ -285,40 +287,38 @@ public class UserScheduleController {
   }
 
   /**
-   * 여러 날짜에 슬롯(오전/오후/저녁) 오버라이드·불확실 여부를 등록·수정한다. items는 최소 1개, 같은 scheduleDate 중복은 불가하다. 각 항목은
-   * slots·uncertain을 독립적으로 선택한다 — 슬롯을 안 건드리려면 slots 필드 자체를 생략(정기+구글 계산값을 그대로 따름), 건드리려면 3개 전부 명시해야
-   * 한다. 이 API로는 오버라이드가 삭제되지 않는다 — 한 번 반영된 날짜는 계속 유지된다.
+   * [개별 일정 슬롯 단위 오버라이드 upsert]
    *
-   * 저장 가능한 날짜는 달력 조회와 같은 구간(오늘 ~ 오늘+2년−1, 참여 중인 ONGOING 여행 희망 기간 종료일이 더 뒤면 그 날짜까지)으로 제한된다 — 구간 밖
-   * 날짜가 하나라도 있으면 저장 전체가 400이다.
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 여러 날짜에 대해 슬롯(오전/오후/저녁) 변경 및 불확실(uncertain) 상태를 등록하거나 수정합니다. <br>
+   * - items는 최소 1개 이상이어야 하며, 같은 scheduleDate 중복은 불가능합니다. <br>
+   * - slots 필드를 보낼 경우 3개 슬롯(morning, afternoon, evening) 모두 명시해야 합니다. 슬롯을 안 건드리려면 slots 자체를 생략하세요.
+   * <br>
+   * - 불확실 상태(uncertain)만 켜고 끄거나 슬롯을 동시에 반영하는 등 다양하게 조합할 수 있습니다. <br>
+   * - 달력 조회 범위 밖의 날짜(오늘 ~ 오늘+2년-1을 벗어난 날짜 등)가 1개라도 있으면 요청 전체가 400 에러를 반환합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 각 날짜에 대해 개별 일정을 upsert하며, 한 번 반영된 날짜의 오버라이드 기록은 이 API를 통해 삭제되지 않습니다. <br>
+   * - 저장 가능한 날짜 구간은 일반 조회 윈도우와 동일하며(진행 중인 여행방의 종료일 포함), 윈도우를 벗어난 경우 에러(400)를 발생시킵니다.
    */
   @Operation(summary = "개별 일정 슬롯 단위 오버라이드 upsert")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "저장 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"items": [{"id": "550e8400-e29b-41d4-a716-446655440000", "scheduleDate": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT — items 비어 있음·scheduleDate 중복·한 항목에 slots·uncertain 둘 다 없음·slots 필드 일부 누락·scheduleDate가 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖",
+          description = "INVALID_INPUT (items 비어 있음)·scheduleDate 중복·한 항목에 slots·uncertain 둘 다 없음·slots 필드 일부 누락·scheduleDate가 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = @Content(
@@ -355,25 +355,25 @@ public class UserScheduleController {
                       """),
               @ExampleObject(
                   name = "구글 캘린더 신호를 덮어쓰는 개별 오버라이드",
-                  summary = "정기 일정 없는 날짜라 구글 연동 신호로 오후만 불가능하게 계산됐지만, 개별 오버라이드로 하루 종일 가능 선언 — 구글보다 개별이 항상 우선",
+                  summary = "정기 일정 없는 날짜라 구글 연동 신호로 오후만 불가능하게 계산됐지만, 개별 오버라이드로 하루 종일 가능 선언. 구글보다 개별이 항상 우선",
                   value = """
                       {"items": [{"scheduleDate": "2026-08-08", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
                       """),
               @ExampleObject(
                   name = "하루 종일 가능 재선언",
-                  summary = "이미 오버라이드된 날짜에 3슬롯 모두 POSSIBLE + uncertain false로 다시 저장 — 이 값 조합이어도 오버라이드가 삭제되는 경로는 없음, 그대로 새 값으로 저장됨",
+                  summary = "이미 오버라이드된 날짜에 3슬롯 모두 POSSIBLE + uncertain false로 다시 저장. 이 값 조합이어도 오버라이드가 삭제되는 경로는 없음, 그대로 새 값으로 저장됨",
                   value = """
                       {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}, "uncertain": false}]}
                       """),
               @ExampleObject(
                   name = "정기·구글 신호 없는 날짜에 개별 일정 단독 등록",
-                  summary = "정기 일정이 하나도 없는 날짜(예: 주말)에도 개별 오버라이드만 단독으로 등록 가능 — 등록 즉시 캘린더 조회에 나타나고 더 이상 생략되지 않음",
+                  summary = "정기 일정이 하나도 없는 날짜(예: 주말)에도 개별 오버라이드만 단독으로 등록 가능. 등록 즉시 캘린더 조회에 나타나고 더 이상 생략되지 않음",
                   value = """
                       {"items": [{"scheduleDate": "2026-08-01", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "IMPOSSIBLE"}}]}
                       """),
               @ExampleObject(
                   name = "❌ 같은 날짜를 아이템 두 개로 분리 → 400",
-                  summary = "같은 scheduleDate가 배열에 두 번 오면 400(INVALID_INPUT) — slots·uncertain은 한 아이템에 같이 담을 수 있으므로 나눠 보낼 필요가 없음",
+                  summary = "같은 scheduleDate가 배열에 두 번 오면 400(INVALID_INPUT). slots·uncertain은 한 아이템에 같이 담을 수 있으므로 나눠 보낼 필요가 없음",
                   value = """
                       {"items": [{"scheduleDate": "2026-08-03", "uncertain": true}, {"scheduleDate": "2026-08-03", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
                       """),
@@ -385,7 +385,7 @@ public class UserScheduleController {
                       """),
               @ExampleObject(
                   name = "❌ slots 슬롯 일부 누락 → 400",
-                  summary = "slots 필드를 보내는 순간 아침·오후·저녁 3개 전부 필수 — 일부만 보내면 400(INVALID_INPUT)",
+                  summary = "slots 필드를 보내는 순간 아침·오후·저녁 3개 전부 필수. 일부만 보내면 400(INVALID_INPUT)",
                   value = """
                       {"items": [{"scheduleDate": "2026-08-03", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE"}}]}
                       """),
@@ -397,7 +397,7 @@ public class UserScheduleController {
                       """),
               @ExampleObject(
                   name = "❌ 허용 윈도우 밖 날짜 → 400",
-                  summary = "지난 날짜이거나 오늘+2년−1(참여 중 ONGOING 여행 종료일이 더 뒤면 그 날짜)을 넘는 날짜는 저장할 수 없음 — 저장해도 GET /calendar로 다시 조회할 수 없는 구간이기 때문",
+                  summary = "지난 날짜이거나 오늘+2년−1(참여 중 ONGOING 여행 종료일이 더 뒤면 그 날짜)을 넘는 날짜는 저장할 수 없음. 저장해도 GET /calendar로 다시 조회할 수 없는 구간이기 때문",
                   value = """
                       {"items": [{"scheduleDate": "2099-01-01", "slots": {"morningStatus": "POSSIBLE", "afternoonStatus": "POSSIBLE", "eveningStatus": "POSSIBLE"}}]}
                       """)
@@ -410,37 +410,37 @@ public class UserScheduleController {
   }
 
   /**
-   * 본인 정기 일정과 개별 일정을 합쳐 날짜별 가능/불가능 달력을 조회한다. 요청 구간은 오늘부터 오늘+2년−1일 안이어야 하지만, 참여 중인 조율 중(ONGOING)
-   * 여행방의 희망 기간 종료일이 그보다 뒤라면 그 날짜까지 상한이 늘어난다. 날짜별 슬롯은 개별 일정이 정기보다 우선하고, 정기가 여럿이면 IMPOSSIBLE이 우선하며, 빈
-   * 날은 응답에서 생략된다. 마이페이지 여행 칩용 방 목록은 GET /trips?scope=ongoing을 따로 호출해야 한다.
+   * [정기+개별 합친 일정 달력 조회]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 본인 정기 일정과 개별 일정을 합친 날짜별 가능/불가능 슬롯 달력을 조회합니다. <br>
+   * - 빈 날(스케줄이 없는 날)은 응답 배열에서 생략됩니다. <br>
+   * - 마이페이지 여행 칩 등에서 사용하는 방 목록은 이 API와 무관하므로 GET /trips?scope=ongoing을 따로 호출해야 합니다. <br>
+   * - 요청 구간(startDate ~ endDate)은 기본적으로 '오늘부터 2년 뒤'까지 허용되며, 진행 중(ONGOING)인 방의 종료일이 그보다 뒤라면 해당 날짜까지
+   * 허용됩니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 정기 일정, 개별 일정, (구글 캘린더 연동 시) 구글 일정을 병합하여 슬롯 값을 계산합니다. <br>
+   * - 우선순위: 개별 오버라이드 > 정기/구글 스케줄. 정기가 여럿 겹칠 경우 불가능(IMPOSSIBLE)이 우선 적용됩니다.
    */
   @Operation(summary = "정기+개별 합친 일정 달력 조회")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"startDate": "2026-08-01", "endDate": "2026-08-07", "days": [{"date": "2026-08-03", "morningStatus": "IMPOSSIBLE", "afternoonStatus": "IMPOSSIBLE", "eveningStatus": "POSSIBLE", "uncertain": false}]}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT — 조회 구간이 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖",
+          description = "INVALID_INPUT (조회 구간이 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping("/calendar")
   ResponseEntity<SuccessResponse<ScheduleCalendarResponse>> getCalendar(

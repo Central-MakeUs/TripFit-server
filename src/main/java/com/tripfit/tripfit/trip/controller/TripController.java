@@ -18,7 +18,6 @@ import com.tripfit.tripfit.trip.service.TripService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -43,7 +42,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/trips")
 @SecurityRequirement(name = "bearer-jwt")
 public class TripController {
-
   private final TripService tripService;
 
   public TripController(TripService tripService) {
@@ -51,45 +49,40 @@ public class TripController {
   }
 
   /**
-   * 새 여행방을 만들고 방장으로 등록한다. 방장 멤버 상태는 SCHEDULE_PENDING(방장 전용·activate 전)이 되고, 응답에는 inviteCode가 없다 —
-   * 생성만으로는 방 입장·초대 공유가 안 되고, 일정 플로우 후 activate로 ACTIVE가 된 뒤 상세 조회에서 inviteCode를 얻는다.
+   * [여행방 생성]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 새 여행방을 만들면 호출자는 자동으로 방장으로 등록됩니다. <br>
+   * - 생성 직후에는 방 입장이나 초대 공유가 불가능하며 응답에 inviteCode가 없습니다. <br>
+   * - 이후 일정 확인 플로우를 거쳐 activate를 완료해야 ACTIVE 상태가 되며, 상세 조회에서 inviteCode를 얻을 수 있습니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 여행방 정보를 저장하고 생성자를 방장(OWNER) 권한으로 등록합니다. <br>
+   * - 생성된 방장의 멤버 상태는 SCHEDULE_PENDING(activate 전)으로 초기화됩니다.
    */
   @Operation(summary = "여행방 생성")
   @ApiResponses({
       @ApiResponse(
           responseCode = "201",
           description = "생성 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "status": "ONGOING", "myMemberStatus": "SCHEDULE_PENDING"}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "name", "message": "이름은 최대 15자입니다."}]}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "PROFILE_NAME_REQUIRED — 성·이름 미입력",
+          description = "PROFILE_NAME_REQUIRED (성)·이름 미입력",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "PROFILE_NAME_REQUIRED", "message": "성·이름 입력이 필요합니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping
   ResponseEntity<SuccessResponse<TripEntryResponse>> createTrip(
@@ -100,29 +93,31 @@ public class TripController {
   }
 
   /**
-   * 내가 속한 여행방 카드 목록을 조회한다. scope=ongoing은 endRange≥오늘 기준 Pin 정렬, scope=all은 Pin 없이 최근 활동순이다.
-   * SCHEDULE_PENDING(방장·참여자 모두 activate 전) 카드가 섞여 나올 수 있는데, 이 카드는 탭했을 때 상세가 아니라 일정 activate 플로우로
-   * 라우팅해야 한다. 목록 카드에는 inviteCode가 없다(공유는 입장 후 상세에서).
+   * [내 여행방 목록]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 내가 속한 여행방 카드 목록을 조회합니다. <br>
+   * - 목록 카드에는 inviteCode가 포함되지 않습니다(초대 공유는 입장 후 상세 화면에서 수행). <br>
+   * - SCHEDULE_PENDING 상태인 카드가 섞여 나올 수 있으며, 이 경우 카드를 탭했을 때 방 상세 화면이 아닌 일정 activate 플로우로 라우팅해야 합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - scope=ongoing: endRange가 오늘 이후인 방 목록을 Pin 여부(우선) 및 일정순으로 정렬합니다. <br>
+   * - scope=all: Pin과 무관하게 최근 활동순으로 모든 방을 반환합니다. <br>
+   * - ownerOnly 파라미터로 본인이 방장인 방만 필터링할 수 있습니다.
    */
   @Operation(summary = "내 여행방 목록")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"trips": [{"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}]}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping
   ResponseEntity<SuccessResponse<TripListResponse>> listTrips(
@@ -138,8 +133,17 @@ public class TripController {
   }
 
   /**
-   * 여행방 상세 정보를 조회한다. 이 방의 멤버이면서 ACTIVE(일정 activate/join 완료)여야 하며, SCHEDULE_PENDING(방장 activate 전)
-   * 상태면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다. 응답에는 inviteCode가 포함된다(방장 초대 공유용) — create 응답에는 없던 값이다.
+   * [여행방 상세]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - ACTIVE 상태(일정 activate/join 완료)인 멤버만 조회할 수 있습니다. SCHEDULE_PENDING 상태면
+   * SCHEDULE_ACTIVATION_REQUIRED로 거부됩니다. <br>
+   * - 이 API 응답부터 inviteCode가 포함되어 방장이 초대를 공유할 수 있습니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 사용자 권한 및 멤버 상태를 검증 후 여행방의 상세 정보와 멤버 요약 리스트를 반환합니다.
    */
   @TripMemberOnly
   @Operation(summary = "여행방 상세")
@@ -147,36 +151,22 @@ public class TripController {
       @ApiResponse(
           responseCode = "200",
           description = "조회 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "confirmedAttendCount": null, "confirmedVacationMemberCount": null, "confirmedUncertainCount": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료",
+          description = "TRIP_ACCESS_DENIED (비참여자 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_ACCESS_DENIED", "message": "여행방 참여 권한이 없습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND — 여행방 없음·soft deleted",
+          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_NOT_FOUND", "message": "여행방을 찾을 수 없습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping("/{tripId}")
   ResponseEntity<SuccessResponse<TripDetailResponse>> getTrip(
@@ -186,8 +176,17 @@ public class TripController {
   }
 
   /**
-   * 방 이름·인원·여행지 등 메타를 수정한다. 방장만 가능하고, 여행방이 ONGOING(조율 중)이어야 하며, 희망 기간(startRange~endRange)은 이 API로
-   * 수정할 수 없다.
+   * [여행방 메타 수정]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 방 이름, 인원, 여행지 등 메타 정보를 수정합니다. <br>
+   * - 희망 기간(startRange, endRange)은 이 API로 수정할 수 없습니다. <br>
+   * - 방장만 호출 가능하며, 여행방이 ONGOING(조율 중) 상태일 때만 가능합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 요청자가 방장인지, 여행방이 ONGOING 상태인지 검증 후 메타 정보를 갱신합니다.
    */
   @TripOwnerOnly
   @Operation(summary = "여행방 메타 수정")
@@ -195,53 +194,32 @@ public class TripController {
       @ApiResponse(
           responseCode = "200",
           description = "수정 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "confirmedAttendCount": null, "confirmedVacationMemberCount": null, "confirmedUncertainCount": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "name", "message": "이름은 최대 15자입니다."}]}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_FORBIDDEN — 방장 아님",
+          description = "TRIP_FORBIDDEN (방장 아님)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_FORBIDDEN", "message": "여행방 방장만 수행할 수 있습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND — 여행방 없음·soft deleted",
+          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_NOT_FOUND", "message": "여행방을 찾을 수 없습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_NOT_ONGOING — 조율 중이 아닌 여행방",
+          description = "TRIP_NOT_ONGOING (조율 중이 아닌 여행방)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_NOT_ONGOING", "message": "조율 중인 여행방만 수정·내보내기·일정 확인할 수 있습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PatchMapping("/{tripId}")
   ResponseEntity<SuccessResponse<TripDetailResponse>> patchTrip(
@@ -252,7 +230,17 @@ public class TripController {
   }
 
   /**
-   * 여행방을 삭제(soft)한다. 방장이면 SCHEDULE_PENDING(activate 전) 상태에서도 삭제할 수 있다. 멤버 row도 함께 연쇄 soft delete된다.
+   * [여행방 삭제]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 방장 전용 기능이며, 방을 삭제 처리합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 여행방 엔티티를 soft delete 처리합니다. <br>
+   * - 연관된 멤버(TripMember) 데이터도 함께 연쇄적으로 soft delete됩니다. <br>
+   * - 방장인 경우 SCHEDULE_PENDING 상태(일정 확정 전)에서도 즉시 삭제 가능합니다.
    */
   @TripOwnerOnly
   @Operation(summary = "여행방 삭제")
@@ -262,26 +250,17 @@ public class TripController {
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_FORBIDDEN — 방장 아님",
+          description = "TRIP_FORBIDDEN (방장 아님)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_FORBIDDEN", "message": "여행방 방장만 수행할 수 있습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND — 여행방 없음·soft deleted",
+          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_NOT_FOUND", "message": "여행방을 찾을 수 없습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @DeleteMapping("/{tripId}")
   ResponseEntity<Void> deleteTrip(
@@ -292,66 +271,51 @@ public class TripController {
   }
 
   /**
-   * 초대 코드로 여행방에 참여한다. 초대 링크를 연 직후, 일정 확인 화면에 들어가기 전에 호출한다 — 멤버는 SCHEDULE_PENDING으로 생성되고 일정 확인을 마친 뒤
-   * activate로 ACTIVE가 된다. 이 응답만으로는 아직 방 안 API를 쓸 수 없다.
+   * [초대 링크로 참여]
    *
-   * 이미 멤버인 사용자가 다시 호출하면 새 자리를 소비하지 않고 그 시점의 myMemberStatus를 그대로 반환한다(idempotent) — 링크를 다시 열었을 때도 같은
-   * 응답이므로 클라이언트는 myMemberStatus만 보고 일정 플로우·방 안 중 어디로 보낼지 정하면 된다.
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 초대 링크를 연 직후, 일정 확인 화면에 들어가기 전에 가장 먼저 호출합니다. <br>
+   * - 이 API만으로는 방 안의 다른 API(상세 조회 등)를 사용할 수 없습니다. 일정 확인을 마친 후 activate API를 호출해야 합니다. <br>
+   * - 이미 참여 중인 사용자가 재호출하면 에러 대신 현재 상태(myMemberStatus)를 그대로 반환합니다(idempotent). 이를 기반으로 일정 플로우로 보낼지 방
+   * 안으로 보낼지 라우팅하세요.
    *
-   * 정원은 SCHEDULE_PENDING 멤버까지 포함해 세며, 가득 찼으면 TRIP_MEMBER_FULL로 거부된다.
+   * <p>
+   * ■ BE 처리 <br>
+   * - 사용자를 해당 방의 멤버로 추가하며 초기 상태는 SCHEDULE_PENDING으로 설정합니다. <br>
+   * - 방의 정원은 SCHEDULE_PENDING 멤버도 포함하여 계산하며 초과 시 TRIP_MEMBER_FULL 에러를 반환합니다.
    */
   @Operation(summary = "초대 링크로 참여")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "참여 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "status": "ONGOING", "myMemberStatus": "SCHEDULE_PENDING"}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(
-                  value = """
-                      {"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다.", "errors": [{"field": "inviteCode", "message": "초대 코드는 필수입니다."}]}
-                      """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "PROFILE_NAME_REQUIRED — 성·이름 미입력",
+          description = "PROFILE_NAME_REQUIRED (성)·이름 미입력",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "PROFILE_NAME_REQUIRED", "message": "성·이름 입력이 필요합니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "INVITE_CODE_NOT_FOUND — 초대 코드 없음",
+          description = "INVITE_CODE_NOT_FOUND (초대 코드 없음)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "INVITE_CODE_NOT_FOUND", "message": "초대 코드를 찾을 수 없습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_MEMBER_FULL — 정원 초과 · TRIP_ALREADY_CONFIRMED — 확정된 방 · TRIP_EXPIRED — 종료된 방",
+          description = "TRIP_MEMBER_FULL (정원 초과 )· TRIP_ALREADY_CONFIRMED (확정된 방 )· TRIP_EXPIRED (종료된 방)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_MEMBER_FULL", "message": "참여 인원이 가득 찼습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/join")
   ResponseEntity<SuccessResponse<TripEntryResponse>> joinTrip(
@@ -361,41 +325,37 @@ public class TripController {
   }
 
   /**
-   * 일정 확인을 끝내 여행방 입장을 완료한다. 방장(create 직후)과 참여자(join 직후)가 모두 이 API를 호출하며, myMemberStatus가
-   * SCHEDULE_PENDING → ACTIVE로 바뀐다. 방 안 API와 방장의 초대 공유는 이 호출 이후에만 쓸 수 있다.
+   * [여행방 멤버십 활성화]
    *
-   * 이미 ACTIVE면 상태 변경 없이 동일 응답이고 알림도 다시 가지 않는다(idempotent).
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 일정 확인(사전 일정 입력 등)을 끝낸 후 호출하여 여행방 입장을 완료합니다. <br>
+   * - 사전 일정 입력(연차·휴일 등)을 한 번도 완료하지 않았다면 403 PRE_SCHEDULE_REQUIRED가 발생합니다. (등록된 일정이 0건인 것은 문제되지 않음)
+   * <br>
+   * - 이미 활성화된 상태에서 호출해도 문제없이 동일 응답을 반환합니다(idempotent). <br>
+   * - 이 호출 이후부터 방 상세 API 등 모든 방 안 기능을 사용할 수 있습니다.
    *
-   * 사전 일정 입력(연차·휴일 정보의 사전 신청일)을 한 번도 완료하지 않았다면 403 PRE_SCHEDULE_REQUIRED로 거부된다. 정기·개별 일정이 0건인 것은 거부
-   * 사유가 아니다 — 입력을 끝냈지만 막힌 일정이 없는 사용자는 그대로 통과한다.
+   * <p>
+   * ■ BE 처리 <br>
+   * - 호출자의 멤버십 상태를 SCHEDULE_PENDING에서 ACTIVE로 갱신합니다. <br>
+   * - 상태 변경 후 방에 속한 전체 멤버의 요약 정보를 포함한 최신 방 상세 데이터를 반환합니다.
    */
   @Operation(summary = "여행방 멤버십 활성화")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "활성화 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "confirmedAttendCount": null, "confirmedVacationMemberCount": null, "confirmedUncertainCount": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": false, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 1, "memberFillRate": 0.16666666666666666, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · PRE_SCHEDULE_REQUIRED — 사전 일정 입력 미완료",
+          description = "TRIP_ACCESS_DENIED (비참여자 )· PRE_SCHEDULE_REQUIRED (사전 일정 입력 미완료)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "PRE_SCHEDULE_REQUIRED", "message": "사전 일정 입력을 완료해야 여행방에 입장할 수 있습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/{tripId}/activate")
   ResponseEntity<SuccessResponse<TripDetailResponse>> activateMembership(
@@ -404,43 +364,40 @@ public class TripController {
     return ResponseEntity.ok(SuccessResponse.of(tripService.activateMembership(tripId, userId)));
   }
 
-  /** 홈 목록에서 이 방을 고정(Pin)하거나 해제한다. 멤버면 되고(SCHEDULE_PENDING 방장 포함), 방 입장(ACTIVE)까지는 필요 없다. */
+  /**
+   * [Pin 토글]
+   *
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 홈 목록에서 특정 방을 상단 고정(Pin)하거나 해제합니다. <br>
+   * - 해당 방의 멤버이기만 하면 입장(ACTIVE) 전이더라도 호출 가능합니다.
+   *
+   * <p>
+   * ■ BE 처리 <br>
+   * - 멤버십 검증 후 사용자의 해당 방 Pin 상태(boolean)를 토글/저장합니다.
+   */
   @TripMembershipOnly
   @Operation(summary = "Pin 토글")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "Pin 변경 성공",
-          useReturnTypeSchema = true,
-          content = @Content(
-              examples = @ExampleObject(
-                  value = """
-                      {"data": {"tripId": "550e8400-e29b-41d4-a716-446655440000", "name": "제주도 여행", "destination": "제주도", "startRange": "2026-08-01", "endRange": "2026-08-31", "durationDays": 4, "durationNights": 3, "memberCount": 6, "status": "ONGOING", "inviteCode": "AB12CD", "confirmedStartDate": null, "confirmedEndDate": null, "confirmedAttendCount": null, "confirmedVacationMemberCount": null, "confirmedUncertainCount": null, "lastRecommendationMode": null, "lastActivityAt": "2026-07-20T10:00:00", "pinned": true, "myRole": "OWNER", "myMemberStatus": "ACTIVE", "activeMemberCount": 3, "memberFillRate": 0.5, "membersPreview": [{"userId": "550e8400-e29b-41d4-a716-446655440000", "displayName": "길동", "profileImageUrl": "https://lh3.googleusercontent.com/a/example", "role": "OWNER"}], "membersPreviewOverflow": 0}}
-                      """))),
+          useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
           description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자",
+          description = "TRIP_ACCESS_DENIED (비참여자)",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_ACCESS_DENIED", "message": "여행방 참여 권한이 없습니다."}
-                  """))),
+              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND — 여행방 없음·soft deleted",
+          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class),
-              examples = @ExampleObject(value = """
-                  {"code": "TRIP_NOT_FOUND", "message": "여행방을 찾을 수 없습니다."}
-                  """)))
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PatchMapping("/{tripId}/pin")
   ResponseEntity<SuccessResponse<TripDetailResponse>> updatePin(
