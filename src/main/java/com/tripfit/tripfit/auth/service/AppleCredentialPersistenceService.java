@@ -9,9 +9,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Apple credential의 DB 조회·저장·삭제만 담당하는 짧은 트랜잭션 — AppleCredentialService가 Apple 토큰 엔드포인트
-// HTTP 호출(교환·revoke)을 이 트랜잭션 밖에서 먼저 끝내도록 분리한 것(AuthLoginPersistenceService와 동일 패턴).
-// AppleCredentialService의 private 메서드로 두면 self-invocation 때문에 @Transactional 프록시가 안 걸려 별도 빈으로 둔다
 @Service
 @RequiredArgsConstructor
 public class AppleCredentialPersistenceService {

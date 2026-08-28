@@ -142,7 +142,7 @@ class TripRecommendationServiceTest {
     assertThat(trip.getLastRecommendationMode()).isEqualTo(RecommendationMode.BASIC);
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().get(0).rank()).isEqualTo(1);
-    // BR-TRIP-010 hard DELETE는 recommendation만 대상 — 이전 recommendation_feedback 행은 손대지 않음(스냅샷 보존)
+
     verifyNoInteractions(recommendationFeedbackRepository);
   }
 

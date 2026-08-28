@@ -14,14 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-// 성·이름 PATCH 및 trip 핵심 API 진입 전 이름 완료 검증 — UserSummary는 UserSummaryService에 위임
+
 public class UserProfileService {
 
   private final UserLookupService userLookupService;
 
   private final UserSummaryService userSummaryService;
 
-  // 온보딩 최초 성·이름 등록
   @Transactional
   public UserSummaryResponse registerOnboardingName(UUID userId, OnboardingNameRequest request) {
     User user = userLookupService.requireUser(userId);
@@ -29,7 +28,6 @@ public class UserProfileService {
     return userSummaryService.toSummary(user);
   }
 
-  // 마이페이지 프로필 부분 수정 — firstName/lastName/notificationEnabled 중 포함된 필드만 갱신(D8)
   @Transactional
   public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
     if (request.firstName() == null
@@ -54,7 +52,6 @@ public class UserProfileService {
     return trimmed;
   }
 
-  // 성·이름 미입력이면 trip 생성·참여 등에서 PROFILE_NAME_REQUIRED
   public void requireProfileNameComplete(User user) {
     if (!user.hasProfileNameComplete()) {
       throw new TripFitException(UserErrorCode.PROFILE_NAME_REQUIRED);

@@ -19,7 +19,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
   }
 
   @Override
-  // 인증되지 않은 요청이 보호 API에 접근할 때 JSON 401 envelope을 반환함
+
   public void commence(
       HttpServletRequest request,
       HttpServletResponse response,

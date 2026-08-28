@@ -20,8 +20,7 @@ class KakaoTokenVerifierTest {
   private static final String KAKAO_USER_ME_URL = "https://kapi.kakao.com/v2/user/me";
 
   private KakaoTokenVerifier newVerifier(MockRestServiceServer[] serverHolder) {
-    // RestClient.builder() 기본 메시지 컨버터가 classpath의 Jackson3(tools.jackson)을 자동 인식함 —
-    // KakaoTokenVerifier가 tools.jackson.databind.JsonNode로 역직렬화하므로 별도 등록 불필요
+
     RestClient.Builder builder = RestClient.builder();
     serverHolder[0] = MockRestServiceServer.bindTo(builder).build();
     return new KakaoTokenVerifier(builder.build());

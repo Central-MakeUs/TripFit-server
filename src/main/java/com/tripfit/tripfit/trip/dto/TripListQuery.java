@@ -19,7 +19,6 @@ public record TripListQuery(
         defaultValue = "false") boolean ownerOnly
 ) {
 
-  // statusFilter·ownerOnly는 scope=ALL 쿼리에서만 적용 (ONGOING scope는 Repository가 무시)
   public static TripListQuery parse(String scope, String status, boolean ownerOnly) {
     return new TripListQuery(parseScope(scope), parseStatusFilter(status), ownerOnly);
   }
@@ -32,7 +31,6 @@ public record TripListQuery(
     }
   }
 
-  // TripStatus 재사용. ALL=필터 없음. ONGOING|CONFIRMED만 (EXPIRED 단독 필터 금지)
   private static Optional<TripStatus> parseStatusFilter(String status) {
     if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status.trim())) {
       return Optional.empty();

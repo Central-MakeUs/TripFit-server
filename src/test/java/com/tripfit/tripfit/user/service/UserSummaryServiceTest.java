@@ -28,7 +28,6 @@ class UserSummaryServiceTest {
     assertThat(summary.hasCompletedPreSchedule()).isFalse();
   }
 
-  // 연차·휴일 정보를 저장하면 일정 row가 하나도 없어도 "갱신 입력"이 된다 — 판정이 일정 존재 여부와 무관함을 고정
   @Test
   void toSummary_vacationPolicySavedWithoutAnySchedule_hasCompletedPreScheduleTrue() {
     user.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
@@ -38,7 +37,6 @@ class UserSummaryServiceTest {
     assertThat(summary.hasCompletedPreSchedule()).isTrue();
   }
 
-  // 탈퇴 스크럽으로 사전 신청일이 지워지면 재가입 사용자는 다시 "최초 입력"이다
   @Test
   void toSummary_afterWithdrawalScrub_hasCompletedPreScheduleFalseAgain() {
     user.applyVacationPolicy(5, VacationApplyPeriod.ONE_WEEK_BEFORE, true, false);

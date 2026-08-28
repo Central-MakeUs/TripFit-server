@@ -17,8 +17,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// GET /notifications의 OpenAPI 200 응답이 raw SuccessResponse로 뭉개지지 않고 NotificationResponse
-// 필드·enum(NotificationType·LandingType)까지 실제로 노출되는지 검증한다 — useReturnTypeSchema 누락 회귀 방지
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)

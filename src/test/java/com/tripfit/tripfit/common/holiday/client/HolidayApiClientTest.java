@@ -26,7 +26,7 @@ class HolidayApiClientTest {
 
   @Test
   void parseHolidays_singleItemAsObject_returnsThatDate() {
-    // 결과가 1건이면 item이 배열이 아니라 단일 객체로 오는 응답 형태
+
     JsonNode response = read("""
         {"response":{"body":{"items":{"item":
           {"dateKind":"01","dateName":"삼일절","isHoliday":"Y","locdate":20260301,"seq":1}
@@ -52,7 +52,7 @@ class HolidayApiClientTest {
 
   @Test
   void parseHolidays_emptyItemsOrNull_returnsEmptySet() {
-    // totalCount=0이면 items가 빈 문자열로 오는 응답 형태
+
     assertThat(HolidayApiClient.parseHolidays(read("""
         {"response":{"body":{"items":"","totalCount":0}}}
         """))).isEmpty();

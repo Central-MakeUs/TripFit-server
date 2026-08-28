@@ -33,7 +33,6 @@ public class GoogleCalendarSyncScheduler {
     this.googleCalendarService = googleCalendarService;
   }
 
-  // 30분마다 연동 유저 전원 freeBusy sync — 유저 사이 짧은 sleep으로 Google API 호출이 한꺼번에 몰리지 않게 함
   @Scheduled(fixedRate = SYNC_INTERVAL_MS)
   public void syncConnectedUsers() {
     List<User> users = userRepository.findByIsGoogleCalendarConnectedTrue();
@@ -41,7 +40,7 @@ public class GoogleCalendarSyncScheduler {
       try {
         googleCalendarService.syncUser(user.getId());
       } catch (Exception exception) {
-        // syncUser 내부에서 이미 대부분의 실패를 삼키므로, 여기까지 오는 건 requireUser 등 예상 밖 오류
+
         SocialIntegrationLog.warn(
             log,
             SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_SYNC)

@@ -13,7 +13,7 @@ public record TripMembersResponse(
     @Schema(
         description = """
             모집 충원율(응답률) activeMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
-            join·remove·정원 변경·일정 확인 완료 시 갱신 — GET /trips/{tripId}/members 재호출.
+            join·remove·정원 변경·일정 확인 완료 시 갱신. GET /trips/{tripId}/members 재호출.
             """,
         example = "0.5") double memberFillRate,
     @Schema(description = "참여자 목록") List<TripMemberItemResponse> members

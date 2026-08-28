@@ -60,7 +60,6 @@ class AuthLoginPersistenceServiceTest {
     assertThat(result.refreshToken().token()).isEqualTo("refresh-token");
   }
 
-  // Apple relay 등 nickname·profileImageUrl이 없는 신규 프로필은 임의 fallback 없이 null 그대로 저장돼야 함
   @Test
   void persist_whenNicknameMissing_storesNullWithoutFallback() {
     OAuthProfile appleProfile =

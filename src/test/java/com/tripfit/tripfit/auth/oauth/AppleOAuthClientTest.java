@@ -33,7 +33,6 @@ class AppleOAuthClientTest {
 
   private static final String REVOKE_URL = "https://appleid.apple.com/auth/revoke";
 
-  // 테스트 전용 P-256 키 쌍(openssl ecparam -genkey -name prime256v1) — 실제 Apple 키와 무관, 서명 검증 로직만 확인
   private static final String TEST_PRIVATE_KEY_PEM =
       """
           -----BEGIN PRIVATE KEY-----
@@ -85,7 +84,6 @@ class AppleOAuthClientTest {
     serverHolder[0].verify();
   }
 
-  // Services ID(모바일 브라우저 경로)로 교환할 때도 그 값 그대로 client_id·client_secret sub에 실려야 함
   @Test
   void exchangeAuthorizationCodeForRefreshToken_withServiceId_usesServiceIdAsClientId()
       throws Exception {
@@ -154,8 +152,6 @@ class AppleOAuthClientTest {
         .doesNotThrowAnyException();
   }
 
-  // client_secret 폼 필드를 꺼내 ES256 서명·클레임(iss/sub/aud/kid)이 올바른지 검증. sub은 호출부가 넘긴
-  // clientId(Bundle ID 또는 Services ID)와 일치해야 함
   private void assertValidClientSecretJwt(
       org.springframework.http.client.ClientHttpRequest request,
       String expectedClientId) {

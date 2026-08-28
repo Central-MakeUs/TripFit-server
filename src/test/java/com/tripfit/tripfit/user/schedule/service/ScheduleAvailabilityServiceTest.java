@@ -28,9 +28,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// resolveAvailability()가 캡슐화하는 "구글 busy 조회 → 정기·개별 일정 병합" 계약을, 하류 소비자
-// (RecommendationEngine·TripScheduleSnapshotService 등) 테스트를 거치지 않고 이 클래스 자체로 직접
-// 검증한다(round3 B-3 — 이전엔 이 계약이 하류 테스트 3곳에만 간접적으로 흩어져 있었음)
 @ExtendWith(MockitoExtension.class)
 class ScheduleAvailabilityServiceTest {
 
@@ -113,7 +110,6 @@ class ScheduleAvailabilityServiceTest {
     assertThat(grouped.get(USER_WITH_SCHEDULE_ID)).containsExactly(personal);
   }
 
-  // 구글 busy만 있고 정기·개별 일정이 없는 유저 — 병합 결과에 해당 날짜가 나타나고 busy 슬롯만 IMPOSSIBLE
   @Test
   void resolveAvailability_appliesGoogleBusyWhenNoOtherSchedule() {
     List<UUID> userIds = List.of(USER_WITH_SCHEDULE_ID, USER_WITHOUT_SCHEDULE_ID);
@@ -139,7 +135,6 @@ class ScheduleAvailabilityServiceTest {
     assertThat(merged.getFirst().afternoonStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
   }
 
-  // 정기·개별 일정·구글 busy 전부 없는 유저 — sparse 규칙대로 해당 날짜가 아예 응답에서 생략된다(폴백)
   @Test
   void resolveAvailability_returnsEmptyListForUserWithNoScheduleOrBusy() {
     List<UUID> userIds = List.of(USER_WITHOUT_SCHEDULE_ID);

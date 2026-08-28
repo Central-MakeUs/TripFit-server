@@ -4,7 +4,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import org.springframework.stereotype.Component;
 
-// Google JWKS(https://www.googleapis.com/oauth2/v3/certs) 공개키로 RS256 서명 JWT를 검증함
 @Component
 public class GoogleJwkVerifier extends AbstractRemoteJwkVerifier {
 

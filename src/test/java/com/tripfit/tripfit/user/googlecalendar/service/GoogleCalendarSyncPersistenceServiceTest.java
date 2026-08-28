@@ -28,7 +28,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// GoogleCalendarService가 Google 서버 통신을 끝낸 뒤 넘기는 결과를 실제로 DB에 반영하는 로직 검증(A-1 분리 대상)
 @ExtendWith(MockitoExtension.class)
 class GoogleCalendarSyncPersistenceServiceTest {
 
@@ -133,8 +132,6 @@ class GoogleCalendarSyncPersistenceServiceTest {
     assertThat(credential.getLastSyncedAt()).isNotNull();
   }
 
-  // access token이 refresh됐을 때만 credential 캐시가 갱신되는지 확인 — 캐시 유효였다면(refreshed* 필드 전부
-  // null) 굳이 덮어쓰지 않아도 된다(B-2와 동일한 취지)
   @Test
   void applySyncSuccess_whenAccessTokenRefreshed_updatesCache() {
     GoogleCalendarCredential credential =

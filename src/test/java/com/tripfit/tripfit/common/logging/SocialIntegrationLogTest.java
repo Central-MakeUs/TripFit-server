@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-// SocialIntegrationLog가 Throwable을 로깅할 때 PiiMasker 마스킹을 실제로 거치는지 검증(A-3)
 class SocialIntegrationLogTest {
 
   private Logger logger;

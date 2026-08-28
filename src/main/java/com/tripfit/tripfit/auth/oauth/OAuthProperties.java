@@ -12,7 +12,6 @@ public class OAuthProperties {
 
   private String googleClientId = "";
 
-  // toString에 노출되면 OAuth client secret이 로그로 유출될 수 있어 제외
   @ToString.Exclude
   private String googleClientSecret = "";
 
@@ -45,7 +44,6 @@ public class OAuthProperties {
         .toList();
   }
 
-  // iOS 네이티브 앱(Bundle ID)·모바일 브라우저(Services ID) 두 경로 중 하나만 맞아도 통과시키기 위한 허용 audience 목록
   public List<String> getAppleAudiences() {
     return Arrays.stream(new String[] {appleBundleId, appleServiceId})
         .filter(id -> id != null && !id.isBlank())

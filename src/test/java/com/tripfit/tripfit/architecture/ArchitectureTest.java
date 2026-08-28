@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
-// spring-boot-java.md 레이어·Entity 규칙을 실행 가능한 테스트로 강제(문서 prose → 자동 검증).
 class ArchitectureTest {
 
   private static JavaClasses classes;
@@ -113,8 +112,7 @@ class ArchitectureTest {
 
   @Test
   void commonPackageDoesNotDependOnOtherDomains() {
-    // SocialProvider는 소셜 로그인 구조화 로그 필드(SocialLogContext/SocialIntegrationLog)로 이미 자리잡은
-    // 공유 enum 예외 — 새로운 common -> 도메인 의존(OpenApiConfig -> auth.jwt.AuthorizedUser 같은 패턴)만 잡는다
+
     ArchRule rule =
         noClasses()
             .that()

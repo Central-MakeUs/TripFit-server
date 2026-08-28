@@ -109,8 +109,7 @@ class ScheduleServiceTest {
     assertThat(response.morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
-    // maxVacationDays·vacationApplyPeriod는 RegularScheduleResponse에서 제거되고
-    // User/VacationPolicyResponse로 이동
+
   }
 
   @Test
@@ -133,9 +132,6 @@ class ScheduleServiceTest {
                 LocalTime.of(9, 0),
                 LocalTime.of(18, 0)));
 
-    // maxVacationDays·vacationApplyPeriod·halfVacationAvailable·holidayRest 기본값 검증은
-    // RegularScheduleResponse에서 제거되고 User(VacationPolicyResponse)로 이동 — createRegular는 더 이상
-    // 이 값들을 다루지 않는다
     assertThat(response.title()).isEqualTo("출근");
   }
 
@@ -177,7 +173,7 @@ class ScheduleServiceTest {
 
   @Test
   void updateRegular_recalculatesSlotsFromTimes() {
-    // 연차·휴일 정보는 이제 RegularSchedule이 아니라 User 소유 값
+
     user.applyVacationPolicy(5, VacationApplyPeriod.ONE_WEEK_BEFORE, true, true);
     RegularSchedule existing =
         RegularSchedule.create(
@@ -204,8 +200,7 @@ class ScheduleServiceTest {
     assertThat(existing.getDaysOfWeek()).isEqualTo("MON,WED,FRI");
     assertThat(existing.getStartTime()).isEqualTo(LocalTime.of(13, 0));
     assertThat(existing.getEndTime()).isEqualTo(LocalTime.of(22, 0));
-    // maxVacationDays·vacationApplyPeriod·halfVacationAvailable·holidayRest는 RegularSchedule에서
-    // 제거되고 User로 이동 — updateRegular는 더 이상 이 값들을 다루지 않는다(전용 PATCH vacation-policy)
+
     assertThat(response.afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.eveningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
   }
@@ -238,7 +233,6 @@ class ScheduleServiceTest {
     assertThat(response.holidayRest()).isFalse();
   }
 
-  // 저장 성공이 곧 "사전 일정 입력 완료" — 일정 row가 하나도 없어도 갱신 입력으로 넘어간다
   @Test
   void updateVacationPolicy_marksPreScheduleCompleted() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
@@ -260,7 +254,6 @@ class ScheduleServiceTest {
         .isInstanceOf(TripFitException.class);
   }
 
-  // "정기 일정이 있나요? → 없어요" 경로 — 남아 있던 정기 일정을 전부 지운다
   @Test
   void deleteAllRegular_removesEveryRegularRowOfUser() {
     scheduleService.deleteAllRegular(USER_ID);
@@ -332,7 +325,6 @@ class ScheduleServiceTest {
     when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
     when(googleCalendarService.findBusyDaysByUserId(USER_ID, date, date)).thenReturn(Map.of());
 
-    // uncertain만 보내면 slots 필드 자체가 없으므로 기존 오버라이드는 절대 안 건드려야 한다(UI 동작 확인 2·3번)
     var response =
         scheduleService.upsertPersonal(
             USER_ID,
@@ -423,8 +415,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_explicitAllPossibleOnWorkday_notDeleted_o13BugRegression() {
-    // 정기(근무일: 아침·오후 불가능)가 있는 날짜에 슬롯 3개를 전부 POSSIBLE로 명시해도
-    // (구 O1.3의 CLEAR 오인 버그와 달리) row가 삭제되지 않고 그대로 저장돼야 한다
+
     LocalDate thursday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.THURSDAY));
     user.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
@@ -562,7 +553,6 @@ class ScheduleServiceTest {
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
   }
 
-  // 저장은 되는데 GET /calendar로는 못 보는 일정이 생기지 않도록, 저장에도 조회와 같은 상한을 적용한다
   @Test
   void upsertPersonal_whenDateAfterWindowEnd_throws400() {
     LocalDate beyondWindow = LocalDate.now().plusYears(2).plusDays(30);
@@ -588,7 +578,6 @@ class ScheduleServiceTest {
     verify(personalScheduleRepository, never()).save(any(PersonalSchedule.class));
   }
 
-  // 지난 날짜도 같은 이유로 막는다 — 조회 구간이 오늘부터라 저장해도 다시 열어볼 수 없다
   @Test
   void upsertPersonal_whenDateBeforeToday_throws400() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
@@ -611,7 +600,6 @@ class ScheduleServiceTest {
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
   }
 
-  // 상한은 조회와 같은 함수로 계산하므로, 참여 중인 ONGOING 여행방 종료일까지 늘어나는 규칙이 저장에도 그대로 적용된다
   @Test
   void upsertPersonal_whenOngoingTripExtendsWindow_allowsDateBeyondTwoYears() {
     LocalDate extendedEnd = LocalDate.now().plusYears(2).plusDays(30);
@@ -690,7 +678,7 @@ class ScheduleServiceTest {
   @Test
   void getCalendar_resolvesSparseWeekdays() {
     LocalDate start = LocalDate.now().plusDays(1);
-    // 다음 월요일부터 7일 — 주중 5일만 regular가 펼쳐짐
+
     while (start.getDayOfWeek().getValue() != 1) {
       start = start.plusDays(1);
     }

@@ -23,7 +23,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// UserWithdrawalService가 provider revoke를 끝낸 뒤 위임하는 cascade·hard delete·soft delete 로직 검증(A-2)
 @ExtendWith(MockitoExtension.class)
 class UserWithdrawalPersistenceServiceTest {
 
@@ -109,8 +108,6 @@ class UserWithdrawalPersistenceServiceTest {
     assertThat(user.getProvider()).isEqualTo(SocialProvider.GOOGLE);
   }
 
-  // #52로 연차 정책이 regular_schedule에서 users로 올라오면서, 일정 행과 함께 지워지던 값이 살아남게 됐다.
-  // 재로그인은 신규 가입과 같은 상태여야 하므로 기본값 복귀를 회귀 테스트로 고정한다
   @Test
   void finalizeWithdrawal_resetsVacationPolicyToDefaults() {
     user.applyVacationPolicy(7, VacationApplyPeriod.ONE_MONTH_BEFORE, true, false);

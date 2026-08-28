@@ -32,8 +32,6 @@ class GoogleOAuthClientTest {
     return new GoogleOAuthClient(builder.build(), properties);
   }
 
-  // 네이티브 앱(serverAuthCode) 로그인 — redirectUri가 null이면 빈 문자열로라도 파라미터가 실려야 함
-  // (2026-07-31 실계정 테스트로 확인: 파라미터 자체가 없으면 "Missing parameter: redirect_uri" 400)
   @Test
   void exchangeAuthorizationCodeForRefreshToken_whenRedirectUriNull_sendsEmptyRedirectUri() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
@@ -59,8 +57,6 @@ class GoogleOAuthClientTest {
     serverHolder[0].verify();
   }
 
-  // 브라우저 리다이렉트 로그인 — Google이 code 발급 시 실제로 쓴 redirect_uri와 정확히 같은 값을 그대로 실어 보내야 함
-  // (2026-08-01 FE 확인: postmessage가 아니라 실제 전체 페이지 리다이렉트 URL)
   @Test
   void exchangeAuthorizationCodeForRefreshToken_whenRedirectUriPresent_sendsItAsIs() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
@@ -107,7 +103,6 @@ class GoogleOAuthClientTest {
     serverHolder[0].verify();
   }
 
-  // 재로그인 등 최초 동의가 아닌 케이스 — Google이 refresh_token을 안 내려줘도 예외가 아니라 null이어야 함
   @Test
   void exchangeAuthorizationCodeForRefreshToken_whenRefreshTokenAbsent_returnsNull() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-// SocialLogContext의 마스킹 강제 계약(withProviderError)과 MDC 필드 매핑(SocialIntegrationLog 경유)을 검증(2차 감사 B-2)
 class SocialLogContextTest {
 
   private Logger logger;

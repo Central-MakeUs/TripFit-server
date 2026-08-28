@@ -13,7 +13,6 @@ public record SuccessResponse<T>(
     @Schema(description = "에러 코드 (성공 시 null)", nullable = true) String code
 ) {
 
-  // 일반 성공 — message/code null
   public static <T> SuccessResponse<T> of(T data) {
     return new SuccessResponse<>(data, null, null);
   }

@@ -37,7 +37,6 @@ class RedisHolidayProviderTest {
     Set<LocalDate> holidays =
         provider().findHolidaysBetween(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
 
-    // fail-open — 공휴일을 몰라도 달력·추천이 막히지 않아야 한다
     assertThat(holidays).isEmpty();
   }
 
@@ -59,7 +58,6 @@ class RedisHolidayProviderTest {
     Set<LocalDate> holidays =
         provider().findHolidaysBetween(LocalDate.of(2026, 12, 1), LocalDate.of(2027, 1, 31));
 
-    // 2026-03-01은 요청 구간 밖이라 잘려나가야 한다
     assertThat(holidays)
         .containsExactlyInAnyOrder(LocalDate.of(2026, 12, 25), LocalDate.of(2027, 1, 1));
   }
@@ -68,7 +66,6 @@ class RedisHolidayProviderTest {
   void replaceYear_emptyResult_keepsExistingCache() {
     provider().replaceYear(2026, Set.of());
 
-    // 정상적인 해에 공휴일 0개는 있을 수 없어 응답 이상으로 보고 기존 캐시를 지킨다
     verify(redisTemplate, never()).rename(anyString(), anyString());
     verify(setOperations, never()).add(anyString(), any(String[].class));
   }

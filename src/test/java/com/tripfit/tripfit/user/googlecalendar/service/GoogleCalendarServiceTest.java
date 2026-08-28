@@ -38,9 +38,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// DB 쓰기(credential 저장·busy_day 갱신)는 GoogleCalendarSyncPersistenceService로 위임되므로(A-1), 이
-// 테스트는 GoogleCalendarService가 Google 서버와의 통신 결과를 올바른 인자로 persistenceService에 넘기는지만
-// 검증한다. 실제 DB 반영 로직은 GoogleCalendarSyncPersistenceServiceTest가 검증한다
 @ExtendWith(MockitoExtension.class)
 class GoogleCalendarServiceTest {
 
@@ -81,8 +78,6 @@ class GoogleCalendarServiceTest {
     user.setId(USER_ID);
   }
 
-  // resolveAccessToken이 "캐시 유효" 분기를 타도록 만료 전 credential을 돌려줌 — 이후 syncUserInternal이
-  // queryFreeBusy까지 정상 진행되는지 확인하기 위함
   private GoogleCalendarCredential validCachedCredential() {
     return GoogleCalendarCredential.create(
         user,
@@ -136,7 +131,6 @@ class GoogleCalendarServiceTest {
         .applySyncSuccess(eq(USER_ID), any(), any(), any(), eq(List.of()));
   }
 
-  // 브라우저 리다이렉트 경로 — Controller가 받은 redirectUri를 그대로 OAuthClient까지 전달하는지 검증
   @Test
   void connect_whenRedirectUriPresent_forwardsToOAuthClient() {
     String redirectUri = "https://tripfit.online/settings/google-calendar/callback";
@@ -172,9 +166,6 @@ class GoogleCalendarServiceTest {
     verify(googleCalendarOAuthClient).exchangeAuthorizationCode("auth-code", redirectUri);
   }
 
-  // 연동 직후 1회 sync가 일시적 오류(429·5xx 등, GoogleCalendarAuthException이 아닌 일반 예외)로 실패해도
-  // persistenceService.disconnectGoogleCalendar는 호출되지 않고 applySyncError만 호출되는지 검증 —
-  // "연동 성공 직후 DELETE가 연동되어 있지 않음으로 실패"하던 회귀 재현 테스트
   @Test
   void connect_whenInitialSyncFailsWithTransientError_doesNotDisconnect() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
@@ -212,7 +203,6 @@ class GoogleCalendarServiceTest {
     verify(persistenceService, never()).disconnectGoogleCalendar(USER_ID);
   }
 
-  // code 교환 실패(잘못된 redirect_uri·invalid_grant 등) 시 원인을 로그로 남기고 502로 변환하는지 검증
   @Test
   void connect_whenExchangeFails_throwsConnectFailed() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
@@ -250,8 +240,6 @@ class GoogleCalendarServiceTest {
         .applySyncSuccess(any(), any(), any(), any(), any());
   }
 
-  // 진행 중인 여행방의 희망 기간이 C1 기본 윈도우(오늘+2년)보다 길면 sync 윈도우도 그만큼 늘어나는지 검증 —
-  // 실제 DB 반영은 persistenceService가 담당하므로, 여기서는 applySyncSuccess에 넘어가는 windowEnd 인자로 확인
   @Test
   void syncUser_whenOngoingTripEndRangeBeyondWindow_extendsSyncWindowEnd() {
     user.connectGoogleCalendar();

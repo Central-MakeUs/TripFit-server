@@ -47,7 +47,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 추천 후보 생성·조회·피드백·여행 날짜 확정/취소. 확정 시 멤버 일정 스냅샷도 같은 TX에서 고정한다. */
 @Service
 @RequiredArgsConstructor
 public class TripRecommendationService {
@@ -66,7 +65,6 @@ public class TripRecommendationService {
 
   private final ApplicationEventPublisher applicationEventPublisher;
 
-  // 방장이 추천 모드로 TOP3 후보를 재계산 — 기존 후보 hard DELETE 후 새로 저장, lastRecommendationMode 갱신
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public RecommendationListResponse generateRecommendations(
@@ -101,12 +99,10 @@ public class TripRecommendationService {
     return toListResponse(mode, rows);
   }
 
-  // 희망 박/일 변경 등 추천 입력이 바뀌어 기존 후보가 무효화될 때 hard DELETE — TripCommandService.patchTrip 전용
   public void deleteRecommendationsForTrip(UUID tripId) {
     recommendationRepository.deleteByTripId(tripId);
   }
 
-  // 방장이 저장된 추천 TOP3 카드 목록을 조회 — 방장 전용(참여자는 확정 일정만 조회 가능)
   @Transactional(readOnly = true)
   public RecommendationListResponse listRecommendations(UUID tripId, UUID ownerId) {
     Trip trip = support.requireOwnedTrip(tripId, ownerId);
@@ -114,7 +110,6 @@ public class TripRecommendationService {
     return toListResponse(trip.getLastRecommendationMode(), rows);
   }
 
-  // 추천 근거 상세 — 참여자별 브레이크다운은 저장하지 않고 그때그때 재계산(카드 목록의 무거운 페이로드 방지)
   @Transactional(readOnly = true)
   public RecommendationDetailResponse getRecommendationDetail(UUID tripId, UUID ownerId, int rank) {
     Trip trip = support.requireOwnedTrip(tripId, ownerId);
@@ -161,7 +156,6 @@ public class TripRecommendationService {
         feedbackResponse);
   }
 
-  // "이 추천이 도움이 되었나요" 피드백 upsert — 후보(recommendation)당 방장 1건. hard DELETE와 무관하게 스냅샷 보존
   @Transactional
   public void saveFeedback(
       UUID tripId,
@@ -190,7 +184,6 @@ public class TripRecommendationService {
     recommendationFeedbackRepository.save(feedback);
   }
 
-  // 방장이 추천 후보(또는 직접 날짜)로 여행을 확정한다 — CONFIRMED 직후 일정 스냅샷 freeze + 확정 시점 통계 저장
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse confirmSchedule(UUID tripId, UUID ownerId, ConfirmTripRequest request) {
@@ -225,7 +218,6 @@ public class TripRecommendationService {
     return support.toDetail(trip, ownerMembership);
   }
 
-  // 방장이 확정을 취소해 ONGOING으로 되돌린다 — 확정 통계·추천 hard DELETE, 스냅샷 폐기, 참여자 알림 이벤트 발행
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public void unconfirm(UUID tripId, UUID ownerId, UnconfirmTripRequest request) {
@@ -243,7 +235,6 @@ public class TripRecommendationService {
     applicationEventPublisher.publishEvent(new TripConfirmCanceledEvent(tripId));
   }
 
-  // recommendationRank 또는 (startDate+endDate) 정확히 하나 — 직접 입력이면 durationDays 일치까지 검증
   private LocalDate[] resolveConfirmDates(Trip trip, UUID tripId, ConfirmTripRequest request) {
     boolean hasRank = request.recommendationRank() != null;
     boolean hasCustomDates = request.startDate() != null || request.endDate() != null;
@@ -304,7 +295,6 @@ public class TripRecommendationService {
     }
   }
 
-  // last_activity_at touch 대상 없음(조회) — 순수 응답 조립
   private RecommendationListResponse toListResponse(
       RecommendationMode mode,
       List<Recommendation> rows) {
@@ -324,7 +314,6 @@ public class TripRecommendationService {
     return new RecommendationListResponse(mode, items);
   }
 
-  // 방 참여자 중 일정 확인(ACTIVE)까지 마친 인원만 — 추천 계산·확정 통계의 응답 참여자 모집단
   private List<TripMember> activeMembers(UUID tripId) {
     return support.listActiveMembersSortedByJoinedAt(tripId).stream()
         .filter(member -> member.getStatus() == TripMemberStatus.ACTIVE)

@@ -41,7 +41,6 @@ public enum Weekday {
     return dayOfWeek;
   }
 
-  // 토큰(MON·MONDAY 등)을 Weekday로 변환. 알 수 없으면 null
   public static Weekday fromToken(String token) {
     if (token == null || token.isBlank()) {
       return null;
@@ -59,7 +58,6 @@ public enum Weekday {
     };
   }
 
-  // CSV를 검증·정규화(대문자·trim·중복 제거·등장 순). null/blank → null. 잘못된 토큰 → IllegalArgumentException
   public static String normalizeCsv(String daysOfWeekCsv) {
     if (daysOfWeekCsv == null || daysOfWeekCsv.isBlank()) {
       return null;

@@ -110,7 +110,6 @@ public class GoogleCalendarCredential extends BaseTimeEntity {
     this.accessTokenExpiresAt = accessTokenExpiresAt;
   }
 
-  // access token 재발급 응답에 회전된(rotated) refresh token이 함께 온 경우에만 갱신
   public void applyRotatedRefreshToken(String refreshTokenCiphertext) {
     this.refreshTokenCiphertext = refreshTokenCiphertext;
   }

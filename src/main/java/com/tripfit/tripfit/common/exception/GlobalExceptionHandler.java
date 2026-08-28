@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-// 도메인·검증 예외만 envelope로 변환 — Filter 경로 401은 AuthErrorResponseWriter가 담당
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,7 +23,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(TripFitException.class)
   ResponseEntity<ErrorResponse> handleTripFitException(TripFitException exception) {
     ErrorCode errorCode = exception.getErrorCode();
-    // 커스텀 message가 있으면 ErrorCode 기본 문구보다 우선
+
     String message =
         exception.getMessage() != null ? exception.getMessage() : errorCode.getMessage();
     return ResponseEntity.status(errorCode.getHttpStatus())
@@ -40,7 +39,6 @@ public class GlobalExceptionHandler {
         .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), errors));
   }
 
-  // 요청 body 파싱 실패·path/query 파라미터 타입 불일치·필수 파라미터 누락 — 셋 다 공통 INVALID_INPUT envelope로 통일
   @ExceptionHandler({
       HttpMessageNotReadableException.class,
       MethodArgumentTypeMismatchException.class,
@@ -58,8 +56,6 @@ public class GlobalExceptionHandler {
         .toList();
   }
 
-  // 위 핸들러가 못 잡는 나머지 전부(DB·NPE 등) — 원인을 로그로 남기고 500 envelope로 통일해 401 오인 마스킹을 막음
-  // 예외 메시지에 사용자 입력(이메일 등)이 섞여 들어올 수 있어, 로깅 전 PiiMasker로 감싼 대역으로 치환 — 스택트레이스는 보존
   @ExceptionHandler(Exception.class)
   ResponseEntity<ErrorResponse> handleUnexpectedException(Exception exception) {
     log.error(

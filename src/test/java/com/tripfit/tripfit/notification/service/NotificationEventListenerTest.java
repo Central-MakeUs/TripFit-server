@@ -115,7 +115,7 @@ class NotificationEventListenerTest {
     assertThat(captor.getValue()).hasSize(1);
     assertThat(captor.getValue().get(0).getUser()).isEqualTo(owner);
     assertThat(captor.getValue().get(0).getBody()).contains("김철수님이 여행방에 참여했어요");
-    // mock 저장이라 UuidGenerator가 실제로 id를 채우지 않으므로 token-1의 매핑 값은 null
+
     Map<String, UUID> expectedHistoryIdByToken = new HashMap<>();
     expectedHistoryIdByToken.put("token-1", null);
     verify(fcmService)

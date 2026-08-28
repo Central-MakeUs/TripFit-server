@@ -38,17 +38,12 @@ public class AuthService {
 
   private final GoogleLoginCredentialService googleLoginCredentialService;
 
-  // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함 — 소셜 provider HTTP 호출(토큰 검증·authorizationCode
-  // 교환)은 DB 쓰기 트랜잭션 밖에서 먼저 끝내, provider 장애·지연이 DB 커넥션 풀을 붙잡지 않게 함
-  // (AuthLoginPersistenceService 참고). refreshToken은 응답 바디가 아니라 HttpOnly 쿠키로 내려가므로
-  // LoginResult에 별도로 담아 Controller에 넘긴다
   public LoginResult login(
       SocialProvider provider,
       String token,
       String authorizationCode,
       String redirectUri) {
-    // 1. APPLE/GOOGLE인데 authorizationCode가 없으면 즉시 거부 — 탈퇴 시 provider revoke 호출이 항상 no-op이
-    // 되는 걸 막기 위한 강제(APPLE은 App Store Guideline 5.1.1(v) 심사 요건, GOOGLE은 #64 재발견 gap 대응)
+
     if ((provider == SocialProvider.APPLE || provider == SocialProvider.GOOGLE)
         && (authorizationCode == null || authorizationCode.isBlank())) {
       throw new TripFitException(
@@ -57,18 +52,12 @@ public class AuthService {
               : AuthErrorCode.AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED);
     }
 
-    // 2. 소셜 제공자별 검증기를 찾아 외부 토큰을 검증함
     SocialTokenVerifier verifier = verifierRegistry.getVerifier(provider);
     OAuthProfile profile = verifier.verify(token);
 
-    // 3. 소셜 프로필 기준으로 사용자를 조회·저장하고 refresh token을 발급함 (짧은 DB 트랜잭션)
     AuthLoginPersistenceService.Result result = authLoginPersistenceService.persist(profile);
     User user = result.user();
 
-    // 4. APPLE/GOOGLE이면 탈퇴 시 revoke용 refresh token을 교환·저장(best-effort — token 교환 자체가 실패해도
-    // 로그인 흐름은 계속 진행). Apple client_id는 방금 aud 검증에서 매칭된 값(Bundle ID/Services ID)을 재사용 —
-    // 로그인 경로와 이후 revoke가 항상 같은 client_id를 쓰도록 보장. Google은 재로그인 시 refresh_token이 없을 수
-    // 있어(최초 동의 때만 발급) credential 저장 자체가 스킵될 수 있음(정상 케이스)
     if (provider == SocialProvider.APPLE) {
       appleCredentialService.saveIfAuthorizationCodePresent(
           user,
@@ -81,7 +70,6 @@ public class AuthService {
           redirectUri);
     }
 
-    // 5. 액세스 토큰 발급 — hasCompletedPreSchedule은 toSummary()가 사전 신청일 저장 여부로 파생 (별도 컬럼 아님)
     String accessToken = jwtService.createAccessToken(user.getId());
     LoginResponse response =
         new LoginResponse(
@@ -91,8 +79,6 @@ public class AuthService {
     return new LoginResult(response, result.refreshToken().token());
   }
 
-  // RTR — 리프레시 토큰을 rotate(기존 토큰 폐기 + 같은 로그인 체인으로 새 토큰 발급)하고 새 액세스 토큰도 발급함.
-  // 재사용(이미 폐기된 토큰 재제출)이면 RefreshTokenService가 AUTH_REFRESH_REUSE를 던짐
   public RefreshResult refresh(String refreshTokenValue) {
     IssuedRefreshToken rotated = refreshTokenService.rotate(refreshTokenValue);
     String accessToken = jwtService.createAccessToken(rotated.userId());
@@ -101,15 +87,12 @@ public class AuthService {
     return new RefreshResult(response, rotated.token());
   }
 
-  // 로그아웃 — 리프레시 토큰을 삭제한다. 쿠키가 이미 없으면(만료·미전송) 아무것도 지울 게 없으므로 조용히
-  // 넘어간다(로그아웃 자체는 항상 성공해야 함)
   public void logout(String refreshTokenValue) {
     if (refreshTokenValue != null) {
       refreshTokenService.delete(refreshTokenValue);
     }
   }
 
-  // JWT userId로 현재 사용자 요약 조회 — hasCompletedPreSchedule은 사전 신청일 저장 여부에서 파생(연차 저장 후 me 재조회)
   @Transactional(readOnly = true)
   public UserSummaryResponse getCurrentUser(UUID userId) {
     return userSummaryService.toSummary(userLookupService.requireUser(userId));

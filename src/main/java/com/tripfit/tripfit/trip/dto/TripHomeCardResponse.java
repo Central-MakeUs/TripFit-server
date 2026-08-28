@@ -15,7 +15,7 @@ import java.util.UUID;
         홈 여행방 카드. GET /trips.
         inviteCode 없음(공유는 입장 후 상세). myMemberStatus=SCHEDULE_PENDING면 탭 시 상세 말고 activate 플로우.
         """)
-// @formatter:off
+
 public record TripHomeCardResponse(
     @Schema(description = "여행방 ID") UUID tripId,
 
@@ -32,16 +32,13 @@ public record TripHomeCardResponse(
     @Schema(
         description = "희망 여행 박수 (n박). durationDays와 쌍으로 저장(nights+1 ≤ days ≤ nights+2). null=미정",
         nullable = true,
-        example = "3")
-    Integer durationNights,
+        example = "3") Integer durationNights,
 
-    @Schema(description = "모집 정원 (1~10)", example = "6", minimum = "1", maximum = "10")
-    Integer memberCount,
+    @Schema(description = "모집 정원 (1~10)", example = "6", minimum = "1",
+        maximum = "10") Integer memberCount,
 
     @Schema(
-        description =
-            "여행방 진행 상태(effectiveStatus). end_range 경과·방장 취소 등 반영된 화면 표시용")
-    TripStatus status,
+        description = "여행방 진행 상태(effectiveStatus). end_range 경과·방장 취소 등 반영된 화면 표시용") TripStatus status,
 
     @Schema(description = "여행방 최근 활동 시각") LocalDateTime lastActivityAt,
 
@@ -50,27 +47,21 @@ public record TripHomeCardResponse(
     @Schema(description = "본인 역할 (방장 OWNER / 일반 MEMBER)") TripMemberRole myRole,
 
     @Schema(
-        description =
-            "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 activate 후·멤버 join 시(입장 가능)")
-    TripMemberStatus myMemberStatus,
+        description = "본인 멤버십 상태. SCHEDULE_PENDING=방장 create 직후만(입장 불가·공유 불가), ACTIVE=방장 activate 후·멤버 join 시(입장 가능)") TripMemberStatus myMemberStatus,
 
     @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int activeMemberCount,
 
     @Schema(
-        description =
-            """
+        description = """
             모집 충원율(응답률) activeMemberCount ÷ memberCount (0.0~1.0, DB 저장 없음).
-            join·remove·정원 변경·일정 확인 완료 시 갱신 — GET /trips 재호출.
+            join·remove·정원 변경·일정 확인 완료 시 갱신. GET /trips 재호출.
             """,
-        example = "0.5")
-        double memberFillRate,
-
-    @Schema(description = "참여자 미리보기 (방장 우선 · joinedAt DESC · 최대 4명)")
-    List<MemberPreviewResponse> membersPreview,
+        example = "0.5") double memberFillRate,
 
     @Schema(
-        description =
-            "미리보기 초과 인원 (참여 인원 - 4, 최소 0). +N 배지 표시용")
-    int membersPreviewOverflow
-) {}
-// @formatter:on
+        description = "참여자 미리보기 (방장 우선 · joinedAt DESC · 최대 4명)") List<MemberPreviewResponse> membersPreview,
+
+    @Schema(
+        description = "미리보기 초과 인원 (참여 인원 - 4, 최소 0). +N 배지 표시용") int membersPreviewOverflow
+) {
+}

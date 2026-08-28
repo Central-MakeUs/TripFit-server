@@ -136,7 +136,6 @@ class AuthControllerTest {
     verify(authService).logout("refresh-token");
   }
 
-  // 쿠키가 이미 없어도(만료·미전송) 로그아웃 자체는 계속 성공해야 함
   @Test
   void logout_withoutCookie_stillReturns204() throws Exception {
     mockMvc

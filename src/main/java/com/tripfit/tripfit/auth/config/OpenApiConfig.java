@@ -19,7 +19,7 @@ public class OpenApiConfig {
   public static final String BEARER_JWT = "bearer-jwt";
 
   @Bean
-  // springdoc에 Bearer JWT 스키마를 전역 적용해 Swagger UI 자물쇠로 인증 필요 여부를 표시함
+
   public OpenAPI tripfitOpenAPI() {
     return new OpenAPI()
         .addServersItem(
@@ -42,8 +42,7 @@ public class OpenApiConfig {
   }
 
   @Bean
-  // @AuthorizedUser 파라미터가 없는 API는 전역 bearer-jwt 자물쇠를 해제함 — @Operation(security = {})만으로는
-  // springdoc이 빈 배열을 응답 JSON에서 누락시켜(전역 상속으로 오인) 로그인류 API에 자물쇠가 잘못 표시되던 문제 수정
+
   public OperationCustomizer publicEndpointSecurityCustomizer() {
     return (operation, handlerMethod) -> {
       boolean requiresJwt = Arrays.stream(handlerMethod.getMethodParameters())

@@ -81,8 +81,6 @@ class TripServiceTest {
 
   private static final UUID TRIP_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440010");
 
-  // 희망 기간을 오늘 기준 상대 날짜로 고정 — 하드코딩된 절대 날짜는 시간이 지나면 endRange가 과거가 되어
-  // effectiveStatus()가 EXPIRED로 판정해버리는 date bomb이 됨(TripServiceSupport.effectiveStatus 참고)
   private static final LocalDate TRIP_START = LocalDate.now();
 
   private static final LocalDate TRIP_END = TRIP_START.plusDays(9);
@@ -148,8 +146,7 @@ class TripServiceTest {
         new ScheduleAvailabilityService(
             regularScheduleRepository, personalScheduleRepository, userRepository,
             holidayProvider, googleCalendarService);
-    // resolveAvailability 내부의 공휴일 휴무(holidayRest) 배치 조회 — 이 테스트 파일은 캘린더 세부값이
-    // 아니라 트립 흐름만 검증하므로 모든 테스트에 필요하진 않아 lenient로 둔다(UnnecessaryStubbingException 방지)
+
     lenient().when(userRepository.findAllById(any())).thenReturn(List.of(owner, member));
     TripMemberQueryService tripMemberQueryService =
         new TripMemberQueryService(
@@ -256,7 +253,6 @@ class TripServiceTest {
 
     assertThat(response.tripId()).isEqualTo(TRIP_ID);
     assertThat(response.status()).isEqualTo(TripStatus.ONGOING);
-    // create는 SCHEDULE_PENDING — inviteCode는 응답에 없음(방 입장·공유는 activate 후)
 
     ArgumentCaptor<TripMember> memberCaptor = ArgumentCaptor.forClass(TripMember.class);
     verify(tripMemberRepository).save(memberCaptor.capture());
@@ -311,8 +307,6 @@ class TripServiceTest {
     assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
   }
 
-  // 사전 일정 입력을 한 번도 끝내지 않은 사용자는 ACTIVE가 될 수 없다 — 일정 0건 멤버를 "모든 날 가능"으로
-  // 계산하는 추천의 전제를 서버가 지키는 지점
   @Test
   void activateMembership_whenPreScheduleNotCompleted_throwsPreScheduleRequired() {
     owner.resetVacationPolicy();
@@ -408,8 +402,6 @@ class TripServiceTest {
         .isEqualTo(UserErrorCode.PROFILE_NAME_REQUIRED);
   }
 
-  // join은 초대 링크를 연 시점 — 아직 방에 실질적 변화가 없으므로 홈 정렬(last_activity_at)을 올리지 않고
-  // 알림도 보내지 않는다. 둘 다 activate가 담당한다
   @Test
   void joinTrip_newMember_createsSchedulePendingWithoutTouchOrEvents() {
     ReflectionTestUtils.setField(trip, "lastActivityAt", LocalDateTime.of(2026, 1, 1, 0, 0));
@@ -501,7 +493,6 @@ class TripServiceTest {
         .isEqualTo(TripErrorCode.TRIP_MEMBER_FULL);
   }
 
-  // 마지막 한 자리를 두 요청이 동시에 잡지 못하도록, 정원은 trip 행을 잠근 뒤에 센다
   @Test
   void joinTrip_countsSeatsUnderPessimisticLock() {
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
@@ -518,14 +509,13 @@ class TripServiceTest {
     inOrder.verify(tripMemberRepository).save(any());
   }
 
-  // 일정 확인을 끝내지 않은 SCHEDULE_PENDING 멤버도 자리를 차지한다 — 이탈자 자리를 자동 회수하지 않기로 한 결정의 이면
   @Test
   void joinTrip_countsSchedulePendingMembersTowardCapacity() {
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     when(tripRepository.findByInviteCodeForUpdate("ABC234")).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.empty());
-    // 6명 중 6자리가 이미 SCHEDULE_PENDING으로 차 있는 상황
+
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(6L);
 
     assertThatThrownBy(() -> tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234")))
@@ -536,8 +526,6 @@ class TripServiceTest {
     verify(tripMemberRepository, never()).save(any());
   }
 
-  // 링크를 다시 열어 join을 재호출해도 새 자리를 쓰지 않고 현재 상태만 돌려준다 — 프론트가 에러 코드가 아니라
-  // myMemberStatus로 라우팅할 수 있어야 한다
   @Test
   void joinTrip_idempotentForSchedulePendingMember() {
     TripMember pending =
@@ -569,7 +557,6 @@ class TripServiceTest {
     verify(tripMemberRepository, never()).save(any());
   }
 
-  // 참여자가 일정 확인을 마친 시점에만 방장에게 알린다 — join(링크 열기)에서는 아직 발행하지 않는다
   @Test
   void activateMembership_member_publishesJoinCompleted() {
     TripMember pending =
@@ -590,7 +577,6 @@ class TripServiceTest {
         .publishEvent(any(AllMembersSubmittedEvent.class));
   }
 
-  // 방장이 자기 방을 activate하는 건 "참여"가 아니다 — 자기 자신에게 참여 알림이 가면 안 된다
   @Test
   void activateMembership_owner_doesNotPublishJoinCompleted() {
     TripMember ownerPending =
@@ -608,8 +594,6 @@ class TripServiceTest {
     verify(applicationEventPublisher, never()).publishEvent(any(TripJoinCompletedEvent.class));
   }
 
-  // "자리가 찼다"가 아니라 "전원이 일정 확인을 마쳤다"를 기준으로 발행한다 — SCHEDULE_PENDING으로 정원이 차도
-  // 방장에게 전원 제출 알림이 가면 안 된다
   @Test
   void activateMembership_lastActiveMember_publishesAllMembersSubmitted() {
     TripMember pending =
@@ -627,7 +611,6 @@ class TripServiceTest {
     verify(applicationEventPublisher).publishEvent(new AllMembersSubmittedEvent(TRIP_ID));
   }
 
-  // 이미 ACTIVE인 사람이 activate를 다시 불러도 알림이 재발송되지 않는다
   @Test
   void activateMembership_alreadyActive_doesNotRepublishEvents() {
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
@@ -1026,8 +1009,6 @@ class TripServiceTest {
     assertThat(membership2.getDeletedAt()).isNotNull();
   }
 
-  // 탈퇴 cascade는 Controller 인터셉터(@TripMemberOnly)를 타지 않는다 — 일정 확인 전(SCHEDULE_PENDING)
-  // 멤버십도 정리돼야 탈퇴한 사용자가 잡아둔 자리가 방에 계속 남지 않는다 (#122)
   @Test
   void leaveAllActiveTripsAsMember_leavesSchedulePendingMembershipToo() {
     TripMember pending =
@@ -1167,7 +1148,6 @@ class TripServiceTest {
     return new TripMember(trip, user, role, TripMemberStatus.ACTIVE, joinedAt);
   }
 
-  // 사전 일정 입력을 마친 사용자 — activate 게이트(PRE_SCHEDULE_REQUIRED)를 통과하려면 사전 신청일이 있어야 한다
   private static User user(UUID id, String lastName, String firstName) {
     User u = new User("sub-" + id, SocialProvider.GOOGLE, "u@example.com", "nick", null);
     u.setId(id);

@@ -29,7 +29,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-// GoogleCalendarController 자체 테스트가 없어(B-6) connect/disconnect의 성공·검증 실패·에러 응답 매핑을 검증한다
 @ExtendWith(MockitoExtension.class)
 class GoogleCalendarControllerTest {
 

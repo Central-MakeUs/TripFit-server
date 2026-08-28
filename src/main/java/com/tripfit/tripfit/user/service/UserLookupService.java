@@ -10,12 +10,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-// userId로 User를 로드하는 공통 진입점 — 여러 서비스가 각자 findById+orElseThrow를 반복하지 않도록 통일
+
 public class UserLookupService {
 
   private final UserRepository userRepository;
 
-  // userId로 User 조회 — 없으면 AUTH_FORBIDDEN(인증은 됐으나 대상 계정 없음)
   public User requireUser(UUID userId) {
     return userRepository
         .findById(userId)

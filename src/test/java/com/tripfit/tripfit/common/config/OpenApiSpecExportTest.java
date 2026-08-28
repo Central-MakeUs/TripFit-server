@@ -25,7 +25,6 @@ class OpenApiSpecExportTest {
   @Autowired
   private WebApplicationContext webApplicationContext;
 
-  // CI의 api-contract-check가 breaking change 비교에 쓸 OpenAPI 스펙을 실서버 기동 없이 생성한다
   @Test
   void exportsOpenApiSpecToBuildDirectory() throws Exception {
     MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();

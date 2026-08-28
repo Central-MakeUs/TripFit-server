@@ -27,7 +27,7 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-// active UNIQUE(trip_id,user_id)는 app 강제 — soft-deleted row 재가입 허용 (MySQL partial unique 미지원)
+
 @Table(name = "trip_member")
 @Schema(description = "여행방 참여자. trip–user 매핑 및 응답 상태")
 public class TripMember extends SoftDeleteEntity {
@@ -64,7 +64,7 @@ public class TripMember extends SoftDeleteEntity {
   private LocalDateTime joinedAt;
 
   @Schema(
-      description = "일정 확인 완료 시각. null이면 SCHEDULE_PENDING(미확인), 값이 있으면 ACTIVE(확인 완료) — activate 시 set."
+      description = "일정 확인 완료 시각. null이면 SCHEDULE_PENDING(미확인), 값이 있으면 ACTIVE(확인 완료). activate 시 set."
           + " 일정 응답 진행 상태(SCHEDULE_PENDING|ACTIVE)의 SSOT이며 별도 status 컬럼은 없음",
       nullable = true,
       example = "2026-07-07T12:05:00")
@@ -86,31 +86,26 @@ public class TripMember extends SoftDeleteEntity {
     this.user = user;
     this.role = role;
     this.joinedAt = joinedAt;
-    // 이미 ACTIVE로 만들어 두는 경로(테스트 픽스처 등)는 activated_at을 joined_at과 같게 둔다.
-    // 운영 경로(create·join)는 항상 SCHEDULE_PENDING으로 들어와 activate에서 값이 채워진다
+
     if (status == TripMemberStatus.ACTIVE) {
       this.activatedAt = joinedAt;
     }
   }
 
-  // 일정 응답 진행 상태 — activatedAt null 여부로 파생 계산(저장 컬럼 없음)
   @Schema(description = "일정 응답 진행 상태")
   public TripMemberStatus getStatus() {
     return activatedAt == null ? TripMemberStatus.SCHEDULE_PENDING : TripMemberStatus.ACTIVE;
   }
 
-  // Pin on/off — on이면 pinnedAt=now, off이면 null
   public void applyPin(boolean pinned) {
     this.pinned = pinned;
     this.pinnedAt = pinned ? LocalDateTime.now() : null;
   }
 
-  // 일정 확인 완료 — activatedAt 세팅만으로 SCHEDULE_PENDING→ACTIVE 파생 전환
   public void activate() {
     this.activatedAt = LocalDateTime.now();
   }
 
-  // end_range 경과 시 Pin 자동 해제
   public void clearPin() {
     this.pinned = false;
     this.pinnedAt = null;

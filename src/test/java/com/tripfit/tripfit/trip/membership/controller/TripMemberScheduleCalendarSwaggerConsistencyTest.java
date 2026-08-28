@@ -35,8 +35,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// GET /trips/{tripId}/members/schedule-calendar의 Swagger(@ApiResponse 200/403/404 예시)가
-// 실제 컨트롤러 동작과 어긋나지 않는지 검증한다
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -76,12 +74,10 @@ class TripMemberScheduleCalendarSwaggerConsistencyTest {
             tag + "@example.com", tag, null));
   }
 
-  // 200 @ApiResponse 예시가 선언한 필드(startDate/endDate/readOnly/members[].userId/displayName/
-  // role/memberStatus/days[]...)가 실제 응답에도 그대로 있는지
   @Test
   void okExample_fieldShape_matchesActualResponse() throws Exception {
     User owner = seedUser("owner1");
-    // 연차·휴일 정보는 이제 User 소유 값
+
     owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
@@ -118,7 +114,6 @@ class TripMemberScheduleCalendarSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.members[0].days[0].morningStatus").value("IMPOSSIBLE"));
   }
 
-  // 403 @ApiResponse 예시(TRIP_ACCESS_DENIED)가 실제로 비멤버 접근 시 나오는 바디와 일치하는지
   @Test
   void forbiddenExample_nonMember_matchesActualErrorBody() throws Exception {
     User owner = seedUser("owner2");
@@ -150,7 +145,6 @@ class TripMemberScheduleCalendarSwaggerConsistencyTest {
         .andExpect(jsonPath("$.message").value("여행방 참여 권한이 없습니다."));
   }
 
-  // 404 @ApiResponse 예시(TRIP_NOT_FOUND)가 실제로 존재하지 않는 tripId 조회 시 나오는 바디와 일치하는지
   @Test
   void notFoundExample_unknownTripId_matchesActualErrorBody() throws Exception {
     User user = seedUser("lonely");

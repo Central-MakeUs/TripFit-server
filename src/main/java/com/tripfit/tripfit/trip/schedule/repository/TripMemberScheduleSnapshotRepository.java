@@ -15,7 +15,6 @@ public interface TripMemberScheduleSnapshotRepository
 
   List<TripMemberScheduleSnapshot> findByTrip_IdOrderByUser_IdAscScheduleDateAsc(UUID tripId);
 
-  // unconfirm 시 스냅샷 폐기 — 재확정 전까지 라이브 데이터로 되돌림(trip-recommendation.md unconfirm 절)
   @Modifying
   @Query("DELETE FROM TripMemberScheduleSnapshot s WHERE s.trip.id = :tripId")
   void deleteByTripId(@Param("tripId") UUID tripId);

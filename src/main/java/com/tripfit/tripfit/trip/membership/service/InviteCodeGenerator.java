@@ -2,7 +2,6 @@ package com.tripfit.tripfit.trip.membership.service;
 
 import java.security.SecureRandom;
 
-// Crockford Base32 (0/O/I/1 제외) 6자 초대 코드 생성
 public final class InviteCodeGenerator {
 
   private static final String ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";

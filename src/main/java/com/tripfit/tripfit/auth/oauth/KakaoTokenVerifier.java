@@ -37,11 +37,10 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
     return SocialProvider.KAKAO;
   }
 
-  // 카카오 사용자 조회 API로 액세스 토큰을 검증하고 사용자 프로필을 추출함
   @Override
   public OAuthProfile verify(String token) {
     try {
-      // 1. 카카오 사용자 정보 API를 호출해 토큰 유효성을 확인함
+
       JsonNode response =
           restClient
               .get()
@@ -51,7 +50,7 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
               .onStatus(
                   HttpStatusCode::isError,
                   (request, clientResponse) -> {
-                    // 카카오 원본 에러 응답을 남겨 만료/무효/앱 설정 오류를 사후에 구분 가능하게 함
+
                     String body = readBodySafely(clientResponse);
                     SocialIntegrationLog.warn(
                         log,
@@ -68,7 +67,6 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
                   })
               .body(JsonNode.class);
 
-      // 2. 응답 본문에서 필수 식별자와 선택 이메일을 추출함
       if (response == null || !response.has("id")) {
         throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
       }
@@ -94,10 +92,10 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
       return new OAuthProfile(
           SocialProvider.KAKAO, providerUserId, email, nickname, profileImageUrl, null);
     } catch (TripFitException exception) {
-      // 비즈니스 검증에서 만든 인증 예외는 그대로 상위로 전달함
+
       throw exception;
     } catch (RestClientException exception) {
-      // 카카오 API 자체에 응답을 못 받은 경우(타임아웃·연결 실패) — 토큰 문제가 아니라 provider 장애
+
       SocialIntegrationLog.warn(
           log,
           SocialLogContext.of(SocialProvider.KAKAO, SocialIntegrationAction.LOGIN_USERINFO_FETCH),
@@ -105,7 +103,7 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
           exception);
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE);
     } catch (Exception exception) {
-      // JSON 파싱 등 그 외 실패 원인을 로그로 남기고 무효 토큰으로 통일
+
       SocialIntegrationLog.warn(
           log,
           SocialLogContext.of(SocialProvider.KAKAO, SocialIntegrationAction.LOGIN_TOKEN_VERIFY),
@@ -115,7 +113,6 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
     }
   }
 
-  // onStatus 핸들러에서 카카오 에러 응답 본문을 로그용으로 읽음 — 실패해도 검증 흐름은 계속됨
   private String readBodySafely(ClientHttpResponse clientResponse) {
     try {
       return StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);

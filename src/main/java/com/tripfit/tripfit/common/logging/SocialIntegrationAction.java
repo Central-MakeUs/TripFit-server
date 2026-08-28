@@ -1,7 +1,5 @@
 package com.tripfit.tripfit.common.logging;
 
-// 소셜 로그인·Google Calendar 연동 구조화 로그의 action 필드 — 닫힌
-// 집합(docs/specs/social-integration-structured-logging.md)
 public enum SocialIntegrationAction {
   LOGIN_TOKEN_VERIFY,
   LOGIN_USERINFO_FETCH,

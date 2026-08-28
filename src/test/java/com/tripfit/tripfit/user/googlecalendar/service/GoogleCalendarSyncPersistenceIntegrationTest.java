@@ -23,10 +23,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-// A-1(트랜잭션 재구성)로 GoogleCalendarSyncPersistenceService가 별도 빈으로 분리됐다 — Mockito 단위 테스트는
-// self-invocation 없이 프록시를 제대로 타는지, 실제 Hibernate dirty checking·lazy loading이 트랜잭션 경계를
-// 넘어 올바르게 동작하는지 검증하지 못한다. 이 테스트는 실제 MySQL(Testcontainers)로 그 공백을 메운다 —
-// 앱 스토어 심사 대응(2026-08-05, API 계약 무변경 확인과 별개로 런타임 정합성도 실제 DB로 재확인)
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -69,7 +65,6 @@ class GoogleCalendarSyncPersistenceIntegrationTest {
         Instant.now().plusSeconds(3600),
         "gcal@gmail.com");
 
-    // 별도 재조회로 실제 커밋 여부 확인 — 같은 영속성 컨텍스트 캐시가 아니라 진짜 DB 반영인지 검증
     Optional<GoogleCalendarCredential> reloaded = credentialRepository.findByUser_Id(user.getId());
     assertThat(reloaded).isPresent();
     assertThat(reloaded.get().getGoogleAccountEmail()).isEqualTo("gcal@gmail.com");
@@ -106,7 +101,7 @@ class GoogleCalendarSyncPersistenceIntegrationTest {
             windowStart,
             windowEnd);
     assertThat(days).hasSize(1);
-    // TimeSlot.MORNING = [00:00, 13:00) — 10~11시는 오전 슬롯에 포함된다
+
     assertThat(days.getFirst().isMorningBusy()).isTrue();
     assertThat(days.getFirst().isAfternoonBusy()).isFalse();
 

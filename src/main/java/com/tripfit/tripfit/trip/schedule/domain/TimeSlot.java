@@ -16,7 +16,6 @@ public enum TimeSlot {
 
   private final LocalTime startInclusive;
 
-  // null = 24:00 (하루 끝, exclusive)
   private final LocalTime endExclusive;
 
   TimeSlot(LocalTime startInclusive, LocalTime endExclusive) {
@@ -32,7 +31,6 @@ public enum TimeSlot {
     return endExclusive;
   }
 
-  // [rangeStart, rangeEnd) 와 이 슬롯이 겹치면 true
   public boolean overlaps(LocalTime rangeStart, LocalTime rangeEnd) {
     if (rangeStart == null || rangeEnd == null || !rangeEnd.isAfter(rangeStart)) {
       return false;
@@ -43,7 +41,6 @@ public enum TimeSlot {
     return startsBeforeSlotEnd && endsAfterSlotStart;
   }
 
-  // 구간과 겹치면 IMPOSSIBLE, 아니면 POSSIBLE
   public ScheduleStatus statusForRange(LocalTime rangeStart, LocalTime rangeEnd) {
     return overlaps(rangeStart, rangeEnd) ? ScheduleStatus.IMPOSSIBLE : ScheduleStatus.POSSIBLE;
   }

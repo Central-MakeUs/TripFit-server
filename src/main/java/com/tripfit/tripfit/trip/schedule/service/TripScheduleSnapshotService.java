@@ -17,7 +17,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 확정·종료 시 희망 기간의 멤버 정기+개별 합친 일정을 스냅샷으로 고정한다 (이후 읽기 전용). */
 @Service
 @RequiredArgsConstructor
 public class TripScheduleSnapshotService {
@@ -28,7 +27,6 @@ public class TripScheduleSnapshotService {
 
   private final TripServiceSupport support;
 
-  // CONFIRMED|EXPIRED 전환과 같은 TX에서 호출 — 이미 freeze된 방은 no-op(idempotent)
   @Transactional
   public void freezeTrip(Trip trip) {
     UUID tripId = trip.getId();

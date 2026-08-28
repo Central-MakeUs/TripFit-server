@@ -13,14 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-// 디바이스 토큰 등록·해제 — 재로그인 시 소유자 재할당(D7)
+
 public class DeviceTokenService {
 
   private final UserDeviceTokenRepository userDeviceTokenRepository;
 
   private final UserLookupService userLookupService;
 
-  // 토큰을 등록한다 — 기존 토큰이 다른 유저 소유면 재할당, 없으면 신규 저장(D7). UNIQUE 경합은 upsert가 원자적으로 흡수
   @Transactional
   public void registerToken(UUID userId, DeviceTokenRegisterRequest request) {
     requireNonBlankToken(request.token());
@@ -32,7 +31,6 @@ public class DeviceTokenService {
         request.deviceType().name());
   }
 
-  // 로그아웃 시 본인 토큰만 해제 — 본인 것이 아니면 404
   @Transactional
   public void unregisterToken(UUID userId, String token) {
     requireNonBlankToken(token);

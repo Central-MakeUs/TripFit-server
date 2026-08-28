@@ -31,7 +31,7 @@ import org.hibernate.type.SqlTypes;
     name = "notification_history",
     indexes = @Index(name = "idx_notification_history_user_sent_at",
         columnList = "user_id, sent_at"))
-@Schema(description = "발송된 FCM 알림 이력 — 알림센터 조회·읽음 상태를 포함한다")
+@Schema(description = "발송된 FCM 알림 이력. 알림센터 조회·읽음 상태를 포함한다")
 public class NotificationHistory extends BaseTimeEntity {
 
   @Schema(description = "알림 이력 ID (UUID v4)")
@@ -99,7 +99,6 @@ public class NotificationHistory extends BaseTimeEntity {
     this.sentAt = sentAt;
   }
 
-  // 알림센터에서 읽음 처리 — 이미 읽음이면 재적용하지 않는다(idempotent)
   public void markRead(LocalDateTime now) {
     if (this.read) {
       return;

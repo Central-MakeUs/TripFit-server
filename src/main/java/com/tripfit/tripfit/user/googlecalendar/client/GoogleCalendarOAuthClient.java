@@ -51,20 +51,11 @@ public class GoogleCalendarOAuthClient {
 
   private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
-  // Google freeBusy.query가 한 번에 너무 긴 range를 거부한다(문서화 안 된 제한, "timeRangeTooLong" 확인됨) —
-  // C1 윈도우(최대 today+2년)를 이 단위로 잘라 여러 번 호출 후 병합한다
   private static final long FREE_BUSY_CHUNK_DAYS = 90;
 
-  // Google 에러 응답 JSON의 "reason" 필드 — errors[].reason(범용, 예: insufficientPermissions)보다
-  // details[].reason(세분화, 예: ACCESS_TOKEN_SCOPE_INSUFFICIENT)이 뒤에 나오므로 마지막 매칭을 채택
   private static final Pattern ERROR_REASON_PATTERN =
       Pattern.compile("\"reason\"\\s*:\\s*\"([^\"]+)\"");
 
-  // 재시도해도 절대 스스로 안 풀리는 403 reason — scope 재동의(재연동) 전에는 복구 불가하므로 401과 동일하게
-  // 영구 실패로 취급한다. "insufficientPermissions"(errors[].reason, Calendar API 자체 vocabulary)와
-  // "ACCESS_TOKEN_SCOPE_INSUFFICIENT"(details[].reason, 구글 공통 ErrorInfo vocabulary)는 같은 실패를
-  // 두 세대의 에러 포맷이 각자 다르게 표기한 것 — 참고: developers.google.com/calendar/api/guides/errors,
-  // cloud.google.com/apis/design/errors. 다른 403(rateLimitExceeded 등)은 여전히 일시적 오류로 재시도된다.
   private static final Set<String> PERMANENT_PERMISSION_FAILURE_REASONS =
       Set.of("insufficientPermissions", "ACCESS_TOKEN_SCOPE_INSUFFICIENT");
 
@@ -77,10 +68,6 @@ public class GoogleCalendarOAuthClient {
     this.oAuthProperties = oAuthProperties;
   }
 
-  // authorization code → access·refresh token 교환 — Google 토큰 엔드포인트는 code를 발급받을 때 실제로 쓴
-  // redirect_uri와 정확히 같은 값을 요구한다. 네이티브 앱(serverAuthCode)은 리다이렉트가 없어도 빈 문자열을 보내야
-  // 하고, 브라우저 리다이렉트로 받은 code는 authorize 요청에 실제로 쓴 redirect_uri를 그대로 보내야 한다 — 로그인용
-  // GoogleOAuthClient에서 동일 요건이 실계정 테스트로 확인됨
   public GoogleOAuthTokenResponse exchangeAuthorizationCode(
       String authorizationCode,
       String redirectUri) {
@@ -100,7 +87,6 @@ public class GoogleCalendarOAuthClient {
     }
   }
 
-  // refresh token → access token 갱신
   public GoogleOAuthTokenResponse refreshAccessToken(String refreshToken) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("refresh_token", refreshToken);
@@ -117,8 +103,6 @@ public class GoogleCalendarOAuthClient {
     }
   }
 
-  // primary 캘린더 freeBusy 조회 — FREE_BUSY_CHUNK_DAYS 단위로 여러 번 호출해 병합(단일 호출은 아래
-  // queryFreeBusyChunk). 한 청크라도 실패하면 전체를 예외로 던짐(부분 sync 반영 안 함, 다음 스케줄에서 통째로 재시도)
   public List<GoogleFreeBusyInterval> queryFreeBusy(
       UUID userId,
       String accessToken,
@@ -137,11 +121,6 @@ public class GoogleCalendarOAuthClient {
     return merged;
   }
 
-  // freeBusy 단일 청크 호출 — 401(access token 무효) 또는 PERMANENT_PERMISSION_FAILURE_REASONS에 등록된
-  // 403 reason(scope 부족)만 인증 실패로 간주해 GoogleCalendarAuthException을 던진다. 그 외 4xx/5xx·네트워크·
-  // 파싱 오류는 일반 RuntimeException으로 던져 syncUserInternal의 일반 catch로 흘러가게 한다 — 여기서 모든
-  // 403·5xx까지 GoogleCalendarAuthException으로 넓히면 connect() 직후 1회 sync가 일시적 오류(rate limit·5xx
-  // 등)만 만나도 방금 저장한 credential이 같은 트랜잭션에서 즉시 삭제돼버린다(2026-08-01 회귀 버그)
   private List<GoogleFreeBusyInterval> queryFreeBusyChunk(
       UUID userId,
       String accessToken,
@@ -174,7 +153,7 @@ public class GoogleCalendarOAuthClient {
                     if (clientResponse.getStatusCode().value() == 401) {
                       throw new GoogleCalendarAuthException("freeBusy unauthorized");
                     }
-                    // Google 에러 응답 body까지 로그에 남겨 원인(예: timeRangeTooLong) 재현 없이도 바로 확인 가능하게 함
+
                     String errorBody =
                         StreamUtils.copyToString(
                             clientResponse.getBody(),
@@ -182,7 +161,7 @@ public class GoogleCalendarOAuthClient {
                     String reason = extractReason(errorBody);
                     if (PERMANENT_PERMISSION_FAILURE_REASONS.contains(reason)) {
                       throw new GoogleCalendarAuthException(
-                          "freeBusy forbidden — permanent scope failure (reason=" + reason + ")");
+                          "freeBusy forbidden. permanent scope failure (reason=" + reason + ")");
                     }
                     throw new FreeBusyHttpException(clientResponse.getStatusCode().value(),
                         errorBody);
@@ -192,7 +171,7 @@ public class GoogleCalendarOAuthClient {
     } catch (GoogleCalendarAuthException exception) {
       throw exception;
     } catch (FreeBusyHttpException exception) {
-      // onStatus에서 잡은 4xx/5xx(401 제외) — httpStatus·body를 그대로 구조화 필드로 남긴 뒤 기존 메시지 포맷으로 재포장
+
       SocialIntegrationLog.warn(
           log,
           SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_SYNC)
@@ -203,7 +182,7 @@ public class GoogleCalendarOAuthClient {
       throw new RuntimeException(
           "freeBusy failed: " + exception.httpStatus + " body=" + exception.body);
     } catch (Exception exception) {
-      // 네트워크·파싱 등 HTTP 상태를 못 얻은 실패 — httpStatus 없이 기록
+
       SocialIntegrationLog.warn(
           log,
           SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_SYNC)
@@ -214,7 +193,6 @@ public class GoogleCalendarOAuthClient {
     }
   }
 
-  // onStatus 핸들러가 4xx/5xx(401 제외)를 httpStatus·body 그대로 바깥 catch까지 전달하기 위한 내부 전용 타입
   private static final class FreeBusyHttpException extends RuntimeException {
 
     private final int httpStatus;
@@ -228,8 +206,6 @@ public class GoogleCalendarOAuthClient {
     }
   }
 
-  // Google 에러 응답 JSON에서 가장 세분화된 reason 값을 뽑음 — errors[].reason보다 details[].reason이 뒤에
-  // 나오므로 마지막 매칭을 채택(예: ACCESS_TOKEN_SCOPE_INSUFFICIENT)
   private String extractReason(String errorBody) {
     if (errorBody == null) {
       return null;
@@ -242,7 +218,6 @@ public class GoogleCalendarOAuthClient {
     return last;
   }
 
-  // 연동 Google 계정 이메일 조회 — userinfo 우선, 실패 시 primary calendar id fallback (없으면 null)
   public String fetchGoogleAccountEmail(String accessToken) {
     String fromUserInfo = fetchEmailFromUserInfo(accessToken);
     if (fromUserInfo != null) {
@@ -251,7 +226,6 @@ public class GoogleCalendarOAuthClient {
     return fetchEmailFromPrimaryCalendar(accessToken);
   }
 
-  // refresh token revoke (best-effort)
   public void revokeRefreshToken(UUID userId, String refreshToken) {
     try {
       restClient
@@ -260,7 +234,7 @@ public class GoogleCalendarOAuthClient {
           .retrieve()
           .toBodilessEntity();
     } catch (Exception exception) {
-      // best-effort — disconnect·탈퇴는 로컬 정리가 SSOT라 예외를 삼키되, 실패 자체는 로그로 남김(토큰 값은 남기지 않음)
+
       SocialIntegrationLog.warn(
           log,
           SocialLogContext.of(SocialProvider.GOOGLE, SocialIntegrationAction.CALENDAR_TOKEN_REVOKE)
@@ -286,7 +260,7 @@ public class GoogleCalendarOAuthClient {
         }
       }
     } catch (Exception ignored) {
-      // scope에 email 없을 수 있음 — primary calendar로 fallback
+
     }
     return null;
   }
@@ -307,7 +281,7 @@ public class GoogleCalendarOAuthClient {
         }
       }
     } catch (Exception ignored) {
-      // freeBusy-only scope 등 — 이메일 미저장 허용
+
     }
     return null;
   }

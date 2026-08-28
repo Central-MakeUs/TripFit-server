@@ -20,12 +20,10 @@ public abstract class SoftDeleteEntity extends BaseTimeEntity {
 
   protected SoftDeleteEntity() {}
 
-  // soft delete 처리 — deletedAt을 현재 시각으로 설정
   public void markDeleted() {
     this.deletedAt = LocalDateTime.now();
   }
 
-  // soft delete 취소(부활) — deletedAt을 null로 되돌림
   public void clearDeleted() {
     this.deletedAt = null;
   }

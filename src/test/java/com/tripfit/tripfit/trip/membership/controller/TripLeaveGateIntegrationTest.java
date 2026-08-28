@@ -35,9 +35,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// 나가기도 "방 안 기능"이라 입장(ACTIVE) 후에만 허용된다(2026-08-19 기획 확정, #122). 이 게이트는 인터셉터가
-// 담당하므로 서비스 단위 테스트로는 잡히지 않아, 실제 HTTP + MySQL(Testcontainers)로 확인한다.
-// 함께 고정하는 것: 미입장자가 점유한 자리는 본인이 비울 수 없고 방장 내보내기로만 회수된다는 회수 경로.
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -68,7 +65,6 @@ class TripLeaveGateIntegrationTest {
             .build();
   }
 
-  // 일정 확인을 끝내지 않은 멤버는 스스로 나갈 수 없다 — 403이고 자리(멤버 row)도 그대로 남는다
   @Test
   void leave_whenSchedulePending_returns403AndKeepsSeat() throws Exception {
     Trip trip = createTripWithOwner(3);
@@ -93,7 +89,6 @@ class TripLeaveGateIntegrationTest {
     assertThat(tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId())).isEqualTo(2);
   }
 
-  // 입장(ACTIVE)까지 마친 멤버는 그대로 나갈 수 있다 — 게이트 추가로 기존 동작이 깨지지 않음을 고정
   @Test
   void leave_whenActive_returns204() throws Exception {
     Trip trip = createTripWithOwner(3);
@@ -117,7 +112,6 @@ class TripLeaveGateIntegrationTest {
     assertThat(tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId())).isEqualTo(1);
   }
 
-  // 미입장자가 잡은 자리를 비우는 유일한 경로 — 방장 내보내기. 정원 2인 방에서 자리가 실제로 회수되는지까지 확인
   @Test
   void ownerRemove_whenTargetSchedulePending_reclaimsSeat() throws Exception {
     Trip trip = createTripWithOwner(2);
@@ -128,13 +122,11 @@ class TripLeaveGateIntegrationTest {
     String abandonerToken = jwtService.createAccessToken(abandoner.getId());
     String latecomerToken = jwtService.createAccessToken(latecomer.getId());
 
-    // 1. 마지막 자리를 미입장자가 차지 — 뒤에 온 사람은 정원 초과로 막힌다
     joinAsSchedulePending(trip, abandonerToken);
     join(trip, latecomerToken)
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("TRIP_MEMBER_FULL"));
 
-    // 2. 방장이 미입장자를 내보낸다 — 대상 상태를 보지 않는다
     mockMvc
         .perform(
             delete("/api/v1/trips/" + trip.getId() + "/members/" + abandoner.getId())
@@ -142,7 +134,6 @@ class TripLeaveGateIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.activeMemberCount").value(1));
 
-    // 3. 비워진 자리로 새 참여자가 들어온다
     join(trip, latecomerToken)
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.myMemberStatus").value("SCHEDULE_PENDING"));
@@ -194,7 +185,6 @@ class TripLeaveGateIntegrationTest {
     return trip;
   }
 
-  // 이름은 방 참여 전제(BR-USER-001), 연차·휴일 정보는 activate 전제(#112) — 둘 다 채워 게이트 대상을 나가기 하나로 좁힌다
   private User createUser(String prefix) {
     String subject = prefix + "-" + UUID.randomUUID();
     User user =

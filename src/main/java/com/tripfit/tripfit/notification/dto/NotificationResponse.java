@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Schema(description = "알림센터 알림 항목. GET /notifications 응답")
-// @formatter:off — record 컴포넌트 가독성(필드별 빈 줄·어노테이션 분리)
+
 public record NotificationResponse(
     @Schema(description = "알림 이력 ID") UUID id,
 
@@ -47,4 +47,3 @@ public record NotificationResponse(
         history.getSentAt());
   }
 }
-// @formatter:on

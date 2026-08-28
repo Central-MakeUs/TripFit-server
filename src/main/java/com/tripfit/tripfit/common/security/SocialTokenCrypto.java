@@ -34,7 +34,6 @@ public class SocialTokenCrypto {
     this.environment = environment;
   }
 
-  // 평문 소셜 OAuth refresh token → IV+암호문 Base64
   public String encrypt(String plaintext) {
     if (plaintext == null) {
       return null;
@@ -55,7 +54,6 @@ public class SocialTokenCrypto {
     }
   }
 
-  // IV+암호문 Base64 → 평문 소셜 OAuth refresh token
   public String decrypt(String ciphertextBase64) {
     if (ciphertextBase64 == null) {
       return null;

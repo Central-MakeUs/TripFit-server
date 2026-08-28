@@ -17,8 +17,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// 연동 유저 전원이 매 사이클 빠짐없이 동기화되는지(그룹 순번 분산 제거 후)와, 한 유저의 syncUser() 실패가
-// 다음 유저 처리를 막지 않는지 검증한다.
 @ExtendWith(MockitoExtension.class)
 class GoogleCalendarSyncSchedulerTest {
 

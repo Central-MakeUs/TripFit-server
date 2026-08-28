@@ -107,7 +107,6 @@ public class RecommendationFeedback extends BaseTimeEntity {
     this.reasonDetail = reasonDetail;
   }
 
-  // upsert 시 값만 갱신 — 스냅샷 식별 필드(mode/rank/dates)는 최초 생성 시점 값 유지
   public void applyFeedback(
       RecommendationFeedbackStatus status,
       RecommendationFeedbackReason reason,

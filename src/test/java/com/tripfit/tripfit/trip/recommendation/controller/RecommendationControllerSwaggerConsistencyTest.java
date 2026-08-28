@@ -34,8 +34,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// RecommendationController의 @ApiResponse 예시 필드 shape가 실제 응답과 어긋나지 않는지 실제 MySQL(Testcontainers) DB로
-// 전 구간(추천 생성→목록→근거 상세→피드백→확정→확정취소) 검증한다
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -81,7 +79,7 @@ class RecommendationControllerSwaggerConsistencyTest {
     String accessToken = jwtService.createAccessToken(owner.getId());
 
     LocalDate startRange = LocalDate.now().plusDays(30);
-    LocalDate endRange = startRange.plusDays(4); // 5일 범위, durationDays=3 → 후보 3개
+    LocalDate endRange = startRange.plusDays(4);
     Trip trip =
         tripRepository.save(
             new Trip(
@@ -93,7 +91,6 @@ class RecommendationControllerSwaggerConsistencyTest {
 
     String tripId = trip.getId().toString();
 
-    // 1. 추천 생성 — 오너 혼자라 항상 전체참석(참석률 100)
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/recommendations")
@@ -109,7 +106,6 @@ class RecommendationControllerSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.items[0].uncertainCount").value(0))
         .andExpect(jsonPath("$.data.items[0].totalVacationDays").value(0.0));
 
-    // 2. 목록 재조회 — 저장된 값 그대로
     mockMvc
         .perform(
             get("/api/v1/trips/" + tripId + "/recommendations")
@@ -117,7 +113,6 @@ class RecommendationControllerSwaggerConsistencyTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.items.length()").value(3));
 
-    // 3. 근거 상세 — 참여자별 브레이크다운(오너 1명)
     mockMvc
         .perform(
             get("/api/v1/trips/" + tripId + "/recommendations/1")
@@ -129,7 +124,6 @@ class RecommendationControllerSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.members[0].uncertainDays").value(0))
         .andExpect(jsonPath("$.data.feedback").doesNotExist());
 
-    // 4. 피드백 저장(upsert) 후 상세 재조회에 반영되는지
     mockMvc
         .perform(
             patch("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
@@ -144,7 +138,6 @@ class RecommendationControllerSwaggerConsistencyTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.feedback.status").value("HELPFUL"));
 
-    // 5. 확정 — status/confirmed* 필드가 문서화된 그대로 채워지는지
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/confirm")
@@ -158,7 +151,6 @@ class RecommendationControllerSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.confirmedVacationMemberCount").value(0))
         .andExpect(jsonPath("$.data.confirmedUncertainCount").value(0));
 
-    // 6. 확정 취소 — confirmed* 필드가 다시 null로, 방 상태는 ONGOING으로
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/unconfirm")
@@ -247,7 +239,6 @@ class RecommendationControllerSwaggerConsistencyTest {
 
     String tripId = trip.getId().toString();
 
-    // 방장이 먼저 추천을 생성해야 rank 1이 실제로 존재함
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/recommendations")
@@ -393,7 +384,6 @@ class RecommendationControllerSwaggerConsistencyTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.items.length()").value(3));
 
-    // 희망 일수(durationNights/durationDays) 변경 — BR-TRIP-010에 따라 기존 추천 hard DELETE
     mockMvc
         .perform(
             patch("/api/v1/trips/" + tripId)

@@ -13,7 +13,6 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
 
   Optional<NotificationHistory> findByIdAndUser_Id(UUID id, UUID userId);
 
-  // 알림센터 목록 — 최근 7일, 최신순(D9). trip fetch join으로 응답의 roomName 조회 시 N+1 방지
   @Query("SELECT h FROM NotificationHistory h LEFT JOIN FETCH h.trip "
       + "WHERE h.user.id = :userId AND h.sentAt >= :since ORDER BY h.sentAt DESC")
   List<NotificationHistory> findByUser_IdAndSentAtGreaterThanEqualOrderBySentAtDesc(

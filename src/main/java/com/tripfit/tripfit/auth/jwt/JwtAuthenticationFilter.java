@@ -19,7 +19,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private static final String BEARER_PREFIX = "Bearer ";
 
-  // permitAll 인증 엔드포인트 SSOT — SecurityConfig의 POST permitAll 등록도 이 목록을 그대로 씀(drift 방지)
   public static final Set<String> PUBLIC_AUTH_POST_PATHS =
       Set.of(
           "/api/v1/auth/login",
@@ -39,16 +38,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   }
 
   @Override
-  // permitAll 엔드포인트는 인증 파싱 자체를 안 태움 — 태우면 클라이언트가 관성적으로 실어 보내는 만료된
-  // 액세스 토큰 때문에 로그인·재발급(refresh) 요청 자체가 컨트롤러 도달 전에 401로 막히는 문제가 생김
+
   protected boolean shouldNotFilter(HttpServletRequest request) {
     return "POST".equals(request.getMethod())
         && PUBLIC_AUTH_POST_PATHS.contains(request.getRequestURI());
   }
 
   @Override
-  // 1. Bearer 없거나 빈 토큰 → 익명으로 chain 계속 (authenticated API는 EntryPoint/Resolver가 차단)
-  // 2. 파싱 성공 시 SecurityContext에 JwtAuthentication 설정
+
   protected void doFilterInternal(
       HttpServletRequest request,
       HttpServletResponse response,
@@ -72,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           .setAuthentication(new JwtAuthentication(claims.userId()));
       filterChain.doFilter(request, response);
     } catch (TripFitException exception) {
-      // JWT 파싱·검증 실패 — Filter 경로라 GlobalExceptionHandler 대신 Writer 사용
+
       ErrorCode errorCode = exception.getErrorCode();
       authErrorResponseWriter.write(response, errorCode);
     }

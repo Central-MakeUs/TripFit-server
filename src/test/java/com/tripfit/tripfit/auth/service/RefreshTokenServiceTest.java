@@ -16,7 +16,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-// 실제 Redis 컨테이너로 RTR(rotation)·reuse detection·유저 단위 일괄 회수를 검증
 class RefreshTokenServiceTest {
 
   private static final UUID USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
@@ -83,7 +82,6 @@ class RefreshTokenServiceTest {
         .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
   }
 
-  // 구 토큰 재사용 시 family 전체(그사이 새로 발급된 토큰까지)가 회수돼야 함
   @Test
   void rotate_alreadyRevokedToken_revokesWholeFamilyAndThrowsReuse() {
     IssuedRefreshToken issued = service.create(USER_ID);
@@ -94,7 +92,6 @@ class RefreshTokenServiceTest {
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_REFRESH_REUSE);
 
-    // reuse 탐지로 family가 통째로 죽어, 그사이 정상 발급됐던 토큰도 더 이상 못 씀
     assertThatThrownBy(() -> service.rotate(rotatedOnce.token()))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())

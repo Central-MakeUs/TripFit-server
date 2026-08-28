@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-// 여행방 멤버 목록·멤버별 일정 달력 조회
+
 public class TripMemberQueryService {
 
   private final TripMemberScheduleSnapshotRepository snapshotRepository;
@@ -39,7 +39,6 @@ public class TripMemberQueryService {
 
   private final ScheduleAvailabilityService scheduleAvailabilityService;
 
-  // 멤버 목록 조회 — 모집률·동명이인 displayName 포함
   @Transactional(readOnly = true)
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
     support.requireMembership(tripId, userId);
@@ -71,7 +70,6 @@ public class TripMemberQueryService {
     return new TripMembersResponse(memberCount, activeMemberCount, memberFillRate, items);
   }
 
-  // 희망 기간 멤버 전원 일정 달력 — 조율 중은 실시간, 확정·종료는 스냅샷(읽기 전용)
   @Transactional(readOnly = true)
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
     support.requireMembership(tripId, userId);
@@ -93,7 +91,6 @@ public class TripMemberQueryService {
     return new MemberScheduleCalendarResponse(startDate, endDate, readOnly, memberCalendars);
   }
 
-  // 조율 중(ONGOING) — 정기·개별 일정을 합친 달력 생성
   private List<MemberCalendar> buildLive(
       List<TripMember> members,
       Map<UUID, String> displayNames,
@@ -122,7 +119,6 @@ public class TripMemberQueryService {
     return memberCalendars;
   }
 
-  // 확정·종료 — 저장해 둔 스냅샷 row로 달력 구성
   private List<MemberCalendar> buildFromSnapshots(
       UUID tripId,
       List<TripMember> members,
@@ -156,7 +152,6 @@ public class TripMemberQueryService {
     return memberCalendars;
   }
 
-  // MemberCalendar 조립 — live·snapshot 두 경로 공용
   private static MemberCalendar toMemberCalendar(
       TripMember member,
       Map<UUID, String> displayNames,

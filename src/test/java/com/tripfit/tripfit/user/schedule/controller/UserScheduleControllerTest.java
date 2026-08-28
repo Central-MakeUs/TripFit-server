@@ -174,7 +174,6 @@ class UserScheduleControllerTest {
         .andExpect(jsonPath("$.data.items[0].morningStatus").value("IMPOSSIBLE"));
   }
 
-  // 사전 신청일이 빠지면 400 — 이 값이 최초/갱신 판정 마커라 누락을 200으로 흘려보내면 판정이 서지 않는다
   @Test
   void patchVacationPolicy_whenVacationApplyPeriodMissing_returns400() throws Exception {
     mockMvc

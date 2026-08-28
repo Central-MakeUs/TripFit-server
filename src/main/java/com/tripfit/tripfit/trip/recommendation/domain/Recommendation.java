@@ -58,7 +58,7 @@ public class Recommendation {
   @Column(nullable = false)
   private LocalDate endDate;
 
-  @Schema(description = "참석률(%) — (전체참석+부분참석 인원)/응답 참여자 수", example = "80")
+  @Schema(description = "참석률(%). (전체참석+부분참석 인원)/응답 참여자 수", example = "80")
   @Column(name = "attend_rate", nullable = false)
   private int attendRate;
 
@@ -74,7 +74,6 @@ public class Recommendation {
   @Column(name = "total_vacation_days", nullable = false)
   private double totalVacationDays;
 
-  // 추천 순위·동점 비교용 점수 — 응답에는 노출하지 않음(내부 정렬 전용)
   @Schema(description = "추천 점수 (100 - Σ패널티×가중치, 순위·동점 비교용)", example = "91.5")
   @Column(nullable = false)
   private double score;

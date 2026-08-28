@@ -143,7 +143,7 @@ class TripControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.tripId").value(TRIP_ID.toString()))
         .andExpect(jsonPath("$.data.myMemberStatus").value("SCHEDULE_PENDING"))
-        // 입장 전 참여자에게 초대 코드가 나가면 "공유는 방장만" 규칙이 깨진다
+
         .andExpect(jsonPath("$.data.inviteCode").doesNotExist());
   }
 

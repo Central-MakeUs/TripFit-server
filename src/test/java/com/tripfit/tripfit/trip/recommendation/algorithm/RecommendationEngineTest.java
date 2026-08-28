@@ -44,7 +44,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class RecommendationEngineTest {
 
-  // 공휴일 반영 테스트만 이 집합에 날짜를 넣는다 — 비워두면 기존 시나리오는 공휴일 없는 상태로 동작
   private final Set<LocalDate> holidays = new HashSet<>();
 
   private final HolidayProvider holidayProvider = (start, end) -> holidays;
@@ -81,7 +80,6 @@ class RecommendationEngineTest {
     when(userRepository.findAllById(any())).thenReturn(List.of(yoonji, eunseo));
   }
 
-  // scoring_draft.md 예시: 10일 오전·12일 오후만 불가능 → 연속 6슬롯(⌈9*0.5⌉=5 이상) → 부분 참석
   @Test
   void classifyMembers_partialAttendBoundaryExample_yoonji() {
     LocalDate start = LocalDate.now().plusDays(9);
@@ -118,7 +116,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
   }
 
-  // scoring_draft.md 예시: 10일 오후·12일 오전 불가능 → 최장 연속 4슬롯(<5) → 불참(분리된 구간 합산 금지)
   @Test
   void classifyMembers_nonAttendBoundaryExample_eunseo() {
     LocalDate start = LocalDate.now().plusDays(9);
@@ -153,7 +150,7 @@ class RecommendationEngineTest {
 
     assertThat(details).hasSize(1);
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
-    // 완전 불참자는 연차 계산에서 제외 — 참석 구간이 없으니 필요 연차도 0
+
     assertThat(details.get(0).vacationDays()).isZero();
   }
 
@@ -193,8 +190,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).uncertainDays()).isEqualTo(1);
   }
 
-  // 근무(09~18시)가 막는 날을 개별 일정으로 하루 통째 가능하게 override해두면, 그 근무는 오전·오후를 둘 다
-  // 걸치므로 종일 연차 1.0일로 집계된다 — 수동 override분과 자동 전환분이 같은 환산식을 쓰는지 확인
   @Test
   void classifyMembers_manualFullDayOverrideOnWorkday_countsOneVacationDay() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -230,8 +225,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // p1.md AS-IS/TO-BE 예시 — 월~금 09:00~18:00 근무, 연차 1일, 금~일 2박3일 여행. 금요일 근무와 겹치지만
-  // 연차 1일로 전체 참석 가능해야 한다(#105)
   @Test
   void classifyMembers_p1ExampleFridayOverlap_fullAttendWithOneVacationDay() {
     LocalDate friday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.FRIDAY));
@@ -256,8 +249,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 연차 예산 부족 시 강등 — 근무 겹침 2일(화~수)인데 연차 1일만 가능하면 전체 참석이 아니라 부분 참석으로
-  // 강등돼야 한다(#105, 무제한 연차 소모 회귀 방지)
   @Test
   void classifyMembers_vacationBudgetInsufficient_degradesToPartialAttend() {
     LocalDate tuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY));
@@ -282,8 +273,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 위 테스트의 대칭 케이스 — 근무 겹침 2일에 연차도 2일이면 전체 참석이 된다(기획 리포트 §3 "겹치는 일수 2일 /
-  // 연차 2일 → 전체 참석" 행). 예산이 딱 맞을 때 남김없이 다 쓰는지 확인
   @Test
   void classifyMembers_vacationBudgetExactlyCoversOverlap_fullAttend() {
     LocalDate tuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY));
@@ -308,8 +297,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(2.0);
   }
 
-  // 반차 불가 사용자의 종일 연차 대체 — 반나절(오전)만 근무와 겹쳐도 halfVacationAvailable=false면 반차(0.5일)가
-  // 아니라 종일 연차 1.0일로 계산돼야 한다(#105 특수 규칙 8)
   @Test
   void classifyMembers_halfVacationUnavailable_singleHalfBlockCostsFullDay() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -338,8 +325,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 예산은 정수 일수로 들어오지만 내부적으로 반나절 단위로 쪼개 쓴다 — 반차 가능 사용자가 연차 2일을 가지고
-  // 종일 연차 1일(월) + 오전 반차 0.5일(화) = 1.5일을 쓰는 조합을 실제로 고르는지 확인(기획자 문의 사례)
   @Test
   void classifyMembers_halfVacationAvailable_spendsFractionalDaysFromIntegerBudget() {
     LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
@@ -370,13 +355,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(monday, tuesday, List.of(member(yoonji)));
 
-    // 월 1.0 + 화 0.5 = 1.5일 — 예산 2일을 다 쓰지 않고 0.5 단위로 정확히 필요한 만큼만 사용
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.FULL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(1.5);
   }
 
-  // 위 테스트의 대칭 케이스 — 저녁을 안 막는 근무의 반나절(오전)만 걸리고 halfVacationAvailable=true면
-  // 종일 연차가 아니라 오전 반차 0.5일만 든다(근무 단위 전환이 반차 단위를 없애버리지 않았는지 확인)
   @Test
   void classifyMembers_halfVacationAvailable_singleHalfBlockCostsHalfDay() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -405,8 +387,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(0.5);
   }
 
-  // 개별 일정으로 이미 막아둔 슬롯은 연차로 전환 불가 — 오전은 개별 일정(결혼식 등)으로 명시적 불가, 오후는
-  // 근무만 막고 있어 전환 가능. 연차 예산이 충분해도 오전은 그대로 불가로 남아야 한다(#105 특수 규칙 7)
   @Test
   void classifyMembers_personalScheduleBlocksVacationConversion() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -434,13 +414,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 오후만 연차로 전환되어 오후+저녁만 연속 참석 — 오전까지 연차로 뚫었다면 FULL_ATTEND이었을 것
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(0.5);
   }
 
-  // 구글 캘린더 busy로 막힌 슬롯도 연차로 전환 불가 — 오후가 구글 일정으로 busy면 연차 예산이 충분해도
-  // 그대로 불가로 남아야 한다(#105 특수 규칙 7)
   @Test
   void classifyMembers_googleBusyBlocksVacationConversion() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -464,15 +441,13 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 오전만 연차로 전환되어 홀로 남고(저녁과 연속되지 않음) 오후는 구글 busy로 여전히 불가 → 최장 연속 1
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
   }
 
-  // 정기 일정을 몇 개 등록하든 연차 예산은 User 소유 값 하나뿐이다(#52) — 행 개수·생성 순서와 무관
   @Test
   void classifyMembers_multipleRegularSchedules_usesSingleUserVacationBudget() {
     LocalDate date = LocalDate.now().plusDays(9);
-    // 아래 두 정기 일정을 등록해도 예산은 이 값 하나로 고정된다
+
     yoonji.applyVacationPolicy(0, null, false, true);
     RegularSchedule firstRegistered =
         RegularSchedule.create(
@@ -490,7 +465,7 @@ class RecommendationEngineTest {
         firstRegistered,
         "createdAt",
         LocalDateTime.now().minusDays(1));
-    // 두 번째 정기 일정도 같은 User 소유라 별도 정책을 갖지 않는다 — 예산은 위에서 설정한 값 하나로 계산된다
+
     RegularSchedule laterRegistered =
         RegularSchedule.create(
             yoonji,
@@ -512,12 +487,9 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // yoonji의 연차 예산 0일이 그대로 쓰여 전환 자체가 불가 — 정기 일정을 2개 등록한 것과 무관
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
   }
 
-  // 근무가 2개면(예: 낮 근무 + 저녁 알바) 연차도 근무마다 따로 써야 한다 — 낮 근무를 빼도 저녁 알바는
-  // 별개 근무라 그대로 막히고, 예산이 1일뿐이면 둘 다 빼지 못해 더 긴 구간이 나오는 낮 근무만 뺀다
   @Test
   void classifyMembers_twoSeparateRegularSchedules_doesNotAutoOpenUnrelatedEveningJob() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -557,13 +529,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 낮 근무(연차 1일)만 전환되고 저녁 알바는 그대로 막혀있어 전체 참석이 아니다
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 위와 같은 낮 근무+저녁 알바 조합이라도 예산이 2일이면 두 근무를 각각 1일씩 빼서 하루를 통째로 비운다 —
-  // 근무마다 1일이므로 합계 2.0일
   @Test
   void classifyMembers_twoSeparateRegularSchedules_buysBothWithSufficientBudget() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -603,13 +572,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 낮 근무 종일 연차(1.0) + 저녁 알바 종일 연차(1.0) = 2.0일 써서 하루 전체 참석
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.FULL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(2.0);
   }
 
-  // 고정 근무가 저녁에만 있는 사용자(오전·오후는 원래 자유) — "저녁 반차"라는 상품은 없지만, 종일 연차
-  // 가격(1.0일)으로는 살 수 있다(#105 후속 — "저녁만 근무하면 연차를 아예 못 쓴다"는 오분류 방지)
   @Test
   void classifyMembers_eveningOnlyRegularSchedule_buysWithFullDayVacation() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -634,13 +600,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 반차 가능 여부와 무관하게 저녁은 항상 종일 연차 가격(1.0)으로만 구매 가능
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.FULL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 오후+저녁 근무(13~23시)가 이틀 연속인데 예산이 1일뿐이면, 하루치 근무만 통째로 빼고 나머지 하루는
-  // 그대로 막힌다 — 근무 하나를 빼는 값은 항상 1일이므로 예산 1일로는 이틀을 감당하지 못한다(#105 후속 amend)
   @Test
   void classifyMembers_afternoonEveningShiftTwoDays_budgetOneDay_clearsOnlyOneShift() {
     LocalDate start = LocalDate.now().plusDays(9);
@@ -661,14 +624,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(start, start.plusDays(1), List.of(member(yoonji)));
 
-    // 첫날 근무를 통째로 빼면 첫날 3슬롯 + 둘째날 오전까지 4슬롯 연속(⌈6*0.5⌉=3 이상) → 부분 참석
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 오후+저녁 근무(13~23시)에서 반차 0.5일만 쓰게 되는 유일한 조건 — 저녁이 근무가 아닌 이유(구글 busy 등)로도
-  // 막혀 있어 애초에 연차로 열 수 없을 때. 이때는 종일 연차를 사도 저녁이 안 열리므로 오후 반차 0.5일이 최선이다.
-  // (예산이 0.5일뿐인 상황은 maxVacationDays가 정수 일수라 발생하지 않는다 — 최소 예산이 이미 1일)
   @Test
   void classifyMembers_afternoonEveningShift_eveningBlockedElsewhere_buysOnlyAfternoonHalf() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -693,13 +652,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 저녁은 구글 일정으로도 막혀 연차 대상이 아님 → 오전+오후 2슬롯만 열려 부분 참석(⌈3*0.5⌉=2), 연차 0.5일
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(0.5);
   }
 
-  // 오후+저녁이 이어지는 근무(13~23시)는 종일 연차 1일이면 그 근무 사이클 전체(오후+저녁)가 한 번에 열린다 —
-  // 저녁 몫을 따로 사지 않는다("연차 = 근무 하나를 통째로 뺀다", #105 후속 amend)
   @Test
   void classifyMembers_afternoonEveningShift_fullDayVacationOpensWholeShift() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -724,8 +680,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 반차 불가 사용자도 같은 근무(13~23시)를 종일 연차 1일로 통째로 뺀다 — 반차를 못 쓴다고 해서 같은 근무의
-  // 저녁분을 또 사야 하는 게 아니다(#105 특수 규칙 8과 근무 단위 전환의 상호작용)
   @Test
   void classifyMembers_afternoonEveningShift_halfVacationUnavailable_stillCostsOneDay() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -746,12 +700,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 예산이 2일 남아있어도 근무는 하나뿐이라 1일만 쓴다
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.FULL_ATTEND);
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 오전부터 저녁까지 이어지는 종일 근무(예: 10~20시)도 종일 연차 1일로 오전·오후·저녁이 한 번에 열린다
   @Test
   void classifyMembers_fullDayIntoEveningShift_fullDayVacationOpensWholeShift() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -775,8 +727,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 저녁이 근무(19~23시)로 막혀 있어도 동시에 개별 일정(예: 밤 결혼식)으로도 막혀 있으면, 연차 예산이
-  // 충분해도 저녁 단독 구매 후보에서 제외돼 열 수 없다 — 연차는 근무만 대체(개별 일정 override가 항상 우선)
   @Test
   void classifyMembers_eveningBlockedByPersonalSchedule_cannotBeOpenedEvenWithBudget() {
     LocalDate date = LocalDate.now().plusDays(9);
@@ -798,12 +748,10 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // 오전·오후는 원래 자유라 그 둘만으로 부분 참석 기준(⌈3*0.5⌉=2)을 충족 — 저녁은 연차로도 못 없애 0일 그대로
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
     assertThat(details.get(0).vacationDays()).isZero();
   }
 
-  // ALL_ATTEND는 하드 필터가 아니다 — 목표 인원 미달(항상 불참자 존재)이어도 후보가 제외되지 않고 TOP3가 그대로 나옴
   @Test
   void generate_allAttendMode_doesNotHardFilterLowAttendanceCandidates() {
     Trip trip =
@@ -828,11 +776,9 @@ class RecommendationEngineTest {
     List<RecommendationCandidate> candidates =
         engine.generate(trip, RecommendationMode.ALL_ATTEND, members);
 
-    // 4일 범위·2일 후보 → 슬라이딩 윈도우 3개, eunseo가 항상 불참이어도 전부 후보로 남는다
     assertThat(candidates).hasSize(3);
   }
 
-  // 동점 처리 — 점수가 같으면 불확실 일정 수가 적은 후보가 먼저(시작일이 더 늦어도 우선)
   @Test
   void generate_tieBreak_byUncertainScheduleCountBeforeStartDate() {
     LocalDate earlierUncertainDay = LocalDate.now();
@@ -854,7 +800,7 @@ class RecommendationEngineTest {
         engine.generate(trip, RecommendationMode.BASIC, members);
 
     assertThat(candidates).hasSize(2);
-    // 두 후보 모두 참석·연차·휴일 정보는 동일(점수 동률) — 불확실 일정 없는 8/2가 8/1보다 먼저 와야 함
+
     assertThat(candidates.get(0).startDate()).isEqualTo(laterCleanDay);
     assertThat(candidates.get(1).startDate()).isEqualTo(earlierUncertainDay);
   }
@@ -901,7 +847,6 @@ class RecommendationEngineTest {
     return PersonalSchedule.create(user, date, morning, afternoon, evening, uncertain);
   }
 
-  // 공휴일에 쉬는 사용자(holidayRest=true)는 그날 근무가 없는 것으로 봐야 한다 — 연차를 쓰지 않고 전체 참석
   @Test
   void classifyMembers_holidayRestUser_holidayNeedsNoVacation() {
     LocalDate holiday = LocalDate.now().plusDays(9);
@@ -926,7 +871,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(0);
   }
 
-  // 같은 근무라도 공휴일이 아니면 종전대로 연차가 필요하다 — 위 테스트의 회귀 방지 짝
   @Test
   void classifyMembers_holidayRestUser_nonHolidayStillNeedsVacation() {
     LocalDate workday = LocalDate.now().plusDays(9);
@@ -949,7 +893,6 @@ class RecommendationEngineTest {
     assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
   }
 
-  // 공휴일에 일하는 사용자(holidayRest=false)는 공휴일에도 종전대로 연차가 필요하다
   @Test
   void classifyMembers_holidayRestFalseUser_holidayStillNeedsVacation() {
     LocalDate holiday = LocalDate.now().plusDays(9);

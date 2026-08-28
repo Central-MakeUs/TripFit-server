@@ -108,8 +108,6 @@ class AuthSecurityIntegrationTest {
         .andExpect(jsonPath("$.code").value("AUTH_EXPIRED"));
   }
 
-  // 회귀 테스트 — 클라이언트가 만료된 액세스 토큰을 Authorization 헤더로 습관적으로 실어 보내도
-  // permitAll인 refresh 자체는 막히면 안 됨(고쳐지기 전엔 필터가 컨트롤러 도달 전에 401 AUTH_EXPIRED로 차단했음)
   @Test
   void refresh_withExpiredBearerHeader_stillReachesController() throws Exception {
     when(authService.refresh("refresh-token"))
@@ -126,7 +124,6 @@ class AuthSecurityIntegrationTest {
         .andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"));
   }
 
-  // 서명 secret은 application-test.yml과 동일 — 이미 만료된 액세스 토큰을 즉시 만들기 위해 만료 시간을 음수로 둠
   private String expiredAccessToken() {
     JwtProperties expiredJwtProperties = new JwtProperties();
     expiredJwtProperties.setSecret("test-jwt-secret-key-at-least-32-characters");

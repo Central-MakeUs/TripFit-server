@@ -19,6 +19,6 @@ public enum UnconfirmReason {
   @Schema(description = "여행 계획이 변경되었어요")
   TRIP_PLAN_CHANGED,
 
-  @Schema(description = "기타 — reasonDetail(서술형) 필수")
+  @Schema(description = "기타. reasonDetail(서술형) 필수")
   OTHER
 }

@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AppleNotificationEvent(
     @Schema(
-        description = "이벤트 종류 — consent-revoked/account-delete/email-enabled/email-disabled 4종(2026-07 기준)",
+        description = "이벤트 종류. consent-revoked/account-delete/email-enabled/email-disabled 4종(2026-07 기준)",
         example = "consent-revoked") String type,
 
     @Schema(description = "Apple user identifier → user.social_id",
@@ -19,12 +19,12 @@ public record AppleNotificationEvent(
         nullable = true) @JsonProperty("event_time") Long eventTime,
 
     @Schema(
-        description = "email-enabled/email-disabled 전용 — 그 외 이벤트는 null",
+        description = "email-enabled/email-disabled 전용. 그 외 이벤트는 null",
         nullable = true,
         example = "user@privaterelay.appleid.com") String email,
 
     @Schema(
-        description = "email-enabled/email-disabled 전용 — Private Relay 여부, 그 외 이벤트는 null",
+        description = "email-enabled/email-disabled 전용. Private Relay 여부, 그 외 이벤트는 null",
         nullable = true) @JsonProperty("is_private_email") Boolean isPrivateEmail
 ) {
 }

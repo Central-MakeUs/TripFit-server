@@ -3,7 +3,6 @@ package com.tripfit.tripfit.common.logging;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import java.util.UUID;
 
-// 소셜 로그인·Google Calendar 연동 구조화 로그의 공통 필드 — SocialIntegrationLog가 MDC로 채운다
 public record SocialLogContext(
     SocialProvider provider,
     SocialIntegrationAction action,
@@ -31,7 +30,6 @@ public record SocialLogContext(
         grantedScope);
   }
 
-  // provider 에러 바디는 여기서만 채울 수 있게 해 PiiMasker 마스킹을 강제한다
   public SocialLogContext withProviderError(String reason, String rawMessage) {
     String masked = rawMessage == null ? null : PiiMasker.mask(rawMessage);
     return new SocialLogContext(

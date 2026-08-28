@@ -8,42 +8,29 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 @Schema(description = "여행방 생성 요청. POST /trips")
-// @formatter:off
+
 public record CreateTripRequest(
-    @Schema(description = "여행방 이름 (최대 15자)", example = "제주 3박4일", maxLength = 15)
-    @NotBlank
-    String name,
+    @Schema(description = "여행방 이름 (최대 15자)", example = "제주 3박4일",
+        maxLength = 15) @NotBlank String name,
 
-    @Schema(description = "희망 여행 기간 시작일", example = "2026-08-01")
-    @NotNull
-    LocalDate startRange,
+    @Schema(description = "희망 여행 기간 시작일", example = "2026-08-01") @NotNull LocalDate startRange,
 
-    @Schema(description = "희망 여행 기간 종료일", example = "2026-08-10")
-    @NotNull
-    LocalDate endRange,
+    @Schema(description = "희망 여행 기간 종료일", example = "2026-08-10") @NotNull LocalDate endRange,
 
     @Schema(
-        description =
-            "희망 여행 박수 (n박). durationDays와 둘 다 null=미정, 둘 다 값이면 nights+1 ≤ days ≤ nights+2."
-                + " 0박(당일치기)도 동일 규칙 적용(days 1~2)",
+        description = "희망 여행 박수 (n박). durationDays와 둘 다 null=미정, 둘 다 값이면 nights+1 ≤ days ≤ nights+2."
+            + " 0박(당일치기)도 동일 규칙 적용(days 1~2)",
         nullable = true,
-        example = "3")
-    Integer durationNights,
+        example = "3") Integer durationNights,
 
     @Schema(
         description = "희망 여행 일수 (m일). null=미정. durationNights+1 ~ durationNights+2 범위만 허용",
         nullable = true,
-        example = "4")
-    Integer durationDays,
+        example = "4") Integer durationDays,
 
-    @Schema(description = "모집 정원 (1~10)", example = "6", minimum = "1", maximum = "10")
-    @NotNull
-    @Min(1)
-    @Max(10)
-    Integer memberCount,
+    @Schema(description = "모집 정원 (1~10)", example = "6", minimum = "1",
+        maximum = "10") @NotNull @Min(1) @Max(10) Integer memberCount,
 
-    @Schema(description = "여행지. null=미정", nullable = true, example = "제주")
-    String destination
+    @Schema(description = "여행지. null=미정", nullable = true, example = "제주") String destination
 ) {
 }
-// @formatter:on

@@ -29,7 +29,7 @@ class TimeSlotTest {
 
   @Test
   void boundary_endsExactlyAtSlotStart_noOverlap() {
-    // [09:00, 13:00) does not overlap afternoon [13:00, 18:00)
+
     assertThat(TimeSlot.AFTERNOON.overlaps(LocalTime.of(9, 0), LocalTime.of(13, 0))).isFalse();
     assertThat(TimeSlot.MORNING.overlaps(LocalTime.of(9, 0), LocalTime.of(13, 0))).isTrue();
   }

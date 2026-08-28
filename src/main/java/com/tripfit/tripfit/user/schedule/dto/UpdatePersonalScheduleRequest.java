@@ -15,7 +15,7 @@ public record UpdatePersonalScheduleRequest(
         requiredMode = Schema.RequiredMode.REQUIRED) @NotEmpty @Valid List<PersonalScheduleItem> items
 ) {
 
-  @Schema(description = "특정 날짜의 슬롯 오버라이드·불확실 갱신 — slots·uncertain 각각 독립적으로 선택(둘 다 없으면 거부)")
+  @Schema(description = "특정 날짜의 슬롯 오버라이드·불확실 갱신. slots·uncertain 각각 독립적으로 선택(둘 다 없으면 거부)")
   public record PersonalScheduleItem(
       @Schema(
           description = "날짜",
@@ -23,7 +23,7 @@ public record UpdatePersonalScheduleRequest(
           requiredMode = Schema.RequiredMode.REQUIRED) @NotNull LocalDate scheduleDate,
 
       @Schema(
-          description = "슬롯 오버라이드. 이 날짜의 슬롯을 안 건드리려면 필드 자체를 생략(null) — 보내면 3개 전부 필수",
+          description = "슬롯 오버라이드. 이 날짜의 슬롯을 안 건드리려면 필드 자체를 생략(null). 보내면 3개 전부 필수",
           nullable = true,
           requiredMode = Schema.RequiredMode.NOT_REQUIRED) @Valid SlotUpdate slots,
 
@@ -35,7 +35,7 @@ public record UpdatePersonalScheduleRequest(
   ) {
   }
 
-  @Schema(description = "슬롯 3개(오전/오후/저녁) 오버라이드 — 하나라도 건드리면 3개 전부 명시")
+  @Schema(description = "슬롯 3개(오전/오후/저녁) 오버라이드. 하나라도 건드리면 3개 전부 명시")
   public record SlotUpdate(
       @Schema(
           description = "오전 [00:00, 13:00) 슬롯 오버라이드",

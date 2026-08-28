@@ -13,10 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-// A-2(트랜잭션 재구성)로 UserWithdrawalPersistenceService가 별도 빈으로 분리됐다 — Mockito 단위 테스트는
-// self-invocation 없이 프록시를 제대로 타는지, 실제 커밋이 일어나는지 검증하지 못한다. 이 테스트는 실제
-// MySQL(Testcontainers)로 finalizeWithdrawal()이 별도 빈 호출로도 트랜잭션이 걸려 정상 커밋되는지 확인한다 —
-// 앱 스토어 심사 대응(2026-08-05)
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -63,7 +59,7 @@ class UserWithdrawalPersistenceIntegrationTest {
     UUID userId = user.getId();
 
     persistenceService.finalizeWithdrawal(userId);
-    // 재호출해도 예외 없이 idempotent 종료돼야 함(이미 soft-delete된 계정)
+
     persistenceService.finalizeWithdrawal(userId);
 
     User reloaded = userRepository.findById(userId).orElseThrow();

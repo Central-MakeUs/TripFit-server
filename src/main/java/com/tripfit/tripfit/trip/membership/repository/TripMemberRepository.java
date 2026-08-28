@@ -18,7 +18,6 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
   Optional<TripMember> findByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
 
-  // 회원 탈퇴 cascade — 특정 role로 활성 참여 중인 멤버십 목록
   List<TripMember> findByUser_IdAndRoleAndDeletedAtIsNull(UUID userId, TripMemberRole role);
 
   @Query("""
@@ -31,10 +30,8 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
   long countByTripIdAndDeletedAtIsNull(UUID tripId);
 
-  // 일정 확인을 마친(ACTIVE) 멤버 수 — 상태는 activated_at 파생이라 컬럼 조건으로 센다
   long countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(UUID tripId);
 
-  // 진행 중 캐러셀: endRange≥today · Pin 우선 → pinnedAt → lastActivityAt
   @Query("""
       SELECT tm FROM TripMember tm
       JOIN FETCH tm.trip t
@@ -48,7 +45,6 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       @Param("userId") UUID userId,
       @Param("today") LocalDate today);
 
-  // 전체 보기: lastActivityAt만 · status/ownerOnly 필터
   @Query("""
       SELECT tm FROM TripMember tm
       JOIN FETCH tm.trip t
@@ -70,7 +66,6 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       @Param("statusFilter") String statusFilter,
       @Param("ownerOnly") boolean ownerOnly);
 
-  // 홈 카드 멤버 미리보기: 방당 최대 4 · 방장 우선 · joinedAt 내림차순
   @Query(
       value = """
           SELECT ranked.trip_id AS tripId, ranked.user_id AS userId,
@@ -113,7 +108,6 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       """)
   int clearExpiredPins(@Param("today") LocalDate today);
 
-  // 마이페이지 달력(C1) 상한 확장 근거 — 활성 참여 중인 ONGOING 여행 endRange 최댓값(없으면 null)
   @Query("""
       SELECT MAX(tm.trip.endRange) FROM TripMember tm
       WHERE tm.user.id = :userId

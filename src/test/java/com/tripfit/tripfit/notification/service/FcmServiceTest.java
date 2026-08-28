@@ -26,9 +26,7 @@ class FcmServiceTest {
   @Test
   void sendMulticast_whenFirebaseMessagingThrowsRuntimeException_doesNotPropagate()
       throws FirebaseMessagingException {
-    // firebaseMessaging은 @Lazy 빈이라 최초 접근 시 초기화 실패(BeanCreationException 등
-    // RuntimeException)가 날 수 있음 — 이 경우도 FirebaseMessagingException과 동일하게 흡수돼야
-    // 호출자(dispatch)의 REQUIRES_NEW 트랜잭션이 롤백되지 않는다
+
     when(firebaseMessaging.sendEach(org.mockito.ArgumentMatchers.anyList()))
         .thenThrow(new IllegalArgumentException("Illegal base64 character 25"));
 

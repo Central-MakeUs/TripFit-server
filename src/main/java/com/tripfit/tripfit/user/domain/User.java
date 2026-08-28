@@ -68,7 +68,7 @@ public class User extends SoftDeleteEntity {
   private String lastName;
 
   @Schema(
-      description = "소셜 provider 표시명 (prefill·참고용). 미제공 시 null — fallback 없음",
+      description = "소셜 provider 표시명 (prefill·참고용). 미제공 시 null. fallback 없음",
       nullable = true,
       example = "홍길동")
   @Column
@@ -85,7 +85,7 @@ public class User extends SoftDeleteEntity {
   @Column(name = "is_google_calendar_connected", nullable = false)
   private boolean isGoogleCalendarConnected;
 
-  @Schema(description = "알림 수신 여부(BR-USER-005). default true — false면 NOTI-001~005·009 전부 미발송",
+  @Schema(description = "알림 수신 여부(BR-USER-005). default true. false면 NOTI-001~005·009 전부 미발송",
       example = "true")
   @Column(name = "notification_enabled", nullable = false)
   private boolean notificationEnabled;
@@ -95,7 +95,7 @@ public class User extends SoftDeleteEntity {
   private int maxVacationDays = DEFAULT_MAX_VACATION_DAYS;
 
   @Schema(
-      description = "연차 신청 가능 시점(사전 신청일). null = 사전 일정 입력 미완료 — 최초/갱신 입력 판정 마커",
+      description = "연차 신청 가능 시점(사전 신청일). null = 사전 일정 입력 미완료. 최초/갱신 입력 판정 마커",
       nullable = true)
   @Enumerated(EnumType.STRING)
   @Column(name = "vacation_apply_period")
@@ -124,12 +124,10 @@ public class User extends SoftDeleteEntity {
     this.notificationEnabled = true;
   }
 
-  // 성·이름이 모두 입력됐는지 확인함 (온보딩 필수 프로필 완료)
   public boolean hasProfileNameComplete() {
     return firstName != null && !firstName.isBlank() && lastName != null && !lastName.isBlank();
   }
 
-  // 사용자 표시명 결정 — 성+이름 → nickname → "사용자" 기본값
   public String displayName() {
     if (hasProfileNameComplete()) {
       return lastName + firstName;
@@ -140,16 +138,12 @@ public class User extends SoftDeleteEntity {
     return "사용자";
   }
 
-  // 탈퇴(soft-deleted) 계정이 같은 소셜 계정으로 재로그인하면 기존 row를 그대로 부활시킴 — (provider, social_id)
-  // UNIQUE 제약 때문에 신규 row를 새로 만들 수 없어 기존 row를 재사용. firstName/lastName·구글 캘린더 연동은
-  // 탈퇴 시 초기화된 채로 남아 재온보딩이 필요함(신규 가입과 동일한 경험)
   public void reviveIfWithdrawn() {
     if (getDeletedAt() != null) {
       clearDeleted();
     }
   }
 
-  // 재로그인 시 소셜에서 온 값만 갱신 — 공백·null은 무시(기존 값 유지)
   public void applySocialProfile(String email, String nickname, String profileImageUrl) {
     if (email != null && !email.isBlank()) {
       this.email = email;
@@ -162,7 +156,6 @@ public class User extends SoftDeleteEntity {
     }
   }
 
-  // 프로필 부분 수정 — null인 파라미터는 미변경(onboarding은 firstName·lastName만, PATCH profile은 D8 부분 업데이트)
   public void applyProfilePatch(String firstName, String lastName, Boolean notificationEnabled) {
     if (firstName != null) {
       this.firstName = firstName;
@@ -183,14 +176,10 @@ public class User extends SoftDeleteEntity {
     this.isGoogleCalendarConnected = false;
   }
 
-  // 사전 일정 정보를 한 번이라도 입력 완료했는지 — 최초/갱신 입력 판정. 정기·개별 일정 row 수는 보지 않는다.
-  // 연차·휴일 정보 4개 중 사전 신청일만 nullable이라(나머지는 기본값이 늘 차 있어 "저장한 적 있음"을 구분 못 함)
-  // 이 값 하나가 입력 완료 마커 역할을 한다
   public boolean hasCompletedPreSchedule() {
     return vacationApplyPeriod != null;
   }
 
-  // 연차·휴일 정보 전체 교체(부분 patch 아님) — 4개 값 모두 필수라 호출부에서 null이 들어오지 않는다
   public void applyVacationPolicy(
       int maxVacationDays,
       VacationApplyPeriod vacationApplyPeriod,
@@ -202,7 +191,6 @@ public class User extends SoftDeleteEntity {
     this.holidayRest = holidayRest;
   }
 
-  // 연차·휴일 정보를 가입 직후 상태로 되돌린다 — 사전 신청일이 null이 되어 다시 "최초 입력"으로 판정된다
   public void resetVacationPolicy() {
     this.maxVacationDays = DEFAULT_MAX_VACATION_DAYS;
     this.vacationApplyPeriod = null;
@@ -210,9 +198,6 @@ public class User extends SoftDeleteEntity {
     this.holidayRest = true;
   }
 
-  // 탈퇴 확정 — soft delete + PII 스크럽. socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지.
-  // 연차·휴일 정보도 되돌린다 — 사전 신청일이 남으면 재가입 사용자가 곧바로 "갱신 입력"으로 판정돼
-  // 입력 플로우를 건너뛴다("신규 가입과 동일한 경험" 원칙 위반)
   public void scrubPiiForWithdrawal() {
     markDeleted();
     this.email = null;

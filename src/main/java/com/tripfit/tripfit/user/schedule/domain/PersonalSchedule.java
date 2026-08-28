@@ -78,7 +78,6 @@ public class PersonalSchedule extends BaseTimeEntity {
     return schedule;
   }
 
-  // 슬롯 3개만 갱신 — uncertain은 손대지 않음(O1.4 부분 업데이트)
   public void applySlots(
       ScheduleStatus morningStatus,
       ScheduleStatus afternoonStatus,
@@ -86,7 +85,6 @@ public class PersonalSchedule extends BaseTimeEntity {
     this.slotStatuses = new SlotStatuses(morningStatus, afternoonStatus, eveningStatus);
   }
 
-  // uncertain만 갱신 — 슬롯 오버라이드는 손대지 않음(O1.4 부분 업데이트)
   public void applyUncertain(boolean uncertain) {
     this.uncertain = uncertain;
   }

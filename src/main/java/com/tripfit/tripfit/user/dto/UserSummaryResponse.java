@@ -47,9 +47,9 @@ public record UserSummaryResponse(
         description = """
             사전 일정 정보를 한 번이라도 입력 완료했는지 (DB 컬럼 없음, 연차·휴일 정보의 사전 신청일 저장 여부에서 파생).
             false = 최초 입력 → "정기 일정이 있나요?" 화면부터. true = 갱신 입력 → "일정 변경이 있나요?" 화면부터.
-            정기·개별 일정 row 수는 판정에 쓰지 않는다 — 입력을 끝냈지만 막힌 일정이 없는 사용자도 true다.
+            정기·개별 일정 row 수는 판정에 쓰지 않는다. 입력을 끝냈지만 막힌 일정이 없는 사용자도 true다.
             PATCH /users/schedule/vacation-policy 저장 시 true가 되며, 탈퇴 후 재가입하면 false로 돌아간다.
-            일정 CRUD 응답에는 미포함 — GET /auth/me 등 재호출.
+            일정 CRUD 응답에는 미포함. GET /auth/me 등 재호출.
             """,
         example = "false") boolean hasCompletedPreSchedule,
 

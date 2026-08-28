@@ -35,8 +35,7 @@ public class AppConfig implements WebMvcConfigurer {
   }
 
   @Bean
-  // 외부 OAuth 제공자 호출에 사용할 공용 RestClient
-  // provider 장애로 응답이 없을 때 스레드가 무한 대기하지 않도록 connect/read 타임아웃을 명시 설정함
+
   RestClient restClient() {
     SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
     requestFactory.setConnectTimeout(Duration.ofSeconds(3));
@@ -45,7 +44,7 @@ public class AppConfig implements WebMvcConfigurer {
   }
 
   @Override
-  // @AuthorizedUser → UUID 주입 (SecurityContext principal)
+
   public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
     resolvers.add(authorizedUserArgumentResolver);
   }

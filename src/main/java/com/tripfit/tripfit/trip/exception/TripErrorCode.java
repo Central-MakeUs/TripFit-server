@@ -36,7 +36,7 @@ public enum TripErrorCode implements ErrorCode {
   @Schema(description = "방장은 내보낼 수 없음")
   CANNOT_REMOVE_OWNER(HttpStatus.BAD_REQUEST, "CANNOT_REMOVE_OWNER", "방장은 내보낼 수 없습니다."),
 
-  @Schema(description = "방장은 나갈 수 없음 — 방 삭제를 사용해야 함")
+  @Schema(description = "방장은 나갈 수 없음. 방 삭제를 사용해야 함")
   TRIP_OWNER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "TRIP_OWNER_CANNOT_LEAVE", "방장은 여행방을 나갈 수 없습니다. 여행방 삭제를 이용해주세요."),
 
   @Schema(description = "CONFIRMED가 아닌 방에서 unconfirm 호출")

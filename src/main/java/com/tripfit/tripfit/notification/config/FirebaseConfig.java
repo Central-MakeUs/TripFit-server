@@ -20,7 +20,6 @@ public class FirebaseConfig {
     this.fcmProperties = fcmProperties;
   }
 
-  // FCM 발송 시 최초 1회 지연 초기화됨 — 키 미설정 로컬·테스트는 부팅에 영향 없음(SocialTokenCrypto와 동일 패턴)
   @Bean
   @Lazy
   public FirebaseMessaging firebaseMessaging() {

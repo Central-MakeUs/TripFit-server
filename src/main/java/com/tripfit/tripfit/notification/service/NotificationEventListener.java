@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-// 여행방·리마인드 이벤트를 트랜잭션 커밋 후 받아 알림 문구를 만들고 FCM 발송·이력 저장을 수행한다(D5)
 @Component
 public class NotificationEventListener {
 
@@ -160,7 +159,6 @@ public class NotificationEventListener {
             () -> new IllegalStateException("Trip not found for notification dispatch: " + tripId));
   }
 
-  // ONGOING 여부와 무관하게 활성 멤버 전원 중 방장을 제외한 참여자(D3)
   private List<User> membersExcludingOwner(Trip trip) {
     return tripMemberRepository.findByTripIdAndDeletedAtIsNull(trip.getId()).stream()
         .filter(member -> member.getRole() != TripMemberRole.OWNER)
@@ -168,7 +166,6 @@ public class NotificationEventListener {
         .toList();
   }
 
-  // 알림 수신자에 notification_enabled 게이트(D10)를 적용해 이력 저장 + FCM 발송
   private void dispatch(
       List<User> recipients,
       Trip trip,
@@ -188,8 +185,6 @@ public class NotificationEventListener {
             .toList();
     notificationHistoryRepository.saveAll(histories);
 
-    // 토큰마다 소유 유저의 알림 이력 id를 붙여야 FCM data에 id를 실을 수 있음(멀티기기·멀티유저 혼재)
-    // Collectors.toMap은 value null을 허용하지 않아 HashMap을 직접 채움
     Map<UUID, UUID> historyIdByUserId = new HashMap<>();
     for (NotificationHistory history : histories) {
       historyIdByUserId.put(history.getUser().getId(), history.getId());

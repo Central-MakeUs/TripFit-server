@@ -34,8 +34,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-// 정원 보장은 Redis hold가 아니라 trip 행 비관적 락이 담당한다 — 단위 테스트로는 잡히지 않는 성질이라
-// 실제 MySQL(Testcontainers)에서 여러 스레드가 마지막 자리를 동시에 요청하게 만들어 검증한다
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -64,7 +62,7 @@ class TripJoinConcurrencyIntegrationTest {
 
     AtomicInteger joined = new AtomicInteger();
     AtomicInteger rejected = new AtomicInteger();
-    // 모든 스레드를 같은 순간에 출발시켜야 카운트-INSERT 사이의 레이스가 실제로 재현된다
+
     CyclicBarrier startLine = new CyclicBarrier(CONCURRENT_JOINS);
     ExecutorService pool = Executors.newFixedThreadPool(CONCURRENT_JOINS);
     try {
@@ -81,14 +79,12 @@ class TripJoinConcurrencyIntegrationTest {
     }
 
     long members = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
-    // 방장 1 + 참여자 = 정원을 절대 넘지 않는다
+
     assertThat(members).isEqualTo(MEMBER_COUNT);
     assertThat(joined.get()).isEqualTo(MEMBER_COUNT - 1);
     assertThat(rejected.get()).isEqualTo(CONCURRENT_JOINS - (MEMBER_COUNT - 1));
   }
 
-  // 자리를 잡고 일정 확인을 끝내지 않은 멤버는 자동으로 사라지지 않는다 — TTL·배치를 나중에 실수로
-  // 되살리는 것을 막기 위한 회귀 테스트
   @Test
   void abandonedSchedulePendingMember_isNotReclaimed() {
     Trip trip = createTripWithOwner();

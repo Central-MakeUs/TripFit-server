@@ -8,43 +8,37 @@ import java.util.UUID;
 
 @Schema(
     description = "정기 일정 1건 응답. GET /users/schedule/regular · POST /users/schedule/regular · PATCH /users/schedule/regular/{id}")
-// @formatter:off — record 컴포넌트 가독성(필드별 빈 줄·어노테이션 분리)
-public record RegularScheduleResponse(
-    @Schema(description = "정기 일정 ID", example = "550e8400-e29b-41d4-a716-446655440000")
-    UUID id,
 
-    @Schema(description = "표시명 (출근·수업 등)", example = "출근")
-    String title,
+public record RegularScheduleResponse(
+    @Schema(description = "정기 일정 ID", example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
+
+    @Schema(description = "표시명 (출근·수업 등)", example = "출근") String title,
 
     @Schema(
         description = "반복 요일. Weekday 콤마 구분(MON~SUN). 미설정 시 null",
         example = "MON,TUE,WED,THU,FRI",
-        nullable = true)
-    String daysOfWeek,
+        nullable = true) String daysOfWeek,
 
-    @Schema(description = "시작 시각. 미설정 시 null", example = "09:00:00", nullable = true)
-    LocalTime startTime,
+    @Schema(description = "시작 시각. 미설정 시 null", example = "09:00:00",
+        nullable = true) LocalTime startTime,
 
-    @Schema(description = "종료 시각. 미설정 시 null", example = "18:00:00", nullable = true)
-    LocalTime endTime,
+    @Schema(description = "종료 시각. 미설정 시 null", example = "18:00:00",
+        nullable = true) LocalTime endTime,
 
     @Schema(
         description = "오전 [00:00, 13:00) 슬롯. start/end 시각에서 파생",
         example = "IMPOSSIBLE",
-        nullable = true)
-    ScheduleStatus morningStatus,
+        nullable = true) ScheduleStatus morningStatus,
 
     @Schema(
         description = "오후 [13:00, 18:00) 슬롯. start/end 시각에서 파생",
         example = "IMPOSSIBLE",
-        nullable = true)
-    ScheduleStatus afternoonStatus,
+        nullable = true) ScheduleStatus afternoonStatus,
 
     @Schema(
         description = "저녁 [18:00, 24:00) 슬롯. start/end 시각에서 파생",
         example = "POSSIBLE",
-        nullable = true)
-    ScheduleStatus eveningStatus
+        nullable = true) ScheduleStatus eveningStatus
 ) {
 
   @Schema(description = "정기 일정 목록 응답. GET /users/schedule/regular")
@@ -53,4 +47,3 @@ public record RegularScheduleResponse(
   ) {
   }
 }
-// @formatter:on

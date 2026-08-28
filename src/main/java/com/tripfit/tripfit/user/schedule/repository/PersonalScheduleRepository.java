@@ -19,6 +19,5 @@ public interface PersonalScheduleRepository extends JpaRepository<PersonalSchedu
       LocalDate startDate,
       LocalDate endDate);
 
-  // 회원 탈퇴 cascade — userId 기준 전체 hard delete
   void deleteByUserId(UUID userId);
 }

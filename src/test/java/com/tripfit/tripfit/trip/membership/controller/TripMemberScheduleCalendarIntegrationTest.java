@@ -37,10 +37,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// docs/product/fe-context/schedule-personal-override-scenarios.md 시나리오 10 — 여행방 멤버 달력이
-// 본인 캘린더(schedule-slot-override O1.4)와 동일한 병합 결과를 내는지 실제 MySQL(Testcontainers) DB로 검증한다
-// (TripMemberQueryService.buildLive → ScheduleAvailabilityService.resolveAvailability → 공용
-// ScheduleCalendarResolver 재사용 여부를 실제 DB 라운드트립으로 확인)
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -83,7 +79,7 @@ class TripMemberScheduleCalendarIntegrationTest {
     User owner =
         new User("trip-member-sub", SocialProvider.GOOGLE, "owner@example.com", "방장", null);
     owner.applyProfilePatch("길동", "홍", null);
-    // 연차·휴일 정보는 이제 User 소유 값
+
     owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     owner = userRepository.save(owner);
     String accessToken = jwtService.createAccessToken(owner.getId());
@@ -92,7 +88,6 @@ class TripMemberScheduleCalendarIntegrationTest {
     LocalDate endRange = startRange.plusDays(6);
     LocalDate workday = startRange.plusDays(2);
 
-    // 정기(평일 09~18시) + 그중 하루만 개별 오버라이드(오후만 가능) — 부분 오버라이드가 그룹 달력에도 반영되는지가 핵심
     regularScheduleRepository.save(
         RegularSchedule.create(
             owner,
@@ -125,7 +120,6 @@ class TripMemberScheduleCalendarIntegrationTest {
         new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.ACTIVE,
             LocalDateTime.now()));
 
-    // 그룹 달력 — 부분 오버라이드(오후만 POSSIBLE)와 정기 계산값(아침 IMPOSSIBLE)이 섞여 반영돼야 한다
     mockMvc
         .perform(
             get("/api/v1/trips/" + trip.getId() + "/members/schedule-calendar")
@@ -136,7 +130,6 @@ class TripMemberScheduleCalendarIntegrationTest {
         .andExpect(jsonPath("$.data.members[0].role").value("OWNER"))
         .andExpect(jsonPath("$.data.members[0].memberStatus").value("ACTIVE"));
 
-    // 같은 날짜를 본인 캘린더(GET /users/schedule/calendar)로도 조회해 완전히 같은 값인지 대조
     var groupResult =
         mockMvc
             .perform(

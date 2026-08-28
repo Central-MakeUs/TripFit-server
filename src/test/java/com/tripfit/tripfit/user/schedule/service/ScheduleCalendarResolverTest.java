@@ -99,7 +99,7 @@ class ScheduleCalendarResolverTest {
             LocalTime.of(9, 0),
             LocalTime.of(18, 0));
     LocalDate thursday = LocalDate.of(2026, 8, 6);
-    // 오후만 오버라이드(반차) — 아침·저녁은 null이라 정기값을 그대로 따름
+
     PersonalSchedule personal =
         PersonalSchedule.create(user, thursday, null, ScheduleStatus.POSSIBLE, null, false);
 
@@ -153,9 +153,7 @@ class ScheduleCalendarResolverTest {
 
   @Test
   void resolve_personalSlotStatusesNullFromHibernate_fallsBackToRegularInsteadOfNpe() {
-    // 재현: 실제 DB에서 morning/afternoon/evening_status 3개 컬럼이 전부 NULL이면 Hibernate가
-    // 임베디드 자체를 null로 되돌린다(all-null composite) — in-memory SlotStatuses(null,null,null)과
-    // 달리 getSlotStatuses()가 진짜 null이 됨. 이 상태에서 NPE 없이 정기 일정으로 폴백해야 한다
+
     RegularSchedule work =
         RegularSchedule.create(
             user,
@@ -281,7 +279,7 @@ class ScheduleCalendarResolverTest {
 
   @Test
   void resolve_personalOverride_winsOverGoogleBusy() {
-    // O1 핵심: 개별 오버라이드는 정기뿐 아니라 구글 busy 신호도 이긴다
+
     LocalDate date = LocalDate.of(2026, 8, 11);
     PersonalSchedule personal =
         PersonalSchedule.create(user, date, null, ScheduleStatus.POSSIBLE, null, false);
@@ -339,7 +337,6 @@ class ScheduleCalendarResolverTest {
             Set.of(holiday),
             true);
 
-    // 정기가 빠지고 개별·구글 신호도 없으면 제약 없는 날 = sparse omit
     assertThat(days).isEmpty();
   }
 
@@ -383,8 +380,7 @@ class ScheduleCalendarResolverTest {
   @Test
   void resolve_holidayRestIsPerUser_bothRegularsDroppedOnHoliday() {
     LocalDate holiday = LocalDate.of(2026, 8, 17);
-    // 대표 행(먼저 등록된 회사)이 holidayRest=true면 알바 행 값과 무관하게 사람 단위로 전부 빠진다 —
-    // holidayRest는 이제 User 단위 값 하나이므로, 대표 행 기준값(true)을 그대로 resolve()에 전달한다
+
     RegularSchedule company = weekdayWork();
     ReflectionTestUtils.setField(company, "createdAt", LocalDateTime.now().minusDays(1));
     RegularSchedule partTime =
@@ -411,7 +407,7 @@ class ScheduleCalendarResolverTest {
 
   @Test
   void resolve_holidayRestUser_representativeRowGovernsEvenIfUnmatchedThatDay() {
-    // 대표 행(평일 근무)은 토요일에 매칭되지 않지만, 공휴일 휴무 판정은 여전히 대표 행 기준(true)이어야 한다
+
     LocalDate saturdayHoliday = LocalDate.of(2026, 8, 15);
     assertThat(saturdayHoliday.getDayOfWeek()).isEqualTo(DayOfWeek.SATURDAY);
 

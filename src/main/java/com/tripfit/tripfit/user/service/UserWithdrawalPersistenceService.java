@@ -12,9 +12,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// UserWithdrawalService.withdraw()가 소셜 provider revoke(외부 HTTP 최대 4회, best-effort)를 먼저 끝낸
-// 뒤에만 호출하는 DB 쓰기 전용 계층 — cascade·개인 데이터 hard delete·User soft delete를 하나의 짧은
-// 트랜잭션으로 묶는다 (A-2, GoogleCalendarSyncPersistenceService와 동일 패턴)
 @Service
 @RequiredArgsConstructor
 public class UserWithdrawalPersistenceService {
@@ -33,27 +30,23 @@ public class UserWithdrawalPersistenceService {
 
   private final RefreshTokenService refreshTokenService;
 
-  // cascade(참여 방 나가기·소유 방 삭제) → 개인 데이터 hard delete → User soft delete+PII 스크럽을 원자적으로 처리
   @Transactional
   public void finalizeWithdrawal(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (user.getDeletedAt() != null) {
-      // provider revoke 대기 중 동시 탈퇴 요청이 먼저 끝난 race — 중복 처리 없이 idempotent 종료
+
       return;
     }
 
-    // 1. cascade: MEMBER인 활성 방 전부 나가기 → OWNER인 활성 방 전부 삭제
     tripService.leaveAllActiveTripsAsMember(userId);
     tripService.deleteAllOwnedActiveTrips(userId);
 
-    // 2. 개인 전용 데이터 hard delete
     personalScheduleRepository.deleteByUserId(userId);
     regularScheduleRepository.deleteByUserId(userId);
     googleCalendarCredentialRepository.deleteByUser_Id(userId);
     googleCalendarBusyDayRepository.deleteByUser_Id(userId);
     refreshTokenService.revokeAllForUser(userId);
 
-    // 3. User soft delete + PII 스크럽 — socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지
     user.scrubPiiForWithdrawal();
   }
 }

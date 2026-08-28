@@ -18,15 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// 정기 요일 펼침 ⊕ 구글 busy(자동 계산 기본값)를, 개별 일정의 슬롯 단위 오버라이드로 덮어써 날짜별 최종 슬롯을 만든다(O1)
-// 슬롯 3개+구글 신호가 전부 없는 날짜는 응답에서 omit(sparse)
-// 공휴일에 쉬는 사용자(holidayRest)의 공휴일은 정기 일정을 적용하지 않는다 — 개별 일정·구글 busy는 그대로 유지
 public final class ScheduleCalendarResolver {
 
   private ScheduleCalendarResolver() {}
 
-  // 1. 날짜별 정기 매칭(공휴일에 쉬는 사용자면 그날 정기 전체 제외) 2. 슬롯마다 정기⊕구글로 기본값 계산
-  // 3. 개별 오버라이드가 있으면 그 슬롯만 최종 승자 — 개별·정기·구글 전부 없는 날짜만 omit
   public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
@@ -42,8 +37,6 @@ public final class ScheduleCalendarResolver {
     return resolve(regulars, personals, dates, googleBusyByDate, holidays, holidayRest);
   }
 
-  // 연속 구간 전체가 아니라 요청받은 날짜 집합만 계산 — upsertPersonal처럼 반영된 날짜만 필요할 때
-  // 날짜가 서로 멀리 떨어져 있어도 O(구간 전체)가 아닌 O(요청 날짜 수)로 순회한다
   public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
@@ -71,8 +64,6 @@ public final class ScheduleCalendarResolver {
         .toList();
   }
 
-  // 그날 실제로 적용되는 정기 일정 — 공휴일에 쉬는 사용자의 공휴일은 정기가 아예 없는 날처럼 취급한다.
-  // 개별 일정·구글 busy는 여기서 건드리지 않으므로 공휴일이어도 그대로 최종값을 이긴다
   private static List<RegularSchedule> regularsAppliedOn(
       LocalDate date,
       Map<DayOfWeek, List<RegularSchedule>> regularsByDayOfWeek,
@@ -92,7 +83,6 @@ public final class ScheduleCalendarResolver {
     return byDate;
   }
 
-  // 정기 일정을 요일별로 미리 묶어, 날짜마다 전체 목록을 선형 탐색하지 않게 함
   private static Map<DayOfWeek, List<RegularSchedule>> groupByDayOfWeek(
       List<RegularSchedule> regulars) {
     Map<DayOfWeek, List<RegularSchedule>> byDayOfWeek = new HashMap<>();
@@ -104,17 +94,13 @@ public final class ScheduleCalendarResolver {
     return byDayOfWeek;
   }
 
-  // 하루치 최종 슬롯 조립 — 슬롯마다 resolveSlot을 적용하고 uncertain은 개별 존재 여부로만 결정
   private static CalendarDayResponse resolveDay(
       LocalDate date,
       List<RegularSchedule> matched,
       PersonalSchedule personal,
       GoogleCalendarBusyDay googleBusy) {
     SlotStatuses regular = combineImpossibleWins(matched);
-    // personal이 있어도 getSlotStatuses()가 null일 수 있다 — @Embeddable 3개
-    // 컬럼(morning/afternoon/evening_status)이
-    // 전부 NULL이면 Hibernate가 임베디드 자체를 null로 되돌리는 all-null composite 동작 때문. "불확실만 체크,
-    // 슬롯 미선택"으로 저장된 개별 일정이 이 케이스라 empty()로 폴백해야 함(override 없음과 동일하게 처리)
+
     SlotStatuses override =
         personal != null && personal.getSlotStatuses() != null
             ? personal.getSlotStatuses()
@@ -136,7 +122,6 @@ public final class ScheduleCalendarResolver {
         personal != null && personal.isUncertain());
   }
 
-  // 슬롯 하나의 최종값 = 개별 오버라이드(있으면) > 정기⊕구글(자동 계산) > POSSIBLE("미입력≠불가능")
   private static ScheduleStatus resolveSlot(
       ScheduleStatus regularSlot,
       Boolean googleBusy,
@@ -148,7 +133,6 @@ public final class ScheduleCalendarResolver {
     return base != null ? base : ScheduleStatus.POSSIBLE;
   }
 
-  // 정기 슬롯값과 구글 busy를 OR 병합 — 정기 IMPOSSIBLE이거나 구글 busy면 IMPOSSIBLE, 둘 다 신호 없으면 null
   private static ScheduleStatus combineWithGoogle(ScheduleStatus regularSlot, Boolean googleBusy) {
     if (regularSlot == ScheduleStatus.IMPOSSIBLE || Boolean.TRUE.equals(googleBusy)) {
       return ScheduleStatus.IMPOSSIBLE;
@@ -171,7 +155,6 @@ public final class ScheduleCalendarResolver {
         : afternoon ? googleBusy.isAfternoonBusy() : googleBusy.isEveningBusy();
   }
 
-  // 같은 요일 정기 일정들의 슬롯을 IMPOSSIBLE 우선으로 합침 — 추천 엔진의 정기-only(연차 필요 판정) 재사용을 위해 public
   public static SlotStatuses combineImpossibleWins(List<RegularSchedule> matched) {
     return new SlotStatuses(
         mergeSlot(matched, true, false, false),
@@ -179,12 +162,10 @@ public final class ScheduleCalendarResolver {
         mergeSlot(matched, false, false, true));
   }
 
-  // daysOfWeek 문자열에 해당 요일이 포함되는지 판별함 — 추천 엔진 재사용을 위해 public
   public static boolean matchesDayOfWeek(String daysOfWeek, DayOfWeek dayOfWeek) {
     return parseDaysOfWeek(daysOfWeek).contains(dayOfWeek);
   }
 
-  // "MON,TUE,WED" 형태를 DayOfWeek 집합으로 파싱함 (잘못된 토큰은 스킵 — 저장본 호환)
   static Set<DayOfWeek> parseDaysOfWeek(String daysOfWeek) {
     Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
     if (daysOfWeek == null || daysOfWeek.isBlank()) {

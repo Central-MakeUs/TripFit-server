@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-// FCM 멀티캐스트 발송 — 500건 배치 분할(D6), 무효 토큰(UNREGISTERED/INVALID_ARGUMENT) 자동 삭제
 @Service
 public class FcmService {
 
@@ -30,8 +29,6 @@ public class FcmService {
 
   private final UserDeviceTokenRepository userDeviceTokenRepository;
 
-  // @Lazy는 생성자 파라미터에 있어야 Spring이 지연 프록시로 주입함(필드 애너테이션은 복사되지 않음) — Lombok
-  // @RequiredArgsConstructor 대상에서 제외
   public FcmService(
       @Lazy FirebaseMessaging firebaseMessaging,
       UserDeviceTokenRepository userDeviceTokenRepository) {
@@ -39,7 +36,6 @@ public class FcmService {
     this.userDeviceTokenRepository = userDeviceTokenRepository;
   }
 
-  // 토큰별 알림 이력 id를 매칭해 동일 알림을 발송한다 — 대상 토큰이 0개면 skip(에러 아님). tripId는 여행방과 무관한 알림(정기 리마인드)이면 null
   public void sendMulticast(
       Map<String, UUID> historyIdByToken,
       String title,
@@ -56,8 +52,6 @@ public class FcmService {
     }
   }
 
-  // token(등록 토큰) 기반 발송 — SDK가 신규 fid(Firebase Installation ID) 필드를 권장하지만 클라이언트는
-  // 표준 FCM 등록 토큰만 발급하므로(스펙 데이터 모델) token 유지
   @SuppressWarnings("deprecation")
   private void sendBatch(
       List<String> tokens,
@@ -75,8 +69,7 @@ public class FcmService {
                       Message.builder()
                           .setToken(token)
                           .setNotification(notification)
-                          // GET /notifications 응답 필드명(id/landingType/tripId)과 동일하게 맞춤 — FE가
-                          // REST·FCM data를 같은 파서로 처리
+
                           .putData("id", historyIdByToken.get(token).toString())
                           .putData("landingType", landingType.name());
                   if (tripId != null) {
@@ -89,10 +82,7 @@ public class FcmService {
       BatchResponse response = firebaseMessaging.sendEach(messages);
       deleteInvalidTokens(tokens, response);
     } catch (Exception exception) {
-      // FirebaseMessagingException(배치 전송 실패)뿐 아니라 지연 초기화된 firebaseMessaging 빈 생성
-      // 실패(BeanCreationException 등 RuntimeException)까지 전부 흡수한다 — 여기서 예외가 위로
-      // 전파되면 호출자(dispatch)의 REQUIRES_NEW 트랜잭션이 롤백되어 이미 저장한
-      // NotificationHistory까지 함께 사라진다. FCM 발송 실패가 알림 이력 저장을 막아서는 안 됨.
+
       log.warn("FCM 멀티캐스트 발송 실패", exception);
     }
   }

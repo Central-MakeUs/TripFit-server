@@ -9,9 +9,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Google login credential의 DB 조회·저장·삭제만 담당하는 짧은 트랜잭션 — GoogleLoginCredentialService가 Google
-// 토큰 엔드포인트 HTTP 호출(교환·revoke)을 이 트랜잭션 밖에서 먼저 끝내도록 분리한 것(AppleCredentialPersistenceService와
-// 동일 패턴). self-invocation 때문에 별도 빈으로 둔다
 @Service
 @RequiredArgsConstructor
 public class GoogleLoginCredentialPersistenceService {

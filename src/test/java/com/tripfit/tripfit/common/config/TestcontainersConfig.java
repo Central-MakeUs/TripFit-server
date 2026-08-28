@@ -7,8 +7,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-// @SpringBootTest에 @Import로 붙이면 실제 MySQL 8·Redis 컨테이너를 띄우고 datasource·redis 연결 정보를
-// 자동 배선한다(@ServiceConnection). 컨테이너는 JVM당 1개만 뜨고 전체 테스트 스위트가 재사용한다(Ryuk이 종료 시 정리).
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfig {
 

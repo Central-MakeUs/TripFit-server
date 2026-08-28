@@ -165,17 +165,14 @@ public class Trip extends SoftDeleteEntity {
     this.lastActivityAt = LocalDateTime.now();
   }
 
-  // 최근 활동 시각 갱신 — join·patch·confirm·추천·확정 등에서 Aspect가 호출
   public void touchLastActivity() {
     this.lastActivityAt = LocalDateTime.now();
   }
 
-  // 여행지 설정 — 생성자에 destination 파라미터가 없어 생성 직후 별도로 채움
   public void applyDestination(String destination) {
     this.destination = destination;
   }
 
-  // 방장 메타 수정(PATCH) — 값 변경 여부 판단은 호출부 책임, 5개 필드 항상 덮어씀
   public void applyPatch(
       String name,
       String destination,
@@ -189,7 +186,6 @@ public class Trip extends SoftDeleteEntity {
     this.memberCount = memberCount;
   }
 
-  // 여행 날짜 확정 — 확정 시점 참석·연차·불확실 인원 통계도 함께 저장
   public void confirm(
       LocalDate confirmedStartDate,
       LocalDate confirmedEndDate,
@@ -204,7 +200,6 @@ public class Trip extends SoftDeleteEntity {
     this.confirmedUncertainCount = confirmedUncertainCount;
   }
 
-  // 확정 취소 — ONGOING으로 되돌리고 확정 통계 전부 초기화. reasonDetail은 reason=OTHER일 때만 보존
   public void unconfirm(UnconfirmReason reason, String reasonDetail) {
     this.unconfirmReason = reason;
     this.unconfirmReasonDetail = reason == UnconfirmReason.OTHER ? reasonDetail : null;
@@ -216,12 +211,10 @@ public class Trip extends SoftDeleteEntity {
     this.confirmedUncertainCount = null;
   }
 
-  // end_range 경과로 방을 종료 처리
   public void expire() {
     this.status = TripStatus.EXPIRED;
   }
 
-  // 추천 생성 API 저장 시 마지막 사용 모드 갱신
   public void applyLastRecommendationMode(RecommendationMode mode) {
     this.lastRecommendationMode = mode;
   }

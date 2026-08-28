@@ -5,8 +5,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
-// SocialLogContext 필드를 MDC에 채운 뒤 로그를 남기고 정리 — auth.oauth/auth.service/user.googlecalendar
-// 패키지 전용 JSON appender(logback-spring.xml)가 이 MDC 값을 그대로 구조화 필드로 직렬화한다
 public final class SocialIntegrationLog {
 
   private SocialIntegrationLog() {}

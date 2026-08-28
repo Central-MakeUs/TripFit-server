@@ -17,7 +17,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-// 운영 500 사고(같은 토큰이 이미 다른 유저 소유일 때 저장 실패 후 재조회까지 같은 제약 위반을 던지던 문제)의 실제 재현·회귀 테스트
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)

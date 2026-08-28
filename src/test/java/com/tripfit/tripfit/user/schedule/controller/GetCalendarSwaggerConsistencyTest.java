@@ -27,8 +27,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// GET /users/schedule/calendar의 Swagger(@ApiResponse 200/400 예시)가 실제 컨트롤러 동작과
-// 어긋나지 않는지 검증한다 — O1.4에서 이 API 응답 모양 자체는 안 바뀌었지만, 실제로 확인은 안 했었다
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -63,7 +61,7 @@ class GetCalendarSwaggerConsistencyTest {
             "getcal@example.com",
             "닉",
             null);
-    // 연차·휴일 정보는 이제 User 소유 값
+
     user.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     user = userRepository.save(user);
     accessToken = jwtService.createAccessToken(user.getId());
@@ -76,8 +74,6 @@ class GetCalendarSwaggerConsistencyTest {
             LocalTime.of(18, 0)));
   }
 
-  // 200 @ApiResponse 예시가 선언한 필드(startDate/endDate/days[].date/morningStatus/afternoonStatus/
-  // eveningStatus/uncertain)가 실제 응답에도 그대로 있는지
   @Test
   void okExample_fieldShape_matchesActualResponse() throws Exception {
     LocalDate date = LocalDate.now().plusDays(15);
@@ -98,7 +94,6 @@ class GetCalendarSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.days[0].uncertain").value(false));
   }
 
-  // 400 @ApiResponse 예시("조회 구간이 허용 윈도우 밖")가 실제 에러 바디와 일치하는지 — startDate가 오늘 이전
   @Test
   void badRequestExample_startBeforeToday_matchesActualErrorBody() throws Exception {
     LocalDate yesterday = LocalDate.now().minusDays(1);

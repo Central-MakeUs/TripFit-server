@@ -14,7 +14,6 @@ public class AuthErrorResponseWriter {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  // Filter·EntryPoint 경로 — DispatcherServlet 밖이라 Advice 대신 직접 ErrorResponse JSON 기록
   public void write(HttpServletResponse response, ErrorCode errorCode) throws IOException {
     response.setStatus(errorCode.getHttpStatus().value());
     response.setCharacterEncoding(StandardCharsets.UTF_8.name());

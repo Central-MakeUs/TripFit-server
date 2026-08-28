@@ -19,9 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// credential 생성/갱신/삭제 세부 동작(신규 vs 기존 overwrite)은 AppleCredentialPersistenceServiceTest 담당 —
-// 여기서는 saveIfAuthorizationCodePresent/revokeAndDeleteIfPresent가 HTTP 교환·revoke와 persistenceService
-// 위임을 best-effort로 올바르게 조율하는지만 검증
 @ExtendWith(MockitoExtension.class)
 class AppleCredentialServiceTest {
 

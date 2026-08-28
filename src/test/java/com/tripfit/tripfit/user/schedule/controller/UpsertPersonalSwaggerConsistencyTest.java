@@ -30,9 +30,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// UserScheduleController.upsertPersonal의 Swagger(@RequestBody 예시·200/400 @ApiResponse 예시·
-// PersonalScheduleItem/SlotUpdate @Schema requiredMode)가 실제 컨트롤러 동작과 어긋나지 않는지
-// 검증한다 — "Swagger를 보고 프론트가 그대로 호출하면 문서와 같은 응답이 온다"를 실제 MySQL(Testcontainers) DB로 확인
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -68,7 +65,6 @@ class UpsertPersonalSwaggerConsistencyTest {
     accessToken = jwtService.createAccessToken(user.getId());
   }
 
-  // @RequestBody 예시 "슬롯만 변경" — Swagger에 적힌 그대로 보내면 200과 동일한 필드 구성이 와야 한다
   @Test
   void requestBodyExample_slotsOnly_matchesDocumentedResponseShape() throws Exception {
     var date = java.time.LocalDate.now().plusDays(10);
@@ -85,8 +81,7 @@ class UpsertPersonalSwaggerConsistencyTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isOk())
-        // 200 @ApiResponse 예시가 선언한 필드 6개(id, scheduleDate, morningStatus, afternoonStatus,
-        // eveningStatus, uncertain)가 실제 응답에도 정확히 그 이름으로 존재하는지
+
         .andExpect(jsonPath("$.data.items[0].id").exists())
         .andExpect(jsonPath("$.data.items[0].scheduleDate").value(date.toString()))
         .andExpect(jsonPath("$.data.items[0].morningStatus").value("IMPOSSIBLE"))
@@ -95,7 +90,6 @@ class UpsertPersonalSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.items[0].uncertain").value(false));
   }
 
-  // @RequestBody 예시 "불확실 여부만 변경" — slots 생략이 Swagger 설명대로 실제로 허용되는지
   @Test
   void requestBodyExample_uncertainOnly_isAccepted() throws Exception {
     var date = java.time.LocalDate.now().plusDays(11);
@@ -113,7 +107,6 @@ class UpsertPersonalSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.items[0].uncertain").value(true));
   }
 
-  // @RequestBody 예시 "슬롯·불확실 동시 변경"
   @Test
   void requestBodyExample_slotsAndUncertainTogether_isAccepted() throws Exception {
     var date = java.time.LocalDate.now().plusDays(12);
@@ -134,8 +127,6 @@ class UpsertPersonalSwaggerConsistencyTest {
         .andExpect(jsonPath("$.data.items[0].uncertain").value(false));
   }
 
-  // 400 @ApiResponse 예시 문구({"code": "INVALID_INPUT", "message": "입력값이 올바르지 않습니다."})가
-  // 실제 400 응답 바디와 글자 그대로 일치하는지
   @Test
   void badRequestExample_matchesActualErrorBody() throws Exception {
     mockMvc
@@ -151,8 +142,6 @@ class UpsertPersonalSwaggerConsistencyTest {
         .andExpect(jsonPath("$.message").value("입력값이 올바르지 않습니다."));
   }
 
-  // /v3/api-docs가 실제로 뿜는 스키마의 required 목록이 @Schema(requiredMode)로 선언한 것과 같은지 —
-  // PersonalScheduleItem은 scheduleDate만 필수(slots/uncertain은 선택), SlotUpdate는 3필드 전부 필수
   @Test
   void openApiSchema_requiredFields_matchAnnotatedConstraints() throws Exception {
     var result =

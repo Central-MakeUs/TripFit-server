@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
-// 동명이인 표시명 — 첫 사람은 원명, 이후 `홍길동(2)` 형식
 public final class TripDisplayNameHelper {
 
   private TripDisplayNameHelper() {}
@@ -16,8 +15,6 @@ public final class TripDisplayNameHelper {
     return assignDisplayNames(usersInOrder, User::displayName);
   }
 
-  // 홈 카드·상세 membersPreview 아바타 전용 — 성 없이 이름만("길동") 노출. 나머지 폴백(닉네임·"사용자")·동명이인 접미사는
-  // assignDisplayNames와 동일
   public static Map<UUID, String> assignPreviewDisplayNames(List<User> usersInOrder) {
     return assignDisplayNames(usersInOrder, TripDisplayNameHelper::previewBaseName);
   }

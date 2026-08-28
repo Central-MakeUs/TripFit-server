@@ -30,8 +30,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// upsert(신규 생성·탈퇴 부활·필드 갱신) 자체의 세부 동작은 AuthLoginPersistenceServiceTest 담당 — 여기서는
-// login()이 검증·persist·credential 저장·토큰 발급을 올바른 순서로 조율하는지만 검증
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
@@ -98,7 +96,6 @@ class AuthServiceTest {
             });
   }
 
-  // 소셜 프로필과 동일한 필드를 가진 User를 만들고, persist()가 이를 반환하도록 스텁
   private static User persistedUser(OAuthProfile profile) {
     User user =
         new User(
@@ -234,7 +231,6 @@ class AuthServiceTest {
         .saveIfAuthorizationCodePresent(eq(user), eq("google-auth-code"), isNull());
   }
 
-  // 브라우저 리다이렉트 로그인 — LoginRequest.redirectUri가 GoogleLoginCredentialService까지 그대로 전달돼야 함
   @Test
   void login_whenGoogleWithRedirectUri_passesItToCredentialService() {
     User user = persistedUser(oAuthProfile);
@@ -294,7 +290,6 @@ class AuthServiceTest {
     verify(refreshTokenService).delete("refresh-token");
   }
 
-  // 쿠키가 이미 없는 경우(만료·미전송) — 지울 게 없으므로 조용히 넘어가고 로그아웃 자체는 계속 성공해야 함
   @Test
   void logout_withoutRefreshTokenCookie_skipsDeleteWithoutFailing() {
     authService.logout(null);

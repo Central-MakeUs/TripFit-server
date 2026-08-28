@@ -36,7 +36,7 @@ public class UserDeviceToken extends BaseTimeEntity {
   @Column(length = 36, nullable = false, updatable = false)
   private UUID id;
 
-  @Schema(description = "토큰 소유 사용자 — 동일 토큰 재등록 시 재할당")
+  @Schema(description = "토큰 소유 사용자. 동일 토큰 재등록 시 재할당")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;

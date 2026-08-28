@@ -11,7 +11,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-// BR-NOTI-005 — 매월 1·15일 09:00(KST) notification_enabled=true 사용자에게 리마인드 발행(D6)
 @Component
 public class ScheduleReminderBatch {
 

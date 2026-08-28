@@ -19,9 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// credential 생성/갱신/삭제 세부 동작(신규 vs 기존 overwrite)은 GoogleLoginCredentialPersistenceServiceTest
-// 담당 — 여기서는 saveIfAuthorizationCodePresent/revokeAndDeleteIfPresent가 HTTP 교환·revoke와
-// persistenceService 위임을 best-effort로 올바르게 조율하는지만 검증
 @ExtendWith(MockitoExtension.class)
 class GoogleLoginCredentialServiceTest {
 
@@ -61,7 +58,6 @@ class GoogleLoginCredentialServiceTest {
     verify(persistenceService).save(user, "encrypted-refresh");
   }
 
-  // 브라우저 로그인(redirectUri 있음) — GoogleOAuthClient에 그대로 전달돼야 함
   @Test
   void saveIfAuthorizationCodePresent_whenRedirectUriPresent_passesItToClient() {
     User user = user();
@@ -83,7 +79,6 @@ class GoogleLoginCredentialServiceTest {
             "https://tripfit.online/auth/google/callback");
   }
 
-  // Google은 재로그인마다 refresh_token을 내려주지 않으므로(최초 동의 시에만), null 응답은 정상 케이스로 skip해야 함
   @Test
   void saveIfAuthorizationCodePresent_whenRefreshTokenAbsent_skipsSave() {
     User user = user();

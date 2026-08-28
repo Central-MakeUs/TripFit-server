@@ -31,9 +31,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-// 여행방 전체 생명주기(생성→activate→참여→추천→확정→나가기/내보내기/메타수정 시도→확정취소→재확정→삭제)를
-// 실제 REST 엔드포인트 + MySQL(Testcontainers) DB로 처음부터 끝까지 밟아, #13/#50 추천·확정 구현이 기존 트립 라이프사이클
-// 전이(ONGOING/CONFIRMED 게이트, join 차단, leave/remove 게이트)와 충돌하지 않는지 검증한다
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -97,9 +94,8 @@ class TripFullLifecycleIntegrationTest {
     String thirdToken = jwtService.createAccessToken(thirdUser.getId());
 
     LocalDate startRange = LocalDate.now().plusDays(30);
-    LocalDate endRange = startRange.plusDays(6); // 7일 범위, durationDays=4 → 후보 4개(TOP3만 저장)
+    LocalDate endRange = startRange.plusDays(6);
 
-    // 1. 생성 — 방장은 SCHEDULE_PENDING, 초대코드 없음
     MvcResult createResult =
         mockMvc
             .perform(
@@ -117,7 +113,6 @@ class TripFullLifecycleIntegrationTest {
             .andReturn();
     String tripId = extract("tripId", createResult.getResponse().getContentAsString());
 
-    // 2. 방장 activate — SCHEDULE_PENDING → ACTIVE (일정 건수는 보지 않음. 사전 일정 입력 완료는 필요)
     MvcResult activateResult =
         mockMvc
             .perform(
@@ -128,7 +123,6 @@ class TripFullLifecycleIntegrationTest {
             .andReturn();
     String inviteCode = extract("inviteCode", activateResult.getResponse().getContentAsString());
 
-    // 3. 멤버가 초대코드로 참여 — 링크를 연 시점이라 SCHEDULE_PENDING, 아직 방 안은 못 본다
     mockMvc
         .perform(
             post("/api/v1/trips/join")
@@ -139,7 +133,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(jsonPath("$.data.myMemberStatus").value("SCHEDULE_PENDING"))
         .andExpect(jsonPath("$.data.inviteCode").doesNotExist());
 
-    // 3-1. 일정 확인 전에는 방 상세가 막힌다
     mockMvc
         .perform(
             get("/api/v1/trips/" + tripId)
@@ -147,7 +140,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.code").value("SCHEDULE_ACTIVATION_REQUIRED"));
 
-    // 3-2. 멤버도 방장과 같은 activate를 거쳐 ACTIVE가 된다
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/activate")
@@ -155,7 +147,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.myMemberStatus").value("ACTIVE"));
 
-    // 4. 멤버 목록 — 2명 다 ACTIVE
     mockMvc
         .perform(
             get("/api/v1/trips/" + tripId + "/members")
@@ -163,7 +154,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.activeMemberCount").value(2));
 
-    // 5. 추천 생성 — 방장 전용, 둘 다 전부 free라 전체참석
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/recommendations")
@@ -174,7 +164,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(jsonPath("$.data.items.length()").value(3))
         .andExpect(jsonPath("$.data.items[0].attendRate").value(100));
 
-    // 6. 참여자(멤버)는 추천 목록에 접근 불가 — 권한 매트릭스 재확인
     mockMvc
         .perform(
             get("/api/v1/trips/" + tripId + "/recommendations")
@@ -182,7 +171,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.code").value("TRIP_FORBIDDEN"));
 
-    // 7. 피드백 저장 후 확정 — status CONFIRMED, 확정 통계 2명
     mockMvc
         .perform(
             patch("/api/v1/trips/" + tripId + "/recommendations/1/feedback")
@@ -201,7 +189,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
         .andExpect(jsonPath("$.data.confirmedAttendCount").value(2));
 
-    // 8. 멤버 달력 조회 — CONFIRMED면 스냅샷(readOnly=true)으로 전환
     mockMvc
         .perform(
             get("/api/v1/trips/" + tripId + "/members/schedule-calendar")
@@ -209,7 +196,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.readOnly").value(true));
 
-    // 9. CONFIRMED 상태에서 메타 수정 시도 — TRIP_NOT_ONGOING
     mockMvc
         .perform(
             patch("/api/v1/trips/" + tripId)
@@ -221,7 +207,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("TRIP_NOT_ONGOING"));
 
-    // 10. CONFIRMED 상태에서 제3자 신규 참여 시도 — TRIP_ALREADY_CONFIRMED
     mockMvc
         .perform(
             post("/api/v1/trips/join")
@@ -231,7 +216,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("TRIP_ALREADY_CONFIRMED"));
 
-    // 11. CONFIRMED 상태에서 방장의 멤버 내보내기 시도 — TRIP_NOT_ONGOING (removeMember도 ONGOING 게이트)
     mockMvc
         .perform(
             delete("/api/v1/trips/" + tripId + "/members/" + member.getId())
@@ -239,14 +223,12 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("TRIP_NOT_ONGOING"));
 
-    // 12. CONFIRMED여도 ACTIVE 멤버의 자진 나가기는 허용 — 방 상태 게이트는 없다(멤버 상태 게이트는 #122로 존재)
     mockMvc
         .perform(
             delete("/api/v1/trips/" + tripId + "/members/me")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberToken))
         .andExpect(status().isNoContent());
 
-    // 13. 확정 취소 — ONGOING 복귀, 확정 통계 초기화, 추천 후보 hard delete
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/unconfirm")
@@ -270,7 +252,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.items.length()").value(0));
 
-    // 14. 나갔던 멤버 자리는 비었으니 재추천 — 방장 혼자라 전체참석 100
     mockMvc
         .perform(
             post("/api/v1/trips/" + tripId + "/recommendations")
@@ -280,7 +261,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.items[0].attendRate").value(100));
 
-    // 15. ONGOING 복귀 후에는 메타 수정도 다시 허용됨
     mockMvc
         .perform(
             patch("/api/v1/trips/" + tripId)
@@ -292,7 +272,6 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.name").value("재조율 완료"));
 
-    // 16. 직접 날짜 입력으로 재확정 — durationDays=4와 일치하는 3박4일 구간
     LocalDate customStart = startRange.plusDays(1);
     LocalDate customEnd = customStart.plusDays(3);
     mockMvc
@@ -308,14 +287,12 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(jsonPath("$.data.confirmedStartDate").value(customStart.toString()))
         .andExpect(jsonPath("$.data.confirmedEndDate").value(customEnd.toString()));
 
-    // 17. 삭제 — CONFIRMED여도 방장 삭제는 게이트 없이 허용(soft delete)
     mockMvc
         .perform(
             delete("/api/v1/trips/" + tripId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerToken))
         .andExpect(status().isNoContent());
 
-    // 18. 삭제 후 조회 — TRIP_NOT_FOUND
     mockMvc
         .perform(
             get("/api/v1/trips/" + tripId)

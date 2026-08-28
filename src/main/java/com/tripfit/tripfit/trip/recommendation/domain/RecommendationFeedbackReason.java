@@ -16,6 +16,6 @@ public enum RecommendationFeedbackReason {
   @Schema(description = "추천 기준이 제 상황과 안 맞아요")
   CRITERIA_MISMATCH,
 
-  @Schema(description = "기타 — reasonDetail(서술형) 필수")
+  @Schema(description = "기타. reasonDetail(서술형) 필수")
   OTHER
 }

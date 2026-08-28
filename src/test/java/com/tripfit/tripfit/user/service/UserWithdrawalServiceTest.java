@@ -18,9 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// cascade·hard delete·soft delete(DB 쓰기)는 UserWithdrawalPersistenceService로 위임되므로(A-2), 이
-// 테스트는 UserWithdrawalService가 provider revoke 호출들을 올바른 조건으로 실행하고 persistenceService에
-// 위임하는지만 검증한다. 실제 DB 반영은 UserWithdrawalPersistenceServiceTest가 검증한다
 @ExtendWith(MockitoExtension.class)
 class UserWithdrawalServiceTest {
 
@@ -102,7 +99,6 @@ class UserWithdrawalServiceTest {
     verify(kakaoUnlinkClient).unlink("kakao-sub");
   }
 
-  // #78 검증 — Kakao 로그인 유저가 Google Calendar만 연동한 상태로 탈퇴해도 Calendar revoke는 provider와 무관하게 항상 실행됨
   @Test
   void withdraw_whenKakaoProviderWithGoogleCalendarConnected_revokesCalendarAndUnlinksKakao() {
     User user = kakaoUser();
@@ -114,7 +110,6 @@ class UserWithdrawalServiceTest {
     verify(kakaoUnlinkClient).unlink("kakao-sub");
   }
 
-  // #78 검증 — Apple 로그인 유저가 Google Calendar만 연동한 상태로 탈퇴해도 Calendar revoke는 provider와 무관하게 항상 실행됨
   @Test
   void withdraw_whenAppleProviderWithGoogleCalendarConnected_revokesCalendarAndAppleCredential() {
     User user = appleUser();

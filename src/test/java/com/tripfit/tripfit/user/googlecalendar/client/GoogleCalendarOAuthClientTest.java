@@ -34,9 +34,6 @@ class GoogleCalendarOAuthClientTest {
     return new GoogleCalendarOAuthClient(builder.build(), properties);
   }
 
-  // Google 토큰 엔드포인트는 redirect_uri 파라미터가 없으면 네이티브 serverAuthCode에도 "Missing parameter:
-  // redirect_uri" 400을 반환함(로그인용 GoogleOAuthClient에서 실계정 테스트로 확인된 동일 요구사항, #64) — 네이티브
-  // 경로(redirectUri=null)는 빈 문자열로 보내는지 검증
   @Test
   void exchangeAuthorizationCode_whenRedirectUriNull_sendsEmptyRedirectUri() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
@@ -63,7 +60,6 @@ class GoogleCalendarOAuthClientTest {
     serverHolder[0].verify();
   }
 
-  // 브라우저 리다이렉트 경로 — authorize 요청에 실제로 쓴 redirect_uri를 code 교환에 그대로 전달하는지 검증
   @Test
   void exchangeAuthorizationCode_whenRedirectUriPresent_forwardsActualValue() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
@@ -93,8 +89,6 @@ class GoogleCalendarOAuthClientTest {
     serverHolder[0].verify();
   }
 
-  // 프로덕션에서 확인된 실제 실패(2026-08-20) — scope 부족은 재시도로 절대 안 풀리므로 401과 동일하게
-  // GoogleCalendarAuthException으로 승격돼야 syncUserInternal이 연동을 자동 해제한다
   @Test
   void queryFreeBusy_when403InsufficientScope_throwsGoogleCalendarAuthException() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
@@ -123,8 +117,6 @@ class GoogleCalendarOAuthClientTest {
     serverHolder[0].verify();
   }
 
-  // 2026-08-01 회귀 버그 재발 방지 — scope 부족이 아닌 다른 403(예: rate limit)은 여전히 일시적 오류로 남아야
-  // connect() 직후 1회 sync가 일시적으로 삐끗해도 credential이 즉시 삭제되지 않는다
   @Test
   void queryFreeBusy_when403RateLimited_throwsPlainRuntimeException() {
     MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];

@@ -43,12 +43,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 사용자 정기·개별 일정 CRUD와 합산 달력 조회 — 정기 일정 없이 개별만 등록 가능
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
 
-  // 마이페이지 달력 조회 가능 기간(년) — today ~ today+2년−1
   public static final int CALENDAR_WINDOW_YEARS = 2;
 
   private final RegularScheduleRepository regularScheduleRepository;
@@ -63,7 +61,6 @@ public class ScheduleService {
 
   private final HolidayProvider holidayProvider;
 
-  // 정기 일정 목록 조회 — 생성 시각 오름차순
   @Transactional(readOnly = true)
   public RegularScheduleListResponse listRegular(UUID userId) {
     return new RegularScheduleListResponse(
@@ -72,10 +69,9 @@ public class ScheduleService {
             .toList());
   }
 
-  // 정기 일정 생성 — start/end로 슬롯 계산 후 저장
   @Transactional
   public RegularScheduleResponse createRegular(UUID userId, CreateRegularScheduleRequest request) {
-    // 1. 제목·시각·요일 입력을 검증하고 정규화된 daysOfWeek를 얻음
+
     String normalizedDaysOfWeek =
         validateAndNormalizeRegularTimes(
             request.title(),
@@ -83,7 +79,6 @@ public class ScheduleService {
             request.startTime(),
             request.endTime());
 
-    // 2. start/end로 슬롯을 계산해 정기 일정을 저장함
     User user = userLookupService.requireUser(userId);
     RegularSchedule schedule =
         RegularSchedule.create(
@@ -96,7 +91,6 @@ public class ScheduleService {
     return toRegularResponse(schedule);
   }
 
-  // 정기 일정 전체 수정 — start/end로 슬롯 재계산
   @Transactional
   public RegularScheduleResponse updateRegular(
       UUID userId,
@@ -117,13 +111,11 @@ public class ScheduleService {
     return toRegularResponse(schedule);
   }
 
-  // 연차·휴일 정보 조회 — 사전 신청일이 null이면 아직 사전 일정 입력을 완료하지 않은 사용자다
   @Transactional(readOnly = true)
   public VacationPolicyResponse getVacationPolicy(UUID userId) {
     return toVacationPolicyResponse(userLookupService.requireUser(userId));
   }
 
-  // 연차·휴일 정보 전체 교체(부분 patch 아님) — 사전 신청일이 저장되면서 사용자가 "갱신 입력" 상태가 된다
   @Transactional
   public VacationPolicyResponse updateVacationPolicy(
       UUID userId,
@@ -144,22 +136,17 @@ public class ScheduleService {
     regularScheduleRepository.delete(schedule);
   }
 
-  // 정기 일정 전체 삭제 — 사전 일정 입력 플로우에서 "정기 일정이 있나요? → 없어요"를 고른 순간 호출된다.
-  // 최초 입력 판정은 사전 신청일만 보므로, 예전에 넣어둔 정기 일정이 남아 있으면 사용자가 "없다"고 답한 것과
-  // 추천 계산이 어긋난다. 0건이어도 성공(멱등)
   @Transactional
   public void deleteAllRegular(UUID userId) {
     regularScheduleRepository.deleteByUserId(userId);
   }
 
-  // 본인 소유 정기 일정 로드 — 없거나 타인 소유면 REGULAR_SCHEDULE_NOT_FOUND
   private RegularSchedule requireOwnedRegularSchedule(UUID regularId, UUID userId) {
     return regularScheduleRepository
         .findByIdAndUserId(regularId, userId)
         .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
   }
 
-  // 개별 일정 슬롯 단위 오버라이드 upsert — slots/uncertain 각각 있는 것만 부분 반영, 삭제 경로 없음(O1.4)
   @Transactional
   public PersonalScheduleResponse upsertPersonal(
       UUID userId,
@@ -172,7 +159,6 @@ public class ScheduleService {
     }
     requireNoDuplicateDates(items);
 
-    // 1. 항목 값 검증부터 전부 끝내 — 잘못된 항목이 있으면 아래 구간 SELECT 전에 즉시 실패
     for (PersonalScheduleItem item : items) {
       validatePersonalItem(item);
     }
@@ -181,18 +167,15 @@ public class ScheduleService {
         items.stream().map(PersonalScheduleItem::scheduleDate).sorted().toList();
     LocalDate minDate = dates.getFirst();
     LocalDate maxDate = dates.getLast();
-    // 2. 달력 조회와 같은 구간만 저장을 허용 — 상한 밖 날짜를 저장할 수 있으면 저장은 됐는데 GET /calendar로는
-    // 400이 나는(= 앱에서 다시 볼 수 없는) 일정이 생긴다. 상한 계산은 조회와 같은 함수를 쓰므로
-    // 참여 중인 ONGOING 여행방 종료일까지 확장되는 규칙도 그대로 적용된다
+
     validateCalendarDateRange(userId, minDate, maxDate);
-    // 구간 내 기존 row를 한 번에 로드해 인덱싱 — 항목 수만큼 개별 SELECT를 반복하지 않는다
+
     Map<LocalDate, PersonalSchedule> existingByDate =
         personalScheduleRepository
             .findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(userId, minDate, maxDate)
             .stream()
             .collect(Collectors.toMap(PersonalSchedule::getScheduleDate, Function.identity()));
 
-    // 2. 항목마다 find-or-create 후 slots 있으면 슬롯만, uncertain 있으면 그것만 갱신(둘 다 있으면 둘 다) — row는 절대 삭제되지 않는다
     for (PersonalScheduleItem item : items) {
       PersonalSchedule existing = existingByDate.get(item.scheduleDate());
       if (existing == null) {
@@ -228,9 +211,6 @@ public class ScheduleService {
         existingByDate.values());
   }
 
-  // 방금 반영한 날짜들의 최종 확정값(정기+개별+구글 합친 값)을 계산해 응답 — 아무 신호도 없는 날짜는 생략
-  // personals는 upsertPersonal이 이미 로드·반영한 구간 전체를 그대로 넘겨받아 재조회하지 않는다
-  // resolve()는 반영된 날짜(dates)만 순회 — minDate~maxDate는 googleBusy 조회 범위로만 쓰인다
   private PersonalScheduleResponse buildPersonalResponse(
       User user,
       List<LocalDate> dates,
@@ -274,7 +254,6 @@ public class ScheduleService {
     return new PersonalScheduleResponse(items);
   }
 
-  // 같은 scheduleDate가 배열에 중복되면 어느 값이 최종인지 모호하므로 거부
   private static void requireNoDuplicateDates(List<PersonalScheduleItem> items) {
     Set<LocalDate> seen = new HashSet<>();
     for (PersonalScheduleItem item : items) {
@@ -284,17 +263,14 @@ public class ScheduleService {
     }
   }
 
-  // 합산 달력 조회 — 정기 일정 미등록도 403 없음, 일정 없는 날은 응답에서 날짜 키 생략(sparse)
-  // sparse day(키 생략)를 POSSIBLE로 해석하는 것은 여행방 UI·추천 쪽 — 본 API는 날짜 키 자체를 omit
   @Transactional(readOnly = true)
   public ScheduleCalendarResponse getCalendar(
       UUID userId,
       LocalDate startDate,
       LocalDate endDate) {
-    // 1. 조회 구간이 today ~ max(today+2년−1, 참여 중 ONGOING 여행 endRange 최댓값) 안에 있는지 검증
+
     validateCalendarDateRange(userId, startDate, endDate);
 
-    // 2. regular·personal을 읽어 날짜별로 정기+개별을 합침
     User user = userLookupService.requireUser(userId);
     List<RegularSchedule> regulars =
         regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
@@ -316,8 +292,6 @@ public class ScheduleService {
             user.isHolidayRest()));
   }
 
-  // 제목·시각·요일을 검증하고, daysOfWeek는 검증과 함께 한 번만 파싱해 정규화된 값을 반환한다
-  // (round3 B-2 — 이전엔 검증용·저장용으로 각자 다시 파싱했음)
   private static String validateAndNormalizeRegularTimes(
       String title,
       String daysOfWeek,
@@ -342,7 +316,6 @@ public class ScheduleService {
     }
   }
 
-  // slots·uncertain 둘 다 없으면 뭘 바꾸라는 요청인지 알 수 없어 거부
   private void validatePersonalItem(PersonalScheduleItem item) {
     if (item.slots() == null && item.uncertain() == null) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
@@ -354,8 +327,6 @@ public class ScheduleService {
     }
   }
 
-  // 슬롯 오버라이드 값 검증 — POSSIBLE/IMPOSSIBLE만 허용(ON_LEAVE 등은 추후 wave, enum 값 제한은 Bean Validation으로 표현
-  // 불가)
   private void requireSlotStatus(ScheduleStatus status) {
     if (status != ScheduleStatus.POSSIBLE && status != ScheduleStatus.IMPOSSIBLE) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
@@ -368,7 +339,6 @@ public class ScheduleService {
     }
   }
 
-  // 달력 조회 구간 검증 — [today, 동적 상한] 범위 밖이거나 today 이전이면 400
   private void validateCalendarDateRange(UUID userId, LocalDate startDate, LocalDate endDate) {
     validateDateRange(startDate, endDate);
     LocalDate today = LocalDate.now();
@@ -381,7 +351,6 @@ public class ScheduleService {
     }
   }
 
-  // 마이페이지 달력 상한 계산 — 기본 today+2년−1과 참여 중 ONGOING 여행 endRange 최댓값 중 더 늦은 날짜
   public static LocalDate resolveCalendarWindowEnd(LocalDate today, LocalDate maxOngoingEndRange) {
     LocalDate baseWindowEnd = today.plusYears(CALENDAR_WINDOW_YEARS).minusDays(1);
     return maxOngoingEndRange != null && maxOngoingEndRange.isAfter(baseWindowEnd)

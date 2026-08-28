@@ -43,8 +43,6 @@ public class GoogleCalendarService {
 
   private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
-  // syncUserInternal 실패 로그의 trigger 필드 — 어느 경로로 sync가 시작됐는지
-  // 구분(docs/specs/social-integration-structured-logging.md)
   private static final String TRIGGER_MANUAL_CONNECT = "MANUAL_CONNECT";
 
   private static final String TRIGGER_SCHEDULED = "SCHEDULED";
@@ -65,9 +63,6 @@ public class GoogleCalendarService {
 
   private final GoogleCalendarSyncPersistenceService persistenceService;
 
-  // authorization code로 연동 — Google 서버와의 통신(코드 교환·freeBusy 조회)을 먼저 끝내고, DB 쓰기(credential
-  // 저장·flag=true)는 persistenceService의 짧은 트랜잭션에 위임한다 (auth 도메인 AuthService 패턴과 동일 —
-  // docs/audits/user/audit.md A-1)
   public UserSummaryResponse connect(UUID userId, String authorizationCode, String redirectUri) {
     userLookupService.requireUser(userId);
     GoogleOAuthTokenResponse tokens;
@@ -75,30 +70,27 @@ public class GoogleCalendarService {
     try {
       tokens = googleCalendarOAuthClient.exchangeAuthorizationCode(authorizationCode, redirectUri);
     } catch (GoogleCalendarAuthException exception) {
-      // 원인(HTTP status·Google 에러 body)을 로그로 남겨야 진단 가능 — GlobalExceptionHandler는
-      // TripFitException을 로깅하지 않으므로 여기서 남기지 않으면 실패 원인이 완전히 유실된다
+
       SocialIntegrationLog.warn(
           log,
           connectContext(userId),
-          "Google Calendar connect failed — authorization code exchange error (hasRedirectUri="
+          "Google Calendar connect failed. authorization code exchange error (hasRedirectUri="
               + hasRedirectUri
               + ")",
           exception);
       throw new TripFitException(GoogleCalendarErrorCode.GOOGLE_CALENDAR_CONNECT_FAILED);
     } catch (TripFitException exception) {
-      // exchangeAuthorizationCode()가 토큰 응답에 refresh_token이 없을 때 여기로 온다(같은 Google 계정을
-      // 다른 client_id 재동의 없이 재연동하면 Google이 refresh_token을 생략) — 이 분기도 로그 없이 삼켜지고
-      // 있었음. hasRedirectUri로 네이티브(false)/브라우저(true) 경로를 구분해 재현 조건을 좁힐 수 있게 한다
+
       SocialIntegrationLog.warn(
           log,
           connectContext(userId),
-          "Google Calendar connect failed — token response missing refresh_token (hasRedirectUri="
+          "Google Calendar connect failed. token response missing refresh_token (hasRedirectUri="
               + hasRedirectUri
               + ")");
       throw exception;
     }
     if (tokens.scope() != null) {
-      // 콘솔·FE 설정이 맞다고 확인돼도 실제 발급된 토큰의 스코프를 재현 없이 확인할 수 있게 함
+
       SocialIntegrationLog.info(
           log,
           connectContext(userId).withGrantedScope(tokens.scope()),
@@ -122,8 +114,6 @@ public class GoogleCalendarService {
     return userSummaryService.toSummary(user);
   }
 
-  // 의도적 해제 — revoke(best-effort, HTTP)를 먼저 트랜잭션 밖에서 끝내고, credential·busy_day 삭제·flag=false
-  // (수동 일정 유지)는 persistenceService의 짧은 트랜잭션에 위임한다 (connect()/syncUser()와 동일 패턴 — A-1 round2)
   public UserSummaryResponse disconnect(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
@@ -135,8 +125,6 @@ public class GoogleCalendarService {
     return userSummaryService.toSummary(updated);
   }
 
-  // credential이 있으면 refresh token revoke(best-effort, HTTP) — disconnect()·회원 탈퇴 양쪽이 공유하는
-  // Google Calendar 연동 해제 프로토콜의 단일 소유 지점(round3 A-1)
   public void revokeIfConnected(UUID userId) {
     credentialRepository
         .findByUser_Id(userId)
@@ -147,22 +135,19 @@ public class GoogleCalendarService {
             });
   }
 
-  // freeBusy → busy_day 갱신 (C1 윈도우) — 권한 영구 실패 시 flag=false·Google 레이어 정리. Google 서버와의
-  // 통신은 트랜잭션 밖에서 수행 (syncUserInternal 참고 — A-1)
   public void syncUser(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
       return;
     }
     if (credentialRepository.findByUser_Id(userId).isEmpty()) {
-      // credential row는 없는데 flag만 true로 남은 데이터 불일치
+
       persistenceService.clearConnectedFlag(userId);
       return;
     }
     syncUserInternal(userId, TRIGGER_SCHEDULED);
   }
 
-  // 달력 Merge용 busy_day 조회 — userId·기간
   @Transactional(readOnly = true)
   public Map<LocalDate, GoogleCalendarBusyDay> findBusyDaysByUserId(
       UUID userId,
@@ -175,7 +160,6 @@ public class GoogleCalendarService {
             endDate));
   }
 
-  // 멤버 달력 Merge용 busy_day batch 조회 — userId별 Map
   @Transactional(readOnly = true)
   public Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> findBusyDaysByUserIds(
       List<UUID> userIds,
@@ -197,12 +181,10 @@ public class GoogleCalendarService {
     return result;
   }
 
-  // Google 서버와의 통신(access token 갱신·freeBusy 조회)을 끝낸 뒤, 결과만 persistenceService의 짧은
-  // 트랜잭션에 반영한다 — 이 메서드 자체는 트랜잭션을 열지 않는다(A-1)
   private void syncUserInternal(UUID userId, String trigger) {
     GoogleCalendarCredential credential = credentialRepository.findByUser_Id(userId).orElse(null);
     if (credential == null) {
-      // connect() 직후 disconnect()가 먼저 끝난 race — 반영할 대상 없음
+
       return;
     }
     LocalDate windowStart = LocalDate.now(SEOUL);
@@ -222,18 +204,15 @@ public class GoogleCalendarService {
               timeMax);
       persistenceService.applySyncSuccess(userId, resolution, windowStart, windowEnd, intervals);
     } catch (GoogleCalendarAuthException exception) {
-      // 401·invalid_grant, 또는 PERMANENT_PERMISSION_FAILURE_REASONS에 등록된 scope 부족(403)처럼 재시도로는
-      // 절대 안 풀리는 실패만 이 분기로 온다(client가 분류) — connect() 직후 1회 sync도 이 메서드를 타므로,
-      // 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 곧바로 삭제된다
+
       SocialIntegrationLog.warn(
           log,
           syncContext(userId, trigger),
-          "Google Calendar sync failed permanently — disconnecting",
+          "Google Calendar sync failed permanently. disconnecting",
           exception);
       persistenceService.disconnectGoogleCalendar(userId);
     } catch (Exception exception) {
-      // freeBusy·refresh 등 일시적 오류 — 30분 폴링이 자동 재시도하므로 credential은 보존하지만, 원인 없이
-      // markSyncError 메시지만 DB에 남으면 재현 없이는 언제·누구에게 발생했는지 알 수 없다
+
       SocialIntegrationLog.warn(
           log,
           syncContext(userId, trigger),
@@ -254,8 +233,6 @@ public class GoogleCalendarService {
         .withTrigger(trigger);
   }
 
-  // access token 캐시가 유효하면 그대로 쓰고, 만료됐으면 refresh — DB에는 쓰지 않고 결과만 반환한다(반영은
-  // persistenceService.applySyncSuccess의 짧은 트랜잭션에서, B-2)
   private AccessTokenResolution resolveAccessToken(GoogleCalendarCredential credential) {
     if (credential.getAccessTokenCiphertext() != null
         && credential.getAccessTokenExpiresAt() != null
