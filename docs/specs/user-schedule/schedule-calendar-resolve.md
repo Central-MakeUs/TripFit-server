@@ -491,7 +491,7 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-17 | A2 T1 확정 · members calendar → #12 |
 | 2026-07-21 | deferred — #37 조회 윈도우 · #38 TERMINATED snapshot (A1 현행 유지) |
 | 2026-07-21 | **제품 재확정** — A1→마이페이지 today+2년(#37 C1) · 방=희망 기간 · #38 CONFIRMED∪TERMINATED |
-| 2026-07-29 | **용어 변경** — "effective" 표현을 전부 "정기+개별 합친 값/달력"으로 교체(Swagger·docs·내부 메서드명 `resolveEffectiveSchedule`→`resolveMergedSchedule` 동일 적용, DB·API 계약 변경 없음) · "응답 DTO 비교"·"마이페이지 개별 일정 편집 UX"(시나리오·엣지케이스) 절 추가 · FE 전달용 [`schedule-calendar-merge.md`](../../product/fe-context/user-schedule/schedule-calendar-merge.md) 작성 |
+| 2026-07-29 | **용어 변경** — "effective" 표현을 전부 "정기+개별 합친 값/달력"으로 교체(Swagger·docs·내부 메서드명 `resolveEffectiveSchedule`→`resolveMergedSchedule` 동일 적용, DB·API 계약 변경 없음) · "응답 DTO 비교"·"마이페이지 개별 일정 편집 UX"(시나리오·엣지케이스) 절 추가 · FE 전달용 `schedule-calendar-merge.md` 작성 (해당 문서는 2026-09-22 `fe-context/` 폴더 전체와 함께 폐기됨 — 현행 병합 규칙 SSOT는 본 스펙) |
 | 2026-07-29 | **문서 보강** — 여행 칩(`GET /trips?scope=ongoing`)과 본 API `startDate`/`endDate`의 관계 명문화("트립 칩 → 조회 구간 선택" 절, API 계약 변경 없음) · "화면 요소 ↔ API 필드 매핑" 절 추가 |
 | 2026-08-16 | **A4 해소** — `holidayRest`를 근무일 판정에 반영([`schedule-holiday-rest.md`](schedule-holiday-rest.md), #107). 구 "wave 2 Out — 요일만" 방향과 프론트 "공휴일≠휴무 자동" 고지 문구 삭제 |
 | 2026-07-29 | **S1 폐기 → O1로 대체** ([`schedule-slot-override.md`](schedule-slot-override.md), #67, **Approved·구현 완료**) — 개별 일정이 "그 날 전체 대체"에서 "슬롯 단위 오버라이드"로 전환. 본 문서의 S1·R1 서술은 이력 문서로 유지, 확정 사항 표 #1·#2에 폐기 표시 |
