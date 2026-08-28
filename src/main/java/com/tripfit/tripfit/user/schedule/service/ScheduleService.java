@@ -167,20 +167,24 @@ public class ScheduleService {
     }
     requireNoDuplicateDates(items);
 
+    // 1. 값 검증부터 전부 끝내 — 잘못된 항목이 있으면 아래 구간 SELECT 전에 즉시 실패
+    for (PersonalScheduleItem item : items) {
+      validatePersonalItem(item);
+    }
+
     List<LocalDate> dates =
         items.stream().map(PersonalScheduleItem::scheduleDate).sorted().toList();
     LocalDate minDate = dates.getFirst();
     LocalDate maxDate = dates.getLast();
+    // 구간 내 기존 row를 한 번에 로드해 인덱싱 — 항목 수만큼 개별 SELECT를 반복하지 않는다
     Map<LocalDate, PersonalSchedule> existingByDate =
         personalScheduleRepository
             .findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(userId, minDate, maxDate)
             .stream()
             .collect(Collectors.toMap(PersonalSchedule::getScheduleDate, Function.identity()));
 
-    // 1. 항목마다 find-or-create 후 slots 있으면 슬롯만, uncertain 있으면 그것만 갱신(둘 다 있으면 둘 다) — row는 절대 삭제되지 않는다
-    // 구간 내 기존 row를 한 번에 로드해 인덱싱 — 항목 수만큼 개별 SELECT를 반복하지 않는다
+    // 2. 항목마다 find-or-create 후 slots 있으면 슬롯만, uncertain 있으면 그것만 갱신(둘 다 있으면 둘 다) — row는 절대 삭제되지 않는다
     for (PersonalScheduleItem item : items) {
-      validatePersonalItem(item);
       PersonalSchedule existing = existingByDate.get(item.scheduleDate());
       if (existing == null) {
         SlotUpdate slots = item.slots();
@@ -207,7 +211,7 @@ public class ScheduleService {
       }
     }
 
-    // 2. 삭제 경로가 없어 upsert는 항상 일어남 — is_all_free를 false로 전이
+    // 3. 삭제 경로가 없어 upsert는 항상 일어남 — is_all_free를 false로 전이
     userSummaryService.clearAllFreeOnScheduleAdded(user);
     return buildPersonalResponse(
         userId,
@@ -219,6 +223,7 @@ public class ScheduleService {
 
   // 방금 반영한 날짜들의 최종 확정값(정기+개별+구글 합친 값)을 계산해 응답 — 아무 신호도 없는 날짜는 생략
   // personals는 upsertPersonal이 이미 로드·반영한 구간 전체를 그대로 넘겨받아 재조회하지 않는다
+  // resolve()는 반영된 날짜(dates)만 순회 — minDate~maxDate는 googleBusy 조회 범위로만 쓰인다
   private PersonalScheduleResponse buildPersonalResponse(
       UUID userId,
       List<LocalDate> dates,
@@ -234,8 +239,8 @@ public class ScheduleService {
         personals.stream()
             .collect(Collectors.toMap(PersonalSchedule::getScheduleDate, PersonalSchedule::getId));
     Map<LocalDate, CalendarDayResponse> resolvedByDate =
-        ScheduleCalendarResolver
-            .resolve(regulars, new ArrayList<>(personals), minDate, maxDate, googleBusy).stream()
+        ScheduleCalendarResolver.resolve(regulars, new ArrayList<>(personals), dates, googleBusy)
+            .stream()
             .collect(Collectors.toMap(CalendarDayResponse::date, Function.identity()));
 
     List<PersonalScheduleItemResponse> items = new ArrayList<>();

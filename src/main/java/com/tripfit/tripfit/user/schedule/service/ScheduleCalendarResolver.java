@@ -10,6 +10,7 @@ import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDa
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -38,11 +39,25 @@ public final class ScheduleCalendarResolver {
       LocalDate startDate,
       LocalDate endDate,
       Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate) {
+    List<LocalDate> dates = new ArrayList<>();
+    for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+      dates.add(date);
+    }
+    return resolve(regulars, personals, dates, googleBusyByDate);
+  }
+
+  // 연속 구간 전체가 아니라 요청받은 날짜 집합만 계산 — upsertPersonal처럼 반영된 날짜만 필요할 때
+  // 날짜가 서로 멀리 떨어져 있어도 O(구간 전체)가 아닌 O(요청 날짜 수)로 순회한다
+  public static List<CalendarDayResponse> resolve(
+      List<RegularSchedule> regulars,
+      List<PersonalSchedule> personals,
+      Collection<LocalDate> dates,
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate) {
     Map<LocalDate, PersonalSchedule> personalsByDate = indexByDate(personals);
     Map<DayOfWeek, List<RegularSchedule>> regularsByDayOfWeek = groupByDayOfWeek(regulars);
 
     Map<LocalDate, CalendarDayResponse> byDate = new HashMap<>();
-    for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+    for (LocalDate date : dates) {
       PersonalSchedule personal = personalsByDate.get(date);
       List<RegularSchedule> matched =
           regularsByDayOfWeek.getOrDefault(date.getDayOfWeek(), List.of());
