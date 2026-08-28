@@ -3,7 +3,7 @@
 > wave: 2
 > implements: BR-TRIP-007, BR-TRIP-010 (API·DTO·ERD·상태전이만 — 계산 로직은 `#50`)
 > deferred: BR-NOTI-004 확정 알림 (wave 3), **추천 계산 로직(후보 윈도우·모드별 스코어링·동점) → [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) (#50, BR-TRIP-005·011·012)**
-> 상태: **Approved** (2026-07-30 — 화면 확인·권한 정리 반영 후 확정)
+> 상태: **Implemented** (`#13` Closed) — 원 승인일 2026-07-30(화면 확인·권한 정리 반영 후 확정)
 > 선행: [`schedule-unified.md`](../user-schedule/schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (ACTIVE·sparse·submit)
 > **2026-07-30 화면 확인:** 추천 결과 카드 UI 반영 — 아래 "요구사항"·"API / 인터페이스"·"데이터 모델" 절 참고. `ALL_ATTEND` 하드 필터·`NO_RECOMMENDATION_CANDIDATES` 에러는 [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) 2026-07-30 개정으로 폐기됨 — 이 스펙도 동기화
 > **2026-07-30 기획 개정(추가):** 추천 후보(TOP 3 카드)·추천 근거 상세는 **방장만** 볼 수 있음. 참여자는 후보를 전혀 볼 수 없고 **확정된 일정만**(기존 `Trip.confirmedStartDate`/`confirmedEndDate`) 볼 수 있다 — `GET .../recommendations`·`GET .../recommendations/{rank}`·`PATCH .../recommendations/{rank}/feedback` 전부 `JWT + owner`로 개정(구 "JWT + member" 폐기)
@@ -275,7 +275,7 @@
 ## 데이터 모델
 
 - `Trip.lastRecommendationMode` — 이미 존재 (기존 컬럼)
-- `Trip.unconfirmReason` / `Trip.unconfirmReasonDetail` — **JPA 컬럼 신규 추가 필요** (`erd.md`엔 이미 문서화돼 있으나 `Trip` 엔티티엔 아직 없음). unconfirm 시 최신값 덮어쓰기 (이력 아님)
+- `Trip.unconfirmReason` / `Trip.unconfirmReasonDetail` — **추가 완료** (`Trip` 엔티티에 반영됨, `erd.md`와 일치). unconfirm 시 최신값 덮어쓰기 (이력 아님)
 - `Trip.confirmedAttendCount` / `Trip.confirmedVacationMemberCount` / `Trip.confirmedUncertainCount` — **신규 컬럼**(Integer, nullable). confirm 시 `#50` `classifyMembers` 결과를 집계해 1회 저장(그 뒤 개별 일정이 바뀌어도 갱신 안 됨 — confirm 시점 스냅샷), unconfirm 시 `null`로 초기화. 응답 노출은 `trip-room-api.md`의 `TripDetailResponse` amend 절 참고 — **이 스펙에서 새 API를 만들지 않고 기존 Trip 상세에 얹기로 결정**(위 UX 흐름 8번)
 - `recommendation` — 기존 엔티티, trip_id FK, hard DELETE only. **2026-07-30 카드 UI 반영 필드 개정:**
   - 삭제: `reason`(TEXT), `riskNote`(TEXT) — 자연어 사유 자동 생성 Nice to Have가 화면에 없어 폐기

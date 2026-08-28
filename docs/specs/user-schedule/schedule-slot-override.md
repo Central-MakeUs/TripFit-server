@@ -1,6 +1,6 @@
 # 개별 일정 = 슬롯 단위 오버라이드 (O1)
 
-> 상태: Approved (#67) — **O1.1~O1.3:** `action` 필드 도입(`OVERRIDE`\|`CLEAR`\|`UNCERTAIN`) → 폐기 이력, 아래 "계약 개정" 절 참고 · **O1.4 amend (2026-07-30, 현재 계약):** `action` 필드·`CLEAR` 액션 전면 제거. 요청 아이템을 `scheduleDate` + 선택적 `slots`/`uncertain` 필드 하나짜리 flat record로 통합. "값 조합(3슬롯 POSSIBLE)으로 CLEAR를 추론"하던 O1.3 설계가 실제로는 **개별 오버라이드가 항상 정기를 이긴다는 핵심 규칙을 깨는 버그**였음을 발견해 CLEAR 자체를 삭제
+> 상태: **Implemented** (#67 Closed) — **O1.1~O1.3:** `action` 필드 도입(`OVERRIDE`\|`CLEAR`\|`UNCERTAIN`) → 폐기 이력, 아래 "계약 개정" 절 참고 · **O1.4 amend (2026-07-30, 현재 계약):** `action` 필드·`CLEAR` 액션 전면 제거. 요청 아이템을 `scheduleDate` + 선택적 `slots`/`uncertain` 필드 하나짜리 flat record로 통합. "값 조합(3슬롯 POSSIBLE)으로 CLEAR를 추론"하던 O1.3 설계가 실제로는 **개별 오버라이드가 항상 정기를 이긴다는 핵심 규칙을 깨는 버그**였음을 발견해 CLEAR 자체를 삭제
 > MVP: In scope (`docs/product/mvp.md` — "참여자 일정 입력(오전/오후/저녁 단위, 미정 상태 포함)")
 > 관련 BR: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-008
 > supersedes: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **S1**(개별 존재 시 그 날 전체 대체) · R1(병합 규칙 1) — **R2(정기 복수 IMPOSSIBLE 우선)는 그대로 유지**
@@ -50,21 +50,21 @@
 
 ### Must Have
 
-- [ ] `personal_schedule` 슬롯 3개(`morning_status`/`afternoon_status`/`evening_status`) 검증을 nullable 허용으로 완화 (`PersonalSchedule` 엔티티는 이미 nullable 저장 가능 — DTO·서비스 검증만 변경)
-- [ ] `ScheduleCalendarResolver` 병합 알고리즘을 아래 "병합 알고리즘(O1)"대로 재작성 — 슬롯 단위로 `개별 오버라이드 > (정기 ⊕ 구글)` 우선순위 적용
-- [ ] **(O1.4)** `PersonalScheduleItem`을 단일 flat record로 정의 — `scheduleDate`(필수) + `slots`(선택, 있으면 3필드 전부 필수) + `uncertain`(선택 `Boolean`). `action` 필드·sealed interface·`ClearItem` **전부 삭제**
-- [ ] **(O1.4)** `PersonalSchedule` 엔티티의 부분 업데이트 메서드 유지: `applySlots(morning, afternoon, evening)`(슬롯만 갱신, `uncertain` 불변) / `applyUncertain(boolean)`(`uncertain`만 갱신, 슬롯 불변)
-- [ ] **(O1.4)** `ScheduleService.upsertPersonal` — 아이템마다 find-or-create 후 `slots`가 있으면 `applySlots`, `uncertain`이 있으면 `applyUncertain` 호출(둘 다 있으면 둘 다). **row를 삭제하는 코드 경로 자체를 제거** — `isDeleteSignal`·값 조합 추론 삭제
-- [ ] **(O1.4)** 검증: `slots`와 `uncertain`이 둘 다 없는 아이템 → `400 INVALID_INPUT`(뭘 바꾸라는 건지 없음). 같은 `scheduleDate`가 `items` 배열에 2번 이상 → `400 INVALID_INPUT`(모호)
-- [ ] `GET /calendar`, `GET /trips/{tripId}/members/schedule-calendar` 응답 **모양은 불변** (여전히 날짜별 3슬롯+`uncertain`, 값은 항상 `POSSIBLE`/`IMPOSSIBLE`로 확정돼 내려감 — nullable은 저장 계층에서만 의미가 있고 응답에는 노출 안 함)
-- [ ] **(O1.4)** `PATCH /personal` 응답의 `id`는 **이제 항상 non-null** — 삭제 경로가 없으므로 처리된 모든 날짜는 반드시 row를 가진다
-- [ ] `ScheduleCalendarResolveService` 단위 테스트 갱신 — 부분 오버라이드·전체 오버라이드·구글 병합 조합 케이스
-- [ ] **(O1.4)** `uncertain` 토글이 슬롯을 보존하는지 검증하는 단위 테스트 — `uncertain=true` → 슬롯 불변 확인 → `uncertain=false` → 슬롯 여전히 불변 확인(UI 동작 확인 3번 시나리오)
-- [ ] **(O1.4, 버그 회귀 테스트)** 정기 패턴이 일부 슬롯을 `IMPOSSIBLE`로 계산하는 날짜에 사용자가 슬롯 3개를 전부 `POSSIBLE`로 명시 오버라이드해도 **삭제되지 않고 그대로 저장**되는지 확인 — "개별이 항상 정기를 이긴다" 규칙이 깨지지 않는지 검증(`schedule-personal-override-scenarios.md` 시나리오 12 참고)
-- [ ] `docs/architecture/erd.md`의 `personal_schedule` 컬럼 nullable 표기(N→Y) + 의미 갱신
-- [ ] `schedule-unified.md`, `schedule-calendar-resolve.md` 개정(S1 폐기 반영, 본 스펙 링크) — **미반영 상태, 아래 "리스크·미결정" 참고**
-- [ ] Swagger `@RequestBody` 예시를 O1.4 플랫 구조로 갱신(슬롯만/uncertain만/둘 다)
-- [ ] 커밋에 `Breaking-Change-Reason:` 트레일러 — `action` 필드·`CLEAR` 액션 삭제, 요청 아이템 구조가 폴리모픽 3종에서 flat 1종(`slots`/`uncertain` 선택적 필드)으로 전환
+- [x] `personal_schedule` 슬롯 3개(`morning_status`/`afternoon_status`/`evening_status`) 검증을 nullable 허용으로 완화 (`PersonalSchedule` 엔티티는 이미 nullable 저장 가능 — DTO·서비스 검증만 변경)
+- [x] `ScheduleCalendarResolver` 병합 알고리즘을 아래 "병합 알고리즘(O1)"대로 재작성 — 슬롯 단위로 `개별 오버라이드 > (정기 ⊕ 구글)` 우선순위 적용
+- [x] **(O1.4)** `PersonalScheduleItem`을 단일 flat record로 정의 — `scheduleDate`(필수) + `slots`(선택, 있으면 3필드 전부 필수) + `uncertain`(선택 `Boolean`). `action` 필드·sealed interface·`ClearItem` **전부 삭제**
+- [x] **(O1.4)** `PersonalSchedule` 엔티티의 부분 업데이트 메서드 유지: `applySlots(morning, afternoon, evening)`(슬롯만 갱신, `uncertain` 불변) / `applyUncertain(boolean)`(`uncertain`만 갱신, 슬롯 불변)
+- [x] **(O1.4)** `ScheduleService.upsertPersonal` — 아이템마다 find-or-create 후 `slots`가 있으면 `applySlots`, `uncertain`이 있으면 `applyUncertain` 호출(둘 다 있으면 둘 다). **row를 삭제하는 코드 경로 자체를 제거** — `isDeleteSignal`·값 조합 추론 삭제
+- [x] **(O1.4)** 검증: `slots`와 `uncertain`이 둘 다 없는 아이템 → `400 INVALID_INPUT`(뭘 바꾸라는 건지 없음). 같은 `scheduleDate`가 `items` 배열에 2번 이상 → `400 INVALID_INPUT`(모호)
+- [x] `GET /calendar`, `GET /trips/{tripId}/members/schedule-calendar` 응답 **모양은 불변** (여전히 날짜별 3슬롯+`uncertain`, 값은 항상 `POSSIBLE`/`IMPOSSIBLE`로 확정돼 내려감 — nullable은 저장 계층에서만 의미가 있고 응답에는 노출 안 함)
+- [x] **(O1.4)** `PATCH /personal` 응답의 `id`는 **이제 항상 non-null** — 삭제 경로가 없으므로 처리된 모든 날짜는 반드시 row를 가진다
+- [x] `ScheduleCalendarResolveService` 단위 테스트 갱신 — 부분 오버라이드·전체 오버라이드·구글 병합 조합 케이스
+- [x] **(O1.4)** `uncertain` 토글이 슬롯을 보존하는지 검증하는 단위 테스트 — `uncertain=true` → 슬롯 불변 확인 → `uncertain=false` → 슬롯 여전히 불변 확인(UI 동작 확인 3번 시나리오)
+- [x] **(O1.4, 버그 회귀 테스트)** 정기 패턴이 일부 슬롯을 `IMPOSSIBLE`로 계산하는 날짜에 사용자가 슬롯 3개를 전부 `POSSIBLE`로 명시 오버라이드해도 **삭제되지 않고 그대로 저장**되는지 확인 — "개별이 항상 정기를 이긴다" 규칙이 깨지지 않는지 검증(`schedule-personal-override-scenarios.md` 시나리오 12 참고)
+- [x] `docs/architecture/erd.md`의 `personal_schedule` 컬럼 nullable 표기(N→Y) + 의미 갱신
+- [x] `schedule-unified.md`, `schedule-calendar-resolve.md` 개정(S1 폐기 반영, 본 스펙 링크) — **반영 완료** (2026-07-30)
+- [x] Swagger `@RequestBody` 예시를 O1.4 플랫 구조로 갱신(슬롯만/uncertain만/둘 다)
+- [x] 커밋에 `Breaking-Change-Reason:` 트레일러 — `action` 필드·`CLEAR` 액션 삭제, 요청 아이템 구조가 폴리모픽 3종에서 flat 1종(`slots`/`uncertain` 선택적 필드)으로 전환
 
 ### Nice to Have
 
@@ -296,8 +296,8 @@ function resolveDay(date, regulars, personal, googleBusyMap):
 | `PATCH` 응답의 `id` | **항상 non-null(O1.4, 확정)** | 삭제 경로가 없으므로 처리된 날짜는 반드시 row를 가짐 |
 | "슬롯 null 개수/값 조합으로 삭제를 암묵적으로 구분"하던 O1~O1.3의 여러 시도 | **전부 폐기(O1.4에서 최종 해결)** | O1(슬롯 개수) → O1.1/O1.2(`action` 필드 도입) → O1.3(값 조합 CLEAR, 그러나 정기 있는 날 override-wins 규칙을 깨는 버그 발견) → O1.4(CLEAR·`action` 삭제로 근본 해결) |
 | `schedule-unified.md` | **반영 완료(2026-07-30)** | O1.4 flat 구조(`slots`/`uncertain`)·삭제 경로 없음으로 개정 완료 |
-| `docs/product/fe-context/schedule-calendar-merge.md` | **반영 완료(2026-07-30)** | 규칙 2·규칙 4를 O1.4 flat 구조·삭제 경로 없음으로 개정 완료 |
-| 현재 코드 상태 | **O1 이전 단계(확인 완료, 2026-07-30 재확인) — 미착수** | `PersonalScheduleItem`이 여전히 슬롯 3필드가 최상위에 있는 구 flat record(`uncertain`도 `boolean` 원시형)이고, `isDeleteSignal`이 "슬롯 3개 전부 `null` && `uncertain=false`"를 삭제 신호로 판정해 실제로 row를 삭제하는 코드가 남아 있음. `PersonalSchedule.apply()`도 4필드 동시 덮어쓰기(`applySlots`/`applyUncertain` 분리 없음). 문서(본 스펙·`schedule-unified.md`·`schedule-calendar-merge.md`)는 O1.4로 갱신됐으나 실제 구현은 아직 착수 전 — DTO·엔티티·서비스·테스트 반영이 남은 작업 |
+| ~~`docs/product/fe-context/schedule-calendar-merge.md`~~ | **문서 폐기(2026-09-22)** | 당시 규칙 2·규칙 4를 O1.4로 개정 완료했으나, `fe-context/` 폴더 전체가 폐기되며 함께 삭제됨 — 현행 SSOT는 본 스펙과 `schedule-calendar-resolve.md` |
+| 현재 코드 상태 | **O1.4 반영 완료 (#67 Closed)** | `PersonalSchedule.applySlots()`/`applyUncertain()`으로 분리 적용되고(`ScheduleService`가 각각 호출), 삭제 신호(`isDeleteSignal`) 판정 코드는 제거됐다 — O1.4 "삭제 경로 없음" 계약과 일치 |
 | `schedule-calendar-resolve.md` | **영향 없음(확인 완료)** | 이 문서는 읽기(GET) 병합만 다루고, 쓰기 계약 변경과 무관 |
 | `docs/architecture/erd.md` | **영향 없음(확인 완료)** | 쓰기 계약은 DB 컬럼이 아니라 애플리케이션 로직이라 ERD엔 등장하지 않는 게 정상 |
 
@@ -313,5 +313,5 @@ function resolveDay(date, regulars, personal, googleBusyMap):
 | 2026-07-29 | **O1.3 amend** — OVERRIDE는 항상 3슬롯 명시 재전송(baseline-diff는 다른 슬롯의 기존 오버라이드를 조용히 삭제하는 사고를 유발해 폐기) + CLEAR는 값 조합으로 판정 + 동일 `scheduleDate` 복수 item(OVERRIDE+UNCERTAIN) 처리 규칙 |
 | 2026-07-30 | S-12~S-21 시나리오 확정(사용자 검수 완료) — O1.3 쓰기 모델을 조회→수정→조회 흐름으로 끝까지 검증 |
 | 2026-07-30 | **O1.4 amend — `action` 필드·`CLEAR` 액션 완전 삭제.** O1.3의 "3슬롯 POSSIBLE+uncertain false → CLEAR" 규칙이 정기 일정이 있는 날짜에서는 "오버라이드 없음"과 다른 값이라는 게 드러남 — 유저가 정기 스케줄을 뒤집어 명시적으로 "하루 종일 가능해요"를 선언해도 이 값 조합과 우연히 일치하면 CLEAR로 오인되어 오버라이드가 삭제되고 정기값으로 되돌아가는 버그 발견("개별은 항상 정기를 이긴다"는 핵심 규칙 위반). 근본 해결로 CLEAR 자체를 제거 — 이제 `personal_schedule` row는 절대 삭제되지 않는다. `action`이 discriminator로서 의미가 없어져(OVERRIDE/UNCERTAIN 두 종류만 남으면 사실상 하나) `PersonalScheduleItem`을 flat record(`scheduleDate` + 선택적 `slots`/`uncertain`)로 통합, 동일 날짜에 슬롯+uncertain을 한 아이템에 같이 담을 수 있어 O1.3의 "복수 item 그룹핑" 메커니즘도 통째로 제거됨. O1.2 당시부터 실사용된 적 없던 슬롯 단위 부분 null-복원(`OverrideItem`의 개별 슬롯 null)도 함께 제거 — `SlotUpdate`의 3필드를 `@NotNull`로 전환. 유저 시나리오 전체를 O1.4 계약에 맞게 재작성·재검수, 옛 S-4(부분 null 복원)·S-5(CLEAR)·S-18/S-19(action 충돌 400)·S-21(idempotent delete)은 제거하고 번호를 S-1~S-17로 정리, 버그 회귀 검증 시나리오(S-13) 추가 |
-| 2026-07-30 | **유저 시나리오 분리** — 스펙 안에 있던 "유저 시나리오(상세)"(S-1~S-17)를 [`docs/product/fe-context/schedule-personal-override-scenarios.md`](../../product/fe-context/user-schedule/schedule-personal-override-scenarios.md)로 분리·재작성. 페르소나(유저 A) 기반 서술로 바꾸고 "캘린더 조회(수정 전) → 수정 → 결과·캘린더 표시" 3단계 형식으로 통일, 시나리오 1~18로 확장(uncertain+슬롯 동시 변경 유지 확인, 무변경 저장 시 저장 버튼 비활성, `slots` 부분 필드 누락 400 등 엣지 케이스 추가). 스펙 본문은 이 문서로의 포인터 + 짧은 요약만 남기고, 이 스펙(O1.4 계약)을 계속 SSOT로 유지 |
-| 2026-07-30 | **문서 정합 보완** — "프론트 요청 가이드"(item 1개 기준 가능한 조합 3종 + 거부되는 요청 5종 표) 절 신설. `schedule-unified.md`·`docs/product/fe-context/schedule-calendar-merge.md`를 O1.4 flat 구조·삭제 경로 없음으로 개정하고 "리스크·미결정" 표의 해당 항목을 반영 완료로 갱신. 현재 코드 상태(여전히 구 `isDeleteSignal`/`apply()` 4필드 덮어쓰기, O1.4 미착수)를 재확인·기록 — 시나리오 14 "무변경 시 저장 버튼 비활성" 관련 후속 논의는 `[미정]` [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)로 별도 등록(`schedule-personal-override-scenarios.md` 시나리오 14 참고) |
+| 2026-07-30 | **유저 시나리오 분리** — 스펙 안에 있던 "유저 시나리오(상세)"(S-1~S-17)를 `docs/product/fe-context/schedule-personal-override-scenarios.md`(2026-09-22 폐기)로 분리·재작성. 페르소나(유저 A) 기반 서술로 바꾸고 "캘린더 조회(수정 전) → 수정 → 결과·캘린더 표시" 3단계 형식으로 통일, 시나리오 1~18로 확장(uncertain+슬롯 동시 변경 유지 확인, 무변경 저장 시 저장 버튼 비활성, `slots` 부분 필드 누락 400 등 엣지 케이스 추가). 스펙 본문은 이 문서로의 포인터 + 짧은 요약만 남기고, 이 스펙(O1.4 계약)을 계속 SSOT로 유지 |
+| 2026-07-30 | **문서 정합 보완** — "프론트 요청 가이드"(item 1개 기준 가능한 조합 3종 + 거부되는 요청 5종 표) 절 신설. `schedule-unified.md`·`docs/product/fe-context/schedule-calendar-merge.md`를 O1.4 flat 구조·삭제 경로 없음으로 개정하고 "리스크·미결정" 표의 해당 항목을 반영 완료로 갱신. 당시 코드 상태(구 `isDeleteSignal`/`apply()` 4필드 덮어쓰기, O1.4 미착수)를 재확인·기록 — 이후 `#67`에서 구현 완료 — 시나리오 14 "무변경 시 저장 버튼 비활성" 관련 후속 논의는 `[미정]` [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)로 별도 등록(`schedule-personal-override-scenarios.md` 시나리오 14 참고) |

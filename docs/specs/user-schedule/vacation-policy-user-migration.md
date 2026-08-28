@@ -1,6 +1,6 @@
 # 연차·휴일 정보 — RegularSchedule → User 이동
 
-> 상태: Approved (2026-08-16) — 구현 진행 중
+> 상태: **Implemented** (`#52` Closed, PR #111 merge 완료) — 원 승인일 2026-08-16
 > **2026-08-19 amend:** `PATCH /users/schedule/vacation-policy`의 4개 필드가 **전부 필수**가 됐다(구 "생략 시 기본값 대체" 폐지, 누락 시 400). 그중 `vacationApplyPeriod`(사전 신청일)는 **사전 일정 입력 완료 마커**로 쓰여, 값이 지워지면 사용자가 최초 입력 상태로 되돌아간다 — 전체 교체 요청에서 값이 빠지면 마커가 지워지므로 필수화가 그 회귀를 막는다. SSOT: [`pre-schedule-entry-flow.md`](pre-schedule-entry-flow.md)
 > MVP: In scope (`docs/product/mvp.md` "개인별 정기 일정 및 연차·휴일 정보 설정")
 > 관련 BR: N/A (스키마 리팩토링, 정책 변경 없음)

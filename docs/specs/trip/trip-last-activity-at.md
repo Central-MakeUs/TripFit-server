@@ -66,7 +66,7 @@
 
 - [x] L1~L4 확정·스펙 amend
 - [x] `@TripActivity` · aspect 구현 · #12 수동 hook → AOP 이전
-- [x] `TripRecommendationService` stub — L1 추천·확정 `@TripActivity` (#13 본 구현 대기)
+- [x] `TripRecommendationService` — L1 추천·확정 `@TripActivity` 적용 완료 (#13 Closed)
 - [x] `./gradlew test` — L1 갱신 이벤트별 1건 이상
 
 ## Out of Scope

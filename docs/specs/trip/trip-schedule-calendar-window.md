@@ -1,7 +1,7 @@
 # 일정 달력 컨텍스트 — 마이페이지 · 여행방 조회 윈도우
 
 > wave: 2  
-> 상태: **Approved** (2026-07-21)  
+> 상태: **Implemented** (`#37` Closed) — 원 승인일 2026-07-21  
 > MVP: In scope · **Wave 2 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))  
 > GitHub: **[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**  
 > 선행: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12)  

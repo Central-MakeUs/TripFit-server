@@ -1,6 +1,6 @@
 # 사전 일정 입력 — 최초/갱신 판정과 진입 플로우
 
-> 상태: **Approved** (2026-08-19, 사용자 승인) — 구현 완료·merge 대기 (브랜치 `feat/112-pre-schedule-entry-flow`, base `feat/114-join-schedule-pending`)
+> 상태: **Implemented** (2026-08-19 승인, `#113`·`#114` Closed로 merge 완료)
 > MVP: In scope (`docs/product/mvp.md` "개인별 정기 일정 및 연차·휴일 정보 설정")
 > 관련 BR: **BR-USER-007 개정** (방 입장 전 사전 일정 입력 완료 필요) · BR-USER-006 무변경
 
