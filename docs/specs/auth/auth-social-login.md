@@ -47,10 +47,12 @@ React 앱(최종 Play·App Store)에서 Google / Kakao / Apple 로그인 후 Tri
 
 ## wave 1 vs wave 4
 
+> **2026-09-15 갱신:** 아래 "wave 4" 열은 이미 **구현 완료**됐고, 그 과정에서 설계가 한 번 뒤집혔다 — Redis는 access JWT 블랙리스트가 아니라 **refresh token 저장소**가 됐고(HttpOnly 쿠키 전달), access는 블랙리스트 없이 TTL 15분으로만 만료된다. 현행 SSOT: [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md). 이 표는 당시 계획 비교 기록으로 남긴다.
+
 | | wave 1 (본 스펙) | wave 4 (확정, 별도 스펙) |
 |--|-------------------|---------------------------|
 | **Refresh rotation (RTR)** | 미적용 — refresh row 유지 | refresh마다 token 교체 + reuse detection |
-| **Redis** | 미사용 | access JWT용 **도입 확정** (blacklist vs whitelist `[미정]`) |
+| **Redis** | 미사용 | ~~access JWT용~~ → **refresh token 저장소로 구현됨** (블랙리스트 폐기) |
 | **프로필 이미지** | **A안** — provider URL → `profile_image_url` 그대로 저장 | **B안** — S3 미러링 후 TripFit URL ([`006`](../../decisions/006-profile-image-url-storage.md)) |
 | **refresh 응답** | `accessToken`만 | + `refreshToken` (새 opaque token) |
 | **준비 (wave 1 코드)** | `jti`, `family_id`, `TokenRevocationChecker` NoOp | wave 4에서 Redis·RTR 구현체 교체 |
@@ -199,7 +201,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 ### Out of Scope (wave 1 — wave 4·별도 스펙)
 
 - **Refresh Token Rotation (RTR)** — wave 4 확정 [`004`](../../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](auth-token-rotation.md)
-- **Redis** (access blacklist/whitelist) — wave 4 확정, 전략 `[미정]`
+- **Redis** — 이후 **refresh token 저장소로 구현 완료**(2026-09-15). access 블랙리스트/화이트리스트는 도입하지 않기로 종결 — [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md)
 - 자체 이메일/비밀번호 회원가입
 - 계정 연결 — BR-USER-003 (Kakao + Google → 하나의 user)
 - `user_identity` 테이블 분리
@@ -575,7 +577,7 @@ com.tripfit.tripfit
 | profileImageUrl 저장 | **확정 (wave 1 A안)** | provider URL passthrough — [`006`](../../decisions/006-profile-image-url-storage.md) |
 | profileImageUrl S3 미러 | **wave 4 예정 (B안)** | [`user-profile-image-s3-mirror.md`](../user/user-profile-image-s3-mirror.md), Issue #9 |
 | Refresh token rotation (RTR) | **wave 4 확정** | [`004`](../../decisions/004-auth-token-rotation.md) — wave 1 Out |
-| Redis (access JWT) | **wave 4 확정** | blacklist vs whitelist `[미정]` |
+| Redis | **Implemented (2026-09-15)** | refresh token 저장소 + 공휴일 캐시. access 블랙리스트는 **폐기** — [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md) |
 | JWT 서명 알고리즘 HS256 vs RS256 | `[미정]` | 단일 서버 MVP는 HS256으로 시작 가능 |
 | Google Calendar OAuth API | **Implemented** | [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](../user/google-calendar-oauth.md) |
 

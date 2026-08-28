@@ -54,13 +54,13 @@
 | [`001-auth-mobile-token-verification.md`](001-auth-mobile-token-verification.md) | 모바일 소셜 토큰 서버 검증 |
 | [`002-domain-split-vercel-api.md`](002-domain-split-vercel-api.md) | `tripfit.online` / `api.tripfit.online` 분리 |
 | [`003-architecture-guide.md`](003-architecture-guide.md) | 도메인 레이어드 패키지 |
-| [`004-auth-token-rotation.md`](004-auth-token-rotation.md) | Refresh token rotation (wave 4) |
+| [`004-auth-token-rotation.md`](004-auth-token-rotation.md) | Refresh token rotation — **2026-09-15 일부 amend**(refresh는 Redis 저장, access 블랙리스트 폐기) |
 | [`005-auth-social-verifier-strategy.md`](005-auth-social-verifier-strategy.md) | OAuth verifier 전략 |
 | [`006-profile-image-url-storage.md`](006-profile-image-url-storage.md) | 프로필 이미지 URL 저장 |
 | [`007-user-profile-onboarding.md`](007-user-profile-onboarding.md) | 온보딩·이름 |
 | [`008-trip-authorization-guard.md`](008-trip-authorization-guard.md) | `@TripMemberOnly` / `@TripOwnerOnly` |
 | [`009-observability-logging.md`](009-observability-logging.md) | 로깅·모니터링 인프라 (Loki + Grafana) |
-| [`010-redis-infra.md`](010-redis-infra.md) | Redis 인프라 (신규 EC2 D) |
+| [`010-redis-infra.md`](010-redis-infra.md) | Redis 인프라 (EC2 D) — 배치 결정 유효, **용도는 refresh token·공휴일 캐시로 변경**(2026-09-15 amend) |
 | [`011-holiday-data-source.md`](011-holiday-data-source.md) | 공휴일 데이터 소스 (공공데이터포털 특일정보 API) |
 
 기능 스펙 인덱스: [`../specs/README.md`](../specs/README.md)

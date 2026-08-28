@@ -109,8 +109,9 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 
 ## Data Model
 
-- ERD: [erd.md](architecture/erd.md) — MVP 핵심: `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation`, `refresh_token`
+- ERD: [erd.md](architecture/erd.md) — MVP 핵심: `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation`
 - **런타임 DB: MySQL 8.0** — snake_case 단수형 테이블명, Soft Delete (`deleted_at`), **PK/FK = UUID v4 (`CHAR(36)`)**
+- **Redis (EC2 D)** — RDB가 아닌 키-값 저장소. refresh token(`auth:refresh:*`, 구 `refresh_token` 테이블을 2026-09-15 대체)과 공휴일 캐시(`holiday:kr:*`)를 담는다. 키 목록은 [erd.md](architecture/erd.md) Redis 절, 인프라는 [`010-redis-infra.md`](decisions/010-redis-infra.md)
 - 엔티티: `common/domain/` (베이스), 슬라이스 `domain/` (비즈니스), `repository/` (기술 영속화)
 
 ## Deployment

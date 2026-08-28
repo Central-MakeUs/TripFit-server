@@ -4,7 +4,20 @@
 - **날짜:** 2026-08-08
 - **관련:** [`004-auth-token-rotation.md`](004-auth-token-rotation.md), [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md), Issue **#4**
 
+## ⚠️ 2026-09-15 amend — Redis 용도 변경 (블랙리스트 폐기)
+
+**"EC2 D를 Redis 전용으로 둔다"는 결정 자체는 유효하다.** 다만 아래 본문이 도입 근거로 든 용도(access token `jti` 블랙리스트)는 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)로 **폐기**됐다 — access token은 이제 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
+
+**현재 Redis가 실제로 담는 것** (키 목록 SSOT: [`erd.md`](../architecture/erd.md) Redis 절):
+
+- **refresh token** — `auth:refresh:{active,family,revoked,user}:*` 4종. MySQL `refresh_token` 테이블을 대체한 SSOT
+- **공휴일 캐시** — `holiday:kr:{year}` ([`011-holiday-data-source.md`](011-holiday-data-source.md))
+
+"App을 수평 확장해도 공유돼야 하는 상태"라는 **도입 논리는 그대로 유효**하다(refresh token은 오히려 블랙리스트보다 더 강하게 공유가 필요하다). 다만 아래 "트레이드오프" 절의 fail-open 논거는 더 이상 성립하지 않는다 — refresh 저장소가 Redis이므로 Redis 장애 시 토큰 갱신이 실패한다(fail-open으로 열화되지 않음). 상세는 새 스펙의 SPOF 절 참고.
+
 ## 맥락
+
+> 아래는 2026-08-08 결정 당시의 기록이다. 용도 서술은 위 amend로 대체됐다.
 
 `#4`(RTR + 액세스 토큰 즉시 무효화)를 시작으로 이 저장소에 처음 Redis가 필요해졌다. Redis가 쓰이는 용도(로그아웃 시 access token jti 블랙리스트 — `#35` 정원 hold도 한때 후보였으나 2026-08-19 `#114`로 DB 비관적 락으로 대체·삭제됨)는 전부 "App 인스턴스가 여러 대로 늘어나도 공유돼야 하는 상태"라, App 프로세스 안에 내장하면 App을 수평 확장하는 순간 각 인스턴스가 자기 것만 보게 돼 목적이 무너진다. 어디에·어떻게 올릴지 결정이 필요했다.
 

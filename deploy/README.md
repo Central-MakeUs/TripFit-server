@@ -42,7 +42,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 | [`nginx/`](nginx/) | EC2 A | `api.tripfit.online` 리버스 프록시 |
 | [`mysql/`](mysql/) | EC2 B | MySQL 8.0 전용 |
 | [`monitoring/`](monitoring/) | EC2 C | Loki(:3100) + Grafana(:3000) — A/B 컨테이너 로그 수집·조회 |
-| [`redis/`](redis/) | EC2 D | Redis(:6379) — access token 블랙리스트(`#4`), `sg-app`에서만 접근 |
+| [`redis/`](redis/) | EC2 D | Redis(:6379) — refresh token 저장소 + 공휴일 캐시, `sg-app`에서만 접근 |
 | [`../docker-compose.yml`](../docker-compose.yml) | 로컬 | App build + MySQL (`--profile edge` 시 API Nginx) |
 
 상세 네트워크·SG: [`ec2-split-deployment.md`](ec2-split-deployment.md)

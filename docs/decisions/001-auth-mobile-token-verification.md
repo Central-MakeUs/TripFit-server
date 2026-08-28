@@ -46,7 +46,7 @@ MVP에서는 핵심 여행방·일정 플로우 검증이 우선이고, 계정 �
 - **Apple 로그인 UI**: 타사 소셜과 함께 제공 시 Apple 로그인도 동등하게 — 프론트·심사 (`platform.md`)
 - **Apple `aud`·Google client ID**: iOS/Android 분기 — 프론트와 env 합의 `[미정]`
 - **Apple S2S Notification**: MVP login과 별도 — 스토어 제출 전 [`auth-apple-server-notifications.md`](../specs/auth/auth-apple-server-notifications.md)
-- **토큰 Lifecycle — wave 4**: **RTR + Redis 도입 확정** — access blacklist/whitelist는 `[미정]`. [`004-auth-token-rotation.md`](004-auth-token-rotation.md), [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md). wave 1은 DB refresh + stateless access(`jti`)만
+- **토큰 Lifecycle — 구현 완료(2026-09-15)**: RTR 도입 확정 후 ~~access blacklist/whitelist `[미정]`~~은 **블랙리스트 폐기로 종결**됐다 — refresh는 Redis에 저장·HttpOnly 쿠키로 전달하고, access는 상태 없이 TTL 15분으로만 만료된다. 현행 SSOT는 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)이고, [`004-auth-token-rotation.md`](004-auth-token-rotation.md)·[`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)은 MySQL·블랙리스트 전제의 이력 문서다
 - **캘린더 연동**: 로그인 OAuth와 scope·token 저장이 다름 — [`google-calendar-oauth.md`](../specs/user/google-calendar-oauth.md) (#44). **서버 302 금지** · 환경 A/B는 [`platform.md`](../product/platform.md)
 - **DB 변경 자유도**: 인증 범위 내 허용이나, `user` rename·Identity 분리는 본 결정 범위 밖
 

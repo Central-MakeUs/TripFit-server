@@ -8,7 +8,7 @@
 
 > **EC2 C(모니터링, Loki+Grafana) 추가됨** — A/B와 같은 VPC·서브넷·키페어를 재사용하는 세 번째 인스턴스. 이 문서가 다루는 App/MySQL 분리 이후에 별도로 추가된 것이라 아래 다이어그램·표에는 포함하지 않았다. 상세: [`docs/decisions/009-observability-logging.md`](../docs/decisions/009-observability-logging.md), 배포 절차: [`deploy/README.md`](README.md#ec2-c--모니터링-loki--grafana)
 
-> **EC2 D(Redis, access token 블랙리스트) 추가됨(2026-08-10)** — A/B/C와 같은 VPC·서브넷·키페어를 재사용하는 네 번째 인스턴스(`TP-redis`, `i-06fb8540484834192`). EC2 C와 달리 외부 도메인·HTTPS가 필요 없는 순수 내부 인프라라, 보안 그룹에서 6379를 EC2 A의 SG(`sg-app`, `TP-server`)에서만 허용하고 Elastic IP는 부여하지 않았다. 상세: [`docs/decisions/010-redis-infra.md`](../docs/decisions/010-redis-infra.md), 배포 절차: [`deploy/README.md`](README.md#ec2-d--redis-docsdecisions010-redis-infram)
+> **EC2 D(Redis — refresh token 저장소 + 공휴일 캐시) 추가됨(2026-08-10)** — A/B/C와 같은 VPC·서브넷·키페어를 재사용하는 네 번째 인스턴스(`TP-redis`, `i-06fb8540484834192`). EC2 C와 달리 외부 도메인·HTTPS가 필요 없는 순수 내부 인프라라, 보안 그룹에서 6379를 EC2 A의 SG(`sg-app`, `TP-server`)에서만 허용하고 Elastic IP는 부여하지 않았다. 상세: [`docs/decisions/010-redis-infra.md`](../docs/decisions/010-redis-infra.md), 배포 절차: [`deploy/README.md`](README.md#ec2-d--redis-docsdecisions010-redis-infram)
 
 ## 1. 목표 아키텍처
 

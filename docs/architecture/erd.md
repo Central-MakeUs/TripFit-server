@@ -262,7 +262,17 @@ trip ||--o{ notification_history : relates_to
 
 RTR(rotate·reuse detection) refresh token은 더 이상 MySQL 테이블이 아니라 **Redis 키**로 저장한다 — 이 ERD(RDB 스키마) 대상에서 제외. 키 설계·rotate 흐름은 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)가 SSOT, 이전 MySQL 기반 설계는 [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md)·[`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)에 이력으로 남아 있다.
 
-**Redis (`#4`):** access token(JWT) `jti` 블랙리스트 `auth:bl:{jti}` — logout·탈퇴 시 등록, TTL=토큰 잔여 수명. 별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)
+**Redis (별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)):** 현재 저장하는 값은 아래 2종이다. ~~access token `jti` 블랙리스트 `auth:bl:{jti}`~~는 **폐기**(2026-09-15, [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)) — access token은 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
+
+| 키 | 용도 | TTL |
+|----|------|-----|
+| `auth:refresh:active:{token}` | 현재 유효한 refresh token 1건 (값 `userId\|familyId`) | refresh 수명(30일) |
+| `auth:refresh:family:{familyId}` | 그 family의 현재 active 토큰 값 — 재사용 탐지 시 회수 대상 조회 | refresh 수명 |
+| `auth:refresh:revoked:{token}` | rotate로 소비된 토큰의 tombstone — "폐기됨"과 "애초에 없음"을 구분 | refresh 수명 |
+| `auth:refresh:user:{userId}` | 그 유저의 familyId 집합 — 탈퇴 시 일괄 회수 | refresh 수명 |
+| `holiday:kr:{year}` | 공휴일·대체공휴일 날짜 Set (공공데이터포털 특일정보 API 캐시) | [`011-holiday-data-source.md`](../decisions/011-holiday-data-source.md) 참고 |
+
+refresh 키 설계·rotate 흐름 SSOT는 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md).
 
 ### `regular_schedule` (정기 일정)
 
