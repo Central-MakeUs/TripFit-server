@@ -154,7 +154,10 @@ public class NotificationEventListener {
   }
 
   private Trip requireTrip(UUID tripId) {
-    return tripRepository.findById(tripId).orElseThrow();
+    return tripRepository
+        .findById(tripId)
+        .orElseThrow(
+            () -> new IllegalStateException("Trip not found for notification dispatch: " + tripId));
   }
 
   // ONGOING 여부와 무관하게 활성 멤버 전원 중 방장을 제외한 참여자(D3)

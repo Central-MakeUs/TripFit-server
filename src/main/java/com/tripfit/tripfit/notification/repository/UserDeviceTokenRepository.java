@@ -14,9 +14,12 @@ public interface UserDeviceTokenRepository extends JpaRepository<UserDeviceToken
 
   Optional<UserDeviceToken> findByToken(String token);
 
-  boolean existsByTokenAndUser_Id(String token, UUID userId);
-
-  void deleteByTokenAndUser_Id(String token, UUID userId);
+  // 로그아웃 시 본인 토큰 해제 대상 — deleteByTokenIn과 동일한 이유(엔티티 단위 delete의
+  // ObjectOptimisticLockingFailureException 레이스 회피)로 벌크 쿼리를 쓴다. FCM 무효 토큰 자동 정리가
+  // 거의 동시에 같은 토큰을 지울 수 있다. 반환값(삭제된 행 수)으로 존재 여부를 판단
+  @Modifying
+  @Query("DELETE FROM UserDeviceToken t WHERE t.token = :token AND t.user.id = :userId")
+  long deleteByTokenAndUser_Id(@Param("token") String token, @Param("userId") UUID userId);
 
   // FCM 무효 토큰 자동 정리 대상 — 여러 알림 이벤트가 짧은 시간 안에 같은 무효 토큰을 동시에 정리할 수 있어
   // 엔티티 단위 delete(파생 쿼리 기본 동작) 대신 벌크 쿼리를 쓴다. 엔티티 단위 delete는 삭제 직전 row 존재를

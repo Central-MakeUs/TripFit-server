@@ -27,7 +27,7 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "notification_history")
-@Schema(description = "발송된 FCM 알림 이력 — 알림센터 조회·읽음 상태를 포함한다(D5)")
+@Schema(description = "발송된 FCM 알림 이력 — 알림센터 조회·읽음 상태를 포함한다")
 public class NotificationHistory extends BaseTimeEntity {
 
   @Schema(description = "알림 이력 ID (UUID v4)")

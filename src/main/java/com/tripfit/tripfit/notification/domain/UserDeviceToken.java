@@ -25,7 +25,7 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "user_device_token")
-@Schema(description = "사용자 기기별 FCM 디바이스 토큰. 재로그인 시 소유자가 재할당될 수 있다(D7)")
+@Schema(description = "사용자 기기별 FCM 디바이스 토큰. 재로그인 시 소유자가 재할당될 수 있다")
 public class UserDeviceToken extends BaseTimeEntity {
 
   @Schema(description = "디바이스 토큰 ID (UUID v4)")
@@ -36,7 +36,7 @@ public class UserDeviceToken extends BaseTimeEntity {
   @Column(length = 36, nullable = false, updatable = false)
   private UUID id;
 
-  @Schema(description = "토큰 소유 사용자 — 동일 토큰 재등록 시 재할당(D7)")
+  @Schema(description = "토큰 소유 사용자 — 동일 토큰 재등록 시 재할당")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;

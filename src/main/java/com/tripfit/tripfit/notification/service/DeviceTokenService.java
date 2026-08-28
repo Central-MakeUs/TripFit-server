@@ -46,9 +46,8 @@ public class DeviceTokenService {
     if (token == null || token.isBlank()) {
       throw new TripFitException(NotificationErrorCode.NOTIFICATION_TOKEN_REQUIRED);
     }
-    if (!userDeviceTokenRepository.existsByTokenAndUser_Id(token, userId)) {
+    if (userDeviceTokenRepository.deleteByTokenAndUser_Id(token, userId) == 0) {
       throw new TripFitException(NotificationErrorCode.NOTIFICATION_TOKEN_NOT_FOUND);
     }
-    userDeviceTokenRepository.deleteByTokenAndUser_Id(token, userId);
   }
 }
