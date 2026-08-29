@@ -32,7 +32,7 @@
 
 ## 문제 3 — `OpenApiConfig.java` Info 블록 (해결됨)
 
-파일: `src/main/java/com/tripfit/tripfit/common/config/OpenApiConfig.java`
+파일: `src/main/java/com/tripfit/tripfit/auth/config/OpenApiConfig.java` (2026-08-05 cross-cutting 리팩토링에서 `common/config/`→`auth/config/`로 이동 — `docs/audits/cross-cutting/refactor-log.md` B-1)
 
 - **현상 A (헤딩-내용 불일치):** `## 인증` 헤딩 아래에 실제 인증 설명과 "API description 읽는 순서(목적→호출시점→전제→결과)" 안내가 섞여 있었음.
 - **현상 B (톤 혼재):** "~습니다"체 격식 문장과 "불가", "안 옴" 같은 축약 메모가 섞여 있었음.

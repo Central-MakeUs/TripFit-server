@@ -177,7 +177,7 @@ notification/service/NotificationEventListener → trip.event.* import로 변경
    5. `trip/service/*`, `trip/config/TripAuthorizationInterceptor`를 포트 의존으로 하나씩 전환 (`TripServiceSupport` → `TripCommandService` → ... 순서로) — 클래스 하나 바꿀 때마다 `./gradlew test`
    6. 모든 `trip → user.*` 직접 import가 제거됐는지 `grep -rn "import com.tripfit.tripfit.user\." src/main/java/com/tripfit/tripfit/trip` 로 확인 (엔티티 `User` 연관관계 import는 예외 — Out of Scope)
    7. `membership/` → `recommendation/` → `schedule/` 순서로 feature 서브패키지 이동 (파일 `git mv` + import 갱신)
-4. **각 단계 후 확인:** `common/config/OpenApiConfig.java`/`WebConfig.java` base-package 스캔 영향 없는지, Swagger `@Tag` 정상 노출되는지, 테스트 코드도 동일 구조로 미러링
+4. **각 단계 후 확인:** `auth/config/OpenApiConfig.java`(2026-08-05 cross-cutting 리팩토링에서 `common/config/`에서 이동됨 — `WebConfig.java`는 죽은 CORS 코드로 판명돼 삭제됨, `docs/audits/cross-cutting/refactor-log.md` 참고) base-package 스캔 영향 없는지, Swagger `@Tag` 정상 노출되는지, 테스트 코드도 동일 구조로 미러링
 5. **완료 후 API 스모크 테스트** — `dev` 프로필 `POST /api/v1/auth/dev-login`으로 토큰 발급 → 여행방 생성 → 멤버 참여 → 추천 생성(`GenerateRecommendationsRequest`) → 추천 상세·피드백 → 확정/확정취소까지 실제 HTTP 호출로 왕복 확인 (Swagger 또는 curl)
 6. **커밋 단위** — 단계별로 나눠 커밋 (이벤트 이관 / algorithm 폴더 / 포트+어댑터 / 서비스 전환 / feature 서브패키지, 5묶음 권장)
 7. **완료 후** — `docs/architecture.md` Package Layout을 새 구조로 갱신, `docs/decisions/003-architecture-guide.md`에 포트·이벤트 소유권 규칙 반영, 이 스펙 상태를 `Implemented`로 갱신
