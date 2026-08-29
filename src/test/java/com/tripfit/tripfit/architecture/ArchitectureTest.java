@@ -5,11 +5,14 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tripfit.tripfit.common.exception.ErrorCode;
+import com.tripfit.tripfit.user.domain.SocialProvider;
 import jakarta.persistence.Id;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
@@ -105,6 +108,28 @@ class ArchitectureTest {
             .areNotInterfaces()
             .should()
             .implement(ErrorCode.class);
+    rule.check(classes);
+  }
+
+  @Test
+  void commonPackageDoesNotDependOnOtherDomains() {
+    // SocialProvider는 소셜 로그인 구조화 로그 필드(SocialLogContext/SocialIntegrationLog)로 이미 자리잡은
+    // 공유 enum 예외 — 새로운 common -> 도메인 의존(OpenApiConfig -> auth.jwt.AuthorizedUser 같은 패턴)만 잡는다
+    ArchRule rule =
+        noClasses()
+            .that()
+            .resideInAPackage("com.tripfit.tripfit.common..")
+            .should()
+            .dependOnClassesThat(
+                JavaClass.Predicates.resideInAnyPackage(
+                    "com.tripfit.tripfit.auth..",
+                    "com.tripfit.tripfit.user..",
+                    "com.tripfit.tripfit.trip..",
+                    "com.tripfit.tripfit.notification..")
+                    .and(
+                        DescribedPredicate.not(
+                            JavaClass.Predicates.assignableTo(
+                                SocialProvider.class))));
     rule.check(classes);
   }
 }

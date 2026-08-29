@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.common.config;
+package com.tripfit.tripfit.auth.config;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
 import io.swagger.v3.oas.models.Components;

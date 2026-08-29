@@ -26,7 +26,7 @@ public class SocialTokenCrypto {
 
   private final SecureRandom secureRandom = new SecureRandom();
 
-  private SecretKeySpec secretKey;
+  private volatile SecretKeySpec secretKey;
 
   public SocialTokenCrypto(
       SocialTokenCryptoProperties socialTokenCryptoProperties, Environment environment) {
