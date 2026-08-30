@@ -488,9 +488,11 @@ Authorization: Bearer <accessToken>
 com.tripfit.tripfit
 ├── common/
 │   ├── api/                        # SuccessResponse, ErrorResponse, FieldError
-│   ├── config/                     # JpaConfig, WebConfig, OpenApiConfig
+│   ├── config/                     # JpaConfig, SchedulingConfig
 │   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
-│   └── exception/                  # ErrorCode, GlobalExceptionHandler
+│   ├── exception/                  # ErrorCode, GlobalExceptionHandler
+│   ├── logging/                    # PiiMasker, SocialIntegrationLog, SocialLogContext, SocialIntegrationAction
+│   └── security/                   # SocialTokenCrypto, SocialTokenCryptoProperties
 ├── auth/
 │   ├── config/                     # JwtProperties, SecurityConfig, JwtAuthenticationFilter,
 │   │                               # AuthorizedUser, AuthorizedUserArgumentResolver

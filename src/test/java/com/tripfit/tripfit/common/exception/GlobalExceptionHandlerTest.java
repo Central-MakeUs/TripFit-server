@@ -2,10 +2,17 @@ package com.tripfit.tripfit.common.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.core.read.ListAppender;
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import java.lang.reflect.Method;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpStatus;
@@ -19,6 +26,23 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 class GlobalExceptionHandlerTest {
 
   private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+  private Logger logger;
+
+  private ListAppender<ILoggingEvent> appender;
+
+  @BeforeEach
+  void setUp() {
+    logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    appender = new ListAppender<>();
+    appender.start();
+    logger.addAppender(appender);
+  }
+
+  @AfterEach
+  void tearDown() {
+    logger.detachAppender(appender);
+  }
 
   @Test
   void handleTripFitException_usesErrorCodeStatusAndDefaultMessage() {
@@ -94,6 +118,17 @@ class GlobalExceptionHandlerTest {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     assertThat(response.getBody().code()).isEqualTo("INTERNAL_ERROR");
     assertThat(response.getBody().message()).isEqualTo("요청 처리 중 오류가 발생했습니다.");
+  }
+
+  @Test
+  void handleUnexpectedException_masksEmailInLoggedThrowableMessage() {
+    RuntimeException exception = new RuntimeException("failure for user@example.com");
+
+    handler.handleUnexpectedException(exception);
+
+    IThrowableProxy proxy = appender.list.get(0).getThrowableProxy();
+    assertThat(proxy.getMessage()).contains("us***@example.com").doesNotContain(
+        "user@example.com");
   }
 
   private static Method sampleMethod() {

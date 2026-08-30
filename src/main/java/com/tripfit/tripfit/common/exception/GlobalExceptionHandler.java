@@ -2,6 +2,7 @@ package com.tripfit.tripfit.common.exception;
 
 import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.FieldError;
+import com.tripfit.tripfit.common.logging.PiiMasker;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,9 +63,12 @@ public class GlobalExceptionHandler {
   }
 
   // 위 핸들러가 못 잡는 나머지 전부(DB·NPE 등) — 원인을 로그로 남기고 500 envelope로 통일해 401 오인 마스킹을 막음
+  // 예외 메시지에 사용자 입력(이메일 등)이 섞여 들어올 수 있어, 로깅 전 PiiMasker로 감싼 대역으로 치환 — 스택트레이스는 보존
   @ExceptionHandler(Exception.class)
   ResponseEntity<ErrorResponse> handleUnexpectedException(Exception exception) {
-    log.error("Unhandled exception reached GlobalExceptionHandler", exception);
+    log.error(
+        "Unhandled exception reached GlobalExceptionHandler",
+        PiiMasker.maskThrowable(exception));
     ErrorCode errorCode = CommonErrorCode.INTERNAL_ERROR;
     return ResponseEntity.status(errorCode.getHttpStatus())
         .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));

@@ -17,9 +17,11 @@ com.tripfit.tripfit
 ├── TripfitApplication.java
 ├── common/
 │   ├── api/                        # SuccessResponse, ErrorResponse, FieldError
-│   ├── config/                     # JPA, Web, OpenAPI
+│   ├── config/                     # JpaConfig, SchedulingConfig
 │   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
-│   └── exception/                  # ErrorCode, CommonErrorCode, TripFitException, GlobalExceptionHandler
+│   ├── exception/                  # ErrorCode, CommonErrorCode, TripFitException, GlobalExceptionHandler
+│   ├── logging/                    # PiiMasker, SocialIntegrationLog, SocialLogContext, SocialIntegrationAction
+│   └── security/                   # SocialTokenCrypto, SocialTokenCryptoProperties
 ├── auth/
 │   ├── controller/                 # AuthController
 │   ├── dto/                        # LoginRequest, LoginResponse, ...
