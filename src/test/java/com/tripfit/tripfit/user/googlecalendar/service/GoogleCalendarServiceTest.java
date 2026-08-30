@@ -173,7 +173,7 @@ class GoogleCalendarServiceTest {
   }
 
   // 연동 직후 1회 sync가 일시적 오류(429·5xx 등, GoogleCalendarAuthException이 아닌 일반 예외)로 실패해도
-  // persistenceService.applyPermanentAuthFailure는 호출되지 않고 applySyncError만 호출되는지 검증 —
+  // persistenceService.disconnectGoogleCalendar는 호출되지 않고 applySyncError만 호출되는지 검증 —
   // "연동 성공 직후 DELETE가 연동되어 있지 않음으로 실패"하던 회귀 재현 테스트
   @Test
   void connect_whenInitialSyncFailsWithTransientError_doesNotDisconnect() {
@@ -209,7 +209,7 @@ class GoogleCalendarServiceTest {
     googleCalendarService.connect(USER_ID, "auth-code", null);
 
     verify(persistenceService).applySyncError(eq(USER_ID), anyString());
-    verify(persistenceService, never()).applyPermanentAuthFailure(USER_ID);
+    verify(persistenceService, never()).disconnectGoogleCalendar(USER_ID);
   }
 
   // code 교환 실패(잘못된 redirect_uri·invalid_grant 등) 시 원인을 로그로 남기고 502로 변환하는지 검증
@@ -245,7 +245,7 @@ class GoogleCalendarServiceTest {
 
     googleCalendarService.syncUser(USER_ID);
 
-    verify(persistenceService).applyPermanentAuthFailure(USER_ID);
+    verify(persistenceService).disconnectGoogleCalendar(USER_ID);
     verify(persistenceService, never())
         .applySyncSuccess(any(), any(), any(), any(), any());
   }
@@ -314,9 +314,8 @@ class GoogleCalendarServiceTest {
 
     googleCalendarService.disconnect(USER_ID);
 
-    assertThat(user.isGoogleCalendarConnected()).isFalse();
-    verify(credentialRepository).deleteByUser_Id(USER_ID);
-    verify(busyDayRepository).deleteByUser_Id(USER_ID);
+    verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "refresh");
+    verify(persistenceService).disconnectGoogleCalendar(USER_ID);
   }
 
   @Test

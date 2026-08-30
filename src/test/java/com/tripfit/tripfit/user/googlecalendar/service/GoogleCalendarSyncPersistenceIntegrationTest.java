@@ -116,7 +116,7 @@ class GoogleCalendarSyncPersistenceIntegrationTest {
   }
 
   @Test
-  void applyPermanentAuthFailure_deletesGoogleLayerAndClearsFlagInRealDb() {
+  void disconnectGoogleCalendar_deletesGoogleLayerAndClearsFlagInRealDb() {
     persistenceService.saveConnectedCredential(
         user.getId(),
         "enc-refresh",
@@ -124,7 +124,7 @@ class GoogleCalendarSyncPersistenceIntegrationTest {
         Instant.now().plusSeconds(3600),
         null);
 
-    persistenceService.applyPermanentAuthFailure(user.getId());
+    persistenceService.disconnectGoogleCalendar(user.getId());
 
     assertThat(credentialRepository.findByUser_Id(user.getId())).isEmpty();
     assertThat(userRepository.findById(user.getId()).orElseThrow().isGoogleCalendarConnected())

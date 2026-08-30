@@ -189,11 +189,11 @@ class GoogleCalendarSyncPersistenceServiceTest {
   }
 
   @Test
-  void applyPermanentAuthFailure_deletesGoogleLayerAndClearsFlag() {
+  void disconnectGoogleCalendar_deletesGoogleLayerAndClearsFlag() {
     user.setGoogleCalendarConnected(true);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
-    persistenceService.applyPermanentAuthFailure(USER_ID);
+    persistenceService.disconnectGoogleCalendar(USER_ID);
 
     verify(credentialRepository).deleteByUser_Id(USER_ID);
     verify(busyDayRepository).deleteByUser_Id(USER_ID);

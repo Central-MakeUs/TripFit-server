@@ -104,9 +104,10 @@ public class GoogleCalendarSyncPersistenceService {
         .ifPresent(credential -> credential.markSyncError(maskedMessage));
   }
 
-  // 권한 영구 실패(401·invalid_grant) — Google 레이어 전체 삭제 + 연동 플래그 해제
+  // Google 레이어 전체 삭제 + 연동 플래그 해제 — 사용자 명시적 해제(disconnect)와 권한 영구 실패(401·invalid_grant)
+  // 양쪽에서 재사용하는 동일한 DB 정리 로직(revoke HTTP는 호출부 책임, 이 메서드는 DB 쓰기만)
   @Transactional
-  public void applyPermanentAuthFailure(UUID userId) {
+  public void disconnectGoogleCalendar(UUID userId) {
     credentialRepository.deleteByUser_Id(userId);
     busyDayRepository.deleteByUser_Id(userId);
     userLookupService.requireUser(userId).setGoogleCalendarConnected(false);

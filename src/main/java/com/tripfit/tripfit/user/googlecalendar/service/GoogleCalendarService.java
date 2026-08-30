@@ -139,8 +139,8 @@ public class GoogleCalendarService {
     return userSummaryService.toSummary(user);
   }
 
-  // 의도적 해제 — revoke(best-effort)·credential·busy_day 삭제·flag=false (수동 일정 유지)
-  @Transactional
+  // 의도적 해제 — revoke(best-effort, HTTP)를 먼저 트랜잭션 밖에서 끝내고, credential·busy_day 삭제·flag=false
+  // (수동 일정 유지)는 persistenceService의 짧은 트랜잭션에 위임한다 (connect()/syncUser()와 동일 패턴 — A-1 round2)
   public UserSummaryResponse disconnect(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
@@ -153,9 +153,9 @@ public class GoogleCalendarService {
               String refreshToken = tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
               googleCalendarOAuthClient.revokeRefreshToken(userId, refreshToken);
             });
-    clearGoogleLayer(userId);
-    user.setGoogleCalendarConnected(false);
-    return userSummaryService.toSummary(user);
+    persistenceService.disconnectGoogleCalendar(userId);
+    User updated = userLookupService.requireUser(userId);
+    return userSummaryService.toSummary(updated);
   }
 
   // freeBusy → busy_day 갱신 (C1 윈도우) — 권한 영구 실패 시 flag=false·Google 레이어 정리. Google 서버와의
@@ -249,7 +249,7 @@ public class GoogleCalendarService {
           syncContext(userId, trigger),
           "Google Calendar sync failed permanently — disconnecting",
           exception);
-      persistenceService.applyPermanentAuthFailure(userId);
+      persistenceService.disconnectGoogleCalendar(userId);
     } catch (Exception exception) {
       // freeBusy·refresh 등 일시적 오류 — 30분 폴링이 자동 재시도하므로 credential은 보존하지만, 원인 없이
       // markSyncError 메시지만 DB에 남으면 재현 없이는 언제·누구에게 발생했는지 알 수 없다
@@ -294,11 +294,6 @@ public class GoogleCalendarService {
         accessCiphertext,
         refreshed.accessTokenExpiresAt(),
         refreshedRefreshCiphertext);
-  }
-
-  private void clearGoogleLayer(UUID userId) {
-    credentialRepository.deleteByUser_Id(userId);
-    busyDayRepository.deleteByUser_Id(userId);
   }
 
 }

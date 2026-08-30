@@ -53,3 +53,48 @@
 - Google Calendar 외부 호출 Circuit Breaker (A-1 선행으로 우선순위 낮아짐)
 - 탈퇴 시 provider revoke 4종 `@Async`화 (A-2와 중복 설계 방지를 위해 A-2 이후로 순연)
 - `GoogleCalendarSyncScheduler` 다중 인스턴스 분산 락 (현재 단일 인스턴스 배포에서는 불필요)
+
+## 2026-08-05 — 2차 라운드 A-1/B-1 반영
+
+2차 감사([`audit-round2.md`](audit-round2.md)) 기준 A(반드시 수정) 1개, B(유지보수성) 1개 전부 반영. 사용자 승인: "A/B 전부".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **A-1 (가장 중요):** 1차 때 Google Calendar 연동(`connect`)·자동 동기화(`syncUser`)는 "구글 서버와 다 얘기를 끝낸 다음에만 DB에 짧게 저장"하도록 고쳤는데, 같은 파일의 세 번째 기능인 **연동 해제**(`disconnect`, 사용자가 "구글 캘린더 연결 끊기"를 누를 때)는 그때 놓쳐서 예전 방식 그대로 남아 있었어요. 연결을 끊을 때도 구글 서버에 "이 연결 취소해줘" 요청을 보내고 응답을 기다리는 동안 DB 접속 자리를 계속 붙잡고 있었던 거예요. 이번에 이것도 "구글에 취소 요청부터 보내고, DB 정리는 그다음에 짧게" 순서로 바꿨습니다. 다행히 1차 때 만들어 둔 "권한이 완전히 끊겼을 때 정리하는 코드"가 정확히 똑같은 작업(연동 정보 삭제 + 연동 안 됨으로 표시)을 하고 있어서, 새 코드를 만들지 않고 그걸 그대로 재사용해서 위험 부담 없이 고쳤어요.
+- **B-1:** 30분마다 자동으로 도는 Google Calendar 동기화 스케줄러에 테스트가 없어서 새로 추가했어요 — "이번 순서에 맞는 사람만 처리한다"는 부하 분산 로직과 "한 사람 처리가 실패해도 다음 사람 처리는 계속된다"는 안전장치를 검증합니다.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| A-1 | `GoogleCalendarService.disconnect()` — Google revoke HTTP 호출을 트랜잭션 밖에서 먼저 끝내도록 재구성. DB 정리(credential·busy_day 삭제 + flag=false)는 기존 `GoogleCalendarSyncPersistenceService.applyPermanentAuthFailure()`를 `disconnectGoogleCalendar()`로 rename해 재사용(권한 영구 실패·의도적 해제 양쪽에서 공유) | `GoogleCalendarService.java`, `GoogleCalendarSyncPersistenceService.java`, 관련 테스트 3개 |
+| B-1 | `GoogleCalendarSyncScheduler`에 대응 테스트가 없어 신규 작성 — 지터 슬롯 분산, 한 유저 예외가 다음 유저 처리를 막지 않는지 검증 | `GoogleCalendarSyncSchedulerTest.java`(신규) |
+
+### 변경 규모
+
+- 기존 파일 수정 5개 (main 2 · test 3): `GoogleCalendarService.java`, `GoogleCalendarSyncPersistenceService.java`, `GoogleCalendarServiceTest.java`, `GoogleCalendarSyncPersistenceServiceTest.java`, `GoogleCalendarSyncPersistenceIntegrationTest.java`
+- 신규 파일 1개 (test): `GoogleCalendarSyncSchedulerTest.java`
+- API 계약(Request/Response/HTTP Status/ErrorCode/Endpoint) 변경 없음 — Controller·DTO·`ErrorCode` enum·`@Operation`/`@Schema` 파일 전부 미변경
+
+### 검증 결과
+
+- `./gradlew compileJava compileTestJava` — 통과
+- `./gradlew test --tests "com.tripfit.tripfit.user.*" --tests "com.tripfit.tripfit.architecture.*"` — 전부 통과
+- `./gradlew test` (전체) — **425개 전체 통과, 0개 실패**
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No breaking changes to report"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → 유일한 diff는 `trip` 도메인 `SaveRecommendationFeedbackRequest`의 `@Schema` 설명 문구(auth 2차 라운드에서도 확인된 것과 동일한 기존 무관 drift) — **user 관련 diff는 0건**.
+
+**결론: user 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목
+
+`audit-round2.md`의 C 3개(스케줄러 단일 스레드 풀 공유, delete 파생 쿼리 SELECT-then-delete, 1차 C 3개 재검증), D 1개(1차 D 4개 재검증) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round2.md` 해당 절 참고.
+
+### Later 후속 제안 (audit-round2.md §15, 이번 라운드 미반영)
+
+- Google Calendar 외부 호출 Circuit Breaker (1차와 동일, Later 유지)
+- 탈퇴 시 provider revoke 4종 `@Async`화 (1차와 동일, Later 유지)
+- `GoogleCalendarSyncScheduler` 다중 인스턴스 분산 락 (1차와 동일, Later 유지)
+- **신규**: `@Scheduled` 기본 단일 스레드 풀을 3개 도메인 스케줄러(Google Calendar sync·notification·trip)가 공유 — 수정 파일이 `common/config/SchedulingConfig.java`라 user 도메인 단독 범위 밖. `cross-cutting` 도메인 감사 시 논의 권장
