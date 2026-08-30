@@ -48,3 +48,42 @@
 ### 남겨둔 C/D 항목
 
 `audit.md`의 C 3개(iss 클레임 미검증 TODO, URL 쿼리 파라미터 결합, Apple webhook 미사용 필드), D 4개(revocation 인터페이스, credential 서비스 분리 유지, 소셜 검증 Strategy 패턴, 별도 credential 엔티티 유지) — 이번 라운드에서 변경하지 않음. 이유는 `audit.md` 해당 절 참고.
+
+## 2026-08-05 — 2차 라운드 A-1/B-1 반영
+
+2차 감사([`audit-round2.md`](audit-round2.md)) 기준 A(반드시 수정) 1개, B(유지보수성) 1개 전부 반영. 사용자 승인: "A/B 전부".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **A-1 (가장 중요):** 1차 때 "카카오/구글/애플 로그인 확인을 받는 동안 DB 접속 자리를 붙잡고 있던" 문제를 고쳤었는데, 이번에 다시 살펴보니 그 확인이 끝난 바로 다음 단계 — 구글/애플 로그인 시 나중에 회원 탈퇴할 때 쓸 갱신 토큰을 저장하는 과정 — 에 똑같은 문제가 남아 있었어요. 이 저장 과정도 구글/애플 서버에 요청을 보내고 응답을 최대 8초까지 기다리는데, 그동안 DB 접속 자리를 계속 붙잡고 있었습니다. 이건 구글/애플로 로그인할 때마다 항상 거치는 과정이라, 1차에서 없애려던 위험이 형태만 바뀌어 그대로 남아 있던 셈이에요. 이제 이 저장 과정도 "먼저 확인 받고, DB 저장은 그다음에 짧게" 순서로 바꿔서 완전히 해결했습니다.
+- **B-1:** 기능 변화는 없고 코드 정리예요 — 구글/애플 로그인 검증 실패 시 에러를 처리하는 코드가 두 파일에 거의 그대로 복사돼 있던 걸 한 곳으로 합쳤습니다.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| A-1 | `AppleCredentialService`/`GoogleLoginCredentialService` — Apple/Google 토큰 엔드포인트 HTTP 호출(교환·revoke)을 DB 쓰기 트랜잭션 밖으로 분리. `AppleCredentialPersistenceService`/`GoogleLoginCredentialPersistenceService`(신규)가 조회·저장·삭제만 담당하는 짧은 `@Transactional`을 가짐 (self-invocation 회피를 위해 별도 빈으로 분리, `AuthLoginPersistenceService`와 동일 패턴) | `AppleCredentialService.java`, `GoogleLoginCredentialService.java`, `AppleCredentialPersistenceService.java`(신규), `GoogleLoginCredentialPersistenceService.java`(신규) |
+| B-1 | `AppleTokenVerifier`/`GoogleTokenVerifier`의 `verify()` 예외 매핑 catch 블록 5종(TripFitException/BadJWTException/BadJOSEException/ParseException/JOSEException/RuntimeException) 중복을 `JwtClaimsVerificationSupport`(신규)로 추출. 두 클래스는 JWKS 서명 검증 + audience 매칭·프로필 생성만 람다로 넘기고 예외→`AuthErrorCode` 매핑은 공용 로직에 위임 | `AppleTokenVerifier.java`, `GoogleTokenVerifier.java`, `JwtClaimsVerificationSupport.java`(신규) |
+
+### 변경 규모
+
+- 기존 파일 수정 4개 (main): `AppleCredentialService.java`, `GoogleLoginCredentialService.java`, `AppleTokenVerifier.java`, `GoogleTokenVerifier.java`
+- 신규 파일 5개 (main 3 · test 2): `AppleCredentialPersistenceService.java`, `GoogleLoginCredentialPersistenceService.java`, `JwtClaimsVerificationSupport.java`, `AppleCredentialPersistenceServiceTest.java`(신규), `GoogleLoginCredentialPersistenceServiceTest.java`(신규)
+- 테스트 갱신 2개: `AppleCredentialServiceTest.java`(persistenceService mock으로 전환, 조율 로직만 검증), `GoogleLoginCredentialServiceTest.java`(동일)
+- API 계약(Request/Response/HTTP Status/ErrorCode/Endpoint) 변경 없음 — Controller·DTO·`ErrorCode` enum·`@Operation`/`@Schema` 파일 전부 미변경
+
+### 검증 결과
+
+- `./gradlew compileJava compileTestJava` — 통과
+- `./gradlew test --tests "com.tripfit.tripfit.auth.*" --tests "com.tripfit.tripfit.architecture.*"` — 전부 통과
+- `./gradlew test` (전체) — **423개 전체 통과, 0개 실패**
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No breaking changes to report"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → 유일한 diff는 `trip` 도메인 `SaveRecommendationFeedbackRequest`의 `@Schema` 설명 문구("PUT" vs "PATCH")로, **이번 auth 라운드와 무관한 기존 drift**(스펙 문서가 실제 코드보다 stale). auth 관련 diff는 **0건**.
+
+**결론: auth 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목
+
+`audit-round2.md`의 C 2개(delete 파생 쿼리 SELECT-then-delete, 1차 C 4개 재검증), D 2개(revive 래퍼 미추출, 1차 D 4개 재검증) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round2.md` 해당 절 참고.
