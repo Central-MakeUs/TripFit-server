@@ -1,5 +1,36 @@
 # trip Refactor Log
 
+## 2026-08-05 — 2차 라운드 B-1·B-2 반영
+
+2차 감사([`audit-round2.md`](audit-round2.md)) 기준 A 없음, B(유지보수성) 2건 전부 반영. 사용자 승인: "B-1·B-2 전부".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **B-1**: `SlotStatuses`(정기·개인 일정의 오전/오후/저녁 상태를 담는 값 타입)에 아무도 안 쓰는 접근 방법이 하나 더 있었어요 — 오전/오후/저녁 상태를 각각 이름으로 꺼내 오는 방법(`getMorningStatus()` 등)과, 슬롯을 파라미터로 넘겨서 꺼내 오는 방법(`get(TimeSlot)`) 두 가지가 있었는데, 실제 코드는 전부 앞의 방법만 쓰고 있었습니다. 안 쓰는 길을 남겨두면 나중에 코드를 보는 사람이 "이건 언제 쓰는 거지?" 헷갈릴 수 있어서 지웠어요.
+- **B-2**: `TripScheduleSnapshotService`(일정 확정 시 멤버들의 일정을 스냅샷으로 굳혀 저장하는 서비스)가 실제로는 같은 폴더 안 다른 코드에서만 불려 쓰이는데, 다른 폴더에서도 자유롭게 갖다 쓸 수 있게 열려 있었어요(`public`). 실제로 그렇게 쓰는 곳은 없었기 때문에, 앞으로 실수로 엉뚱한 곳에서 이 서비스를 직접 가져다 쓰는 걸 막기 위해 접근 범위를 같은 폴더 안으로 좁혔습니다.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| B-1 | `SlotStatuses`의 미사용 제네릭 접근자 `get(TimeSlot)`/`set(TimeSlot, ScheduleStatus)` 삭제. 개별 getter/setter(`getMorningStatus()` 등)는 유지 | `SlotStatuses.java` |
+| B-2 | `TripScheduleSnapshotService` 클래스·생성자 가시성을 `public` → package-private으로 축소(같은 패키지 내 서비스 계층 가시성 컨벤션과 통일) | `TripScheduleSnapshotService.java` |
+
+### 검증 결과
+
+- `./gradlew compileJava compileTestJava` — 통과
+- `./gradlew test` (전체) — 통과, 실패 0건
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **`{}`** (diff 0건)
+
+**결론: trip 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목
+
+`audit-round2.md`의 C 2개(`RecommendationEngine.loadContext`/`resolveMergedSchedules` 조회 패턴 유사성, `CreateTripRequest`/`PatchTripRequest` 필드 중복), D 2개(엔티티 `equals`/`hashCode` 미구현, `TripMemberScheduleSnapshot.frozenAt` 별도 컬럼 유지) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round2.md` 해당 절 참고.
+
 ## 2026-08-05 — A-1, A-2, B-1~B-3 반영
 
 `audit.md`의 A(반드시 수정) 2건, B(유지보수성) 3건을 전부 반영. C/D는 이번 라운드에서 보류.

@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 확정·종료 시 희망 기간의 멤버 정기+개별 합친 일정을 스냅샷으로 고정한다 (이후 읽기 전용). */
 @Service
-public class TripScheduleSnapshotService {
+class TripScheduleSnapshotService {
 
   private final TripMemberScheduleSnapshotRepository snapshotRepository;
 
@@ -32,7 +32,7 @@ public class TripScheduleSnapshotService {
 
   private final TripServiceSupport support;
 
-  public TripScheduleSnapshotService(
+  TripScheduleSnapshotService(
       TripMemberScheduleSnapshotRepository snapshotRepository,
       RegularScheduleRepository regularScheduleRepository,
       PersonalScheduleRepository personalScheduleRepository,

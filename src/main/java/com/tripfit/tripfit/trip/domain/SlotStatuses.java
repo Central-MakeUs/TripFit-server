@@ -51,22 +51,6 @@ public class SlotStatuses {
         TimeSlot.EVENING.statusForRange(startTime, endTime));
   }
 
-  public ScheduleStatus get(TimeSlot slot) {
-    return switch (slot) {
-      case MORNING -> morningStatus;
-      case AFTERNOON -> afternoonStatus;
-      case EVENING -> eveningStatus;
-    };
-  }
-
-  public void set(TimeSlot slot, ScheduleStatus status) {
-    switch (slot) {
-      case MORNING -> morningStatus = status;
-      case AFTERNOON -> afternoonStatus = status;
-      case EVENING -> eveningStatus = status;
-    }
-  }
-
   public ScheduleStatus getMorningStatus() {
     return morningStatus;
   }
