@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class DeviceTokenServiceTest {
@@ -48,7 +49,25 @@ class DeviceTokenServiceTest {
         USER_ID,
         new DeviceTokenRegisterRequest("token-1", DeviceType.ANDROID));
 
-    verify(userDeviceTokenRepository).save(any(UserDeviceToken.class));
+    verify(userDeviceTokenRepository).saveAndFlush(any(UserDeviceToken.class));
+  }
+
+  @Test
+  void registerToken_raceOnNewToken_reassignsExistingInstead() {
+    User user = new User("sub", SocialProvider.GOOGLE, "u@example.com", "nick", null);
+    UserDeviceToken existing = new UserDeviceToken(user, "token-1", DeviceType.IOS);
+    when(userDeviceTokenRepository.findByToken("token-1"))
+        .thenReturn(Optional.empty())
+        .thenReturn(Optional.of(existing));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(userDeviceTokenRepository.saveAndFlush(any(UserDeviceToken.class)))
+        .thenThrow(new DataIntegrityViolationException("duplicate token"));
+
+    deviceTokenService.registerToken(
+        USER_ID,
+        new DeviceTokenRegisterRequest("token-1", DeviceType.ANDROID));
+
+    assertThat(existing.getDeviceType()).isEqualTo(DeviceType.ANDROID);
   }
 
   @Test
@@ -65,7 +84,7 @@ class DeviceTokenServiceTest {
 
     assertThat(existing.getUser()).isEqualTo(newOwner);
     assertThat(existing.getDeviceType()).isEqualTo(DeviceType.ANDROID);
-    verify(userDeviceTokenRepository, never()).save(any(UserDeviceToken.class));
+    verify(userDeviceTokenRepository, never()).saveAndFlush(any(UserDeviceToken.class));
   }
 
   @Test

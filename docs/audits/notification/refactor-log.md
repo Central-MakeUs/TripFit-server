@@ -1,5 +1,38 @@
 # notification Refactor Log
 
+## 2026-08-05 — 2차 라운드 A-1·A-2·B-1 반영
+
+2차 감사([`audit-round2.md`](audit-round2.md)) 기준 A(반드시 수정) 2건, B(유지보수성) 1건 전부 반영. 사용자 승인: "A-1·A-2·B-1 전부".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **A-1**: 알림센터 목록을 불러올 때, 알림 하나하나마다 "이 알림이 어느 여행방 알림인지" 이름을 확인하는 과정에서 매번 DB에 별도로 물어보고 있었어요. 최근 7일치 알림에 서로 다른 여행방이 여러 개 섞여 있으면, 그 방 개수만큼 DB에 왕복 질문을 더 하게 되는 구조였습니다. 이번에 "알림 목록 + 관련 여행방 이름"을 한 번의 질문으로 같이 받아오도록 바꿔서, 여러 방에 속한 사용자일수록 체감하던 지연을 줄였어요.
+- **A-2**: 앱이 알림 받을 기기 정보(FCM 토큰)를 서버에 등록할 때, 네트워크가 불안정해서 클라이언트가 같은 요청을 짧은 시간에 두 번 보내는 경우가 있을 수 있어요. 이런 경우 드물게 서버가 "이미 있는 값인데 또 넣으려 했다"는 내부 오류로 500 에러를 돌려줄 수 있는 여지가 있었습니다(흔치는 않지만 재시도할 때마다 매번 성공을 보장하지 못했던 셈이에요). 이제 그런 충돌이 나면 서버가 스스로 "아, 이미 다른 요청이 방금 넣었구나"라고 판단해서 그 기존 값에 정상적으로 맞춰 넣도록(재할당) 고쳐서, 재시도할 때도 항상 성공하도록 만들었어요.
+- **B-1**: 기능 변화는 없고 코드 정리예요 — 토큰 값이 비어 있는지 확인하는 코드가 등록·해제 두 메서드에 거의 똑같이 복사돼 있던 걸 한 곳으로 모았습니다.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| A-1 | `NotificationHistoryRepository.findByUser_IdAndSentAtGreaterThanEqualOrderBySentAtDesc`를 파생 쿼리에서 `@Query` + `LEFT JOIN FETCH h.trip`으로 변경 — 알림센터 목록 조회 시 여행방 이름(roomName) 접근으로 인한 N+1 제거. 메서드 시그니처·반환 타입·정렬·호출부는 동일 유지 | `NotificationHistoryRepository.java` |
+| A-2 | `DeviceTokenService.registerToken()`의 신규 토큰 저장 분기를 `save()` → `saveAndFlush()`로 바꿔 즉시 INSERT를 실행시키고, `DataIntegrityViolationException`(동시 등록 레이스로 인한 UNIQUE 위반) 발생 시 `findByToken` 재조회 후 `reassign()`으로 수렴하도록 `saveNewToken()` 헬퍼 신설 | `DeviceTokenService.java`, `DeviceTokenServiceTest.java`(레이스 폴백 테스트 추가) |
+| B-1 | `registerToken()`/`unregisterToken()`에 중복돼 있던 토큰 blank 검증을 `requireNonBlankToken(String)` private 헬퍼로 통합 | `DeviceTokenService.java` |
+
+### 검증 결과
+
+- `./gradlew compileJava compileTestJava` — 통과
+- `./gradlew test` (전체) — 통과, 실패 0건
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **`{}`** (diff 0건)
+
+**결론: notification 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목
+
+`audit-round2.md`의 C 2개(`DeviceTokenController.unregister()`의 FCM 토큰 쿼리 파라미터 노출 — 엔드포인트 계약 변경이라 별도 스펙 승인 필요, 1차 C 3건 재확인), D 3개(1차 D 5건 재확인, `FcmProperties` Bean 위치 재확인) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round2.md` 해당 절 참고.
+
 ## 2026-08-05 — A-1, B-1~B-3 반영
 
 `audit.md`의 A(반드시 수정) 1건, B(유지보수성) 3건을 전부 반영. C/D는 이번 라운드에서 보류.
