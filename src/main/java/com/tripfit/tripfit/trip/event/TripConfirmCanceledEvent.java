@@ -1,4 +1,4 @@
-package com.tripfit.tripfit.notification.event;
+package com.tripfit.tripfit.trip.event;
 
 import java.util.UUID;
 
