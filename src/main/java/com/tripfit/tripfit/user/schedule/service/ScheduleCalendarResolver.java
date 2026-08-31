@@ -1,7 +1,7 @@
 package com.tripfit.tripfit.user.schedule.service;
 
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
-import com.tripfit.tripfit.trip.domain.SlotStatuses;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.schedule.domain.SlotStatuses;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;

@@ -2,7 +2,7 @@ package com.tripfit.tripfit.user.schedule.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
