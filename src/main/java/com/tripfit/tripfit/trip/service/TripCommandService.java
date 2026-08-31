@@ -1,28 +1,30 @@
 package com.tripfit.tripfit.trip.service;
 
+import com.tripfit.tripfit.trip.membership.service.TripJoinService;
+import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
+import com.tripfit.tripfit.trip.recommendation.service.TripRecommendationService;
 import com.tripfit.tripfit.common.exception.TripFitException;
-import com.tripfit.tripfit.notification.event.AllMembersSubmittedEvent;
-import com.tripfit.tripfit.notification.event.TripInfoChangedEvent;
-import com.tripfit.tripfit.notification.event.TripJoinCompletedEvent;
 import com.tripfit.tripfit.trip.config.TripActivity;
 import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.domain.TripMember;
-import com.tripfit.tripfit.trip.domain.TripMemberRole;
-import com.tripfit.tripfit.trip.domain.TripMemberStatus;
+import com.tripfit.tripfit.trip.membership.domain.TripMember;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.CreateTripResponse;
-import com.tripfit.tripfit.trip.dto.JoinTripRequest;
+import com.tripfit.tripfit.trip.membership.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
-import com.tripfit.tripfit.trip.dto.TripMembersResponse;
+import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
+import com.tripfit.tripfit.trip.event.AllMembersSubmittedEvent;
+import com.tripfit.tripfit.trip.event.TripInfoChangedEvent;
+import com.tripfit.tripfit.trip.event.TripJoinCompletedEvent;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
+import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.service.UserProfileService;
-import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,12 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 // 여행방 생성·참여·멤버십 activate·메타 수정·삭제·Pin·내보내기 등 쓰기 유스케이스
 class TripCommandService {
-
   private final TripRepository tripRepository;
 
   private final TripMemberRepository tripMemberRepository;
-
-  private final UserProfileService userProfileService;
 
   private final TripServiceSupport support;
 
@@ -48,28 +47,26 @@ class TripCommandService {
 
   private final TripMemberQueryService tripMemberQueryService;
 
-  private final UserSummaryService userSummaryService;
+  private final UserDirectoryPort userDirectoryPort;
 
   private final ApplicationEventPublisher applicationEventPublisher;
 
   TripCommandService(
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
-      UserProfileService userProfileService,
       TripServiceSupport support,
       TripJoinService tripJoinService,
       TripRecommendationService tripRecommendationService,
       TripMemberQueryService tripMemberQueryService,
-      UserSummaryService userSummaryService,
+      UserDirectoryPort userDirectoryPort,
       ApplicationEventPublisher applicationEventPublisher) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
-    this.userProfileService = userProfileService;
     this.support = support;
     this.tripJoinService = tripJoinService;
     this.tripRecommendationService = tripRecommendationService;
     this.tripMemberQueryService = tripMemberQueryService;
-    this.userSummaryService = userSummaryService;
+    this.userDirectoryPort = userDirectoryPort;
     this.applicationEventPublisher = applicationEventPublisher;
   }
 
@@ -78,7 +75,7 @@ class TripCommandService {
   public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = support.findUser(userId);
     // 성·이름 미완료면 생성 불가
-    userProfileService.requireProfileNameComplete(owner);
+    userDirectoryPort.requireProfileNameComplete(owner);
     support.validateTripMeta(
         request.name(),
         request.startRange(),
@@ -88,7 +85,6 @@ class TripCommandService {
         request.memberCount());
     Integer durationDays =
         TripServiceSupport.resolveDurationDays(request.durationNights(), request.durationDays());
-
     Trip trip =
         new Trip(
             owner,
@@ -102,7 +98,6 @@ class TripCommandService {
             TripStatus.ONGOING);
     trip.setDestination(TripServiceSupport.normalizeDestination(request.destination()));
     tripRepository.save(trip);
-
     // create 직후는 SCHEDULE_PENDING — 일정 activate 후에 ACTIVE. 전부 free 처리는 activate/join에서.
     TripMember ownerMember =
         new TripMember(
@@ -112,7 +107,6 @@ class TripCommandService {
             TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
     tripMemberRepository.save(ownerMember);
-
     // inviteCode는 DB에만 발급 — SCHEDULE_PENDING(입장 전) 생성 응답에는 안 실림. 공유는 activate 후 상세에서
     return new CreateTripResponse(
         trip.getId(), support.effectiveStatus(trip), ownerMember.getStatus());
@@ -124,13 +118,11 @@ class TripCommandService {
   public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
     Trip trip = support.requireActiveTrip(tripId);
     TripMember membership = support.requireActiveMember(tripId, userId);
-
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
       // 일정이 0건이면 전부 free로 표시한 뒤 ACTIVE로 전환 — canEnterRoom을 항상 충족시키므로 별도 재검증 불필요
-      userSummaryService.markAllFreeIfNoSchedules(membership.getUser());
+      userDirectoryPort.markAllFreeIfNoSchedules(membership.getUser());
       membership.activate();
     }
-
     return support.toDetail(trip, membership);
   }
 
@@ -139,7 +131,6 @@ class TripCommandService {
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
     Trip trip = support.requireOwnedOngoingTrip(tripId, userId);
-
     support.validateTripMeta(
         request.name(),
         trip.getStartRange(),
@@ -149,7 +140,6 @@ class TripCommandService {
         request.memberCount());
     Integer durationDays =
         TripServiceSupport.resolveDurationDays(request.durationNights(), request.durationDays());
-
     boolean recommendationInputsChanged =
         !Objects.equals(trip.getDurationDays(), durationDays);
     String normalizedDestination = TripServiceSupport.normalizeDestination(request.destination());
@@ -160,20 +150,17 @@ class TripCommandService {
             || recommendationInputsChanged
             || !Objects.equals(trip.getMemberCount(), request.memberCount())
             || !Objects.equals(trip.getDestination(), normalizedDestination);
-
     trip.setName(request.name().trim());
     trip.setDurationNights(request.durationNights());
     trip.setDurationDays(durationDays);
     trip.setMemberCount(request.memberCount());
     trip.setDestination(normalizedDestination);
-
     if (recommendationInputsChanged) {
       tripRecommendationService.deleteRecommendationsForTrip(tripId);
     }
     if (valuesChanged) {
       applicationEventPublisher.publishEvent(new TripInfoChangedEvent(tripId));
     }
-
     TripMember membership = support.requireActiveMember(tripId, userId);
     return support.toDetail(trip, membership);
   }
@@ -182,7 +169,6 @@ class TripCommandService {
   @Transactional
   public void deleteTrip(UUID tripId, UUID userId) {
     Trip trip = support.requireOwnedTrip(tripId, userId);
-
     LocalDateTime now = LocalDateTime.now();
     trip.setDeletedAt(now);
     for (TripMember member : tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId)) {
@@ -195,14 +181,12 @@ class TripCommandService {
   public TripDetailResponse joinTrip(UUID userId, JoinTripRequest request) {
     User user = support.findUser(userId);
     // 성·이름 미완료면 참여 불가
-    userProfileService.requireProfileNameComplete(user);
+    userDirectoryPort.requireProfileNameComplete(user);
     String inviteCode = request.inviteCode().trim().toUpperCase();
-
     Trip trip =
         tripRepository
             .findByInviteCodeAndDeletedAtIsNull(inviteCode)
             .orElseThrow(() -> new TripFitException(TripErrorCode.INVITE_CODE_NOT_FOUND));
-
     var existing =
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {
@@ -211,7 +195,6 @@ class TripCommandService {
       support.requireActive(membership);
       return support.toDetail(trip, membership);
     }
-
     TripStatus status = support.effectiveStatus(trip);
     long joinedMemberCount = 0;
     switch (status) {
@@ -224,9 +207,7 @@ class TripCommandService {
         }
       }
     }
-
     TripDetailResponse response = tripJoinService.joinAsNewMember(trip, user);
-
     applicationEventPublisher.publishEvent(new TripJoinCompletedEvent(trip.getId(), userId));
     // D11 — 멤버는 join 즉시 ACTIVE라 "정원 도달"이 곧 전원 제출 완료. 방금 저장한 신규 멤버만큼 +1해 재조회 없이 판정
     if (joinedMemberCount + 1 >= trip.getMemberCount()) {
@@ -249,7 +230,6 @@ class TripCommandService {
   @TripActivity(tripIdParam = "tripId")
   public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
     support.requireOwnedOngoingTrip(tripId, ownerId);
-
     TripMember target =
         tripMemberRepository
             .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, targetUserId)
@@ -257,7 +237,6 @@ class TripCommandService {
     if (target.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.CANNOT_REMOVE_OWNER);
     }
-
     target.setDeletedAt(LocalDateTime.now());
     return tripMemberQueryService.listMembers(tripId, ownerId);
   }
@@ -271,8 +250,6 @@ class TripCommandService {
     if (membership.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);
     }
-
     membership.setDeletedAt(LocalDateTime.now());
   }
-
 }

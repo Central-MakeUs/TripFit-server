@@ -11,35 +11,46 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.config.TripActivityAspect;
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.domain.TripMember;
-import com.tripfit.tripfit.trip.domain.TripMemberRole;
-import com.tripfit.tripfit.trip.domain.TripMemberScheduleSnapshot;
-import com.tripfit.tripfit.trip.domain.TripMemberStatus;
+import com.tripfit.tripfit.trip.membership.domain.TripMember;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.schedule.domain.TripMemberScheduleSnapshot;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
-import com.tripfit.tripfit.trip.dto.JoinTripRequest;
+import com.tripfit.tripfit.trip.membership.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListScope;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.repository.RecommendationFeedbackRepository;
-import com.tripfit.tripfit.trip.repository.RecommendationRepository;
-import com.tripfit.tripfit.trip.repository.TripMemberScheduleSnapshotRepository;
-import com.tripfit.tripfit.trip.repository.projection.TripMemberCountProjection;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.membership.service.TripJoinService;
+import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
+import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
+import com.tripfit.tripfit.trip.port.out.SchedulePort;
+import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
+import com.tripfit.tripfit.trip.recommendation.algorithm.RecommendationEngine;
+import com.tripfit.tripfit.trip.recommendation.repository.RecommendationFeedbackRepository;
+import com.tripfit.tripfit.trip.recommendation.repository.RecommendationRepository;
+import com.tripfit.tripfit.trip.recommendation.service.TripRecommendationService;
+import com.tripfit.tripfit.trip.schedule.repository.TripMemberScheduleSnapshotRepository;
+import com.tripfit.tripfit.trip.schedule.service.TripScheduleSnapshotService;
+import com.tripfit.tripfit.trip.membership.repository.projection.TripMemberCountProjection;
+import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import com.tripfit.tripfit.user.service.UserProfileService;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityAdapter;
+import com.tripfit.tripfit.user.service.UserDirectoryAdapter;
 import com.tripfit.tripfit.user.service.UserLookupService;
+import com.tripfit.tripfit.user.service.UserProfileService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -119,19 +130,23 @@ class TripServiceTest {
             regularScheduleRepository,
             personalScheduleRepository,
             userLookupService);
+    UserDirectoryPort userDirectoryPort =
+        new UserDirectoryAdapter(
+            userLookupService, userRepository, userProfileService, userSummaryService);
     TripServiceSupport support =
-        new TripServiceSupport(
-            tripRepository, tripMemberRepository, userLookupService, userRepository);
+        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
+    SchedulePort schedulePort =
+        new ScheduleAvailabilityAdapter(regularScheduleRepository, personalScheduleRepository);
+    GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     TripMemberQueryService tripMemberQueryService =
         new TripMemberQueryService(
-            regularScheduleRepository,
-            personalScheduleRepository,
             snapshotRepository,
             support,
-            googleCalendarService);
+            schedulePort,
+            googleCalendarPort);
     TripJoinService tripJoinService =
-        new TripJoinService(tripMemberRepository, support, userSummaryService);
+        new TripJoinService(tripMemberRepository, support, userDirectoryPort);
     TripActivityAspect tripActivityAspect = new TripActivityAspect(tripRepository);
     AspectJProxyFactory joinProxyFactory = new AspectJProxyFactory(tripJoinService);
     joinProxyFactory.addAspect(tripActivityAspect);
@@ -140,13 +155,11 @@ class TripServiceTest {
     TripScheduleSnapshotService tripScheduleSnapshotService =
         new TripScheduleSnapshotService(
             snapshotRepository,
-            regularScheduleRepository,
-            personalScheduleRepository,
-            googleCalendarService,
+            schedulePort,
+            googleCalendarPort,
             support);
     RecommendationEngine recommendationEngine =
-        new RecommendationEngine(
-            regularScheduleRepository, personalScheduleRepository, googleCalendarService);
+        new RecommendationEngine(schedulePort, googleCalendarPort);
     TripRecommendationService tripRecommendationServiceRaw =
         new TripRecommendationService(
             support,
@@ -165,12 +178,11 @@ class TripServiceTest {
         new TripCommandService(
             tripRepository,
             tripMemberRepository,
-            userProfileService,
             support,
             proxiedJoinService,
             tripRecommendationService,
             tripMemberQueryService,
-            userSummaryService,
+            userDirectoryPort,
             applicationEventPublisher);
     AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
     commandProxyFactory.addAspect(tripActivityAspect);
@@ -390,9 +402,9 @@ class TripServiceTest {
     verify(tripMemberRepository).save(any());
     verify(applicationEventPublisher)
         .publishEvent(
-            new com.tripfit.tripfit.notification.event.TripJoinCompletedEvent(TRIP_ID, MEMBER_ID));
+            new com.tripfit.tripfit.trip.event.TripJoinCompletedEvent(TRIP_ID, MEMBER_ID));
     verify(applicationEventPublisher, never())
-        .publishEvent(any(com.tripfit.tripfit.notification.event.AllMembersSubmittedEvent.class));
+        .publishEvent(any(com.tripfit.tripfit.trip.event.AllMembersSubmittedEvent.class));
   }
 
   @Test
@@ -409,7 +421,7 @@ class TripServiceTest {
     tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
 
     verify(applicationEventPublisher)
-        .publishEvent(new com.tripfit.tripfit.notification.event.AllMembersSubmittedEvent(TRIP_ID));
+        .publishEvent(new com.tripfit.tripfit.trip.event.AllMembersSubmittedEvent(TRIP_ID));
   }
 
   @Test
@@ -542,7 +554,7 @@ class TripServiceTest {
     assertThat(trip.getDurationDays()).isEqualTo(3);
     assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
     verify(applicationEventPublisher)
-        .publishEvent(new com.tripfit.tripfit.notification.event.TripInfoChangedEvent(TRIP_ID));
+        .publishEvent(new com.tripfit.tripfit.trip.event.TripInfoChangedEvent(TRIP_ID));
   }
 
   @Test
@@ -559,7 +571,7 @@ class TripServiceTest {
             trip.getMemberCount(), null));
 
     verify(applicationEventPublisher, never())
-        .publishEvent(any(com.tripfit.tripfit.notification.event.TripInfoChangedEvent.class));
+        .publishEvent(any(com.tripfit.tripfit.trip.event.TripInfoChangedEvent.class));
   }
 
   @Test

@@ -2,11 +2,11 @@ package com.tripfit.tripfit.trip.config;
 
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
-import com.tripfit.tripfit.trip.domain.TripMember;
+import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
+import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
-import com.tripfit.tripfit.user.service.UserSummaryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -30,15 +30,15 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
   private final TripServiceSupport support;
 
-  private final UserSummaryService userSummaryService;
+  private final UserDirectoryPort userDirectoryPort;
 
   public TripAuthorizationInterceptor(
       TripRepository tripRepository,
       TripServiceSupport support,
-      UserSummaryService userSummaryService) {
+      UserDirectoryPort userDirectoryPort) {
     this.tripRepository = tripRepository;
     this.support = support;
-    this.userSummaryService = userSummaryService;
+    this.userDirectoryPort = userDirectoryPort;
   }
 
   // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly/@TripMembershipOnly 권한 검사 — SCHEDULE_PENDING 방장은
@@ -92,7 +92,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     support.requireActive(membership);
 
     // 전역 입장 조건: 일정≥1 또는 전부 free
-    userSummaryService.requireCanEnterRoom(userId);
+    userDirectoryPort.requireCanEnterRoom(userId);
     return true;
   }
 

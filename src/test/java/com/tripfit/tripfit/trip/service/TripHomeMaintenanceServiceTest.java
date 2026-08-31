@@ -7,7 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripStatus;
-import com.tripfit.tripfit.trip.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
+import com.tripfit.tripfit.trip.schedule.service.TripScheduleSnapshotService;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
