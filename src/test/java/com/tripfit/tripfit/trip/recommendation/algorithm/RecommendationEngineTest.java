@@ -1,25 +1,29 @@
-package com.tripfit.tripfit.trip.service;
+package com.tripfit.tripfit.trip.recommendation.algorithm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.tripfit.tripfit.trip.domain.AttendanceType;
-import com.tripfit.tripfit.trip.domain.RecommendationMode;
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
-import com.tripfit.tripfit.trip.domain.SlotStatuses;
+import com.tripfit.tripfit.trip.recommendation.domain.AttendanceType;
+import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.schedule.domain.SlotStatuses;
 import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.domain.TripMember;
-import com.tripfit.tripfit.trip.domain.TripMemberRole;
-import com.tripfit.tripfit.trip.domain.TripMemberStatus;
+import com.tripfit.tripfit.trip.membership.domain.TripMember;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
+import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
+import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
+import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityAdapter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -52,9 +56,10 @@ class RecommendationEngineTest {
 
   @BeforeEach
   void setUp() {
-    engine =
-        new RecommendationEngine(
-            regularScheduleRepository, personalScheduleRepository, googleCalendarService);
+    SchedulePort schedulePort =
+        new ScheduleAvailabilityAdapter(regularScheduleRepository, personalScheduleRepository);
+    GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
+    engine = new RecommendationEngine(schedulePort, googleCalendarPort);
     yoonji = user("yoonji");
     eunseo = user("eunseo");
     when(googleCalendarService.findBusyDaysByUserIds(any(), any(), any())).thenReturn(Map.of());

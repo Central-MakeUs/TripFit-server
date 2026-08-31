@@ -1,18 +1,16 @@
-package com.tripfit.tripfit.trip.service;
+package com.tripfit.tripfit.trip.recommendation.algorithm;
 
-import com.tripfit.tripfit.trip.domain.AttendanceType;
-import com.tripfit.tripfit.trip.domain.RecommendationMode;
-import com.tripfit.tripfit.trip.domain.ScheduleStatus;
-import com.tripfit.tripfit.trip.domain.SlotStatuses;
+import com.tripfit.tripfit.trip.recommendation.domain.AttendanceType;
+import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
+import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
+import com.tripfit.tripfit.trip.schedule.domain.SlotStatuses;
 import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.domain.TripMember;
+import com.tripfit.tripfit.trip.membership.domain.TripMember;
+import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
+import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
-import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
-import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
-import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.schedule.service.ScheduleCalendarResolver;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -28,28 +26,24 @@ import org.springframework.stereotype.Component;
 
 // 후보 윈도우 생성 → 참여자 3분류 → 평가항목 4종 패널티·모드 가중치 스코어링 → 동점 처리 → Best3 산출(#50 BR-TRIP-005·011·012)
 @Component
-class RecommendationEngine {
+public class RecommendationEngine {
 
   private static final int RESULT_LIMIT = 3;
 
-  private final RegularScheduleRepository regularScheduleRepository;
+  private final SchedulePort schedulePort;
 
-  private final PersonalScheduleRepository personalScheduleRepository;
+  private final GoogleCalendarPort googleCalendarPort;
 
-  private final GoogleCalendarService googleCalendarService;
-
-  RecommendationEngine(
-      RegularScheduleRepository regularScheduleRepository,
-      PersonalScheduleRepository personalScheduleRepository,
-      GoogleCalendarService googleCalendarService) {
-    this.regularScheduleRepository = regularScheduleRepository;
-    this.personalScheduleRepository = personalScheduleRepository;
-    this.googleCalendarService = googleCalendarService;
+  public RecommendationEngine(
+      SchedulePort schedulePort,
+      GoogleCalendarPort googleCalendarPort) {
+    this.schedulePort = schedulePort;
+    this.googleCalendarPort = googleCalendarPort;
   }
 
   // 방장이 고른 모드로 TOP3 후보를 계산 — 응답 참여자는 activeMembers 전원(모든 ACTIVE 멤버는 activate/join 시
   // 이미 일정 확인을 마쳤으므로 별도 미응답 제외 없음, 0건도 없음(방장은 항상 포함))
-  List<RecommendationCandidate> generate(
+  public List<RecommendationCandidate> generate(
       Trip trip,
       RecommendationMode mode,
       List<TripMember> activeMembers) {
@@ -77,7 +71,7 @@ class RecommendationEngine {
   }
 
   // 모드 무관 참여자 분류 — 특정 구간 하나만 다시 계산(추천 근거 상세 라이브 재계산·confirm 시점 통계 공용)
-  List<MemberAttendanceDetail> classifyMembers(
+  public List<MemberAttendanceDetail> classifyMembers(
       LocalDate startDate,
       LocalDate endDate,
       List<TripMember> activeMembers) {
@@ -303,29 +297,19 @@ class RecommendationEngine {
     List<UUID> userIds = activeMembers.stream().map(member -> member.getUser().getId()).toList();
 
     Map<UUID, List<RegularSchedule>> regularsByUser =
-        regularScheduleRepository.findByUserIdIn(userIds).stream()
-            .collect(Collectors.groupingBy(regular -> regular.getUser().getId()));
-
-    Map<UUID, List<PersonalSchedule>> personalsByUser =
-        personalScheduleRepository
-            .findByUserIdInAndScheduleDateBetween(userIds, rangeStart, rangeEnd).stream()
-            .collect(Collectors.groupingBy(personal -> personal.getUser().getId()));
+        schedulePort.findRegularSchedulesByUserIds(userIds);
 
     Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> busyByUser =
-        googleCalendarService.findBusyDaysByUserIds(userIds, rangeStart, rangeEnd);
+        googleCalendarPort.findBusyDaysByUserIds(userIds, rangeStart, rangeEnd);
+
+    Map<UUID, List<CalendarDayResponse>> mergedByUser =
+        schedulePort.resolveMergedSchedules(userIds, rangeStart, rangeEnd, busyByUser);
 
     Map<UUID, Map<LocalDate, CalendarDayResponse>> resolvedByUser = new HashMap<>();
     for (UUID userId : userIds) {
-      List<CalendarDayResponse> resolved =
-          ScheduleCalendarResolver.resolve(
-              regularsByUser.getOrDefault(userId, List.of()),
-              personalsByUser.getOrDefault(userId, List.of()),
-              rangeStart,
-              rangeEnd,
-              busyByUser.getOrDefault(userId, Map.of()));
       resolvedByUser.put(
           userId,
-          resolved.stream()
+          mergedByUser.getOrDefault(userId, List.of()).stream()
               .collect(Collectors.toMap(CalendarDayResponse::date, day -> day)));
     }
 
