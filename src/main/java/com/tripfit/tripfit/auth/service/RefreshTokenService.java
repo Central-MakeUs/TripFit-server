@@ -32,10 +32,16 @@ public class RefreshTokenService {
 
   private final JwtProperties jwtProperties;
 
+  // 새로운 Refresh Token을 발급합니다.
+  // 동일 기기/로그인 세션을 식별하는 Family ID를 새로 생성하여 토큰과 함께 저장합니다.
   public IssuedRefreshToken create(UUID userId) {
     return issue(userId, UUID.randomUUID().toString());
   }
 
+  // 기존 Refresh Token을 사용하여 새로운 토큰으로 교체(Rotate)합니다.
+  // 1. 기존 토큰이 유효한지 검증합니다.
+  // 2. 이미 사용된 토큰(Reuse)이라면 보안을 위해 해당 Family 전체를 폐기 처리합니다.
+  // 3. 정상적인 경우, 새 토큰을 발급하고 기존 토큰을 무효화합니다.
   public IssuedRefreshToken rotate(String tokenValue) {
     String revokedValue = redisTemplate.opsForValue().get(REVOKED_PREFIX + tokenValue);
     if (revokedValue != null) {

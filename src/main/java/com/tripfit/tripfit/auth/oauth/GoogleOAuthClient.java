@@ -35,6 +35,8 @@ public class GoogleOAuthClient {
     this.oAuthProperties = oAuthProperties;
   }
 
+  // 구글 인가 코드(Authorization Code)를 이용해 Refresh Token을 발급받는 구글 외부 API 호출입니다.
+  // API 스펙 참조: https://developers.google.com/identity/protocols/oauth2/web-server
   public String exchangeAuthorizationCodeForRefreshToken(
       String authorizationCode,
       String redirectUri) {
@@ -89,6 +91,7 @@ public class GoogleOAuthClient {
     return response.get("refresh_token").asText();
   }
 
+  // 유저 탈퇴 시 연동 해제를 위해 구글 서버에 Refresh Token 강제 폐기를 요청합니다.
   public void revokeRefreshToken(String refreshToken) {
     try {
       restClient

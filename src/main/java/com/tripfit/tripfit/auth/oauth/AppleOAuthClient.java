@@ -50,6 +50,10 @@ public class AppleOAuthClient {
     this.oAuthProperties = oAuthProperties;
   }
 
+  // 애플 인가 코드를 이용해 Refresh Token을 발급받는 서버 간 통신입니다.
+  // 애플은 요청 시 발급된 Client Secret(서명된 JWT)을 요구합니다.
+  // API 스펙 참조:
+  // https://developer.apple.com/documentation/sign_in_with_apple/generate_and_validate_tokens
   public String exchangeAuthorizationCodeForRefreshToken(
       String authorizationCode,
       String clientId) {
@@ -85,6 +89,7 @@ public class AppleOAuthClient {
     return response.get("refresh_token").asText();
   }
 
+  // 유저 탈퇴 시 연동 해제를 위해 애플 서버에 Refresh Token 강제 폐기를 요청합니다.
   public void revokeRefreshToken(String refreshToken, String clientId) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("client_id", clientId);
@@ -108,6 +113,8 @@ public class AppleOAuthClient {
     }
   }
 
+  // 애플 REST API 호출 시 인증을 위해 필요한 Client Secret (JWT 형식)을 생성합니다.
+  // 내부적으로 애플 개발자 키(P8)를 사용하여 ES256 알고리즘으로 서명합니다.
   private String buildClientSecretJwt(String clientId) {
     try {
       Instant now = Instant.now();

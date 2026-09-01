@@ -26,6 +26,8 @@ public class AppleCredentialService {
 
   private final AppleCredentialPersistenceService persistenceService;
 
+  // Apple 로그인 시 함께 전달된 Authorization Code를 이용해 Refresh Token을 발급받고,
+  // 이를 암호화하여 DB에 안전하게 저장합니다.
   public void saveIfAuthorizationCodePresent(User user, String authorizationCode, String clientId) {
     if (authorizationCode == null || authorizationCode.isBlank()) {
       return;
@@ -46,6 +48,8 @@ public class AppleCredentialService {
     }
   }
 
+  // 회원의 Apple 캘린더 등 연동 해제 시, DB에 저장된 암호화된 Refresh Token을 복호화하여
+  // Apple 측 서버에 토큰 폐기 요청을 보낸 뒤 DB에서 자격 증명을 삭제합니다.
   public void revokeAndDeleteIfPresent(UUID userId) {
     persistenceService
         .findByUserId(userId)

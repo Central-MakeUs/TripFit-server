@@ -32,6 +32,8 @@ public class AppleNotificationService {
 
   private final RefreshTokenService refreshTokenService;
 
+  // Apple 서버로부터 전달받은 알림(S2S Webhook) 이벤트를 처리합니다.
+  // 연동 해제(consent-revoked) 시 세션을 종료하고, 계정 삭제(account-delete) 시 소프트 딜리트를 수행합니다.
   @Transactional
   public void handle(AppleNotificationEvent event) {
     switch (event.type()) {
