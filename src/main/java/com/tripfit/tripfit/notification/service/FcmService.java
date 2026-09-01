@@ -36,6 +36,9 @@ public class FcmService {
     this.userDeviceTokenRepository = userDeviceTokenRepository;
   }
 
+  // 여러 기기 토큰으로 동일한 푸시 알림을 발송합니다.
+  // 알림 payload에는 앱 진입 시 활용될 데이터(landingType, tripId 등)가 포함되며,
+  // 500건 단위로 나누어(Batch) 전송합니다.
   public void sendMulticast(
       Map<String, UUID> historyIdByToken,
       String title,
@@ -52,6 +55,8 @@ public class FcmService {
     }
   }
 
+  // 최대 500개의 토큰을 묶어 한 번에 FCM 서버로 전송합니다.
+  // 전송 결과 중 실패(Unregistered, InvalidArgument)한 토큰은 DB에서 자동 삭제합니다.
   @SuppressWarnings("deprecation")
   private void sendBatch(
       List<String> tokens,

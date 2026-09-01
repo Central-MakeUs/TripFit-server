@@ -30,6 +30,8 @@ public class KakaoUnlinkClient {
     this.oAuthProperties = oAuthProperties;
   }
 
+  // 유저 탈퇴 시 카카오서버에 연동 해제(Unlink)를 요청합니다.
+  // API 스펙 참조: https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#unlink
   public void unlink(String socialId) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("target_id_type", "user_id");

@@ -61,6 +61,7 @@ public class ScheduleService {
 
   private final HolidayProvider holidayProvider;
 
+  // 특정 사용자의 정기 일정 목록을 생성일 오름차순으로 조회합니다.
   @Transactional(readOnly = true)
   public RegularScheduleListResponse listRegular(UUID userId) {
     return new RegularScheduleListResponse(
@@ -69,6 +70,7 @@ public class ScheduleService {
             .toList());
   }
 
+  // 정기 일정을 생성합니다. 요일 정보(csv)와 시간대를 정규화/검증한 뒤 저장합니다.
   @Transactional
   public RegularScheduleResponse createRegular(UUID userId, CreateRegularScheduleRequest request) {
 
@@ -91,6 +93,7 @@ public class ScheduleService {
     return toRegularResponse(schedule);
   }
 
+  // 특정 정기 일정을 덮어씁니다(전체 수정).
   @Transactional
   public RegularScheduleResponse updateRegular(
       UUID userId,
@@ -111,11 +114,13 @@ public class ScheduleService {
     return toRegularResponse(schedule);
   }
 
+  // 사용자의 연차 및 휴일 정책을 반환합니다.
   @Transactional(readOnly = true)
   public VacationPolicyResponse getVacationPolicy(UUID userId) {
     return toVacationPolicyResponse(userLookupService.requireUser(userId));
   }
 
+  // 연차 정책 정보를 수정(교체)합니다.
   @Transactional
   public VacationPolicyResponse updateVacationPolicy(
       UUID userId,
@@ -147,10 +152,12 @@ public class ScheduleService {
         .orElseThrow(() -> new TripFitException(ScheduleErrorCode.REGULAR_SCHEDULE_NOT_FOUND));
   }
 
+  // 개별 일정을 Upsert 합니다.
   @Transactional
   public PersonalScheduleResponse upsertPersonal(
       UUID userId,
       UpdatePersonalScheduleRequest request) {
+    // 1. 요청된 항목 검증(중복된 날짜나 허용 윈도우 밖 등 검사)
     User user = userLookupService.requireUser(userId);
     List<PersonalScheduleItem> items =
         request.items() == null ? List.of() : request.items();
@@ -170,6 +177,7 @@ public class ScheduleService {
 
     validateCalendarDateRange(userId, minDate, maxDate);
 
+    // 2. 이미 존재하는 날짜면 덮어쓰고, 없으면 새로 저장(Upsert 방식)
     Map<LocalDate, PersonalSchedule> existingByDate =
         personalScheduleRepository
             .findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(userId, minDate, maxDate)
@@ -179,6 +187,7 @@ public class ScheduleService {
     for (PersonalScheduleItem item : items) {
       PersonalSchedule existing = existingByDate.get(item.scheduleDate());
       if (existing == null) {
+        // 3. 기존 일정이 없는 경우: 새로 생성
         SlotUpdate slots = item.slots();
         PersonalSchedule created =
             personalScheduleRepository.save(
@@ -191,6 +200,7 @@ public class ScheduleService {
                     item.uncertain() != null && item.uncertain()));
         existingByDate.put(item.scheduleDate(), created);
       } else {
+        // 4. 기존 일정이 있는 경우: 수정
         if (item.slots() != null) {
           existing.applySlots(
               item.slots().morningStatus(),
@@ -263,6 +273,8 @@ public class ScheduleService {
     }
   }
 
+  // 정기, 개별, 그리고 외부 캘린더 일정을 병합하여
+  // 지정된 기간(startDate ~ endDate)의 최종 달력을 조회합니다.
   @Transactional(readOnly = true)
   public ScheduleCalendarResponse getCalendar(
       UUID userId,

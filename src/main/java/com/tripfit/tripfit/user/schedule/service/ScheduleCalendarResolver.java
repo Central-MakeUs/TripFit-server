@@ -37,6 +37,10 @@ public final class ScheduleCalendarResolver {
     return resolve(regulars, personals, dates, googleBusyByDate, holidays, holidayRest);
   }
 
+  // 사용자의 정기 일정, 개별(수동) 일정, 구글 캘린더 충돌 여부를 기반으로 특정 날짜의 가용성을 계산합니다.
+  // 1. 요일 기반으로 해당 날짜에 적용되는 정기 일정을 모두 필터링합니다.
+  // 2. 덮어쓰기 우선순위가 있는 개별 일정이 존재하는지 확인합니다.
+  // 3. 이 3가지 데이터를 합성하여 오전/오후/저녁 슬롯의 최종 상태를 도출합니다.
   public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
@@ -122,6 +126,9 @@ public final class ScheduleCalendarResolver {
         personal != null && personal.isUncertain());
   }
 
+  // 슬롯별(오전/오후/저녁) 최종 상태를 결정합니다.
+  // 1. 유저가 수동으로 입력한 개별 일정(override)이 있다면 무조건 우선 적용됩니다.
+  // 2. 수동 일정이 없다면, 정기 일정(Regular)과 구글 캘린더 상태를 합성(combineWithGoogle)합니다.
   private static ScheduleStatus resolveSlot(
       ScheduleStatus regularSlot,
       Boolean googleBusy,

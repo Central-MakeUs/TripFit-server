@@ -21,6 +21,8 @@ public class UserProfileService {
 
   private final UserSummaryService userSummaryService;
 
+  // 사용자의 온보딩 시 성과 이름을 최초 등록합니다.
+  // 온보딩 완료 시 프로필 정보를 갱신합니다.
   @Transactional
   public UserSummaryResponse registerOnboardingName(UUID userId, OnboardingNameRequest request) {
     User user = userLookupService.requireUser(userId);
@@ -28,6 +30,8 @@ public class UserProfileService {
     return userSummaryService.toSummary(user);
   }
 
+  // 사용자의 마이페이지에서 프로필 정보를 선택적으로 수정합니다.
+  // 전달된 필드 중 null이 아닌 값들만 업데이트에 반영됩니다.
   @Transactional
   public UserSummaryResponse updateProfile(UUID userId, UpdateProfileRequest request) {
     if (request.firstName() == null
@@ -44,6 +48,7 @@ public class UserProfileService {
     return userSummaryService.toSummary(user);
   }
 
+  // 공백 문자열 검증 헬퍼 메서드
   private String requireNonBlank(String value) {
     String trimmed = value.trim();
     if (trimmed.isEmpty()) {

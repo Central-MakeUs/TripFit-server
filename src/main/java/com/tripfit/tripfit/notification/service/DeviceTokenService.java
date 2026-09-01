@@ -20,6 +20,7 @@ public class DeviceTokenService {
 
   private final UserLookupService userLookupService;
 
+  // 사용자 디바이스의 푸시 알림 토큰(FCM Token)을 등록하거나 갱신합니다.
   @Transactional
   public void registerToken(UUID userId, DeviceTokenRegisterRequest request) {
     requireNonBlankToken(request.token());
@@ -31,6 +32,7 @@ public class DeviceTokenService {
         request.deviceType().name());
   }
 
+  // 등록된 디바이스 토큰을 삭제하여 알림 수신을 해제합니다.
   @Transactional
   public void unregisterToken(UUID userId, String token) {
     requireNonBlankToken(token);

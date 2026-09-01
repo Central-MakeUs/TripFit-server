@@ -15,6 +15,7 @@ public class HolidayQueryService {
 
   private final HolidayProvider holidayProvider;
 
+  // 지정된 날짜 구간(startDate ~ endDate)에 해당하는 공휴일 목록을 정렬하여 반환합니다.
   public HolidayListResponse getHolidays(LocalDate startDate, LocalDate endDate) {
     if (startDate.isAfter(endDate)) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);

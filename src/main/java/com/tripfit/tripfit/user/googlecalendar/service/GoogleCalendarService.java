@@ -63,6 +63,8 @@ public class GoogleCalendarService {
 
   private final GoogleCalendarSyncPersistenceService persistenceService;
 
+  // Google OAuth 인증 코드를 교환하여 캘린더 연동을 처리합니다.
+  // 성공 시 사용자 엔티티의 연동 상태를 업데이트하고 초기 동기화를 수행합니다.
   public UserSummaryResponse connect(UUID userId, String authorizationCode, String redirectUri) {
     userLookupService.requireUser(userId);
     GoogleOAuthTokenResponse tokens;
@@ -114,6 +116,8 @@ public class GoogleCalendarService {
     return userSummaryService.toSummary(user);
   }
 
+  // Google 캘린더 연동을 해제합니다.
+  // DB에서 관련 토큰을 삭제하고, 가능하면 Google 측에서도 토큰을 폐기합니다.
   public UserSummaryResponse disconnect(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
@@ -125,6 +129,7 @@ public class GoogleCalendarService {
     return userSummaryService.toSummary(updated);
   }
 
+  // Google 측에 Refresh Token 폐기를 요청합니다. (연동 해제 시 사용)
   public void revokeIfConnected(UUID userId) {
     credentialRepository
         .findByUser_Id(userId)
@@ -135,6 +140,7 @@ public class GoogleCalendarService {
             });
   }
 
+  // 특정 사용자의 Google 캘린더 일정을 백그라운드 등에서 동기화합니다.
   public void syncUser(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (!user.isGoogleCalendarConnected()) {
@@ -148,6 +154,7 @@ public class GoogleCalendarService {
     syncUserInternal(userId, TRIGGER_SCHEDULED);
   }
 
+  // 지정한 기간 동안 사용자의 Google 캘린더 바쁜 일정(BusyDays)을 날짜별로 매핑하여 반환합니다.
   @Transactional(readOnly = true)
   public Map<LocalDate, GoogleCalendarBusyDay> findBusyDaysByUserId(
       UUID userId,
@@ -160,6 +167,7 @@ public class GoogleCalendarService {
             endDate));
   }
 
+  // 여러 사용자의 Google 캘린더 바쁜 일정을 한 번에 쿼리하여 반환합니다. (N+1 문제 방지 목적)
   @Transactional(readOnly = true)
   public Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> findBusyDaysByUserIds(
       List<UUID> userIds,
