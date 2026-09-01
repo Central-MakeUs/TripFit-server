@@ -106,6 +106,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`openapi-response-schema-generics.md`](cross-cutting/openapi-response-schema-generics.md) | 도구 | **Approved** (이슈 미생성) | `SuccessResponse<T>` 응답 스키마가 스펙에 필드 노출 안 되는 문제 — `useReturnTypeSchema = true`로 해결 | api-contract-diff-ci |
 | [`social-integration-structured-logging.md`](cross-cutting/social-integration-structured-logging.md) | 도구 | Draft (`#65`) | 소셜 로그인(Google/Kakao/Apple)·Google Calendar 연동 구조화 JSON 로깅 — provider/action/httpStatus/providerErrorReason 필드, PII 마스킹 | google-calendar-oauth · auth-social-login |
 | [`terraform-iac-migration.md`](cross-cutting/terraform-iac-migration.md) | 무관 | Draft (`#125`) | 수동 생성된 AWS 인프라(EC2 4대·SG·EIP·Route 53)를 Terraform으로 1:1 import — `infra/terraform/`, S3+native lockfile state | decision 002·009·010 |
+| [`add-prometheus.md`](cross-cutting/add-prometheus.md) | 무관 | Draft (`#126`) | Prometheus 지표 수집 및 Grafana 연동 | — |
 
 **구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
@@ -142,6 +143,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#62** | trip-thumbnail-image (Draft) — 2026-08-02 재작성, 구 "OAuth 콘솔 설정값" 내용은 `#86`으로 이관 | Open |
 | **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
 | **#125** | terraform-iac-migration (Draft — 스펙 승인 대기) | Open · **출시 이후** · `priority: could` |
+| **#126** | add-prometheus (Draft) | Open |
 
 ## 완료 후
 
