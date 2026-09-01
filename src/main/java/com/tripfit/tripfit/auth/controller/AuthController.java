@@ -131,17 +131,22 @@ public class AuthController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  /** refresh token으로 access JWT만 다시 발급한다. refresh row는 그대로 유지된다(재사용 가능). */
-  @Operation(summary = "액세스 토큰 재발급")
+  /**
+   * refresh token으로 access·refresh를 함께 재발급한다(RTR) — 기존 refresh는 이 호출과 동시에 폐기되므로 응답의 새
+   * refreshToken으로 반드시 교체해야 한다. 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를
+   * 폐기한다(401 AUTH_REFRESH_REUSE).
+   */
+  @Operation(summary = "액세스·리프레시 토큰 재발급 (RTR)")
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
           description = "재발급 성공",
           useReturnTypeSchema = true,
           content = @Content(
-              examples = @ExampleObject(value = """
-                  {"data": {"accessToken": "eyJhbG...", "expiresIn": 7200}}
-                  """))),
+              examples = @ExampleObject(
+                  value = """
+                      {"data": {"accessToken": "eyJhbG...", "refreshToken": "550e8400-e29b-41d4-a716-446655440002", "expiresIn": 7200}}
+                      """))),
       @ApiResponse(
           responseCode = "400",
           description = "요청 값 검증 실패 (INVALID_INPUT)",
@@ -153,7 +158,7 @@ public class AuthController {
                       """))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_INVALID_REFRESH — refresh 무효·만료",
+          description = "AUTH_INVALID_REFRESH — refresh 없음·만료 · AUTH_REFRESH_REUSE — 이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
@@ -167,7 +172,10 @@ public class AuthController {
     return ResponseEntity.ok(SuccessResponse.of(response));
   }
 
-  /** refresh token을 폐기해 재발급을 막는다. access는 자체 만료 시각까지는 여전히 유효할 수 있다. */
+  /**
+   * refresh token을 폐기해 재발급을 막는다. accessToken을 함께 보내면 자체 만료 시각 전이라도 즉시 무효화된다(블랙리스트) — 없거나 이미 만료·위조된
+   * 값이면 조용히 무시되고 로그아웃 자체는 계속 성공한다.
+   */
   @Operation(summary = "로그아웃")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "로그아웃 성공(No Content)"),
@@ -184,7 +192,7 @@ public class AuthController {
   @PostMapping("/logout")
   ResponseEntity<Void> logout(
       @Valid @RequestBody LogoutRequest request) {
-    authService.logout(request.refreshToken());
+    authService.logout(request.refreshToken(), request.accessToken());
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 

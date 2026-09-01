@@ -1,7 +1,9 @@
 package com.tripfit.tripfit.auth.service;
 
+import com.tripfit.tripfit.auth.jwt.AccessTokenClaims;
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
+import com.tripfit.tripfit.auth.oauth.RedisTokenRevocationChecker;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifier;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifierRegistry;
 import com.tripfit.tripfit.auth.domain.RefreshToken;
@@ -37,6 +39,8 @@ public class AuthService {
 
   private final GoogleLoginCredentialService googleLoginCredentialService;
 
+  private final RedisTokenRevocationChecker tokenRevocationChecker;
+
   public AuthService(
       SocialTokenVerifierRegistry verifierRegistry,
       AuthLoginPersistenceService authLoginPersistenceService,
@@ -45,7 +49,8 @@ public class AuthService {
       UserSummaryService userSummaryService,
       UserLookupService userLookupService,
       AppleCredentialService appleCredentialService,
-      GoogleLoginCredentialService googleLoginCredentialService) {
+      GoogleLoginCredentialService googleLoginCredentialService,
+      RedisTokenRevocationChecker tokenRevocationChecker) {
     this.verifierRegistry = verifierRegistry;
     this.authLoginPersistenceService = authLoginPersistenceService;
     this.jwtService = jwtService;
@@ -54,6 +59,7 @@ public class AuthService {
     this.userLookupService = userLookupService;
     this.appleCredentialService = appleCredentialService;
     this.googleLoginCredentialService = googleLoginCredentialService;
+    this.tokenRevocationChecker = tokenRevocationChecker;
   }
 
   // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함 — 소셜 provider HTTP 호출(토큰 검증·authorizationCode
@@ -107,29 +113,30 @@ public class AuthService {
         userSummaryService.toSummary(user));
   }
 
-  // 리프레시 토큰으로 새로운 액세스 토큰을 재발급함
+  // RTR — 리프레시 토큰을 rotate(기존 토큰 폐기 + 같은 로그인 체인으로 새 토큰 발급)하고 새 액세스 토큰도 발급함.
+  // 재사용(이미 폐기된 토큰 재제출)이면 RefreshTokenService가 AUTH_REFRESH_REUSE를 던짐
   @Transactional
   public RefreshResponse refresh(String refreshTokenValue) {
-    try {
-      // 1. 리프레시 토큰의 존재 여부와 만료 여부를 검증함
-      RefreshToken refreshToken = refreshTokenService.validate(refreshTokenValue);
-
-      // 2. 검증된 사용자 ID로 새 액세스 토큰을 생성함
-      String accessToken = jwtService.createAccessToken(refreshToken.getUserId());
-      return new RefreshResponse(accessToken, jwtService.getAccessExpirationSeconds());
-    } catch (TripFitException exception) {
-      if (exception.getErrorCode() == AuthErrorCode.AUTH_INVALID_REFRESH) {
-        // 만료 refresh로 재시도 시 row를 남겨두면 동일 토큰으로 반복 호출 가능 — 정리 후 401
-        refreshTokenService.deleteExpired(refreshTokenValue);
-      }
-      throw exception;
-    }
+    RefreshToken rotated = refreshTokenService.rotate(refreshTokenValue);
+    String accessToken = jwtService.createAccessToken(rotated.getUserId());
+    return new RefreshResponse(
+        accessToken, rotated.getToken(), jwtService.getAccessExpirationSeconds());
   }
 
-  // 로그아웃 요청에 해당하는 리프레시 토큰을 삭제함
+  // 로그아웃 — 리프레시 토큰을 삭제하고, 클라이언트가 현재 access token을 같이 보냈으면 즉시 블랙리스트에 올림.
+  // access token이 없거나 이미 만료·위조된 값이면 조용히 넘어감(로그아웃 자체는 항상 성공해야 함)
   @Transactional
-  public void logout(String refreshTokenValue) {
+  public void logout(String refreshTokenValue, String accessTokenValue) {
     refreshTokenService.delete(refreshTokenValue);
+    if (accessTokenValue == null || accessTokenValue.isBlank()) {
+      return;
+    }
+    try {
+      AccessTokenClaims claims = jwtService.parseAccessToken(accessTokenValue);
+      tokenRevocationChecker.revoke(claims.jti(), claims.expiresAt());
+    } catch (TripFitException exception) {
+      // 이미 만료·위조된 access token — 블랙리스트에 올릴 필요 없음
+    }
   }
 
   // JWT userId로 현재 사용자 요약 조회 — hasPreSchedule은 일정 EXISTS 파생(일정 CRUD 후 me 재조회)

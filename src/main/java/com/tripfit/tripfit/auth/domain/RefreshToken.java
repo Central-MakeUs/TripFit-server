@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
@@ -21,8 +22,14 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "refresh_token", uniqueConstraints = @UniqueConstraint(columnNames = "token"))
-@Schema(description = "리프레시 토큰 (opaque). wave 1: logout 시 row 삭제. wave 4: RTR 예정")
+@Table(
+    name = "refresh_token",
+    uniqueConstraints = @UniqueConstraint(columnNames = "token"),
+    indexes = {
+        @Index(name = "idx_refresh_token_family_id", columnList = "family_id"),
+        @Index(name = "idx_refresh_token_user_id_revoked_at", columnList = "user_id, revoked_at")
+    })
+@Schema(description = "리프레시 토큰 (opaque). RTR: refresh마다 rotate, family_id로 재사용 탐지")
 public class RefreshToken extends BaseTimeEntity {
 
   @Schema(
@@ -49,12 +56,13 @@ public class RefreshToken extends BaseTimeEntity {
   private String token;
 
   @Schema(
-      description = "login 체인 식별 UUID. wave 4 RTR reuse detection용",
+      description = "login 체인 식별 UUID. refresh로 rotate돼도 유지 — 재사용된 토큰 탐지 시 이 값 기준으로 체인 전체 폐기",
       example = "550e8400-e29b-41d4-a716-446655440001")
   @Column(name = "family_id", nullable = false, length = 36)
   private String familyId;
 
-  @Schema(description = "폐기 시각. wave 4 rotation용. wave 1 logout은 row delete", nullable = true)
+  @Schema(description = "폐기 시각. refresh로 rotate되거나 재사용 탐지로 체인 전체 폐기될 때 설정. logout은 row delete",
+      nullable = true)
   @Setter
   @Column(name = "revoked_at")
   private LocalDateTime revokedAt;

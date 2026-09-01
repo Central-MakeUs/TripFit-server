@@ -23,49 +23,54 @@ public class RefreshTokenService {
     this.jwtProperties = jwtProperties;
   }
 
-  // 사용자 ID 기준으로 새 리프레시 토큰을 발급해 저장함
+  // 로그인 시 신규 로그인 체인(family)으로 리프레시 토큰을 발급해 저장함
   @Transactional
   public RefreshToken create(UUID userId) {
-    // 1. 토큰 값과 토큰 패밀리 식별자를 새로 생성함 (wave 4 RTR에서 rotation·reuse 탐지)
-    String token = UUID.randomUUID().toString();
-    String familyId = UUID.randomUUID().toString();
+    return createInFamily(userId, UUID.randomUUID().toString());
+  }
 
-    // 2. 설정된 만료 일수를 반영해 저장용 엔티티를 생성함
+  // RTR — 제출된 토큰을 검증하고, 유효하면 같은 family로 새 토큰을 발급하며 기존 토큰은 즉시 폐기함(rotate).
+  // 이미 폐기된 토큰이 재제출되면 탈취 재사용으로 간주해 family 전체를 폐기하고 AUTH_REFRESH_REUSE를 던짐
+  @Transactional
+  public RefreshToken rotate(String tokenValue) {
+    RefreshToken current =
+        refreshTokenRepository
+            .findByToken(tokenValue)
+            .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH));
+
+    if (current.isRevoked()) {
+      revokeFamily(current.getFamilyId());
+      throw new TripFitException(AuthErrorCode.AUTH_REFRESH_REUSE);
+    }
+    if (current.isExpired()) {
+      // 만료 토큰으로 재시도 시 row를 남겨두면 동일 토큰으로 반복 호출 가능 — 정리 후 401
+      refreshTokenRepository.delete(current);
+      throw new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH);
+    }
+
+    current.setRevokedAt(LocalDateTime.now());
+    return createInFamily(current.getUserId(), current.getFamilyId());
+  }
+
+  private RefreshToken createInFamily(UUID userId, String familyId) {
+    String token = UUID.randomUUID().toString();
     LocalDateTime expiresAt =
         LocalDateTime.now().plusDays(jwtProperties.getRefreshExpirationDays());
     return refreshTokenRepository.save(new RefreshToken(userId, token, familyId, expiresAt));
   }
 
-  // 리프레시 토큰의 존재 여부와 사용 가능 상태를 검증함
-  @Transactional(readOnly = true)
-  public RefreshToken validate(String tokenValue) {
-    RefreshToken refreshToken =
-        refreshTokenRepository
-            .findByToken(tokenValue)
-            .orElseThrow(() -> new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH));
-    if (refreshToken.isRevoked() || refreshToken.isExpired()) {
-      throw new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH);
-    }
-    return refreshToken;
+  // 재사용 탐지 — 같은 로그인 체인에서 아직 안 죽은 토큰 전부를 폐기함(공격자가 새로 받아간 토큰 포함)
+  private void revokeFamily(String familyId) {
+    LocalDateTime now = LocalDateTime.now();
+    refreshTokenRepository
+        .findAllByFamilyIdAndRevokedAtIsNull(familyId)
+        .forEach(refreshToken -> refreshToken.setRevokedAt(now));
   }
 
   // 주어진 리프레시 토큰 값을 저장소에서 삭제함
   @Transactional
   public void delete(String tokenValue) {
     refreshTokenRepository.deleteByToken(tokenValue);
-  }
-
-  // 만료된 리프레시 토큰만 선별해서 저장소에서 정리함
-  @Transactional
-  public void deleteExpired(String tokenValue) {
-    refreshTokenRepository
-        .findByToken(tokenValue)
-        .ifPresent(
-            refreshToken -> {
-              if (refreshToken.isExpired()) {
-                refreshTokenRepository.delete(refreshToken);
-              }
-            });
   }
 
   // 회원 탈퇴 cascade — 해당 사용자의 리프레시 토큰을 전부 hard delete

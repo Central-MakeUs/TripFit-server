@@ -27,6 +27,9 @@ public enum AuthErrorCode implements ErrorCode {
   @Schema(description = "리프레시 토큰 없음·만료·폐기")
   AUTH_INVALID_REFRESH(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_REFRESH", "유효하지 않은 리프레시 토큰입니다."),
 
+  @Schema(description = "이미 rotate로 폐기된 리프레시 토큰이 재사용됨 — 탈취 의심, 해당 로그인 체인(family) 전체 폐기됨")
+  AUTH_REFRESH_REUSE(HttpStatus.UNAUTHORIZED, "AUTH_REFRESH_REUSE", "재사용된 리프레시 토큰이 감지되어 다시 로그인해야 합니다."),
+
   @Schema(description = "인증됐으나 권한 없음")
   AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_FORBIDDEN", "접근 권한이 없습니다."),
 
