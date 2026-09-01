@@ -15,6 +15,7 @@ import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.notification.exception.NotificationErrorCode;
 import com.tripfit.tripfit.notification.service.DeviceTokenService;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +40,9 @@ class DeviceTokenControllerTest {
 
   @BeforeEach
   void setUp() {
-    SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(USER_ID));
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
     DeviceTokenController controller = new DeviceTokenController(deviceTokenService);
     mockMvc =
         MockMvcBuilders.standaloneSetup(controller)

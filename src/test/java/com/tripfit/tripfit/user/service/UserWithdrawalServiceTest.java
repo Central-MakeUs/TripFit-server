@@ -5,6 +5,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.auth.oauth.RedisTokenRevocationChecker;
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
 import com.tripfit.tripfit.common.security.SocialTokenCrypto;
@@ -14,6 +15,7 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +56,9 @@ class UserWithdrawalServiceTest {
   @Mock
   private UserWithdrawalPersistenceService persistenceService;
 
+  @Mock
+  private RedisTokenRevocationChecker tokenRevocationChecker;
+
   private UserWithdrawalService userWithdrawalService;
 
   @org.junit.jupiter.api.BeforeEach
@@ -67,7 +72,8 @@ class UserWithdrawalServiceTest {
             kakaoUnlinkClient,
             appleCredentialService,
             googleLoginCredentialService,
-            persistenceService);
+            persistenceService,
+            tokenRevocationChecker);
   }
 
   @Test
@@ -75,9 +81,33 @@ class UserWithdrawalServiceTest {
     User user = user();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(persistenceService).finalizeWithdrawal(USER_ID);
+  }
+
+  // 지금 사용 중인 access token은 항상(탈퇴 여부와 무관하게) 즉시 블랙리스트에 올라가야 함
+  @Test
+  void withdraw_alwaysBlacklistsCurrentAccessToken() {
+    User user = user();
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    Instant expiresAt = Instant.now().plusSeconds(3600);
+
+    userWithdrawalService.withdraw(USER_ID, "current-jti", expiresAt);
+
+    verify(tokenRevocationChecker).revoke("current-jti", expiresAt);
+  }
+
+  @Test
+  void withdraw_whenAlreadyWithdrawn_stillBlacklistsAccessToken() {
+    User user = user();
+    user.setDeletedAt(LocalDateTime.now().minusDays(1));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    Instant expiresAt = Instant.now().plusSeconds(3600);
+
+    userWithdrawalService.withdraw(USER_ID, "current-jti", expiresAt);
+
+    verify(tokenRevocationChecker).revoke("current-jti", expiresAt);
   }
 
   @Test
@@ -90,7 +120,7 @@ class UserWithdrawalServiceTest {
         .thenReturn(Optional.of(credential));
     when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(persistenceService).finalizeWithdrawal(USER_ID);
@@ -102,7 +132,7 @@ class UserWithdrawalServiceTest {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(googleCalendarCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(googleCalendarOAuthClient, never()).revokeRefreshToken(any(), any());
   }
@@ -112,7 +142,7 @@ class UserWithdrawalServiceTest {
     User user = kakaoUser();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(kakaoUnlinkClient).unlink("kakao-sub");
   }
@@ -128,7 +158,7 @@ class UserWithdrawalServiceTest {
         .thenReturn(Optional.of(credential));
     when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(kakaoUnlinkClient).unlink("kakao-sub");
@@ -145,7 +175,7 @@ class UserWithdrawalServiceTest {
         .thenReturn(Optional.of(credential));
     when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
     verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
@@ -156,7 +186,7 @@ class UserWithdrawalServiceTest {
     User user = user();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(kakaoUnlinkClient, never()).unlink(any());
   }
@@ -166,7 +196,7 @@ class UserWithdrawalServiceTest {
     User user = user();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
   }
@@ -176,7 +206,7 @@ class UserWithdrawalServiceTest {
     User user = user();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(googleLoginCredentialService).revokeAndDeleteIfPresent(USER_ID);
   }
@@ -187,7 +217,7 @@ class UserWithdrawalServiceTest {
     user.setDeletedAt(LocalDateTime.now().minusDays(1));
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
-    userWithdrawalService.withdraw(USER_ID);
+    userWithdrawalService.withdraw(USER_ID, "current-jti", Instant.now().plusSeconds(3600));
 
     verify(appleCredentialService, never()).revokeAndDeleteIfPresent(any());
     verify(googleLoginCredentialService, never()).revokeAndDeleteIfPresent(any());
