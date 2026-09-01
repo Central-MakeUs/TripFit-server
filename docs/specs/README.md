@@ -33,7 +33,7 @@
 | [`apple-oauth-multi-audience.md`](auth/apple-oauth-multi-audience.md) | 1 | Implemented (`#64` amend) | Apple 로그인 Bundle ID(네이티브)/Services ID(웹) 이원화 `aud` 검증 | auth-social-login |
 | [`google-login-revoke.md`](auth/google-login-revoke.md) | 2 | **Implemented** (`#64` 후속, Closed) · 구 Release Gate | Google 로그인 시 authorization code 확보·저장 → 탈퇴 시 revoke | auth-social-login · user-account-withdrawal |
 | [`auth-error-code-granularity.md`](auth/auth-error-code-granularity.md) | 4 | **Approved** (#57) · 구현 중 | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` | auth-social-login |
-| [`auth-token-rotation.md`](auth/auth-token-rotation.md) | 4 | Draft | RTR + Redis | auth-social-login · decision 004 |
+| [`auth-token-rotation.md`](auth/auth-token-rotation.md) | 4 | **Approved** (`#4`) · 코드·인프라(EC2 D) 구현 완료, 배포 검증 대기 | RTR + Redis Blacklist | auth-social-login · decision 004·010 |
 | [`auth-apple-server-notifications.md`](auth/auth-apple-server-notifications.md) | 4 | Approved | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`auth-dev-stub-verifier.md`](auth/auth-dev-stub-verifier.md) | 4 | Draft (#52) | `/auth/login` 계약 유지형 dev 스텁 검증기 — `dev-mock-login` 대체 예정 | dev-mock-login |
 | [`dev-mock-login.md`](auth/dev-mock-login.md) | 도구 | **Approved** (이슈 미생성) · **deferred→#52** | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 | auth-social-login |

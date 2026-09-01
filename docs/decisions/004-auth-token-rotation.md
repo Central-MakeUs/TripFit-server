@@ -1,10 +1,11 @@
 # 인증 토큰 Rotation — RTR + Redis
 
 - **wave:** 4
-- **상태:** 확정 (Redis access 전략만 `[미정]`)
-- **날짜:** 2026-07-06
+- **상태:** 확정
+- **날짜:** 2026-07-06 (Redis access 전략 확정: 2026-08-08)
 - **관련:**
   - [`docs/decisions/001-auth-mobile-token-verification.md`](001-auth-mobile-token-verification.md) — 안 B (wave 1)
+  - [`docs/decisions/010-redis-infra.md`](010-redis-infra.md) — Redis 인프라 배치(EC2 D)
   - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — wave 1 구현
   - [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) — wave 4 구현 스펙
 
@@ -27,14 +28,14 @@ wave 1(MVP)은 `POST /auth/login`, `/refresh`, `/logout`과 DB 기반 opaque ref
    - refresh token SSOT는 **MySQL `refresh_token` 테이블** (Redis에 refresh 저장하지 않음)
 
 2. **Redis를 인증 인프라에 도입한다.**
-   - 용도: access JWT 관련 **상태 저장·조회** (블랙리스트 또는 화이트리스트 — 아래 `[미정]`)
+   - 용도: access JWT 관련 **상태 저장·조회** — **Blacklist**로 확정(아래)
    - wave 1 구현 시 Redis **미포함**. wave 4 스펙 Approved 후 추가
 
-### `[미정]` — Redis access JWT 전략
+### Redis access JWT 전략 — Blacklist (2026-08-08 확정)
 
-블랙리스트 vs 화이트리스트는 **wave 4 구현 착수 전** 팀 합의한다. 옵션 비교·Redis 키 설계는 [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) §"[미정] — Redis access 전략"이 SSOT — 여기서 중복 정의하지 않는다.
-
-**현재 가이드 (결정 전 참고):** access TTL 2h·하이브리드 앱 기준 **blacklist 우선 검토**. whitelist는 “전 기기 즉시 차단” 요구가 명확해질 때 decisions amend.
+- 평소엔 Redis 미조회(JWT 서명·만료만으로 통과), logout·탈퇴 시에만 `SET auth:bl:{jti} 1 EX {remaining_ttl}`
+- **채택 이유:** Whitelist는 로그인·갱신마다 쓰기가 발생하고 활성 세션 전체를 Redis가 들고 있어야 하는데, `010-redis-infra.md`의 EC2 D는 이중화 없는 **단일 인스턴스**라 Redis 장애 시 "허용 목록 확인 불가 = 전체 로그인 마비"(fail-closed)가 된다. Blacklist는 같은 장애 상황에서 "즉시 무효화 기능만 잠깐 못 씀, 로그인 자체는 wave 1처럼 정상 동작"(fail-open)으로 훨씬 안전하게 열화된다. 데이터량·쓰기 부하도 Blacklist가 구조적으로 적다(로그아웃한 사람만 기록, 로그인마다 기록 아님)
+- 상세 키 설계·JwtFilter 동작은 [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)가 SSOT
 
 ## wave 1 → wave 4 관계
 
@@ -52,11 +53,13 @@ wave 1(MVP)은 `POST /auth/login`, `/refresh`, `/logout`과 DB 기반 opaque ref
 ## 트레이드오프 · 후속 리스크
 
 - **프론트 계약 변경:** wave 4 refresh 응답에 `refreshToken` 필드 추가 — 클라이언트 저장 로직 필요
-- **Redis 운영:** EC2 colocated vs ElastiCache `[미정]` — `deploy/`·wave 4 스펙에서 확정
+- **Redis 운영:** 신규 EC2 D(self-managed, ElastiCache 미채택) — 상세 근거는 [`010-redis-infra.md`](010-redis-infra.md). 이중화 없는 단일 인스턴스라 fail-open(Blacklist) 전제가 중요
 - **Reuse false positive:** 네트워크 재시도로 구 refresh 재전송 시 family revoke — 클라이언트는 새 refresh만 사용하도록 가이드
+- **Family revoke ↔ access token 연결 미정:** reuse detection으로 refresh family가 revoke돼도, 현재 `AccessTokenClaims`엔 `family_id`가 없어 그 family로 발급된 access token을 추적해 같이 블랙리스트에 올릴 방법이 없음 — 스펙 작업 시 Must Have 포함 여부 결정
 
 ## 후속 작업
 
+- [x] Redis access 전략(blacklist vs whitelist) 팀 합의 → 본 decisions amend (2026-08-08, Blacklist 확정)
+- [x] Redis 인프라 배치 합의 → [`010-redis-infra.md`](010-redis-infra.md) (2026-08-08, EC2 D 확정)
 - [ ] [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) Draft → Approved
-- [ ] Redis access 전략(blacklist vs whitelist) 팀 합의 → 본 decisions amend
 - [ ] wave 1 구현 완료 후 wave 4 착수 (JwtFilter + Redis + RTR)

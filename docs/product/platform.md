@@ -54,9 +54,11 @@
 
 프론트는 React로 웹 화면을 만든 뒤, **Play·App Store 앱 껍데기 안에 WebView로 같은 화면을 띄우는** 방식을 목표로 한다. (= 위 **환경 A**의 UI 층)
 
+**확정 (2026-08-10):** 환경 A의 WebView는 **`tripfit.online`(Vercel)을 실시간으로 로드**한다. 번들된 웹 에셋(앱 안에 정적 파일로 내장)은 아니다.
+
 ```
 [스마트폰 앱 껍데기]          ← 환경 A
-  └── WebView → React 화면 (tripfit.online 또는 번들된 웹 에셋)
+  └── WebView → React 화면 (tripfit.online, Vercel 실시간 로드 — 번들 웹 에셋 아님)
         └── HTTPS REST → api.tripfit.online (이 repo)
 
 [카카오 인앱 / 모바일 사파리·크롬]  ← 환경 B
@@ -66,7 +68,9 @@
 | 항목 | 내용 |
 |------|------|
 | 장점 | 기존 React UI 재사용, 개발 기간 단축 |
+| 장점 | 프론트 변경이 **Vercel 배포 즉시** 앱에 반영됨 — 앱을 다시 빌드해 스토어 심사를 다시 받을 필요 없음 |
 | 주의 | Google 등 OS·스토어 정책에 민감한 기능은 **환경 A/B에서 획득 경로만 다름** (API는 동일) |
+| 주의 | 앱을 백그라운드에 오래 띄워둔 채로 안 끈 사용자는 WebView가 이미 메모리에 올려둔 **구버전 JS를 얼마간 계속 쓸 수 있음** — 콜드 스타트(앱 재실행) 시에만 최신 JS를 다시 받음. API 계약이 바뀌는 배포(예: 인증 토큰 저장 방식 변경)는 이 창을 감안해 순서를 조율 |
 | 백엔드 전제 | **302 OAuth 금지** · **클라이언트 SDK/시스템 브라우저 → REST** (`decisions/001`) |
 
 상세 인증 API·검증 방식: [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md)

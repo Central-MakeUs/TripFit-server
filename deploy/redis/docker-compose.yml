@@ -1,0 +1,38 @@
+# EC2 D — Redis 전용 서버 (docs/decisions/010-redis-infra.md)
+# 사용: cp .env.example .env → 값 설정 → docker compose up -d
+#
+# access token 블랙리스트(#4, auth:bl:{jti})만 담는다 — 전부 TTL 있는 단기 데이터라 영속화 불필요
+# (--save "" --appendonly no). 컨테이너·인스턴스 재시작 시 블랙리스트가 비워져도 즉시무효화 기능만
+# 일시적으로 못 쓸 뿐 로그인 자체는 fail-open으로 정상 동작한다(RedisTokenRevocationChecker).
+#
+# 로그: Loki docker logging driver로 EC2 C(deploy/monitoring/)에 전송한다.
+# 최초 1회 필요: docker plugin install grafana/loki-docker-driver:latest \
+#   --alias loki --grant-all-permissions
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tripfit-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    ports:
+      # VPC 내부 전용 — sg-app에서만 6379 허용 (010-redis-infra.md). public 바인딩 금지.
+      - "${REDIS_BIND:-0.0.0.0}:${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://${LOKI_HOST:-172.31.38.217}:3100/loki/api/v1/push"
+        loki-retries: "3"
+        loki-batch-size: "400"

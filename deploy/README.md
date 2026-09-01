@@ -41,6 +41,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 | [`nginx/`](nginx/) | EC2 A | `api.tripfit.online` 리버스 프록시 |
 | [`mysql/`](mysql/) | EC2 B | MySQL 8.0 전용 |
 | [`monitoring/`](monitoring/) | EC2 C | Loki(:3100) + Grafana(:3000) — A/B 컨테이너 로그 수집·조회 |
+| [`redis/`](redis/) | EC2 D | Redis(:6379) — access token 블랙리스트(`#4`), `sg-app`에서만 접근 |
 | [`../docker-compose.yml`](../docker-compose.yml) | 로컬 | App build + MySQL (`--profile edge` 시 API Nginx) |
 
 상세 네트워크·SG: [`ec2-split-deployment.md`](ec2-split-deployment.md)
@@ -66,6 +67,16 @@ docker compose --profile app up -d --build
 
 ```bash
 cd deploy/mysql
+cp .env.example .env
+docker compose up -d
+```
+
+### EC2 D — Redis (`docs/decisions/010-redis-infra.md`)
+
+프로비저닝 완료(2026-08-10) — `TP-redis`(`i-06fb8540484834192`), A/B/C와 동일 VPC·서브넷·키페어, t3.micro. Private IP `172.31.38.246`, 보안 그룹 `TP-redis`가 6379를 `sg-app`(TP-server)에서만 허용. Elastic IP 없음 — App만 사설 IP로 접근하고 외부 도메인이 필요 없는 내부 인프라라 EC2 A/C와 다름.
+
+```bash
+cd deploy/redis
 cp .env.example .env
 docker compose up -d
 ```
@@ -182,6 +193,9 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 | `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | | 기본 80 / 443 |
 | `CERTBOT_DOMAIN` | | 기본 `api.tripfit.online` |
 | `LOKI_HOST` | | EC2 C(모니터링) private IP — 기본 `172.31.38.217`. 미등록이어도 `docker-compose.yml`의 동일 기본값으로 fail-safe(로깅 미동작 대신 컨테이너는 정상 기동) |
+| `REDIS_HOST` | | EC2 D(Redis) private IP — 기본 `172.31.38.246`(TP-redis). 미등록이어도 `docker-compose.yml`의 동일 기본값으로 fail-safe. `docs/decisions/010-redis-infra.md` |
+| `REDIS_PORT` | | 기본 6379 |
+| `REDIS_PASSWORD` | ✅ | Redis `requirepass` — GitHub Secret 등록 완료(2026-08-10) |
 | `JWT_SECRET` | ✅ | Access JWT 서명 키 (256bit+ random) |
 | `JWT_ACCESS_EXPIRATION` | | 기본 7200초(2h) |
 | `JWT_REFRESH_EXPIRATION_DAYS` | | 기본 30일 |
@@ -201,6 +215,8 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 | `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
 
 **`LOKI_HOST`**: EC2 A는 위 Secret으로 관리(값 `172.31.38.217` — TP-monitoring private IP). EC2 C를 재생성해 private IP가 바뀌면 **이 Secret만 갱신**하면 된다. `deploy/app/docker-compose.yml`·`deploy/mysql/docker-compose.yml`의 `${LOKI_HOST:-172.31.38.217}` 기본값은 Secret 미설정 시에도 컨테이너가 죽지 않게 하는 fail-safe 용도로 남겨뒀다 — IP가 실제로 바뀌면 이 기본값도 함께 갱신해 두 값이 계속 일치하도록 한다. **EC2 B(MySQL)는 CI/CD 대상이 아니라 이 Secret이 적용되지 않음** — B의 `deploy/mysql/.env`에 `LOKI_HOST`를 직접 수정해야 한다.
+
+**`REDIS_HOST`**: 2026-08-10 EC2 D(`TP-redis`, `i-06fb8540484834192`) 프로비저닝 후 GitHub Secret 등록 완료(값 `172.31.38.246`). EC2 D를 재생성해 private IP가 바뀌면 **이 Secret과 `deploy/app/docker-compose.yml`의 `${REDIS_HOST:-172.31.38.246}` 기본값을 함께 갱신**한다(LOKI_HOST와 동일 패턴). Redis는 fail-open 설계(`RedisTokenRevocationChecker`)라 연결이 안 돼도 앱 자체는 죽지 않고 즉시무효화 기능만 비활성화된다.
 
 등록 위치: GitHub repo → **Settings → Secrets and variables → Actions**
 
