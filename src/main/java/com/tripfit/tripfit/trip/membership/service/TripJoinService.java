@@ -23,6 +23,7 @@ public class TripJoinService {
 
   private final TripServiceSupport support;
 
+  // 인원 제한을 검사한 뒤 새로운 여행 멤버를 추가(SCHEDULE_PENDING 상태)합니다.
   @Transactional
   public TripEntryResponse joinAsNewMember(Trip lockedTrip, User user) {
     long occupiedSeats = tripMemberRepository.countByTripIdAndDeletedAtIsNull(lockedTrip.getId());

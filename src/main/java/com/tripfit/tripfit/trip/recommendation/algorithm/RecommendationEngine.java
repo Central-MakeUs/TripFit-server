@@ -114,6 +114,9 @@ public class RecommendationEngine {
     double totalVacationDays = 0;
     int vacationMemberCount = 0;
 
+    // 각 후보 일정에 대해 모든 멤버의 참석 가능 여부를 평가하고 페널티를 계산하여 점수를 매깁니다.
+    // 1. 멤버별로 휴가 사용, 정기 일정, 구글 캘린더 충돌 등을 종합하여 참석 형태(전체, 부분, 불참)를 분류합니다.
+    // 2. 미확정(Uncertain) 일정 유무 및 소진해야 하는 총 휴가 일수를 계산합니다.
     for (TripMember member : activeMembers) {
       UUID userId = member.getUser().getId();
       MemberAttendanceDetail detail =
@@ -143,11 +146,14 @@ public class RecommendationEngine {
       }
     }
 
+    // 3. 전체 인원 대비 불참, 부분 참석, 미확정 인원 비율과 1인당 평균 휴가 소진일을 구합니다.
     double nonAttendRate = (double) nonAttend / respondedCount;
     double partialAttendRate = (double) partialAttend / respondedCount;
     double uncertainRate = (double) uncertainMembers / respondedCount;
     double avgVacationDays = vacationMemberCount == 0 ? 0 : totalVacationDays / vacationMemberCount;
 
+    // 4. Mode(추천 모드)에 따라 각 요소의 페널티 가중치(weights)를 적용하여 감점을 합산합니다.
+    // 최종 점수 = 100 - 총 감점
     double penaltySum =
         nonAttendPenalty(nonAttendRate) * weights.nonAttend()
             + partialAttendPenalty(partialAttendRate) * weights.partialAttend()
@@ -155,6 +161,7 @@ public class RecommendationEngine {
             + vacationPenalty(avgVacationDays) * weights.vacation();
     double score = 100 - penaltySum;
 
+    // 5. 추천 화면에 표시할 직관적인 '참석률(Attend Rate)'을 계산합니다 (전체/부분 참석자 비율).
     int attendRate =
         (int) Math.round((double) (fullAttend + partialAttend) / respondedCount * 100);
 
@@ -260,6 +267,7 @@ public class RecommendationEngine {
       return possible;
     }
 
+    // 1. 해당 기간 동안 변환 가능한 휴가 슬롯(오전/오후/전일)의 옵션들을 수집합니다.
     VacationOptions options =
         collectVacationOptions(
             start,
@@ -280,6 +288,8 @@ public class RecommendationEngine {
     int bestLength = longestPossibleRun(possible).length;
     int bestCost = 0;
 
+    // 2. 비트마스크(Bitmask)를 이용하여 모든 가능한 휴가 조합 2^N을 시뮬레이션합니다.
+    // budgetHalfDays(남은 반차/연차 갯수)를 넘지 않는 선에서 가장 긴 '연속된 빈 시간'을 확보하는 조합을 찾습니다.
     for (int mask = 1; mask < (1 << unitCount); mask++) {
       int cost = 0;
       for (int i = 0; i < unitCount; i++) {

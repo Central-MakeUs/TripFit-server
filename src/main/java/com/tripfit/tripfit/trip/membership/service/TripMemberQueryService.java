@@ -39,6 +39,9 @@ public class TripMemberQueryService {
 
   private final ScheduleAvailabilityService scheduleAvailabilityService;
 
+  // 여행방에 속한 멤버 목록을 조회합니다.
+  // 1. 참여 순으로 활성 멤버 목록 정렬 및 동명이인 처리(디스플레이 이름 할당)
+  // 2. 전체 인원 대비 실제 참여 인원 비율(Fill Rate) 계산
   @Transactional(readOnly = true)
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
     support.requireMembership(tripId, userId);
@@ -70,6 +73,7 @@ public class TripMemberQueryService {
     return new TripMembersResponse(memberCount, activeMemberCount, memberFillRate, items);
   }
 
+  // 여행방 멤버들의 통합 일정표(캘린더)를 조회합니다.
   @Transactional(readOnly = true)
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
     support.requireMembership(tripId, userId);
@@ -82,6 +86,8 @@ public class TripMemberQueryService {
     List<User> usersInOrder = members.stream().map(TripMember::getUser).toList();
     Map<UUID, String> displayNames = TripDisplayNameHelper.assignDisplayNames(usersInOrder);
 
+    // 1. 현재 여행방 상태가 확정(CONFIRMED)이거나 만료(EXPIRED)된 경우, 더 이상 일정이 변경되지 않으므로 DB 스냅샷(과거 기록)을 읽어옵니다.
+    // 2. 진행 중(ONGOING)인 경우 실시간으로 연동된 구글 캘린더, 정기 일정, 개별 일정을 병합 연산하여 보여줍니다.
     boolean readOnly = status == TripStatus.CONFIRMED || status == TripStatus.EXPIRED;
     List<MemberCalendar> memberCalendars =
         readOnly

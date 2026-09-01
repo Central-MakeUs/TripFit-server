@@ -51,10 +51,15 @@ class TripCommandService {
 
   private final ApplicationEventPublisher applicationEventPublisher;
 
+  // 새로운 여행방을 생성합니다.
+  // 1. 방장의 기본 프로필 검증 및 입력값 유효성 검사 수행
+  // 2. 고유 초대 코드 발급 및 여행방 엔티티 생성 후 방장 멤버십 추가
   @Transactional
   public TripEntryResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = support.findUser(userId);
 
+    // 1. 방장의 필수 프로필 정보(이름 등)가 입력되었는지 확인하고,
+    // 여행 기본 정보(기간, 인원수 등)의 정책적 제약조건을 검증합니다.
     support.requireProfileNameComplete(owner);
     support.validateTripMeta(
         request.name(),
@@ -63,6 +68,7 @@ class TripCommandService {
         request.durationNights(),
         request.durationDays(),
         request.memberCount());
+    // 2. 입력된 정보로 Trip 엔티티를 초기화하고 초대 코드를 발급하여 저장합니다.
     Integer durationDays =
         TripServiceSupport.resolveDurationDays(request.durationNights(), request.durationDays());
     Trip trip =
@@ -79,6 +85,8 @@ class TripCommandService {
     trip.applyDestination(TripServiceSupport.normalizeDestination(request.destination()));
     tripRepository.save(trip);
 
+    // 3. 방장(Owner)을 해당 여행방의 첫 멤버로 등록합니다.
+    // 방장 역시 최초에는 SCHEDULE_PENDING 상태(사전 일정 미입력 상태)로 시작합니다.
     TripMember ownerMember =
         new TripMember(
             trip,
@@ -91,6 +99,8 @@ class TripCommandService {
     return support.toEntry(trip, ownerMember);
   }
 
+  // 사용자가 여행방에서 사전 일정 입력을 완료한 후 ACTIVE 상태로 멤버십을 활성화합니다.
+  // 활성화 시 전체 멤버 제출 여부 등을 판단해 이벤트를 발행합니다.
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
@@ -122,10 +132,14 @@ class TripCommandService {
     }
   }
 
+  // 진행 중(ONGOING)인 여행방의 기본 정보를 수정합니다. (방장 전용)
+  // 일정이나 멤버 수가 변경될 경우 기존 추천 스케줄을 초기화하고 이벤트를 발생시킵니다.
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
     Trip trip = support.requireOwnedOngoingTrip(tripId, userId);
+
+    // 1. 요청된 패치 데이터의 유효성을 검증하고, 기간(박/일)을 계산합니다.
     support.validateTripMeta(
         request.name(),
         trip.getStartRange(),
@@ -135,25 +149,33 @@ class TripCommandService {
         request.memberCount());
     Integer durationDays =
         TripServiceSupport.resolveDurationDays(request.durationNights(), request.durationDays());
+
+    // 2. 여행 일수가 변경되었는지 확인합니다. 일수가 변경되면 기존의 AI 추천 스케줄이 무효화됩니다.
     boolean recommendationInputsChanged =
         !Objects.equals(trip.getDurationDays(), durationDays);
     String normalizedDestination = TripServiceSupport.normalizeDestination(request.destination());
 
+    // 3. 실제 값의 변경 여부를 체크하여 이벤트를 발행할지 결정한 뒤 데이터를 갱신합니다.
     boolean valuesChanged =
         !Objects.equals(trip.getName(), request.name().trim())
             || !Objects.equals(trip.getDurationNights(), request.durationNights())
             || recommendationInputsChanged
             || !Objects.equals(trip.getMemberCount(), request.memberCount())
             || !Objects.equals(trip.getDestination(), normalizedDestination);
+
     trip.applyPatch(
         request.name().trim(),
         normalizedDestination,
         request.durationNights(),
         durationDays,
         request.memberCount());
+
+    // 4. 여행 일수 변경 시 기존 추천 결과를 모두 삭제합니다.
     if (recommendationInputsChanged) {
       tripRecommendationService.deleteRecommendationsForTrip(tripId);
     }
+
+    // 5. 유의미한 정보 변경이 발생했다면 푸시 알림 등을 위한 이벤트를 발행합니다.
     if (valuesChanged) {
       applicationEventPublisher.publishEvent(new TripInfoChangedEvent(tripId));
     }
@@ -170,6 +192,8 @@ class TripCommandService {
     }
   }
 
+  // 초대 코드를 이용해 여행방에 참여합니다.
+  // 잠금 조회(Pessimistic Lock)를 통해 동시 인원 초과를 방지합니다.
   @Transactional
   public TripEntryResponse joinTrip(UUID userId, JoinTripRequest request) {
 
