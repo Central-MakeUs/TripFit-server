@@ -15,4 +15,4 @@
 
 ## 리뷰 등급 (Milestone과 무관)
 
-N1(필수) ~ N5(사소) — [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)
+P1(필수) ~ P5(사소) — [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)

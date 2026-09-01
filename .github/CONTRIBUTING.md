@@ -2,7 +2,7 @@
 
 Issue · PR · Milestone · CI를 TripFit 하네스(`docs/`, `.claude/`)와 연결합니다.
 
-계획·우선순위 SSOT: [`docs/product/development-wave.md`](../docs/product/development-wave.md) · 요약: [`waves.md`](../docs/product/waves.md)
+계획·우선순위 SSOT: [`docs/product/development-wave.md`](../docs/product/development-wave.md)
 
 ## 브랜치 전략
 
@@ -88,19 +88,19 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 저장소 설정: Settings → General → Pull Requests → **Allow squash merging** 끄기.
 
-## 코드 리뷰 — N 룰
+## 코드 리뷰 — PN 룰
 
 리뷰 코멘트 등급 (**Milestone과 무관**).
 
 | 등급 | 의미 |
 |------|------|
-| **N1** | 필수 반영 |
-| **N2** | 권장 |
-| **N3** | 웬만하면 반영 |
-| **N4** | 선택 |
-| **N5** | 사소 |
+| **P1** | 필수 반영 |
+| **P2** | 권장 |
+| **P3** | 웬만하면 반영 |
+| **P4** | 선택 |
+| **P5** | 사소 |
 
-예: `N2: prod에서 ddl-auto update인데 엔티티 컬럼 삭제 시 운영 DB에 orphan column이 남을 수 있습니다.`
+예: `P2: prod에서 ddl-auto update인데 엔티티 컬럼 삭제 시 운영 DB에 orphan column이 남을 수 있습니다.`
 
 ## 라벨 · 마일스톤
 
@@ -118,15 +118,11 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 Must/Could 구분은 **이슈에 직접 붙는 `priority:` 라벨**로 표현한다. 상세: [`development-wave.md` §2](../docs/product/development-wave.md#2-priority-must--priority-could).
 
-`area:`는 2026-08-26 폐지 — 단일 모듈(Spring Boot monolith)에서 api/domain/deploy/infra 구분이 실제 필터링 가치가 적어 간결화 차원에서 제거(코드 위치는 이슈 제목·본문으로 충분).
-
-`wave:`도 2026-08-26 폐지 — 이슈의 46%가 한 Wave에 몰려 분류축 기능을 못 했고, Milestone(`MVP 출시`/`출시 이후`)이 그 역할을 대신함. 상세: [`development-wave.md` §0](../docs/product/development-wave.md#0-무엇이-바뀌었나).
-
 이슈당 **Milestone 1개** + priority 1개 + kind 1개 권장.
 
 ### `[미정]` 항목 처리
 
-중앙 트래커(구 `#2`)는 폐지됐다(2026-08-19) — 기획·스펙·BR의 `[미정]` 항목은 해당 문서에 표기만 남긴다. 상세: `.claude/rules/harness-wave.md`.
+기획·스펙·BR의 `[미정]` 항목은 별도 중앙 트래커 없이 해당 문서에 표기만 남긴다. 상세: `.claude/rules/harness-wave.md`.
 
 ### 마일스톤
 
