@@ -25,6 +25,7 @@ import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListScope;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
+import com.tripfit.tripfit.trip.membership.service.TripJoinHoldService;
 import com.tripfit.tripfit.trip.membership.service.TripJoinService;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
 import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
@@ -108,6 +109,9 @@ class TripServiceTest {
   @Mock
   private ApplicationEventPublisher applicationEventPublisher;
 
+  @Mock
+  private TripJoinHoldService tripJoinHoldService;
+
   private TripService tripService;
 
   private User owner;
@@ -180,6 +184,7 @@ class TripServiceTest {
             tripMemberRepository,
             support,
             proxiedJoinService,
+            tripJoinHoldService,
             tripRecommendationService,
             tripMemberQueryService,
             userDirectoryPort,
@@ -210,8 +215,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "서울 당일치기",
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 10),
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(10),
             0,
             1,
             4,
@@ -239,8 +244,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주 3박4일",
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(10),
                 3,
                 4,
                 6,
@@ -279,8 +284,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "제주 3박4일",
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 10),
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(10),
             3,
             4,
             6,
@@ -331,8 +336,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "가".repeat(16),
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(10),
                 3,
                 4,
                 6,
@@ -351,8 +356,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주 3박4일",
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(10),
                 3,
                 4,
                 11,
@@ -374,8 +379,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주",
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(10),
                 3,
                 4,
                 6,
@@ -503,6 +508,149 @@ class TripServiceTest {
         .isEqualTo(TripErrorCode.TRIP_MEMBER_FULL);
   }
 
+  // #35 — join()이 유효한 hold를 갖고 있으면, 실제 카운트가 이미 정원에 도달했어도(hold가 미리 보장한 자리이므로)
+  // 재확인 없이 성공하고 hold를 소비(release)한다
+  @Test
+  void joinTrip_withActiveHold_skipsCapacityRecheckAndReleasesHold() {
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(6L);
+    when(tripJoinHoldService.hasActiveHold(TRIP_ID, MEMBER_ID)).thenReturn(true);
+
+    tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
+
+    verify(tripMemberRepository).save(any());
+    verify(tripJoinHoldService, never()).countActiveHolds(any());
+    verify(tripJoinHoldService).release(TRIP_ID, MEMBER_ID);
+  }
+
+  // hold 없이 join하는 호출자는 확정 멤버 수뿐 아니라 다른 사용자의 활성 hold 수까지 합쳐 정원을 체크해야
+  // 한다 — 그렇지 않으면 hold로 자리를 예약해둔 다른 사용자의 자리를 가로챌 수 있음
+  @Test
+  void joinTrip_withoutHold_countsOtherActiveHoldsTowardCapacity() {
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(5L);
+    when(tripJoinHoldService.hasActiveHold(TRIP_ID, MEMBER_ID)).thenReturn(false);
+    when(tripJoinHoldService.countActiveHolds(TRIP_ID)).thenReturn(1L);
+
+    assertThatThrownBy(() -> tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234")))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_MEMBER_FULL);
+
+    verify(tripMemberRepository, never()).save(any());
+  }
+
+  @Test
+  void joinTrip_withoutHoldAndRoomLeftAfterOtherHolds_succeeds() {
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(4L);
+    when(tripJoinHoldService.hasActiveHold(TRIP_ID, MEMBER_ID)).thenReturn(false);
+    when(tripJoinHoldService.countActiveHolds(TRIP_ID)).thenReturn(1L);
+
+    tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
+
+    verify(tripMemberRepository).save(any());
+  }
+
+  // #35 — 초대코드 미리보기 + hold 생성. 신규 참여자는 tryHold를 호출해 자리를 선점한다
+  @Test
+  void previewAndHold_newMember_triesHoldAndReturnsPreview() {
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(3L);
+    when(tripJoinHoldService.tryHold(TRIP_ID, MEMBER_ID, 3L, 6)).thenReturn(true);
+
+    var preview = tripService.previewAndHold(MEMBER_ID, new JoinTripRequest("ABC234"));
+
+    assertThat(preview.tripId()).isEqualTo(TRIP_ID);
+    assertThat(preview.memberCount()).isEqualTo(6);
+    verify(tripJoinHoldService).tryHold(TRIP_ID, MEMBER_ID, 3L, 6);
+  }
+
+  // hold 발급 자체가 원자적으로 실패하면(자리 없음) 409 — 신규 ErrorCode 없이 기존 TRIP_MEMBER_FULL 재사용
+  @Test
+  void previewAndHold_rejectsWhenHoldFails() {
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+    when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(6L);
+    when(tripJoinHoldService.tryHold(TRIP_ID, MEMBER_ID, 6L, 6)).thenReturn(false);
+
+    assertThatThrownBy(
+        () -> tripService.previewAndHold(MEMBER_ID, new JoinTripRequest("ABC234")))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_MEMBER_FULL);
+  }
+
+  // 이미 ACTIVE 멤버가 재호출하면 hold를 만들지 않고 동일 정보만 반환(idempotent 재진입)
+  @Test
+  void previewAndHold_existingActiveMember_skipsHold() {
+    TripMember existing = tripMember(member, TripMemberRole.MEMBER);
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.of(existing));
+
+    var preview = tripService.previewAndHold(MEMBER_ID, new JoinTripRequest("ABC234"));
+
+    assertThat(preview.tripId()).isEqualTo(TRIP_ID);
+    verify(tripJoinHoldService, never()).tryHold(
+        any(),
+        any(),
+        org.mockito.ArgumentMatchers.anyLong(),
+        org.mockito.ArgumentMatchers.anyInt());
+  }
+
+  // CONFIRMED 방은 hold 시도 자체를 하지 않고 바로 거부
+  @Test
+  void previewAndHold_rejectsConfirmedTripWithoutAttemptingHold() {
+    trip.setStatus(TripStatus.CONFIRMED);
+    when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
+    when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
+        .thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.empty());
+
+    assertThatThrownBy(
+        () -> tripService.previewAndHold(MEMBER_ID, new JoinTripRequest("ABC234")))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(TripErrorCode.TRIP_ALREADY_CONFIRMED);
+
+    verify(tripJoinHoldService, never()).tryHold(
+        any(),
+        any(),
+        org.mockito.ArgumentMatchers.anyLong(),
+        org.mockito.ArgumentMatchers.anyInt());
+  }
+
+  // 플로우 첫 화면 이탈 — hold 서비스에 그대로 위임(idempotent no-op 포함은 TripJoinHoldServiceTest가 커버)
+  @Test
+  void releaseJoinHold_delegatesToHoldService() {
+    tripService.releaseJoinHold(TRIP_ID, MEMBER_ID);
+
+    verify(tripJoinHoldService).release(TRIP_ID, MEMBER_ID);
+  }
+
   @Test
   void patchTrip_rejectsNonOwner() {
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
@@ -591,8 +739,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "제주",
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 10),
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(10),
             null,
             null,
             6,
@@ -610,8 +758,8 @@ class TripServiceTest {
             OWNER_ID,
             new CreateTripRequest(
                 "제주",
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(10),
                 3,
                 6,
                 6,
@@ -637,8 +785,8 @@ class TripServiceTest {
         OWNER_ID,
         new CreateTripRequest(
             "제주",
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 10),
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(10),
             3,
             5,
             6,
@@ -971,8 +1119,8 @@ class TripServiceTest {
         new Trip(
             owner,
             "제주 3박4일",
-            LocalDate.of(2026, 8, 1),
-            LocalDate.of(2026, 8, 10),
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(10),
             3,
             4,
             6,
