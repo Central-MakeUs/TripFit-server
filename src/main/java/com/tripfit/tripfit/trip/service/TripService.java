@@ -16,6 +16,7 @@ import com.tripfit.tripfit.trip.recommendation.dto.SaveRecommendationFeedbackReq
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
+import com.tripfit.tripfit.trip.membership.dto.TripJoinPreviewResponse;
 import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.recommendation.dto.UnconfirmTripRequest;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
@@ -68,6 +69,16 @@ public class TripService {
   // facade: 여행방 삭제 → TripCommandService
   public void deleteTrip(UUID tripId, UUID userId) {
     tripCommandService.deleteTrip(tripId, userId);
+  }
+
+  // facade: 초대코드 미리보기 + 정원 hold 생성 → TripCommandService
+  public TripJoinPreviewResponse previewAndHold(UUID userId, JoinTripRequest request) {
+    return tripCommandService.previewAndHold(userId, request);
+  }
+
+  // facade: 정원 hold 해제 → TripCommandService
+  public void releaseJoinHold(UUID tripId, UUID userId) {
+    tripCommandService.releaseJoinHold(tripId, userId);
   }
 
   // facade: 초대코드 참여 → TripCommandService
