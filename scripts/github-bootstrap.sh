@@ -113,8 +113,8 @@ for old in \
 done
 
 upsert_milestone "MVP 출시" \
-  "mvp.md In Scope. docs/product/development-wave.md"
+  "mvp.md In Scope. docs/product/release-milestones.md"
 upsert_milestone "출시 이후" \
-  "런칭 후 추가 기능 + 기술부채·리팩토링. docs/product/development-wave.md"
+  "런칭 후 추가 기능 + 기술부채·리팩토링. docs/product/release-milestones.md"
 
 echo "[github-bootstrap] done"

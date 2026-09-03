@@ -1,6 +1,6 @@
 # Notification (알림) 비즈니스 규칙
 
-> 기획자 전달 알림 명세 표(2026-07-23)를 SSOT로 반영. 푸시·카카오 공유·정기 리마인드 전부 **wave 3** (2026-07-23 재분류 — 아래 "확정" 참고).
+> 기획자 전달 알림 명세 표(2026-07-23)를 SSOT로 반영. 푸시·카카오 공유·정기 리마인드 전부 **MVP 출시** (2026-07-23 재분류 — 아래 "확정" 참고).
 
 ## 알림 이벤트 요약
 
@@ -45,7 +45,7 @@
 
 랜딩 화면: 일정 관리 · `BR-USER-005` Off 시 미발송
 
-## 보조 규칙 (카카오 공유 — wave 3, `#19`)
+## 보조 규칙 (카카오 공유 — MVP 출시, `#19`)
 
 | 규칙 ID | 이벤트 | 알림·공유 문구 예시 |
 | :--- | :--- | :--- |
@@ -58,14 +58,14 @@
 
 ### 확정 (2026-07-08)
 
-- ~~BR-NOTI-005 (월 1·15 스케줄러): wave 4 — MVP에서는 카카오 수동 공유(BR-NOTI-008) 등만~~ — **2026-07-23 아래 항목으로 번복**
+- ~~BR-NOTI-005 (월 1·15 스케줄러): 출시 이후 — MVP에서는 카카오 수동 공유(BR-NOTI-008) 등만~~ — **2026-07-23 아래 항목으로 번복**
 
 ### 확정 (2026-07-23)
 
 - 알림 문구·발송 조건·랜딩 화면을 기획자 전달 표 기준으로 반영
 - BR-NOTI-004(확정·취소 통합)를 **확정(BR-NOTI-004)** / **취소(BR-NOTI-009 신설)** 로 분리 — 카피·랜딩이 서로 다름
 - 구 BR-NOTI-006/007(카카오 공유·카피 예시)은 본문 표(001/002)에 통합되며 폐기. BR-NOTI-007 문구 "일정이 준비되었어요" → "일정이 제출되었어요"로 교체
-- **BR-NOTI-005를 wave 4 → wave 3로 재분류** (`docs/specs/notification/notification.md` D1, 사용자 승인) — `#21`/`#31`/`#32`·`development-wave.md`·`waves.md`·`mvp.md` 동시 amend
+- **BR-NOTI-005를 출시 이후 → MVP 출시로 재분류** (`docs/specs/notification/notification.md` D1, 사용자 승인) — `#21`/`#31`/`#32`·`release-milestones.md`·`release-milestones.md`·`mvp.md` 동시 amend
 - **BR-USER-005(알림 on/off) 확정** (`docs/specs/notification/notification.md` D2) — `user.md` BR-USER-005 참고. **예외 없이 NOTI-001~005·009 전체에 게이트 적용** (D10)
 - **NOTI-003/004/009 수신 대상 "참여자(방장 제외)"로 확정** (`docs/specs/notification/notification.md` D3) — 액션을 수행한 방장 본인은 제외
 - **NOTI-002 판정 기준 확정**: 여행방 정원 도달 순간 (`docs/specs/notification/notification.md` D11)

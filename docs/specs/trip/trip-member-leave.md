@@ -3,7 +3,6 @@
 > 상태: Implemented · **2026-08-19 amend (`#122`) — 나가기도 입장(`ACTIVE`) 후에만 가능**
 > MVP: In scope
 > 관련 BR: BR-USER-004 (회원 탈퇴 cascade 시 자동 호출 + 사용자 자진 나가기)
-> wave: 2 (Nice)
 > implements: (없음 — Figma ROOM_02, 마이페이지 탈퇴 플로우 전제)
 > deferred: (해당 없음)
 > GitHub: 정책 근거 `#47`(hotfix, 확정) · 구현도 `#47` 브랜치(`docs/47-trip-status-policy-alignment`)에서 완료(별도 구현 이슈 없이 진행)
@@ -94,8 +93,8 @@
 
 - [x] Must Have 전부
 - [x] `#26`(`trip-last-activity-at.md`) L1 표에 "방 나가기" touch 행 추가
-- [x] `docs/specs/README.md` wave 2 표·이슈 매핑 갱신
-- [x] Wave 2 Backlog(`#30`) Nice 섹션에 추가
+- [x] `docs/specs/README.md` MVP 출시 표·이슈 매핑 갱신
+- [x] MVP 출시 Backlog(`#30`) Nice 섹션에 추가
 
 ## 리스크·미결정
 

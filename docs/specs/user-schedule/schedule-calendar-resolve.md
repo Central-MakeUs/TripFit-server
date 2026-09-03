@@ -1,17 +1,16 @@
 # 일정 달력 통합 조회 (Resolved Calendar)
 
-> wave: 2  
-> implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008  
-> related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](../trip/trip-room-api.md), [`trip-recommendation.md`](../trip/trip-recommendation.md)  
-> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 → 마이페이지 today+2년** [`trip-schedule-calendar-window.md`](../trip/trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)** C1) · **CONFIRMED/EXPIRED snapshot** [`trip-schedule-snapshot.md`](../trip/trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)  
-> 상태: **Implemented** (#17) — S1·R2=A · sparse. **A1:** #37에서 today~+2년 윈도우로 amend (**Implemented** on feat/37)  
-> MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 wave 3
+> implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-006, BR-USER-008
+> related: [`schedule-unified.md`](schedule-unified.md), [`trip-room-api.md`](../trip/trip-room-api.md), [`trip-recommendation.md`](../trip/trip-recommendation.md)
+> deferred: sparse day 의미(가능 vs 미입력) → **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** · **A1 → 마이페이지 today+2년** [`trip-schedule-calendar-window.md`](../trip/trip-schedule-calendar-window.md) (**[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)** C1) · **CONFIRMED/EXPIRED snapshot** [`trip-schedule-snapshot.md`](../trip/trip-schedule-snapshot.md) (**[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**)
+> 상태: **Implemented** (#17) — S1·R2=A · sparse. **A1:** #37에서 today~+2년 윈도우로 amend (**Implemented** on feat/37)
+> MVP: In scope (일정 응답·추천 입력 데이터) / 그룹 달력 UX는 MVP 출시
 
 > ⚠️ **개별 일정 병합 규칙 S1은 폐기되었다.** [`schedule-slot-override.md`](schedule-slot-override.md)(O1, #67, **Approved**)가 "개별 행이 있으면 그 날 전체 대체"(S1)를 "슬롯 단위 오버라이드"로 대체한다 — 아래 R1·S1 관련 서술은 **이력 문서**로만 남기고, 현재 병합 계약은 O1 스펙을 SSOT로 본다. R2(정기 복수 겹침)·R3(uncertain)·R4(레이어 없음)·A1(기간 상한)·sparse 원칙은 O1에서도 그대로 유지된다.
 
 ## 목표
 
-클라이언트가 **기간 내 날짜×오전/오후/저녁**을 달력·일정 시트·추천에 바로 쓸 수 있도록,  
+클라이언트가 **기간 내 날짜×오전/오후/저녁**을 달력·일정 시트·추천에 바로 쓸 수 있도록,
 `regular_schedule`(패턴)과 `personal_schedule`(날짜 예외)를 서버에서 **펼치고 합친(정기+개별) 조회 API**를 정의한다.
 
 ---
@@ -56,7 +55,7 @@ GET /users/schedule/calendar  시
 }
 ```
 
-문서에서 “정기+개별 합친 값”은 위 필드들의 **의미**(합친 결과)를 가리키는 표현일 뿐,  
+문서에서 “정기+개별 합친 값”은 위 필드들의 **의미**(합친 결과)를 가리키는 표현일 뿐,
 응답에 별도 이름의 중첩 객체(예: `"merged": { ... }`)를 두지 않는다 — day에 슬롯 필드가 그대로 노출된다.
 
 ---
@@ -103,11 +102,11 @@ GET /users/schedule/calendar  시
 
 날짜 `date`마다:
 
-1. `(user_id, date)` **personal 행 있음**  
-   → 합친 값 = personal의 `morning` / `afternoon` / `evening` / `uncertain` **전부**  
-2. personal 없고, 요일에 매칭되는 **regular ≥1**  
-   → 합친 값 = regular 슬롯 합성 (R2) + `uncertain=false`  
-3. 둘 다 없음  
+1. `(user_id, date)` **personal 행 있음**
+   → 합친 값 = personal의 `morning` / `afternoon` / `evening` / `uncertain` **전부**
+2. personal 없고, 요일에 매칭되는 **regular ≥1**
+   → 합친 값 = regular 슬롯 합성 (R2) + `uncertain=false`
+3. 둘 다 없음
    → **omit** (sparse)
 
 ### R2 — 같은 요일 regular 복수 = **A 확정** (슬롯별 IMPOSSIBLE 우선)
@@ -126,12 +125,12 @@ null(미설정) 슬롯 → 합성에서 무시 (의견 없음). 해당 슬롯에
 
 ### R3 — `uncertain` 표시 (가정 U1, 추천은 #13)
 
-- 달력 합친 값: personal이 있으면 `uncertain` 그대로, regular만이면 `false`  
+- 달력 합친 값: personal이 있으면 `uncertain` 그대로, regular만이면 `false`
 - 슬롯 status는 가리지 않음 (U1). 추천 가중치는 별도 스펙.
 
 ### R4 — 레이어 (확정: 없음)
 
-본인·그룹 calendar 모두 **정기+개별 합친 값(납작한 day)만**.  
+본인·그룹 calendar 모두 **정기+개별 합친 값(납작한 day)만**.
 `fromRegular` / `fromPersonal` / 중첩 `merged` 객체 **Out of Scope**.
 
 ---
@@ -151,9 +150,9 @@ null(미설정) 슬롯 → 합성에서 무시 (의견 없음). 해당 슬롯에
 
 **DB**
 
-- Regular: 월~금, 오전·오후 IMPOSSIBLE, 저녁 POSSIBLE  
-- Personal 8/5 (화, “오후만 연차”를 S1로 저장):  
-  오전 IMPOSSIBLE, 오후 POSSIBLE, 저녁 POSSIBLE, uncertain=false  
+- Regular: 월~금, 오전·오후 IMPOSSIBLE, 저녁 POSSIBLE
+- Personal 8/5 (화, “오후만 연차”를 S1로 저장):
+  오전 IMPOSSIBLE, 오후 POSSIBLE, 저녁 POSSIBLE, uncertain=false
   ← 클라이언트가 오전·저녁을 regular와 같게 **채워서** 보냄
 
 **`GET .../calendar?startDate=2026-08-01&endDate=2026-08-07`**
@@ -190,7 +189,7 @@ null(미설정) 슬롯 → 합성에서 무시 (의견 없음). 해당 슬롯에
 |--------|------|------|
 | GET | `/api/v1/users/schedule/calendar` | JWT |
 
-**Query:** `startDate`, `endDate` (ISO date, 필수). `end < start` → 400.  
+**Query:** `startDate`, `endDate` (ISO date, 필수). `end < start` → 400.
 **기간 윈도우 (#37 C1):** 요청 구간 ⊆ `[today, today+2년−1]`. today 이전 포함·윈도우 밖 → 400 `INVALID_INPUT`.
 
 **응답**
@@ -238,7 +237,7 @@ null(미설정) 슬롯 → 합성에서 무시 (의견 없음). 해당 슬롯에
 |--------|------|------|
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | JWT + member |
 
-기존 ~~`personal-summary`~~ 와의 관계 **T1 확정** (#12) · **API 삭제**.  
+기존 ~~`personal-summary`~~ 와의 관계 **T1 확정** (#12) · **API 삭제**.
 trip CRUD 전이면 **①만** 구현.
 
 ### 유지 (변경 없음)
@@ -250,7 +249,7 @@ trip CRUD 전이면 **①만** 구현.
 
 ### Out of Scope
 
-- wave 3 집계 API, Google Calendar, S2(nullable 슬롯), 원본 레이어 응답, DB 신규 테이블
+- MVP 출시 집계 API, Google Calendar, S2(nullable 슬롯), 원본 레이어 응답, DB 신규 테이블
 
 ---
 
@@ -336,7 +335,7 @@ trip CRUD 전이면 **①만** 구현.
 
 ## 데이터 모델
 
-- **스키마 변경 없음** (S1 = 현행 personal 계약).  
+- **스키마 변경 없음** (S1 = 현행 personal 계약).
 - Read model만 추가.
 
 ### 알고리즘 (S1)
@@ -384,16 +383,16 @@ function combineRegularsImpossibleWins(regulars):
 
 ### 정상
 
-- [x] regular만 → 매칭 요일만 days, 주말 omit  
-- [x] personal 있으면 그날 슬롯·uncertain이 personal과 **완전 일치** (S1)  
-- [x] personal만(요일 regular 없음) → 그날만 포함  
-- [x] “오후만 연차” 저장 = 클라이언트가 3슬롯 채움 → calendar 합친 값이 그 3슬롯  
+- [x] regular만 → 매칭 요일만 days, 주말 omit
+- [x] personal 있으면 그날 슬롯·uncertain이 personal과 **완전 일치** (S1)
+- [x] personal만(요일 regular 없음) → 그날만 포함
+- [x] “오후만 연차” 저장 = 클라이언트가 3슬롯 채움 → calendar 합친 값이 그 3슬롯
 - [x] 동일 요일 regular 2행 → 슬롯별 IMPOSSIBLE 우선 (R2=A)
 
 ### 실패
 
-- [x] `endDate < startDate` → 400  
-- [x] 기간 내 무데이터 → `days: []`  
+- [x] `endDate < startDate` → 400
+- [x] 기간 내 무데이터 → `days: []`
 - [ ] trip calendar 비멤버 → 403 — **#12**
 
 ---
@@ -402,15 +401,15 @@ function combineRegularsImpossibleWins(regulars):
 
 ### 사전 작업 (문서)
 
-- [x] S1·sparse·정기+개별 합친 값만 노출·**R2=A** 문서 확정  
-- [x] 관련 스펙 인덱스·`schedule-unified` 동기화  
-- [x] A1 확정 — 최초 730일, **현행은 #37로 대체** (`today`~`today+2y−1`)  
+- [x] S1·sparse·정기+개별 합친 값만 노출·**R2=A** 문서 확정
+- [x] 관련 스펙 인덱스·`schedule-unified` 동기화
+- [x] A1 확정 — 최초 730일, **현행은 #37로 대체** (`today`~`today+2y−1`)
 
 ### 구현
 
-- [x] 본 스펙 **Approved** 후 코드  
-- [x] `./gradlew test` (`user.schedule.*`)  
-- [x] 이슈 #17 체크리스트 갱신  
+- [x] 본 스펙 **Approved** 후 코드
+- [x] `./gradlew test` (`user.schedule.*`)
+- [x] 이슈 #17 체크리스트 갱신
 - [x] `main`에 반영됨 (PR empty — calendar 커밋이 이미 main에 존재, 2026-07-15 확인)
 
 ---
@@ -472,11 +471,11 @@ function combineRegularsImpossibleWins(regulars):
 
 ### 구현 순서
 
-1. 스펙 Approved (+ A1 기본값 권장)  
-2. resolve 단위 테스트 (S1, R2=A, omit)  
-3. `GET .../users/schedule/calendar`  
-4. #12 이후 members calendar · summary 정리(A2)  
-5. #13에서 resolve **공유** (C1)  
+1. 스펙 Approved (+ A1 기본값 권장)
+2. resolve 단위 테스트 (S1, R2=A, omit)
+3. `GET .../users/schedule/calendar`
+4. #12 이후 members calendar · summary 정리(A2)
+5. #13에서 resolve **공유** (C1)
 
 ---
 
@@ -493,5 +492,5 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-21 | **제품 재확정** — A1→마이페이지 today+2년(#37 C1) · 방=희망 기간 · #38 CONFIRMED∪TERMINATED |
 | 2026-07-29 | **용어 변경** — "effective" 표현을 전부 "정기+개별 합친 값/달력"으로 교체(Swagger·docs·내부 메서드명 `resolveEffectiveSchedule`→`resolveMergedSchedule` 동일 적용, DB·API 계약 변경 없음) · "응답 DTO 비교"·"마이페이지 개별 일정 편집 UX"(시나리오·엣지케이스) 절 추가 · FE 전달용 `schedule-calendar-merge.md` 작성 (해당 문서는 2026-09-22 `fe-context/` 폴더 전체와 함께 폐기됨 — 현행 병합 규칙 SSOT는 본 스펙) |
 | 2026-07-29 | **문서 보강** — 여행 칩(`GET /trips?scope=ongoing`)과 본 API `startDate`/`endDate`의 관계 명문화("트립 칩 → 조회 구간 선택" 절, API 계약 변경 없음) · "화면 요소 ↔ API 필드 매핑" 절 추가 |
-| 2026-08-16 | **A4 해소** — `holidayRest`를 근무일 판정에 반영([`schedule-holiday-rest.md`](schedule-holiday-rest.md), #107). 구 "wave 2 Out — 요일만" 방향과 프론트 "공휴일≠휴무 자동" 고지 문구 삭제 |
+| 2026-08-16 | **A4 해소** — `holidayRest`를 근무일 판정에 반영([`schedule-holiday-rest.md`](schedule-holiday-rest.md), #107). 구 "MVP 출시 Out — 요일만" 방향과 프론트 "공휴일≠휴무 자동" 고지 문구 삭제 |
 | 2026-07-29 | **S1 폐기 → O1로 대체** ([`schedule-slot-override.md`](schedule-slot-override.md), #67, **Approved·구현 완료**) — 개별 일정이 "그 날 전체 대체"에서 "슬롯 단위 오버라이드"로 전환. 본 문서의 S1·R1 서술은 이력 문서로 유지, 확정 사항 표 #1·#2에 폐기 표시 |

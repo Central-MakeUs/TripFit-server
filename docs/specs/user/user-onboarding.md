@@ -1,11 +1,10 @@
 # 사용자 온보딩 · 프로필 (이름 + 선택 단계)
 
-> wave: 1  
-> implements: BR-USER-001 (이름 완료 후 핵심 API)  
-> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md)  
-> 선행: [`auth-social-login.md`](../auth/auth-social-login.md)  
-> deferred: trip join 일정 게이트(D-JOIN-TRIP-FLOW) · `hasCompletedPreSchedule` 필드 SSOT → [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md)  
-> 상태: Approved (이름 API) · **재진입·이름 게이트 2026-07-20 amend** (#22 D-NAME-1, D-REENTRY-2) · **선택 온보딩 boolean(`isScheduleRegistered`/`isOptionalOnboardingCompleted`)과 `PATCH /users/onboarding`은 2026-07-20 삭제 — 대체: `hasCompletedPreSchedule` (`schedule-participation-onboarding.md` D-BR006-C) — 구 `isAllFree`는 2026-08-18 `#113`으로, 구 `hasPreSchedule`/`hasRegularSchedule`은 2026-08-19로 삭제**  
+> implements: BR-USER-001 (이름 완료 후 핵심 API)
+> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md)
+> 선행: [`auth-social-login.md`](../auth/auth-social-login.md)
+> deferred: trip join 일정 게이트(D-JOIN-TRIP-FLOW) · `hasCompletedPreSchedule` 필드 SSOT → [`schedule-participation-onboarding.md`](../trip/schedule-participation-onboarding.md)
+> 상태: Approved (이름 API) · **재진입·이름 게이트 2026-07-20 amend** (#22 D-NAME-1, D-REENTRY-2) · **선택 온보딩 boolean(`isScheduleRegistered`/`isOptionalOnboardingCompleted`)과 `PATCH /users/onboarding`은 2026-07-20 삭제 — 대체: `hasCompletedPreSchedule` (`schedule-participation-onboarding.md` D-BR006-C) — 구 `isAllFree`는 2026-08-18 `#113`으로, 구 `hasPreSchedule`/`hasRegularSchedule`은 2026-08-19로 삭제**
 
 > ## ⚠️ 2026-08-19 amend — 회원가입에서 사전 일정 단계 제거
 >
@@ -98,7 +97,7 @@ firstName 또는 lastName null?
 
 ## 요구사항
 
-### Must Have (wave 1 — 본 스펙)
+### Must Have (MVP 출시 — 본 스펙)
 
 - [x] `user` 컬럼: `first_name`, `last_name`, `is_google_calendar_connected`
 - [x] `nickname` — 소셜 값만, **fallback 폐기** ([`007`](../../decisions/007-user-profile-onboarding.md))
@@ -110,10 +109,10 @@ firstName 또는 lastName null?
 
 **삭제됨 (2026-07-20, #22):** `is_schedule_registered`/`is_optional_onboarding_completed` 컬럼, `PATCH /api/v1/users/onboarding` 엔드포인트. 코드에 없음(`UserController`에 `/onboarding` 매핑 없음) — 현행 대체값은 `hasCompletedPreSchedule`(파생). 당시 대체값이던 `hasPreSchedule`·`user.is_all_free`는 각각 2026-08-19·2026-08-18에 삭제됐다.
 
-### Deferred (별도 스펙 — wave 1 본문 구현 안 함)
+### Deferred (별도 스펙 — MVP 출시 본문 구현 안 함)
 
 - [x] Google Calendar OAuth 연동 API·토큰 저장 → [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](google-calendar-oauth.md) **Implemented**
-- [x] 정기·개별 일정 — [`schedule-unified.md`](../user-schedule/schedule-unified.md) (wave 2, #11)
+- [x] 정기·개별 일정 — [`schedule-unified.md`](../user-schedule/schedule-unified.md) (MVP 출시, #11)
 - [ ] 마이페이지 이름 수정 — [`user-my-page.md`](user-my-page.md) (`PATCH /users/profile`)
 - [ ] 네이버 캘린더
 

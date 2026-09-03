@@ -1,5 +1,7 @@
 # notification Refactor Log
 
+알림(`notification`) 도메인 아키텍처 감사에서 승인된 항목을 실제로 반영한 이력이다. 라운드별 수정 사항과 검증 결과를 기록한다. 감사 결과 원본은 `audit.md` 및 `audit-round2.md`에 있다.
+
 ## 2026-08-08 — 스펙-코드 drift 해소: `notification_history` 인덱스 누락 반영
 
 `docs/specs/notification/notification.md`(D9)·`docs/architecture/erd.md`가 이미 `(user_id, sent_at)` 인덱스를 명시하고 있었는데, 실제 `NotificationHistory` 엔티티에는 반영돼 있지 않았던 drift를 발견해 반영. 백엔드 성능 개선 검토 중 발견(신규 결정 아님 — 이미 승인된 스펙을 코드가 놓친 케이스).

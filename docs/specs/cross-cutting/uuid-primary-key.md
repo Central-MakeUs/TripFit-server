@@ -1,10 +1,9 @@
 # UUID Primary Key 전환
 
-> 상태: Implemented  
-> MVP: In scope (인프라·스키마)  
-> 관련 BR: 해당 없음  
-> wave: 1  
-> implements: PK/FK UUID 통일, JWT `sub` UUID, 에이전트 규칙  
+> 상태: Implemented
+> MVP: In scope (인프라·스키마)
+> 관련 BR: 해당 없음
+> implements: PK/FK UUID 통일, JWT `sub` UUID, 에이전트 규칙
 > deferred: UUID v7, BINARY(16) 저장 (Flyway·데이터 보존 마이그레이션은 **도입하지 않음** — harness ⛔ DB)
 
 ## 목표

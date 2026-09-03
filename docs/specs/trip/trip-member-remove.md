@@ -1,6 +1,5 @@
 # 참여자 내보내기
 
-> wave: **2** (Nice)
 > implements: (없음 — Figma ROOM_02)
 > deferred: 추천 캐시 무효화 → [`trip-recommendation.md`](trip-recommendation.md) / `#13` (#3 보류), 알림 → `#21`
 > 상태: **Implemented** — 2026-07-21 [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) 결정 잠금

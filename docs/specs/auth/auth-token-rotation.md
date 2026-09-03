@@ -1,20 +1,19 @@
 # 인증 토큰 Rotation — RTR + Redis
 
-> wave: 4  
-> 선행: wave 1 [`auth-social-login.md`](auth-social-login.md)  
-> 결정: [`docs/decisions/004-auth-token-rotation.md`](../../decisions/004-auth-token-rotation.md) — **RTR 확정**, **Redis Blacklist 확정**(2026-08-08). 인프라: [`010-redis-infra.md`](../../decisions/010-redis-infra.md)(EC2 D)  
+> 선행: MVP 출시 [`auth-social-login.md`](auth-social-login.md)
+> 결정: [`docs/decisions/004-auth-token-rotation.md`](../../decisions/004-auth-token-rotation.md) — **RTR 확정**, **Redis Blacklist 확정**(2026-08-08). 인프라: [`010-redis-infra.md`](../../decisions/010-redis-infra.md)(EC2 D)
 > 상태: Approved (2026-08-10) — **2026-09-15 이 문서의 핵심 전제 2가지(refresh는 MySQL SSOT, access는 Redis Blacklist)가 [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md)로 뒤집혔다.** RTR(rotation·reuse detection) 자체의 시맨틱은 그대로 유지되고 저장소만 MySQL→Redis로 바뀌었으니, 이 문서는 RTR 개념 설명용 이력으로 남기고 실제 저장·전달 계약은 새 문서를 SSOT로 본다.
 
 ## 목표
 
-wave 1 이후 아래를 도입한다.
+MVP 출시 이후 아래를 도입한다.
 
 1. **Refresh Token Rotation (RTR)** — refresh 시 token 교체 + reuse detection
 2. **Redis Blacklist** — access JWT logout/탈퇴 시 즉시 무효화
 
 ## 배경
 
-- wave 1: DB refresh + stateless access JWT (`jti` 포함)
+- MVP 출시: DB refresh + stateless access JWT (`jti` 포함)
 - 확정된 후속: RTR + Redis ([`004`](../../decisions/004-auth-token-rotation.md))
 - login API shape·단일 `POST /auth/login`은 **변경 없음**
 
@@ -22,7 +21,7 @@ wave 1 이후 아래를 도입한다.
 
 | 문서 | 내용 |
 |------|------|
-| `auth-social-login.md` | wave 1 baseline |
+| `auth-social-login.md` | MVP 출시 baseline |
 | `004-auth-token-rotation.md` | RTR·Redis 결정 (Blacklist 확정) |
 | `010-redis-infra.md` | Redis 인프라 배치 (EC2 D) |
 | `architecture/erd.md` | `refresh_token` + `family_id` |
@@ -59,7 +58,7 @@ sequenceDiagram
 
 ## 요구사항
 
-### Must Have (wave 4)
+### Must Have (출시 이후)
 
 - [x] **RTR:** `POST /auth/refresh` 성공 시 새 `refreshToken` 발급, 기존 refresh 즉시 revoke — `RefreshTokenService.rotate()`
 - [x] **Reuse detection:** revoke된 refresh 재사용 → `AUTH_REFRESH_REUSE` + 해당 `family_id` 전체 revoke
@@ -84,7 +83,7 @@ refresh reuse가 탐지돼 `family_id` 전체가 revoke될 때, 그 family로 �
 - 지금 `AccessTokenClaims`엔 `jti`만 있고 `family_id`가 없어, "이 family로 발급된 access token이 뭔지" 서버가 추적할 방법이 없음
 - 넣으려면 JWT claim에 `family_id` 추가 필요(API 응답 계약엔 영향 없음 — 내부 클레임)
 - 안 넣으면: refresh 탈취가 걸려 family가 revoke돼도, 이미 나가 있는 access token은 자기 만료 시각(최대 2h)까지 계속 유효 — reuse detection의 방어 범위가 "새 토큰 발급 차단"까지만이고 "이미 발급된 것 회수"는 못 함
-- **왜 지금 안 막아도 괜찮은가:** RTR만으로도 wave 1 대비 노출 창이 "탈취 후 최대 30일"에서 "탈취한 refresh가 재사용되는 순간까지 + 그때 이미 나가 있던 access token 잔여 수명(최대 2h)"으로 크게 줄어든다 — 이 마지막 구멍은 추가 개선이지 이번 라운드의 필수 방어선은 아님
+- **왜 지금 안 막아도 괜찮은가:** RTR만으로도 MVP 출시 대비 노출 창이 "탈취 후 최대 30일"에서 "탈취한 refresh가 재사용되는 순간까지 + 그때 이미 나가 있던 access token 잔여 수명(최대 2h)"으로 크게 줄어든다 — 이 마지막 구멍은 추가 개선이지 이번 라운드의 필수 방어선은 아님
 - 재상정 조건: 이후 라운드에서 다시 검토하거나, 실제 reuse 탐지 사례가 쌓여 이 잔여 노출이 문제로 관측되면 Must Have로 승격 검토
 
 ### Nice to Have
@@ -101,15 +100,15 @@ refresh reuse가 탐지돼 `family_id` 전체가 revoke될 때, 그 family로 �
 
 ## API 변경
 
-### `POST /api/v1/auth/refresh` — wave 4 응답 확장
+### `POST /api/v1/auth/refresh` — 출시 이후 응답 확장
 
-wave 1:
+MVP 출시:
 
 ```json
 { "accessToken": "...", "expiresIn": 7200 }
 ```
 
-**wave 4 (additive):**
+**출시 이후 (additive):**
 
 ```json
 {
@@ -120,7 +119,7 @@ wave 1:
 ```
 
 - `login` 응답: **변경 없음**
-- 클라이언트: wave 4 배포 시 refresh 응답의 `refreshToken` **필수 저장**
+- 클라이언트: 출시 이후 배포 시 refresh 응답의 `refreshToken` **필수 저장**
 
 ### 에러 추가
 
@@ -130,14 +129,14 @@ wave 1:
 
 ## 데이터 모델
 
-### `refresh_token` — wave 4 컬럼 (wave 1에서 선반영 권장)
+### `refresh_token` — 출시 이후 컬럼 (MVP 출시에서 선반영 권장)
 
 | 컬럼 | 타입 | Nullable | 설명 |
 |------|------|----------|------|
 | family_id | char(36) | N | UUID — 동일 로그인 체인. login 시 신규, rotation 시 유지 |
-| revoked_at | datetime(6) | Y | revoke 시각. wave 4 rotation 시 set. wave 1 logout은 delete 가능 |
+| revoked_at | datetime(6) | Y | revoke 시각. 출시 이후 rotation 시 set. MVP 출시 logout은 delete 가능 |
 
-wave 1: login마다 새 `family_id`, `revoked_at` null. wave 4: rotation 시 old row `revoked_at` set (또는 soft revoke 후 delete 정책 — 구현 시 하나로 통일).
+MVP 출시: login마다 새 `family_id`, `revoked_at` null. 출시 이후: rotation 시 old row `revoked_at` set (또는 soft revoke 후 delete 정책 — 구현 시 하나로 통일).
 
 **인덱스 추가:** `INDEX (family_id)`, `INDEX (user_id, revoked_at)`
 
@@ -156,9 +155,9 @@ auth/
 │   └── security/
 │       ├── TokenRevocationChecker.java
 │       ├── NoOpTokenRevocationChecker.java
-│       └── RedisTokenRevocationChecker.java   # wave 4
+│       └── RedisTokenRevocationChecker.java   # 출시 이후
 ├── config/
-│   └── RedisConfig.java             # wave 4
+│   └── RedisConfig.java             # 출시 이후
 └── repository/
     ├── RefreshToken.java
     └── RefreshTokenRepository.java
@@ -166,7 +165,7 @@ auth/
 
 패키징 가이드: `docs/decisions/003-architecture-guide.md`
 
-## 환경 변수 (wave 4 추가)
+## 환경 변수 (출시 이후 추가)
 
 | 변수 | 용도 |
 |------|------|
@@ -174,7 +173,7 @@ auth/
 | `REDIS_PORT` | 기본 6379 |
 | `REDIS_PASSWORD` | Redis `requirepass` |
 
-`deploy/app/.env.example` wave 4 PR에서 갱신. `deploy/redis/` compose·EC2 D 배치는 [`010-redis-infra.md`](../../decisions/010-redis-infra.md) 참고.
+`deploy/app/.env.example` 출시 이후 PR에서 갱신. `deploy/redis/` compose·EC2 D 배치는 [`010-redis-infra.md`](../../decisions/010-redis-infra.md) 참고.
 
 ## 검증 시나리오
 
@@ -195,7 +194,7 @@ auth/
 - [x] decisions `004` Redis 전략 `[미정]` → Blacklist 확정 amend (2026-08-08)
 - [x] Redis 인프라 배치 결정 → [`010-redis-infra.md`](../../decisions/010-redis-infra.md) (2026-08-08)
 - [x] "Reuse detection ↔ access token 블랙리스트 연결" `[미정]` — 이번 라운드 Deferred로 확정, Must Have 제외 (2026-08-08)
-- [x] `erd.md` wave 4 컬럼·Redis 운영 메모 동기화 (2026-08-10)
+- [x] `erd.md` 출시 이후 컬럼·Redis 운영 메모 동기화 (2026-08-10)
 - [x] `./gradlew test` 전체 통과 (452개, 0 실패) (2026-08-10)
 - [x] EC2 D 프로비저닝 완료 (2026-08-10) — `TP-redis`(`i-06fb8540484834192`, private IP `172.31.38.246`). App(sg-app)에서만 접근 가능·외부 차단 실측 확인, GitHub Secrets(`REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`) 등록 완료
 - [ ] EC2 A 재배포 후 실제 프로덕션 트래픽으로 Redis 연동 확인 (다음 `main` push 배포 시 자동 반영, 이 세션에서는 인프라·Secrets만 준비)

@@ -1,5 +1,7 @@
 # Trip Architecture Audit — 2차 라운드 (2026-08-05)
 
+`com.tripfit.tripfit.trip` 패키지를 대상으로 1차 리팩토링 반영 이후 진행한 2차 아키텍처 감사 문서다. 반드시 수정해야 하는 A 항목은 0건이며, 유지보수성 리팩토링 B 항목 2건(참고 C 2건, 비권장 D 2건)을 도출했다. 도출된 항목은 승인 대기 상태로 정리되었다.
+
 ## 범위
 
 - 패키지: `com.tripfit.tripfit.trip` — `config`, `controller`, `domain`, `dto`, `exception`, `repository`, `repository.projection`, `scheduler`, `service` (추천/recommendation은 별도 패키지 없이 `service/`에 flat 포함)

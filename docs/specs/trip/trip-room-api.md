@@ -1,8 +1,7 @@
 # 여행방 API — 생성·참여·Pin
 
-> wave: 2
 > implements: BR-TRIP-001, BR-TRIP-008, BR-TRIP-009, BR-TRIP-013, BR-USER-001, BR-USER-002, BR-USER-009, BR-USER-010
-> deferred: ~~정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)~~ (**Superseded** 2026-08-18 `#114` — DB 비관적 락으로 대체, [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)는 이력 문서), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), 여행방 삭제 시 VOC 사유(wave 4, unconfirm 사유와 별개), **카카오 초대·확정·재촉 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **EXPIRED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)
+> deferred: ~~정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)~~ (**Superseded** 2026-08-18 `#114` — DB 비관적 락으로 대체, [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)는 이력 문서), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), 여행방 삭제 시 VOC 사유(출시 이후, unconfirm 사유와 별개), **카카오 초대·확정·재촉 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **EXPIRED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)
 > related Implemented: 참여자 내보내기 → [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) [`trip-member-remove.md`](trip-member-remove.md)
 > 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·참여 = #22 확정** (2026-07-21) · **D5 홈 2뷰 amend** (2026-07-19) · **D5 구현 후속 defer #26·#27** (2026-07-19)
 > 선행: [`auth-social-login.md`](../auth/auth-social-login.md), [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)
@@ -10,7 +9,7 @@
 
 ## 목표
 
-방장이 여행방을 만들고 초대·참여·홈(진행 중 캐러셀 / 전체 목록)·Pin까지 REST API로 제공한다. MVP 완료 기준(wave 2)의 **여행방·참여** 축을 담당한다.
+방장이 여행방을 만들고 초대·참여·홈(진행 중 캐러셀 / 전체 목록)·Pin까지 REST API로 제공한다. MVP 완료 기준(MVP 출시)의 **여행방·참여** 축을 담당한다.
 
 ## 프론트·신규 개발자 — 멤버십·공유 (필독)
 
@@ -130,10 +129,10 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 | 항목 | 이슈 |
 |------|------|
 | 추천·확정·취소 | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) |
-| **참여·온보딩·sparse** | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (wave 1) |
-| 카카오 초대·확정·재촉 공유 | [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) · [`kakao-invite-share.md`](kakao-invite-share.md) (wave 3) |
-| 푸시 알림 | [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21) (wave 3) |
-| 여행방 삭제 시 VOC 사유 (unconfirm 사유와 별개) | wave 4 |
+| **참여·온보딩·sparse** | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (MVP 출시) |
+| 카카오 초대·확정·재촉 공유 | [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) · [`kakao-invite-share.md`](kakao-invite-share.md) (MVP 출시) |
+| 푸시 알림 | [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21) (MVP 출시) |
+| 여행방 삭제 시 VOC 사유 (unconfirm 사유와 별개) | 출시 이후 |
 
 ## API / 인터페이스
 
@@ -394,7 +393,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 | `trip_member` | trip delete 시 **연쇄** `deleted_at` |
 | `regular_schedule` · `personal_schedule` | **유지** (User 전역) |
 
-### TripStatus (wave 2)
+### TripStatus (MVP 출시)
 
 | UI | `TripStatus` | join (신규) | PATCH |
 |----|--------------|-------------|-------|

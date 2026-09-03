@@ -1,10 +1,9 @@
 # 카카오톡 · 링크 공유 (초대 / 확정 / 재촉)
 
-> wave: 3
 > implements: BR-NOTI-008 (응답 재촉 수동 공유) · 공유 UX 공통
 > deferred: FCM/APNs → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), 공유 스냅샷 단일 API (Nice · 미착수), 확정 후 공유(B) 동적 썸네일 이미지 → [`trip-thumbnail-image.md`](trip-thumbnail-image.md) ([#62](https://github.com/Central-MakeUs/TripFit-server/issues/62), Draft)
 > 상태: **Approved**
-> MVP: In scope (Wave 3)
+> MVP: In scope (MVP 출시)
 > Issue: [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)
 
 ## 목표

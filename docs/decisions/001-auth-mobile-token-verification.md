@@ -17,7 +17,7 @@ TripFit은 React 프론트 2명이 개발하고 최종적으로 Play·App Store 
 3. **모바일 토큰 검증 API** — 앱 SDK 토큰을 백엔드가 검증 후 JWT 발급
 4. **Identity 분리 + 계정 연결** — `user` / `user_identity` 구조
 
-MVP에서는 핵심 여행방·일정 플로우 검증이 우선이고, 계정 연결(BR-USER-003)은 wave 4다.
+MVP에서는 핵심 여행방·일정 플로우 검증이 우선이고, 계정 연결(BR-USER-003)은 출시 이후다.
 
 ## 결정
 
@@ -41,7 +41,7 @@ MVP에서는 핵심 여행방·일정 플로우 검증이 우선이고, 계정 �
 
 ## 트레이드오프 · 후속 리스크
 
-- **계정 연결 불가**: 한 provider = 한 user. Kakao·Google 통합은 wave 4 `user_identity` 스펙 필요
+- **계정 연결 불가**: 한 provider = 한 user. Kakao·Google 통합은 출시 이후 `user_identity` 스펙 필요
 - **Google WebView 차단**: 구글 로그인은 WebView가 아닌 네이티브 SDK — 프론트 책임 (`platform.md`)
 - **Apple 로그인 UI**: 타사 소셜과 함께 제공 시 Apple 로그인도 동등하게 — 프론트·심사 (`platform.md`)
 - **Apple `aud`·Google client ID**: iOS/Android 분기 — 프론트와 env 합의 `[미정]`
@@ -56,8 +56,8 @@ MVP에서는 핵심 여행방·일정 플로우 검증이 우선이고, 계정 �
 - [ ] `deploy/app/.env.example` JWT·provider client ID placeholder
 - [ ] 프론트와 login API 계약 공유 (token 종류·단일 login URL·환경 A/B)
 - [ ] 스토어 제출 전: `docs/specs/auth/auth-apple-server-notifications.md` 구현
-- [ ] wave 1 완료 후: [`004-auth-token-rotation.md`](004-auth-token-rotation.md) — RTR + Redis (access 전략 합의)
-- [ ] wave 4: 계정 연결 시 identity 스펙 검토
+- [ ] MVP 출시 완료 후: [`004-auth-token-rotation.md`](004-auth-token-rotation.md) — RTR + Redis (access 전략 합의)
+- [ ] 출시 이후: 계정 연결 시 identity 스펙 검토
 - [x] 2026-07-22: 클라이언트 환경 A/B · Google 302 금지 — `platform.md` 확정 · Calendar API code→POST
 
 ## 변경 이력

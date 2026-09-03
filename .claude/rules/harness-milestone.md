@@ -4,19 +4,19 @@
 
 ## 🚨 Release Gate — 앱 배포·심사 필수 체크리스트
 
-**Milestone `출시 이후`(런칭 후 개선)와 혼동 금지.** 스토어 제출·심사를 **통과하기 위해 반드시 필요**한 항목 — 없어도 되는 개선이 아니다. 2026-07-28 도입 계기: `#5`(Apple S2S webhook)가 심사 요건이었는데도 한때 잘못 분류돼 있었음. 상세: [`development-wave.md` §4](../../docs/product/development-wave.md#4-앱-배포심사-release-gate--milestonepriority와-무관).
+**Milestone `출시 이후`(런칭 후 개선)와 혼동 금지.** 스토어 제출·심사를 **통과하기 위해 반드시 필요**한 항목 — 없어도 되는 개선이 아니다. 2026-07-28 도입 계기: `#5`(Apple S2S webhook)가 심사 요건이었는데도 한때 잘못 분류돼 있었음. 상세: [`release-milestones.md` §4](../../docs/product/release-milestones.md#4-앱-배포심사-release-gate--milestonepriority와-무관).
 
 **판단 기준:** "이게 없으면 스토어 심사를 통과 못 하는가?" → Yes면 Release Gate(`release: blocking` 라벨, Milestone은 다른 이슈와 동일하게 지정), No면 `priority:`만으로 충분.
 
-**현재 상태·과거 항목 이력·이슈 번호 재사용 관행:** [`development-wave.md` §4](../../docs/product/development-wave.md#4-앱-배포심사-release-gate--milestonepriority와-무관)가 SSOT — 여기서 중복 서술하지 않는다. **새 Release Gate 항목 발견 시 새 이슈를 만들어**(생성 전 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용) 그 문서 §4에 등록.
+**현재 상태·과거 항목 이력·이슈 번호 재사용 관행:** [`release-milestones.md` §4](../../docs/product/release-milestones.md#4-앱-배포심사-release-gate--milestonepriority와-무관)가 SSOT — 여기서 중복 서술하지 않는다. **새 Release Gate 항목 발견 시 새 이슈를 만들어**(생성 전 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용) 그 문서 §4에 등록.
 
-**에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 릴리즈 상태를 논의할 때, `development-wave.md` §4에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
+**에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 릴리즈 상태를 논의할 때, `release-milestones.md` §4에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
 
 **금지:** Release Gate 항목을 `출시 이후`로 분류
 
 ## 릴리즈 축 (2026-08-26 개편 — Wave 도메인 축 폐지)
 
-과거엔 이슈를 "Wave"라는 도메인 축(1 소셜 로그인·2 MVP 로직·3 외부 API 연동·4 리팩토링·성능·런칭후UX) 4단계로 나눴으나, 실제 이슈의 46%가 Wave 2에 몰리고 Wave 4가 "기술부채"와 "런칭후 신규기능"을 억지로 묶고 있던 문제로 **폐지했다**(상세·변경 이력: [`development-wave.md` §0](../../docs/product/development-wave.md#0-무엇이-바뀌었나)).
+과거엔 이슈를 "Wave"라는 도메인 축(1 소셜 로그인·2 MVP 로직·3 외부 API 연동·4 리팩토링·성능·런칭후UX) 4단계로 나눴으나, 실제 이슈의 46%가 MVP 출시에 몰리고 출시 이후가 "기술부채"와 "런칭후 신규기능"을 억지로 묶고 있던 문제로 **폐지했다**(상세·변경 이력: [`release-milestones.md` §0](../../docs/product/release-milestones.md#0-무엇이-바뀌었나)).
 
 지금은 서로 겹치지 않는 3개 축만 쓴다:
 
@@ -26,7 +26,7 @@
 | 출시 전/후? | Milestone `MVP 출시` / `출시 이후` |
 | 기능·버그(must) vs 성능·구조정리(could)? | 아래 `priority:` 절 |
 
-**Wave 관련 용어(`wave:N` 라벨, Wave 배치 결정 트리, "로그인 vs 외부연동 경계" 판단)는 전부 폐지됐다 — 새 이슈에 더 이상 적용하지 않는다.**
+**구 도메인 축 관련 용어(`wave:N` 라벨, Milestone 배치 결정 트리, "로그인 vs 외부연동 경계" 판단)는 전부 폐지됐다 — 새 이슈에 더 이상 적용하지 않는다.**
 
 ## `[미정]` 항목 처리 (전용 트래커 폐지 — 2026-08-19)
 
@@ -67,4 +67,4 @@
 | **조회 윈도우** | 여행방 일정 calendar 조회 가능 구간 (#37) | 희망 기간과 **별 축** · C1=`today~+2y` · C2/C3=`startRange~endRange` |
 | **C1 윈도우 (#37)** | 본인 `users/schedule/calendar` 조회·수정 가능 구간 | **today ~ max(today+2년−1, 참여 중 ONGOING 여행 endRange 최댓값)**(#53 R4) · 구 A1(730일 길이) 대체 |
 
-상세: [`docs/product/development-wave.md`](../../docs/product/development-wave.md) · [`docs/product/glossary.md`](../../docs/product/glossary.md)
+상세: [`docs/product/release-milestones.md`](../../docs/product/release-milestones.md) · [`docs/product/glossary.md`](../../docs/product/glossary.md)

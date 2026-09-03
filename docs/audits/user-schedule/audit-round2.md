@@ -1,5 +1,7 @@
 # user-schedule Architecture Audit — Round 2 (2026-08-05)
 
+`com.tripfit.tripfit.user.schedule` 패키지를 대상으로 1차 리팩토링 반영 이후 진행한 2차 아키텍처 감사 문서다. 반드시 수정해야 하는 A 항목 1건과 유지보수성 리팩토링 B 항목 1건(참고 C 1건, 비권장 D 1건)을 도출했다. 도출된 항목은 승인 대기 상태로 정리되었으며, 이후 반영 내역은 `refactor-log.md`에 기록되었다.
+
 ## 범위
 - 패키지: com.tripfit.tripfit.user.schedule (+ 하위 패키지, 관련 호출부)
 - 감사자: 서브에이전트 (Agent 툴, 읽기 전용) — 1차 반영(2026-08-05) 이후 재검사

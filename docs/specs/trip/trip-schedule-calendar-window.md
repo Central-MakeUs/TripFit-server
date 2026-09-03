@@ -1,12 +1,11 @@
 # 일정 달력 컨텍스트 — 마이페이지 · 여행방 조회 윈도우
 
-> wave: 2  
-> 상태: **Implemented** (`#37` Closed) — 원 승인일 2026-07-21  
-> MVP: In scope · **Wave 2 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))  
-> GitHub: **[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**  
-> 선행: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12)  
-> related: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (#38)  
-> deferred: 없음 — 구 **미가입 참여자의 R4 상한 공백**은 [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110), **Implemented** 2026-08-18)에서 해소  
+> 상태: **Implemented** (`#37` Closed) — 원 승인일 2026-07-21
+> MVP: In scope · **MVP 출시 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))
+> GitHub: **[#37](https://github.com/Central-MakeUs/TripFit-server/issues/37)**
+> 선행: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12)
+> related: [`trip-schedule-snapshot.md`](trip-schedule-snapshot.md) (#38)
+> deferred: 없음 — 구 **미가입 참여자의 R4 상한 공백**은 [`trip-calendar-window-pre-join.md`](trip-calendar-window-pre-join.md) ([#110](https://github.com/Central-MakeUs/TripFit-server/issues/110), **Implemented** 2026-08-18)에서 해소
 > 용어: [`glossary.md`](../../product/glossary.md)
 
 ## 목표

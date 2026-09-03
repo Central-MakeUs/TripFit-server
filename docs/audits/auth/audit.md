@@ -158,7 +158,7 @@
 
 ## 🚫 D. 수정하지 않는 것이 더 좋은 사항
 
-- **`TokenRevocationChecker` 인터페이스 + `NoOpTokenRevocationChecker` 단일 구현체** — 구현체가 하나뿐이고 항상 `false`만 반환해 과도한 추상화로 보일 수 있으나, `RefreshToken` 엔티티에 이미 `familyId`/`revokedAt`(wave 4 RTR용) 필드가 준비돼 있고 TODO도 "wave 4 RTR+Redis 도입 시 jti 블랙리스트 조회로 교체"라고 구체적으로 명시돼 있다. `JwtAuthenticationFilter`가 이미 인터페이스에만 의존하므로, 지금 이 seam을 걷어내면 wave 4에서 동일한 확장점을 다시 만들어야 한다 — 실제로 임박한 계획된 확장이라 YAGNI 위반이 아니다.
+- **`TokenRevocationChecker` 인터페이스 + `NoOpTokenRevocationChecker` 단일 구현체** — 구현체가 하나뿐이고 항상 `false`만 반환해 과도한 추상화로 보일 수 있으나, `RefreshToken` 엔티티에 이미 `familyId`/`revokedAt`(출시 이후 RTR용) 필드가 준비돼 있고 TODO도 "출시 이후 RTR+Redis 도입 시 jti 블랙리스트 조회로 교체"라고 구체적으로 명시돼 있다. `JwtAuthenticationFilter`가 이미 인터페이스에만 의존하므로, 지금 이 seam을 걷어내면 출시 이후에 동일한 확장점을 다시 만들어야 한다 — 실제로 임박한 계획된 확장이라 YAGNI 위반이 아니다.
 - **`AppleCredentialService`/`GoogleLoginCredentialService`를 `AuthService`로 합치지 않음** — provider별 credential 저장·revoke 책임을 별도 Service로 분리한 현재 구조가 SRP에 맞다. 합치면 `AuthService`가 로그인 오케스트레이션 + 2개 provider의 credential 영속화까지 떠안는 God Service가 되어 `audit-checklist.md` 9번(과도하게 큰 Service) 위반이 된다.
 - **`SocialTokenVerifier` 인터페이스 + `SocialTokenVerifierRegistry`(Strategy + `EnumMap`)** — provider가 3개뿐이라 과도해 보일 수 있으나, 이미 실사용 중인 검증된 확장점이다(Kakao 추가 시 `AuthService`/registry 코드를 전혀 안 건드리고 `@Component` 하나만 추가해서 끝났다는 사실 자체가 이 추상화의 실익을 증명한다). YAGNI가 아니라 이미 값을 증명한 패턴.
 - **`AppleCredential`/`GoogleLoginCredential` 엔티티를 하나로 합치지 않음** — 필드 구조(`id`, `user`, `refreshTokenCiphertext`)는 비슷해 보이지만 `update()` 시맨틱이 근본적으로 다르다(Apple은 재로그인마다 refreshToken·clientId를 항상 함께 덮어씀, Google은 refreshToken이 있을 때만 조건부로 덮어씀 — 코드 주석에도 이 비대칭이 명시돼 있음). 하나의 provider 판별 컬럼을 가진 테이블로 합치면 오히려 nullable 컬럼과 조건 분기가 늘어나 가독성이 떨어진다.
@@ -167,10 +167,10 @@
 
 ### Redis — jti revocation 블랙리스트
 
-- **왜 필요한지 / 적용 가치**: `NoOpTokenRevocationChecker`가 이미 이 자리를 비워두고 있고, wave 4 RTR(refresh token rotation) reuse 탐지를 위해서도 결국 필요해질 기능이다. access JWT는 자체 만료까지 무효화할 방법이 없는데(로그아웃해도 access는 만료 시각까지 유효 — `AuthController.logout` Javadoc에 이미 명시), 탈취된 access 토큰을 즉시 차단하려면 jti 블랙리스트가 필요하다.
+- **왜 필요한지 / 적용 가치**: `NoOpTokenRevocationChecker`가 이미 이 자리를 비워두고 있고, 출시 이후 RTR(refresh token rotation) reuse 탐지를 위해서도 결국 필요해질 기능이다. access JWT는 자체 만료까지 무효화할 방법이 없는데(로그아웃해도 access는 만료 시각까지 유효 — `AuthController.logout` Javadoc에 이미 명시), 탈취된 access 토큰을 즉시 차단하려면 jti 블랙리스트가 필요하다.
 - **장단점**: 장점 — 로그아웃/탈퇴 즉시 access 토큰 무효화 가능, RTR reuse 탐지 기반 마련. 단점 — Redis 운영 부담 추가, 모든 인증 요청마다 Redis round-trip이 추가돼 지연 증가(로컬 캐시·TTL 설계 필요).
 - **구현 난이도**: 중간 — `TokenRevocationChecker` 인터페이스가 이미 있어 구현체 교체만 하면 되지만, "폐기 시 jti를 어떻게 수집·전파할지"(로그아웃 시 jti 기록, TTL을 access 만료 시각과 맞추는 등) 설계가 필요.
-- **Now / Later / Never**: **Later** — 현재 트래픽·wave 규모에서 access 토큰 즉시 무효화가 실제로 요구되는 사고가 아직 없고, wave 4 RTR 도입과 자연스럽게 묶어서 하는 편이 중복 설계를 피할 수 있다.
+- **Now / Later / Never**: **Later** — 현재 트래픽·Milestone 규모에서 access 토큰 즉시 무효화가 실제로 요구되는 사고가 아직 없고, 출시 이후 RTR 도입과 자연스럽게 묶어서 하는 편이 중복 설계를 피할 수 있다.
 
 ### Resilience — 소셜 provider 호출 타임아웃/Circuit Breaker
 

@@ -1,7 +1,7 @@
 # Swagger/OpenAPI 문서 가독성 개선
 
 - 상태: Implemented (이슈 미생성)
-- wave: 무관 (도구/문서 품질)
+- Milestone: 무관 (도구/문서 품질)
 - 선행: 없음
 - 목적: 프론트가 Swagger UI로 API를 파악할 때 불편한 지점을 정리하고 개선.
 

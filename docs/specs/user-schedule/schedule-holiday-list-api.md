@@ -1,6 +1,5 @@
 # 공휴일 날짜 목록 조회 API
 
-> wave: 2
 > implements: 해당 없음 (판정 로직이 아니라 화면 표시 지원용 순수 조회 API)
 > related: [`schedule-holiday-rest.md`](schedule-holiday-rest.md)(부모 — 본 스펙이 그 Out of Scope를 amend) · [`docs/decisions/011-holiday-data-source.md`](../../decisions/011-holiday-data-source.md) · [`trip-schedule-calendar-window.md`](../trip/trip-schedule-calendar-window.md)
 > 상태: **Implemented** (#107) — 2026-08-18 승인·구현·로컬 라우팅 검증 완료

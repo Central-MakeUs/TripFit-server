@@ -1,11 +1,10 @@
 # 완료·만료 여행방 일정 Snapshot
 
-> wave: 2  
-> 상태: **Implemented** (`#38` Closed) — 원 승인일 2026-07-21  
-> MVP: In scope · **Wave 2 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))  
-> GitHub: **[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**  
-> 선행: [`trip-home-schedulers.md`](trip-home-schedulers.md) (#27), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (#37)  
-> related: [`trip-room-api.md`](trip-room-api.md) (#12), [`trip-recommendation.md`](trip-recommendation.md) (#13)  
+> 상태: **Implemented** (`#38` Closed) — 원 승인일 2026-07-21
+> MVP: In scope · **MVP 출시 Must** ([#30](https://github.com/Central-MakeUs/TripFit-server/issues/30))
+> GitHub: **[#38](https://github.com/Central-MakeUs/TripFit-server/issues/38)**
+> 선행: [`trip-home-schedulers.md`](trip-home-schedulers.md) (#27), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-schedule-calendar-window.md`](trip-schedule-calendar-window.md) (#37)
+> related: [`trip-room-api.md`](trip-room-api.md) (#12), [`trip-recommendation.md`](trip-recommendation.md) (#13)
 > implements: **BR-USER-008** (ONGOING만 전역 live)
 
 ## 목표

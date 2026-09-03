@@ -1,8 +1,7 @@
 # 일정 참여·온보딩·submit 흐름 (재설계)
 
-> wave: **2** (2026-08-03 Wave 1→2 이동 — trip 참여 흐름, 도메인축 재분류)
 > implements: BR-USER-001(이름 게이트), BR-USER-006(부분), BR-USER-007(부분)
-> deferred: BR-NOTI-001/002(wave 3)
+> deferred: BR-NOTI-001/002(MVP 출시)
 > 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend**(방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`) + **`#113` amend(2026-08-18 — 전역 입장 게이트 `is_all_free`·`canEnterRoom` 폐지)** + **`#114` amend(2026-08-19 — 참여자도 join 시 `SCHEDULE_PENDING`, hold 폐지)**. submit 삭제. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
 > GitHub: **#22** · amend **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)**
 > 선행: [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
@@ -30,7 +29,7 @@
 
 ## 목표
 
-다음이 **한 세트**로 엮여 있어, 개별 확정(D1 등)만으로는 제품·API가 모순된다. wave 1에서 **하나의 설계**로 재확정한다.
+다음이 **한 세트**로 엮여 있어, 개별 확정(D1 등)만으로는 제품·API가 모순된다. MVP 출시에서 **하나의 설계**로 재확정한다.
 
 1. ~~**방 입장 3조건 (D-JOIN-ENTRY)** — 정기 OR 개별 OR **`is_all_free`**~~ → **`#113`(2026-08-18)으로 폐지.** 방 입장 판정 = 그 방의 `trip_member.status == ACTIVE`
 2. **신규 trip 확인 플로우** — 방장·멤버 동일: 방 진입(방장 create · 멤버 **`POST /trips/join`**)=`SCHEDULE_PENDING` → 일정 → **`POST .../activate`**=`ACTIVE` (#39 · **#114**)
@@ -263,7 +262,7 @@
 
 | 필드 | 상태 |
 |------|------|
-| `isGoogleCalendarConnected` | **유지** — OAuth 연동 SSOT (Google Calendar API wave 3) |
+| `isGoogleCalendarConnected` | **유지** — OAuth 연동 SSOT (Google Calendar API MVP 출시) |
 | `isScheduleRegistered` | **제거** — 현행 대체값은 `hasCompletedPreSchedule` 파생 (D-BR006-C. 당시 대체값이던 `hasPreSchedule`은 2026-08-19 삭제) |
 | `isOptionalOnboardingCompleted` | **제거** — 재접속 SSOT = 이름 완료 (D-REENTRY-2) |
 | `PATCH /users/onboarding` | **삭제** |
@@ -353,7 +352,7 @@
 | [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) | sparse omit 확정 | sparse = 가능 vs 미입력 → `[미정]` (A10 등) |
 | [`trip-recommendation.md`](trip-recommendation.md) | ACTIVE·uncertain 참조 | 입력 전제·TBD 해석 → 본 스펙 확정 후 amend |
 | [`auth-social-login.md`](../auth/auth-social-login.md) | login 응답에 onboarding boolean | boolean 의미 주석 → `[미정]` 링크 |
-| [`docs/specs/README.md`](../README.md) | wave 2 인덱스 | wave 1 항목 + 이슈 매핑 추가 |
+| [`docs/specs/README.md`](../README.md) | MVP 출시 인덱스 | MVP 출시 항목 + 이슈 매핑 추가 |
 
 ### B. 결정 (`docs/decisions/`)
 
@@ -366,8 +365,8 @@
 
 | 파일 | 조치 |
 |------|------|
-| [`waves.md`](../../product/waves.md) | wave 1에 본 재설계 항목 추가 |
-| [`mvp.md`](../../product/mvp.md) | “일정 응답·참여 완료” UX → `[미정]` 또는 wave 1 선행 |
+| [`release-milestones.md`](../../product/release-milestones.md) | MVP 출시에 본 재설계 항목 추가 |
+| [`mvp.md`](../../product/mvp.md) | “일정 응답·참여 완료” UX → `[미정]` 또는 MVP 출시 선행 |
 | [`prd.md`](../../product/prd.md) | BR-USER-006/007 행 → `[미정]` |
 | [`glossary.md`](../../product/glossary.md) | “참여자” 정의(ACTIVE) → `[미정]` |
 | [`business-rules/user.md`](../../product/business-rules/user.md) | BR-USER-006·007 → `[미정]` |
@@ -412,7 +411,7 @@
 
 | 대상 | 조치 |
 |------|------|
-| **#22** | schedule-participation-onboarding | Open · wave 1 |
+| **#22** | schedule-participation-onboarding | Open · MVP 출시 |
 | **#12** | submit·D1·schedule-calendar Must Have 제거 → #22 deferred |
 | **#13** | ACTIVE·sparse 입력 전제 → #22 선행 |
 | **#21** | NOTI-001/002 → 본 스펙 선행 |

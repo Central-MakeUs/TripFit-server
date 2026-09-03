@@ -139,7 +139,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 | **초대 링크** | 카카오 공유·딥링크 — Universal Link / App Link fallback은 스펙·프론트와 합의. 임의 URL 스킴 구현 금지 |
 | **CORS** | Vercel(`https://tripfit.online`) 등 웹 origin — API는 `api.tripfit.online`. 네이티브 앱은 CORS 없음 |
 | **에러 응답** | [`api-response.md`](../architecture/api-response.md) **초안** — Body: `data`, `message`, `code` (HTTP status는 헤더만) |
-| **푸시 알림** | wave 3(리마인드). FCM/APNs는 **별도 스펙** 없으면 토큰 테이블·발송 로직 추가 금지 |
+| **푸시 알림** | MVP 출시(리마인드). FCM/APNs는 **별도 스펙** 없으면 토큰 테이블·발송 로직 추가 금지 |
 | **결제·수익화** | MVP Out unless `mvp.md`·스펙에 명시. Agent가 임의 결제 API 추가 금지 |
 
 ### 프론트와의 계약
@@ -162,7 +162,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 
 ## 인증·플랫폼 Milestone (Agent)
 
-계획 축: [`development-wave.md`](development-wave.md) (2026-08-26부터 Milestone `MVP 출시`/`출시 이후` 2단계 — 이전 wave 1~4 축은 폐지)
+계획 축: [`release-milestones.md`](release-milestones.md) (2026-08-26부터 Milestone `MVP 출시`/`출시 이후` 2단계 — 이전 MVP 출시~4 축은 폐지)
 
 | Milestone | 작업 |
 |------|------|
@@ -170,13 +170,13 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 | **출시 이후** | [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) — RTR + Redis |
 | **출시 이후** | 딥링크, 앱 버전 호환 |
 | **미정** | 푸시, 분석, 결제 등 — 각각 스펙 + decisions 확정 후 Milestone 지정 |
-| **Release Gate**(Milestone과 무관) | Apple S2S webhook(#5) 등 스토어 심사 필수 항목 — [`development-wave.md` §4](development-wave.md#4-앱-배포심사-release-gate--milestonepriority와-무관) |
+| **Release Gate**(Milestone과 무관) | Apple S2S webhook(#5) 등 스토어 심사 필수 항목 — [`release-milestones.md` §4](release-milestones.md#4-앱-배포심사-release-gate--milestonepriority와-무관) |
 
 ## 관련 문서
 
 | 문서 | 용도 |
 |------|------|
-| `development-wave.md` | **릴리즈 Milestone·priority 운영 SSOT** |
+| `release-milestones.md` | **릴리즈 Milestone·priority 운영 SSOT** |
 | `mvp.md` | 기능 In/Out |
 | `prd.md` | 앱 설치·온보딩 등 사용자 시나리오 |
 | `design/figma-wireframe-v1.md` | 화면·상태 |

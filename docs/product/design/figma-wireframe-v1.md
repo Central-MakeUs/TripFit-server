@@ -24,15 +24,15 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 
 | 섹션 | 주요 화면 | 백엔드 관련성 |
 |------|-----------|---------------|
-| **홈** | 진행 중 캐러셀 + 전체 목록·필터·Pin·방 생성 | `GET /trips?scope=` · `last_activity_at` · `is_pinned`/`pinned_at` (wave 2 · D5) |
-| **온보딩** | 소셜 로그인, 가이드, 캘린더 `[제안]` | JWT, `User` boolean, wave 1 |
-| **여행방 생성/참여** | 이름·기간·일수·인원·여행지·초대 코드 | `trip` POST, `invite_code` 검증 (wave 2) |
-| **내 일정 관리** | 근무·연차, 날짜별 슬롯 | `schedule` CONDITION + AVAILABILITY (wave 2) |
-| **여행방 상세** | 그룹 달력, 응답률, 추천 CTA | `trip_member.status`, User `schedule` 필터 (달력 UI wave 3) |
-| **추천 결과** | 4모드, TOP 3, 근거 | `recommendation`, `last_recommendation_mode` (wave 2) |
-| **확정·공유** | 확정, 카카오 공유, 확정 취소 | `CONFIRMED`; 확정 취소(`unconfirm`) 사유 wave 2(#13) |
-| **알림센터** | 알림 목록 | BR-NOTI-* (wave 3) |
-| **마이페이지** | 설정, 탈퇴, 캘린더 | BR-USER-004/005, wave 3 연동 |
+| **홈** | 진행 중 캐러셀 + 전체 목록·필터·Pin·방 생성 | `GET /trips?scope=` · `last_activity_at` · `is_pinned`/`pinned_at` (MVP 출시 · D5) |
+| **온보딩** | 소셜 로그인, 가이드, 캘린더 `[제안]` | JWT, `User` boolean, MVP 출시 |
+| **여행방 생성/참여** | 이름·기간·일수·인원·여행지·초대 코드 | `trip` POST, `invite_code` 검증 (MVP 출시) |
+| **내 일정 관리** | 근무·연차, 날짜별 슬롯 | `schedule` CONDITION + AVAILABILITY (MVP 출시) |
+| **여행방 상세** | 그룹 달력, 응답률, 추천 CTA | `trip_member.status`, User `schedule` 필터 (달력 UI MVP 출시) |
+| **추천 결과** | 4모드, TOP 3, 근거 | `recommendation`, `last_recommendation_mode` (MVP 출시) |
+| **확정·공유** | 확정, 카카오 공유, 확정 취소 | `CONFIRMED`; 확정 취소(`unconfirm`) 사유 MVP 출시(#13) |
+| **알림센터** | 알림 목록 | BR-NOTI-* (MVP 출시) |
+| **마이페이지** | 설정, 탈퇴, 캘린더 | BR-USER-004/005, MVP 출시 연동 |
 
 ---
 
@@ -79,29 +79,29 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 - `hasCompletedPreSchedule` — `users.vacation_apply_period`(연차·휴일 정보의 **사전 신청일**) 저장 여부 **파생** (사전 일정 입력 **최초/갱신** 2분기 판정용 — D-BR006-C, 2026-08-19). 일정 row 수는 보지 않는다
 - 회원가입 온보딩은 **이름 → Google 캘린더**까지 — 사전 일정 입력은 여행방 입장·여행방 내 수정·마이페이지에서만 (2026-08-19)
 - 구 `hasPreSchedule`(regular OR personal ≥1) · `hasRegularSchedule`(regular ≥1)은 2026-08-19 삭제
-- 프로필 이미지: wave 1 provider CDN — [`006`](../../decisions/006-profile-image-url-storage.md)
+- 프로필 이미지: MVP 출시 provider CDN — [`006`](../../decisions/006-profile-image-url-storage.md)
 
 ### 5. 알림
 
-BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-rules/notification.md)가 SSOT. 요지: 참여·응답·공유 알림·정기 스케줄러(BR-NOTI-005) 전부 wave 3 (FCM/Firebase 외부 연동).
+BR-NOTI-* 규칙·Milestone 매핑은 [`business-rules/notification.md`](../business-rules/notification.md)가 SSOT. 요지: 참여·응답·공유 알림·정기 스케줄러(BR-NOTI-005) 전부 MVP 출시 (FCM/Firebase 외부 연동).
 
 ---
 
 ## 화면별 API 힌트 (기획 수준)
 
-| 화면 | 데이터·액션 | BR | wave |
+| 화면 | 데이터·액션 | BR | Milestone |
 |------|-------------|-----|------|
-| 홈 · 진행 중 | `GET /trips?scope=ongoing` — Pin → `pinned_at` → `last_activity_at` | D5 | 2 |
-| 홈 · 전체 | `GET /trips?scope=all` (+ `status`·`ownerOnly`) — `last_activity_at`만 | D5 | 2 |
-| 온보딩 | profile / onboarding PATCH | BR-USER-001, 006 | 1 |
-| 방 생성 | trip POST + invite | BR-TRIP-001 | 2 |
+| 홈 · 진행 중 | `GET /trips?scope=ongoing` — Pin → `pinned_at` → `last_activity_at` | D5 | MVP 출시 |
+| 홈 · 전체 | `GET /trips?scope=all` (+ `status`·`ownerOnly`) — `last_activity_at`만 | D5 | MVP 출시 |
+| 온보딩 | profile / onboarding PATCH | BR-USER-001, 006 | MVP 출시 |
+| 방 생성 | trip POST + invite | BR-TRIP-001 | MVP 출시 |
 | 방 상세 | 기간 내 AVAILABILITY 집계 | BR-TRIP-002~004 | 2 (UI 달력 3) |
-| 일정 시트 | schedule AVAILABILITY PATCH | BR-TRIP-003 | 2 |
-| 추천 모드 | 재계산 + recommendation replace | BR-TRIP-005, 010 | 2 |
-| 확정 | status → CONFIRMED | BR-TRIP-007 | 2 |
-| Pin 토글 | `trip_member.is_pinned` + `pinned_at` | D5 | 2 |
-| 알림센터 | 알림 이력 | BR-NOTI-* | 3 |
-| 확정 취소 사유 | unconfirmReason | wave 2 (#13) | 2 |
+| 일정 시트 | schedule AVAILABILITY PATCH | BR-TRIP-003 | MVP 출시 |
+| 추천 모드 | 재계산 + recommendation replace | BR-TRIP-005, 010 | MVP 출시 |
+| 확정 | status → CONFIRMED | BR-TRIP-007 | MVP 출시 |
+| Pin 토글 | `trip_member.is_pinned` + `pinned_at` | D5 | MVP 출시 |
+| 알림센터 | 알림 이력 | BR-NOTI-* | MVP 출시 |
+| 확정 취소 사유 | unconfirmReason | MVP 출시 (#13) | MVP 출시 |
 
 ---
 
@@ -110,7 +110,7 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 | 항목 | 정리 |
 |------|------|
 | **destination** | ver2·Figma ROOM_02 — ERD **MVP In** (PRD 구버전보다 최신) |
-| **Pin·내보내기** | Pin MVP In (D5 홈 2뷰). 내보내기 API [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) (**Wave 2 Could**) |
+| **Pin·내보내기** | Pin MVP In (D5 홈 2뷰). 내보내기 API [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) (**MVP 출시 Could**) |
 | **불가 사유 UI** | 팝업 텍스트 노출 여부 `[미정]` — API `note` 없음 |
 | **TBD** | 상태값으로 확정 (시간대 아님) |
 

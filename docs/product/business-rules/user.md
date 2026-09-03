@@ -6,7 +6,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **BR-USER-001** | 방장(총대) 인증 | 여행방 생성 시 | 소셜 로그인 + 이름 완료. **생성 폼 → `POST /trips`(SCHEDULE_PENDING) → 일정 플로우 → activate** | 미인증·이름 미입력 401/403 |
 | **BR-USER-002** | 참여자 진입 및 인증 | 초대 링크·코드 | 소셜 로그인 필수. 비회원 없음 | 미로그인 401 |
-| **BR-USER-003** | 소셜 계정 연동 | 설정 | 카카오·구글 등 | wave 4 |
+| **BR-USER-003** | 소셜 계정 연동 | 설정 | 카카오·구글 등 | 출시 이후 |
 | **BR-USER-004** | 회원 탈퇴 | 탈퇴 요청 | 확인 후 탈퇴 — 차단 없이 자동 cascade. 참여 중인 모든 방에서 자동 나가기(MEMBER) 또는 소유한 모든 방 자동 삭제(OWNER) 후 탈퇴 처리. 전 상태(`ONGOING`/`CONFIRMED`/`EXPIRED`) 적용 | [`user-account-withdrawal.md`](../../specs/user/user-account-withdrawal.md) · [`trip-member-leave.md`](../../specs/trip/trip-member-leave.md) · 정책 근거 `#47` |
 | **BR-USER-005** | 알림 허용 | 마이페이지 | `users.notification_enabled` on/off (default true), `PATCH /users/profile`(partial update)로 설정 | Off 시 BR-NOTI-001~005·009 **전체** 미발송(예외 없음) |
 | **BR-USER-006** | 방 입장 가능 조건 | D-JOIN-ENTRY · **2026-08-19** | **그 방의 일정 확인 완료**(`trip_member.status = ACTIVE`) — 사용자 전역 조건 없음. 방 안 기능은 전부 이 조건을 요구하며 **방 나가기도 포함**된다(`#122`) | 미완료 시 `SCHEDULE_ACTIVATION_REQUIRED` |

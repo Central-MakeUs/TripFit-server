@@ -1,6 +1,5 @@
 # trip.last_activity_at — 갱신 정책·AOP
 
-> wave: 2 (후속)
 > implements: (없음 — D5 `last_activity_at` 컬럼은 [#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)에서 선행)
 > deferred from: [`trip-room-api.md`](trip-room-api.md) D5 · 2026-07-19
 > 상태: **Approved** (#26 · L1~L4 확정 — 2026-07-19)

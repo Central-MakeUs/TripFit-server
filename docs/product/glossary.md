@@ -36,7 +36,7 @@
 | **클라이언트 환경 A** | 순수 모바일 앱 (iOS/Android 스토어) | Google = 네이티브 SDK. [`platform.md`](platform.md) |
 | **클라이언트 환경 B** | 카카오톡 인앱 브라우저 · 모바일 웹 | Google UI는 시스템 브라우저 탈출. API는 A와 동일 |
 | **연차 조건** | (구 용어) → **연차·휴일 정보** | 2026-08-19 표기 통일 |
-| **추천 모드** | 방장이 후보 산출 시 선택하는 전략 | 기본 / 모두 참석 / 휴가 아끼기 / 확실하게 가기 (wave 2) |
+| **추천 모드** | 방장이 후보 산출 시 선택하는 전략 | 기본 / 모두 참석 / 휴가 아끼기 / 확실하게 가기 (MVP 출시) |
 
 ### 헷갈리기 쉬운 점 (프론트·신규 서버)
 
@@ -57,4 +57,4 @@
 | **MVP** | Minimum Viable Product | 핵심 가치를 검증하기 위한 최소 기능 제품 |
 | **KPI** | Key Performance Indicator | 핵심 성과 지표 |
 | **BR** | Business Rule | `business-rules/` 규칙 ID 접두 |
-| **wave** (폐지, 2026-08-26) | 구 도메인 축(1~4) | Milestone(`MVP 출시`/`출시 이후`)로 대체 — [`development-wave.md`](development-wave.md) |
+| **wave** (폐지, 2026-08-26) | 구 도메인 축(1~4) | Milestone(`MVP 출시`/`출시 이후`)로 대체 — [`release-milestones.md`](release-milestones.md) |

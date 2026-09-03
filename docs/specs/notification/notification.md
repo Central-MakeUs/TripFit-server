@@ -1,9 +1,8 @@
 # 알림 (Notification) — FCM 푸시 · 알림 설정 · 알림센터
 
 > 상태: **Implemented** (`#21` Closed) — D1~D12 확정 반영 후 구현 완료. 원 승인일 2026-07-29
-> MVP: In scope (Wave 3 Must — 이슈 `#21` `priority: must` 라벨)
+> MVP: In scope (MVP 출시 Must — 이슈 `#21` `priority: must` 라벨)
 > 관련 BR: BR-NOTI-001~005, 009 · BR-NOTI-008(카카오 공유, `#19` 소관) · BR-USER-005
-> wave: 3
 > implements: BR-NOTI-001, BR-NOTI-002, BR-NOTI-003, BR-NOTI-004, BR-NOTI-005, BR-NOTI-009, BR-USER-005
 > deferred: BR-NOTI-008(카카오 공유) → `#19`(Approved)
 > GitHub: **#21**
@@ -18,13 +17,13 @@
 
 - 기획자 전달 알림 명세 표(2026-07-23)를 [`docs/product/business-rules/notification.md`](../../product/business-rules/notification.md)에 반영 완료
 - 이슈 `#21` Must Have: FCM 연동, 알림 이력 테이블, NOTI-001~005·009 트리거, 알림 설정, 알림센터
-- [`client-platform.md`](../../../.claude/rules/client-platform.md): "푸시(FCM/APNs)는 wave 3 — **스펙 없으면** 엔티티·발송 API 추가 금지" — 본 스펙이 그 게이트 역할
+- [`client-platform.md`](../../../.claude/rules/client-platform.md): "푸시(FCM/APNs)는 MVP 출시 — **스펙 없으면** 엔티티·발송 API 추가 금지" — 본 스펙이 그 게이트 역할
 
 ### 확정 사항 (2026-07-23, 사용자 승인) — 전부 임의 결정 아님
 
 | # | 쟁점 | 결정 |
 |---|------|------|
-| **D1** | `BR-NOTI-005`(정기 리마인드) 포함 여부 | **포함.** wave 4 → wave 3 재분류 (`#21`/`#31`/`#32`·`development-wave.md`·`waves.md`·`mvp.md`·`flows/README.md` amend 완료) |
+| **D1** | `BR-NOTI-005`(정기 리마인드) 포함 여부 | **포함.** 출시 이후 → MVP 출시 재분류 (`#21`/`#31`/`#32`·`release-milestones.md`·`release-milestones.md`·`mvp.md`·`flows/README.md` amend 완료) |
 | **D2** | `BR-USER-005`(알림 on/off) 구현 여부 | **포함.** `users.notification_enabled`(default `true`) |
 | **D3** | NOTI-003/004/009 발송 대상 방장 제외 여부 | **방장 제외** |
 | **D4** | FCM 단일 채널 vs APNs 병행 | **FCM 단일 채널** |
@@ -182,7 +181,7 @@ com.tripfit.tripfit.notification
 - [x] `./gradlew test` 통과
 - [x] OpenAPI 반영 (device-tokens·notifications API, `user-my-page.md`의 my-page PATCH 변경분) — `docs/api/openapi.json`은 CI가 `main` push 시 자동 갱신
 - [x] `docs/architecture/erd.md` §2·§5·§8 갱신
-- [x] `docs/specs/README.md` wave 3 표 갱신
+- [x] `docs/specs/README.md` MVP 출시 표 갱신
 - [x] `.env.example`에 FCM 관련 키 추가 (기 반영)
 
 ## 리스크·미결정
@@ -205,5 +204,5 @@ com.tripfit.tripfit.notification
 | 2026-07-29 | Draft → Approved (사용자 승인, `#67` 브랜치에서 구현 착수 후 `#21`로 커밋 이전 예정) |
 | 2026-07-28 | `user-my-page.md`의 API 경로 리네이밍(`PATCH /users/my-page` → `PATCH /users/profile`) 반영 — 알림 on/off는 여전히 별도 엔드포인트 없이 이 경로에 편입 |
 | 2026-07-23 | D6~D12 추가 확정 (사용자 감수 확인 요청 후) — NOTI-005 배치 발송, 토큰 재할당, 알림 설정 API를 `user-my-page.md`로 이관, 알림센터 7일 윈도우, 001/002 게이트 적용, 정원 기준 판정, no-op 스킵 |
-| 2026-07-23 | D1~D5 확정 (사용자 승인) — BR-NOTI-005 wave 3 편입, BR-USER-005 구현 포함, 방장 제외, FCM 단일, 알림센터 API 포함 |
+| 2026-07-23 | D1~D5 확정 (사용자 승인) — BR-NOTI-005 MVP 출시 편입, BR-USER-005 구현 포함, 방장 제외, FCM 단일, 알림센터 API 포함 |
 | 2026-07-23 | 초안 — 기획자 알림 명세 표 + 사용자 제공 FCM 아키텍처 요구사항 기반 |

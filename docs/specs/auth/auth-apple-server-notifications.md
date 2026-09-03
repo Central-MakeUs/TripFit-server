@@ -1,8 +1,8 @@
 # Apple Sign In — Server-to-Server Notification
 
-> 상태: Approved (2026-07-30)  
-> 범위: **스토어 제출 전** (MVP 로그인 스펙과 별도)  
-> 관련: [`auth-social-login.md`](auth-social-login.md), [`docs/product/platform.md`](../../product/platform.md)  
+> 상태: Approved (2026-07-30)
+> 범위: **스토어 제출 전** (MVP 로그인 스펙과 별도)
+> 관련: [`auth-social-login.md`](auth-social-login.md), [`docs/product/platform.md`](../../product/platform.md)
 > 결정: [`docs/decisions/001-auth-mobile-token-verification.md`](../../decisions/001-auth-mobile-token-verification.md)
 
 ## 목표
@@ -65,7 +65,7 @@ Apple의 outer JWT는 `{ "iss": "https://appleid.apple.com", "aud": "<client_id>
 |---------------|------|---------------|
 | `consent-revoked` | 사용자가 설정에서 TripFit의 Apple 연동을 해제(로그아웃 의도, 계정 자체는 유지) | 해당 `sub` → `user.social_id` where `provider = APPLE` 조회 → `refresh_token` 전부 삭제(로그아웃 처리). **soft delete 안 함** — 계정 삭제 이벤트가 아님 |
 | `account-delete` | 사용자가 Apple ID 자체를 영구 삭제 | 해당 user `deleted_at` 설정(soft delete) + `refresh_token` 삭제 |
-| `email-enabled` | Private Relay 이메일 전달 재활성화 | MVP `user.email` 미보유 — 로그만 (wave 4 email 컬럼 추가 시 반영) |
+| `email-enabled` | Private Relay 이메일 전달 재활성화 | MVP `user.email` 미보유 — 로그만 (출시 이후 email 컬럼 추가 시 반영) |
 | `email-disabled` | Private Relay 이메일 전달 비활성화 | MVP `user.email` 미보유 — 로그만 |
 
 **식별**: 이벤트의 Apple user identifier(`sub`) → `user.social_id` where `provider = APPLE`.
@@ -183,7 +183,7 @@ login 스펙과 완전히 공유 — **신규 env 없음**. outer JWT는 Apple J
 | 엔드포인트 path | **확정** `/api/v1/auth/apple/notifications` | 구현 완료 후 Apple Developer Console에 동일 URL을 Server-to-Server Notification Endpoint로 등록(#5 담당 구분 표 참고) |
 | 이벤트 type 전체 목록 | **확정** — `consent-revoked` / `account-delete` / `email-enabled` / `email-disabled` 4종 (Apple 공식 문서 기준) | 신규 type이 추가되면 스펙 amend 후 반영 — 그 전까진 미인식 type은 200 no-op |
 | 존재하지 않는 `sub` 응답 | **확정** — 200 no-op | Apple 재시도 폭주 방지 우선 |
-| `user.email` 미보유 시 email 이벤트 처리 | Out for MVP | 로그만, wave 4에서 email 컬럼 추가 시 재검토 |
+| `user.email` 미보유 시 email 이벤트 처리 | Out for MVP | 로그만, 출시 이후에 email 컬럼 추가 시 재검토 |
 | idempotency(동일 event 중복 처리) | Nice to Have로 유지 | `consent-revoked`(refresh_token 삭제)·`account-delete`(soft delete) 모두 자연히 idempotent한 연산이라 dedup 테이블 없이도 안전 — Must 승격 불필요 |
 
 ## 변경 이력

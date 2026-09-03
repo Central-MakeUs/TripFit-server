@@ -1,6 +1,5 @@
 # 여행방 join 정원 선점·예약 (Capacity hold)
 
-> wave: **4**
 > 상태: **Superseded** (2026-08-19, `#114`) — 구현·배포됐던 기능이지만 [`trip-join-schedule-gate.md`](trip-join-schedule-gate.md) J-4가 Redis hold를 **DB 비관적 락**으로 대체하며 엔드포인트 2개와 Redis Lua·TTL 코드를 전부 삭제했다. 아래 본문은 이력으로만 읽을 것 — 현행 정원 보장은 `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리한다
 > MVP: Out — #22 새 join 모델에서 **동시 플로우 경쟁은 MVP 감수**
 > 관련: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) · [`trip-room-api.md`](trip-room-api.md) D8
@@ -16,7 +15,7 @@
 #22 확정(참여자): 정기→개별 플로우 후 **가입 API 한 번**으로 멤버 INSERT.
 정원 검사는 INSERT 시점 → 플로우 중 여러 명이 동시에 진행하면 **먼저 완료한 1명만 성공**, 나머지는 `TRIP_MEMBER_FULL`(409).
 
-MVP는 이를 **감수**. 선점/예약은 wave 4.
+MVP는 이를 **감수**. 선점/예약은 출시 이후.
 
 **현재 코드 위치 (2026-08-08 재확인):** [`TripCommandService.joinTrip()`](../../../src/main/java/com/tripfit/tripfit/trip/service/TripCommandService.java) — `countByTripIdAndDeletedAtIsNull()`로 카운트 → `if (joinedMemberCount >= trip.getMemberCount())` 체크 → `tripJoinService.joinAsNewMember()` INSERT. 세 단계 사이 락 없음.
 
@@ -24,7 +23,7 @@ MVP는 이를 **감수**. 선점/예약은 wave 4.
 
 **배포 제약 (2026-08-10):** 앱은 이미 릴리즈된 상태. `#4`(RTR+Redis)는 프론트가 RTR 변경사항(refresh token 매 회 재발급 등)에 대응할 때까지 프로덕션 배포를 보류 중. Redis 서버 자체(EC2 D)는 이미 프로비저닝 완료([`010-redis-infra.md`](../../decisions/010-redis-infra.md))되어 있으나, Spring Boot 쪽 Redis 연결 코드는 아직 `main`이 아닌 `feat/4-rtr-redis-blacklist` 브랜치에만 있다. `#35`가 Redis 카운터 방식을 쓰기로 하면서, **`#35`의 배포 시점도 `#4`의 배포 시점(프론트 완료 대기)에 함께 묶이는 것을 인지하고 감수**하기로 함(같은 배포 이미지이므로).
 
-## Must Have (wave 4)
+## Must Have (출시 이후)
 
 - [x] 참여자가 초대코드로 방에 진입할 때, 신규 API 호출로 **10분 TTL hold** 생성 (Redis)
 - [x] `POST /trips/join` 성공 시 hold → `trip_member` 확정, hold 소비(제거)
@@ -173,7 +172,7 @@ trip:{tripId}:holds (ZSET)
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | `Breaking-Change-Reason` 트레일러 대상 여부 | 확정 — **불필요** | 신규 엔드포인트 추가만으로는 기존 계약 breaking 아님. `POST /trips/join` 자체의 요청/응답 shape·ErrorCode는 불변(내부 동작만 변경), 프론트가 신규 엔드포인트를 연동 안 해도 기존 동작 그대로 유지(폴백). 단, hold 카운터가 UX 개선 효과를 내려면 프론트가 신규 엔드포인트를 실제로 붙여야 함 — 이건 breaking 이슈가 아니라 **신규 연동 필요 안내** |
-| Wave 4 Backlog(`#32`) 체크 | 확정 — 완료 | 2026-08-10 `#35` 항목 `[x]` 체크 완료 |
+| 출시 이후 Backlog(`#32`) 체크 | 확정 — 완료 | 2026-08-10 `#35` 항목 `[x]` 체크 완료 |
 | "플로우 첫 화면" 실제 라우팅 명세 | 프론트 확인 전제 | 스펙은 "정기 일정 입력 화면 = 플로우 진입점"으로 가정 — 실제 프론트 네비게이션 구조와 다르면 `DELETE` 호출 지점 재조정 필요 |
 
 ## 변경 이력

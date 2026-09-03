@@ -1,11 +1,10 @@
 # 마이페이지 이름 수정 · 알림 설정
 
-> wave: 1 (이름 수정) · 3 (알림 설정 필드 — `#21` D8 amend)  
-> implements: — (마이페이지 UI에서 이름 변경) · BR-USER-005(알림 on/off)  
-> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) — `first_name`/`last_name` SSOT  
-> 선행: [`user-onboarding.md`](user-onboarding.md) — 온보딩 필수 이름 입력  
-> 상태: Approved (2026-07-23 알림 설정 필드 amend — 아래 "변경 이력")  
-> 승인: 2026-07-09 (이름 PATCH) · 2026-07-23 (알림 설정 필드 추가 + partial update 전환)  
+> implements: — (마이페이지 UI에서 이름 변경) · BR-USER-005(알림 on/off)
+> 결정: [`docs/decisions/007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) — `first_name`/`last_name` SSOT
+> 선행: [`user-onboarding.md`](user-onboarding.md) — 온보딩 필수 이름 입력
+> 상태: Approved (2026-07-23 알림 설정 필드 amend — 아래 "변경 이력")
+> 승인: 2026-07-09 (이름 PATCH) · 2026-07-23 (알림 설정 필드 추가 + partial update 전환)
 > deferred: 회원 탈퇴 → [`user-account-withdrawal.md`](user-account-withdrawal.md) (Implemented, `#47` 브랜치)
 
 ## 목표
@@ -21,14 +20,14 @@
 
 ## 요구사항
 
-### Must Have (wave 1 — 이름 PATCH)
+### Must Have (MVP 출시 — 이름 PATCH)
 
 - [x] `PATCH /api/v1/users/profile` — `{ firstName, lastName }` (JWT 필수)
 - [x] `first_name`/`last_name` 갱신 (trim 적용)
 - [x] 응답: 갱신된 `user` 요약 DTO (`UserSummaryResponse`)
 - [x] `./gradlew test` 통과
 
-### Must Have (wave 3 — 알림 설정 amend, `#21` D8)
+### Must Have (MVP 출시 — 알림 설정 amend, `#21` D8)
 
 - [x] `UpdateProfileRequest`에 `notificationEnabled`(Boolean, nullable) 필드 추가
 - [x] `firstName`/`lastName`/`notificationEnabled` **전부 optional로 전환** — 요청에 없는(= null) 필드는 미변경, 있는 필드만 반영(partial update)
@@ -40,9 +39,9 @@
 
 ### Out of Scope (이번 스펙)
 
-- 프로필 이미지 변경 ([`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) — wave 4)
+- 프로필 이미지 변경 ([`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) — 출시 이후)
 - 캘린더 연동 API
-- 회원 탈퇴 → [`user-account-withdrawal.md`](user-account-withdrawal.md)(Implemented, `#47` 브랜치, Wave 2 Must)로 위임
+- 회원 탈퇴 → [`user-account-withdrawal.md`](user-account-withdrawal.md)(Implemented, `#47` 브랜치, MVP 출시 Must)로 위임
 - `user_condition` CRUD
 
 ## API
@@ -114,7 +113,7 @@
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-07-30 | wave 3 Must Have(D8 amend) 구현 완료 — `notificationEnabled` 필드·partial update 전환·`User.notificationEnabled` 컬럼 |
+| 2026-07-30 | MVP 출시 Must Have(D8 amend) 구현 완료 — `notificationEnabled` 필드·partial update 전환·`User.notificationEnabled` 컬럼 |
 | 2026-07-28 | API 경로 리네이밍 — `PATCH /users/my-page` → `PATCH /users/profile`(온보딩 API는 `PATCH /users/onboarding/name`으로 이동, `user-onboarding.md` 변경 이력 참고). "my-page"가 화면 이름을 그대로 딴 비-리소스 경로였던 문제 해소 |
 | 2026-07-23 | `#21` D8 — `notificationEnabled` 필드 추가, **전 필드 optional(partial update)로 전환** (기존 firstName/lastName 필수 계약 변경) |
 | 2026-07-09 | Approved — 마이페이지 이름 PATCH |

@@ -5,7 +5,7 @@
 - **관련:**
   - [`001-auth-mobile-token-verification.md`](001-auth-mobile-token-verification.md) — 모바일 토큰 검증 + JWT (안 B)
   - [`003-architecture-guide.md`](003-architecture-guide.md) — 도메인 기반 레이어드·레이어 규칙
-  - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — wave 1 인증 API 스펙
+  - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — MVP 출시 인증 API 스펙
 
 ## 맥락
 
@@ -93,11 +93,11 @@ Registry는 생성 시 Spring이 주입한 `List<SocialTokenVerifier>`를 `EnumM
 - Kakao: 서버 env **불필요** (클라이언트 `access_token`으로 profile API 호출).
 - verifier 구현체는 `@Component` 단일 bean; factory 클래스 남발하지 않는다.
 
-### 6. wave 4 확장과의 정렬
+### 6. 출시 이후 확장과의 정렬
 
 동일 auth 슬라이스에서 **인터페이스 + NoOp 구현** 패턴을 재사용한다.
 
-| 관심사 | wave 1 | wave 4 (예정) |
+| 관심사 | MVP 출시 | 출시 이후 (예정) |
 |--------|--------|---------------|
 | 소셜 검증 | `SocialTokenVerifier` | 동일 |
 | access JWT 폐기 | `TokenRevocationChecker` NoOp | Redis 구현체로 교체 |
@@ -172,7 +172,7 @@ provider별 **실토큰 E2E**는 스테이징·수동; CI는 mock·fixture 위�
 - **Registry는 기동 시점에 고정** — enum에 없는 provider bean이 있거나, enum은 있는데 bean이 없으면 login 시 런타임 실패. enum·bean 쌍을 PR에서 함께 리뷰한다.
 - **Kakao만 token 종류가 다름** (`access_token` vs `id_token`) — 클라이언트 계약 문서(`platform.md`, 스펙)와 반드시 맞출 것. verifier 내부에 숨기고 API는 통일 `{ provider, token }`.
 - **Spring Security OAuth2 Client 미사용** — verifier가 직접 JWK·RestClient를 호출한다. 키 rotation(JWK refetch)은 각 구현체 책임.
-- **계정 연결(BR-USER-003)** — Strategy는 wave 4 `user_identity` 스펙과 별개. 현재 upsert는 `(provider, social_id)` 1:1.
+- **계정 연결(BR-USER-003)** — Strategy는 출시 이후 `user_identity` 스펙과 별개. 현재 upsert는 `(provider, social_id)` 1:1.
 
 ## 관련 코드 (SSOT)
 
@@ -186,9 +186,9 @@ provider별 **실토큰 E2E**는 스테이징·수동; CI는 mock·fixture 위�
 ## 후속 작업
 
 - [ ] provider 추가 시 본 문서 체크리스트 + 스펙 동기화
-- [ ] wave 4: `TokenRevocationChecker` Redis 구현 — 본 Strategy 문서와 별도 ([`004`](004-auth-token-rotation.md))
-- [ ] wave 4: 계정 연결 시 `user_identity` — verifier 출력·upsert 정책 재검토
-- [ ] wave 4: 프로필 이미지 B안(S3 미러) — [`006`](006-profile-image-url-storage.md), [`user-profile-image-s3-mirror.md`](../specs/user/user-profile-image-s3-mirror.md)
+- [ ] 출시 이후: `TokenRevocationChecker` Redis 구현 — 본 Strategy 문서와 별도 ([`004`](004-auth-token-rotation.md))
+- [ ] 출시 이후: 계정 연결 시 `user_identity` — verifier 출력·upsert 정책 재검토
+- [ ] 출시 이후: 프로필 이미지 B안(S3 미러) — [`006`](006-profile-image-url-storage.md), [`user-profile-image-s3-mirror.md`](../specs/user/user-profile-image-s3-mirror.md)
 
 ## 변경 이력
 

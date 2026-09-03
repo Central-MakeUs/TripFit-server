@@ -23,7 +23,7 @@
 - **여행방 생성 및 관리:** 여행명, 희망 기간, 인원 등을 설정하여 조율 공간 생성
 - **일정 시각화 및 입력:** 오전/오후/저녁 단위로 가능/불가/미정 상태 입력 및 그룹 달력 가시화
 - **개인 맞춤 조건 설정:** 근무 패턴(교대 근무 등) 및 연차 사용 조건(개수, 사전 신청 기간 등) 반영
-- **최적 일정 추천 로직:** 방장이 선택한 **추천 모드**(기본 / 모두 참석 / 휴가 아끼기 / 확실하게 가기)에 따라 가중치 기반 TOP 3 후보와 추천 근거 제공 (wave 2 전 모드 구현 — BR-TRIP-005)
+- **최적 일정 추천 로직:** 방장이 선택한 **추천 모드**(기본 / 모두 참석 / 휴가 아끼기 / 확실하게 가기)에 따라 가중치 기반 TOP 3 후보와 추천 근거 제공 (MVP 출시 전 모드 구현 — BR-TRIP-005)
 - **일정 확정 및 공유:** 추천된 후보 중 하나를 선택하여 최종 일정을 확정하고 외부 공유
 
 ## 5. 사용자 시나리오 / 플로우
@@ -76,4 +76,4 @@
 
 ### 확정 사항
 
-BR-* 확정 내역·최신 changelog는 각 `business-rules/{trip,user,notification}.md`가 SSOT — 여기서 날짜 고정된 스냅샷을 중복 유지하지 않는다 (이 표는 2026-07-08 시점 이후 갱신되지 않아 각 BR 파일의 후속 amend와 어긋났었음). 릴리즈 Milestone·priority는 [`development-wave.md`](development-wave.md) SSOT (2026-08-26 Wave 도메인 축 폐지 — 구 `waves.md`는 안내 스텁으로만 유지).
+BR-* 확정 내역·최신 changelog는 각 `business-rules/{trip,user,notification}.md`가 SSOT — 여기서 날짜 고정된 스냅샷을 중복 유지하지 않는다 (이 표는 2026-07-08 시점 이후 갱신되지 않아 각 BR 파일의 후속 amend와 어긋났었음). 릴리즈 Milestone·priority는 [`release-milestones.md`](release-milestones.md) SSOT (2026-08-26 구 도메인 축 폐지 — Milestone `MVP 출시`/`출시 이후`로 대체, SSOT는 [`release-milestones.md`](release-milestones.md)).

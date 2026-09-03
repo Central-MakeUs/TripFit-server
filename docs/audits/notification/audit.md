@@ -1,5 +1,7 @@
 # Notification Architecture Audit — 2026-08-05
 
+`com.tripfit.tripfit.notification` 패키지를 대상으로 진행한 1차 아키텍처 감사 문서다. 반드시 수정해야 하는 A 항목 1건과 유지보수성 리팩토링 B 항목 3건(참고 C 5건, 비권장 D 5건)을 도출했다. 도출된 항목은 승인 대기 상태로 정리되었으며, 이후 반영 내역은 `refactor-log.md`에 기록되었다.
+
 ## 범위
 
 - 패키지: `com.tripfit.tripfit.notification` (`config`, `controller`, `domain`, `dto`, `event`, `exception`, `repository`, `scheduler`, `service`)

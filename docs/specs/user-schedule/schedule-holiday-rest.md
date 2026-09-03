@@ -1,6 +1,5 @@
 # 공휴일 휴무 반영 (`holidayRest`)
 
-> wave: 2
 > implements: BR-TRIP-002, BR-TRIP-005, BR-USER-008
 > related: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) A4 · [`schedule-unified.md`](schedule-unified.md) · [`trip-recommendation-algorithm.md`](../trip/trip-recommendation-algorithm.md) · [`docs/decisions/011-holiday-data-source.md`](../../decisions/011-holiday-data-source.md) · [`vacation-policy-user-migration.md`](vacation-policy-user-migration.md)(`#52`, 4개 필드 User 이동 완료 — 본 스펙의 대표 행 조회 제거됨)
 > 상태: **Implemented** (#107) — 2026-08-16 승인·구현 완료. 인증키 발급 후 실제 API 응답 대조만 남음. `#52`(2026-08-16) 완료로 대표 행 우회 로직 삭제
@@ -14,7 +13,7 @@
 
 `holidayRest` 필드는 이미 저장·조회되지만 **어디에서도 읽히지 않는다.** 대한민국 공휴일 데이터 자체가 코드베이스에 없어 판정할 근거가 없었기 때문이다. 그 결과 평일 9~18시 근무자는 공휴일에도 오전·오후가 `IMPOSSIBLE`로 계산되고, 추천 엔진은 그 날을 여행하려면 연차가 필요하다고 잘못 판단한다.
 
-- 기존 스펙은 [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **A4**에서 "wave 2 Out — 요일만. 공휴일은 후속"으로 명시적으로 미뤄둔 상태였다. 본 스펙이 그 A4를 해소한다.
+- 기존 스펙은 [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **A4**에서 "MVP 출시 Out — 요일만. 공휴일은 후속"으로 명시적으로 미뤄둔 상태였다. 본 스펙이 그 A4를 해소한다.
 - 데이터 소스는 [`011-holiday-data-source.md`](../../decisions/011-holiday-data-source.md)에서 **공공데이터포털 특일 정보 API + Redis 캐싱**으로 확정됐다(static table 미채택). 본 스펙은 그 결정을 전제로 **연동 방식·판정 규칙**만 정의한다.
 - `[미정]` 트래커 `#2`의 "공휴일 데이터" 항목은 위 결정으로 종결됨.
 
@@ -28,14 +27,14 @@
 
 ### MODIFIED
 
-- [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **A4**: (변경 전) "wave 2 Out — 요일만. 공휴일은 #13·후속" → (변경 후) **반영함** — `holidayRest=true` 정기 일정은 공휴일에 적용되지 않음. 프론트 고지 문구 "공휴일≠휴무 자동"도 함께 폐기
+- [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **A4**: (변경 전) "MVP 출시 Out — 요일만. 공휴일은 #13·후속" → (변경 후) **반영함** — `holidayRest=true` 정기 일정은 공휴일에 적용되지 않음. 프론트 고지 문구 "공휴일≠휴무 자동"도 함께 폐기
 - [`trip-recommendation-algorithm.md`](../trip/trip-recommendation-algorithm.md) 리스크 표 "공휴일 데이터 = #107로 분리, `holidayRest`는 추천 계산에서 읽히지 않는 상태" → **반영 완료**로 amend
 - `RecommendationEngine.matchingRegulars(regulars, dayOfWeek)` → 날짜·공휴일을 함께 받아, 공휴일에 쉬는 사용자면 빈 목록을 반환하는 시그니처로 변경
 - `#105`의 대표 행 규칙을 `RecommendationEngine.primaryVacationSchedule`(private) → `RegularSchedule.policySource`(엔티티 static)로 이동해 달력·추천이 같은 SSOT를 쓰게 함. 적용 대상에 `holidayRest` 추가 — 기존 `maxVacationDays`·`halfVacationAvailable`과 동일 기준
 
 ### REMOVED
 
-- `schedule-calendar-resolve.md` A4의 "wave 2 Out" 확정 방향 서술 및 프론트 고지 문구 (위 MODIFIED에서 대체 — 같은 PR에서 문구 삭제)
+- `schedule-calendar-resolve.md` A4의 "MVP 출시 Out" 확정 방향 서술 및 프론트 고지 문구 (위 MODIFIED에서 대체 — 같은 PR에서 문구 삭제)
 - 구 `matchingRegulars(List<RegularSchedule>, DayOfWeek)` 시그니처 (교체 후 잔존 금지)
 
 ## 요구사항

@@ -1,8 +1,7 @@
 # 추천 4모드 · TOP 3 · 확정·취소
 
-> wave: 2
 > implements: BR-TRIP-007, BR-TRIP-010 (API·DTO·ERD·상태전이만 — 계산 로직은 `#50`)
-> deferred: BR-NOTI-004 확정 알림 (wave 3), **추천 계산 로직(후보 윈도우·모드별 스코어링·동점) → [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) (#50, BR-TRIP-005·011·012)**
+> deferred: BR-NOTI-004 확정 알림 (MVP 출시), **추천 계산 로직(후보 윈도우·모드별 스코어링·동점) → [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) (#50, BR-TRIP-005·011·012)**
 > 상태: **Implemented** (`#13` Closed) — 원 승인일 2026-07-30(화면 확인·권한 정리 반영 후 확정)
 > 선행: [`schedule-unified.md`](../user-schedule/schedule-unified.md) (#11), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17), [`trip-room-api.md`](trip-room-api.md) (#12), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (ACTIVE·sparse·submit)
 > **2026-07-30 화면 확인:** 추천 결과 카드 UI 반영 — 아래 "요구사항"·"API / 인터페이스"·"데이터 모델" 절 참고. `ALL_ATTEND` 하드 필터·`NO_RECOMMENDATION_CANDIDATES` 에러는 [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md) 2026-07-30 개정으로 폐기됨 — 이 스펙도 동기화
@@ -10,7 +9,7 @@
 
 ## 목표
 
-방장이 **4가지 추천 모드**로 TOP 3 후보를 받고, 후보 선택 또는 직접 날짜 입력으로 일정을 확정·취소한다. wave 2 MVP 완료 기준의 **추천·확정** 축.
+방장이 **4가지 추천 모드**로 TOP 3 후보를 받고, 후보 선택 또는 직접 날짜 입력으로 일정을 확정·취소한다. MVP 완료 기준의 **추천·확정** 축.
 
 **2026-07-24 범위 분리:** 이 스펙은 **API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·hard DELETE 트리거**만 담당한다. `POST /recommendations`가 실제로 반환할 **TOP 3 계산 로직**(후보 윈도우 생성·모드별 스코어링·동점 처리)은 [`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md)(`#50`)로 분리했다. 이 스펙만으로 구현하는 동안 `POST /recommendations`는 **플레이스홀더 값**으로 응답해 API 계약만 검증한다.
 
@@ -18,7 +17,7 @@
 
 - **ERD:** `recommendation` (rank 1~3), `trip.last_recommendation_mode`, `trip.confirmed_*`, `TripStatus`
 - **JPA:** `Recommendation` 엔티티 존재, Service·API 없음
-- **BR-TRIP-005:** wave 2 **4모드 전부** — BASIC, ALL_ATTEND, SAVE_VACATION, CERTAIN
+- **BR-TRIP-005:** MVP 출시 **4모드 전부** — BASIC, ALL_ATTEND, SAVE_VACATION, CERTAIN
 - **BR-TRIP-010:** 모드·기간·일수 변경·trip delete → `recommendation` **hard DELETE**
 - **저장 정책:** trip당 **현재 모드 TOP 3만** 유지 (이전 모드 결과는 DELETE)
 
@@ -44,7 +43,7 @@
 | `TRIP_PLAN_CHANGED` | 여행 계획이 변경되었어요 |
 | `OTHER` | 기타 (직접 입력 — `reasonDetail` 필수) |
 
-`Trip.unconfirmReason`/`Trip.unconfirmReasonDetail`에 **최신값만** 저장(덮어쓰기, 이력 아님). 구 `cancel_reason`(취소·**삭제** VOC, wave 4)과는 별개 — 여행방 **삭제** 시 VOC 사유는 여전히 미정.
+`Trip.unconfirmReason`/`Trip.unconfirmReasonDetail`에 **최신값만** 저장(덮어쓰기, 이력 아님). 구 `cancel_reason`(취소·**삭제** VOC, 출시 이후)과는 별개 — 여행방 **삭제** 시 VOC 사유는 여전히 미정.
 
 ### 관련 문서
 
@@ -113,8 +112,8 @@
 ### Out of Scope
 
 - **추천 계산 로직 전체**(후보 윈도우 생성·`#17` resolve 집계·모드별 스코어링·BR-TRIP-012 동점) — `#50`([`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md))
-- 알림 발송 (BR-NOTI-004) — wave 3
-- 여행방 **삭제** 시 VOC 사유 — `unconfirm` 사유와 별개, 미정(wave 4)
+- 알림 발송 (BR-NOTI-004) — MVP 출시
+- 여행방 **삭제** 시 VOC 사유 — `unconfirm` 사유와 별개, 미정(출시 이후)
 - 가격·날씨 등 외부 데이터
 - 공휴일 API — 주말만 `[제안]` 또는 static `[미정]` (`#50` 소관)
 - `score`/`reason`/`riskNote` 자연어 사유 자동 생성 — 화면에 없음, **폐기**(구 Nice to Have)
@@ -354,7 +353,7 @@
 
 - [x] `./gradlew test` 통과 (RecommendationServiceTest 등)
 - [x] OpenAPI 반영
-- [x] `#50` 연결 완료 시점에 wave 2 MVP 완료 기준(방장이 4모드 중 하나로 **실제 계산된** TOP 3 확인 후 확정) 충족 — 이 스펙만으로는 API 계약까지만 검증
+- [x] `#50` 연결 완료 시점에 MVP 완료 기준(방장이 4모드 중 하나로 **실제 계산된** TOP 3 확인 후 확정) 충족 — 이 스펙만으로는 API 계약까지만 검증
 
 ## 리스크·미결정
 
@@ -365,9 +364,9 @@
 | regular vs personal 병합 | **Implemented** (#17) | 추천은 resolve **재사용** (C1), 호출은 `#50` |
 | 공휴일 데이터 | `[미정]` | 동점 처리엔 더 이상 불필요(주말·공휴일 기준 폐기). 카드 UI에 별도 필요해지면 재논의 |
 | confirm 후 recommendation 유지 | `[제안]` | UI 재조회용 |
-| NOTI on confirm | wave 3 | stub 없음 |
+| NOTI on confirm | MVP 출시 | stub 없음 |
 | `TripStatus.CANCELED` 제거 | **#48 Implemented** | 이 스펙이 유일한 프로듀서였던 `cancel`(→CANCELED) API를 삭제하고 `unconfirm`으로 교체 완료. enum 값 삭제 자체도 `#48`에서 코드로 실행 완료 |
-| unconfirm 사유 입력 | 확정 (2026-07-24, 기획자 답변) | 라디오 6종(`OTHER`는 직접입력) — `UnconfirmReason` enum 신설. 구 `cancel_reason`(VOC, wave4) 개념과는 분리 — 여행방 **삭제** 시 VOC 사유는 여전히 미정. 실제 `Trip.unconfirmReason`/`unconfirmReasonDetail` 필드·API 구현은 본 스펙(`#13`)에서 진행 |
+| unconfirm 사유 입력 | 확정 (2026-07-24, 기획자 답변) | 라디오 6종(`OTHER`는 직접입력) — `UnconfirmReason` enum 신설. 구 `cancel_reason`(VOC, 출시 이후) 개념과는 분리 — 여행방 **삭제** 시 VOC 사유는 여전히 미정. 실제 `Trip.unconfirmReason`/`unconfirmReasonDetail` 필드·API 구현은 본 스펙(`#13`)에서 진행 |
 | `TERMINATED` → `EXPIRED` 리네임 | **#48 Implemented** | `#27`/`#37`/`#38` 등 관련 스펙 문구도 함께 `EXPIRED`로 갱신 완료 |
 
 ## 변경 이력
@@ -383,7 +382,7 @@
 | 2026-07-30 | 카드 UI 확인 반영 — 응답 DTO 필드 개정(`reason`/`riskNote`/`score` 제거, `attendRate`/`partialAttendCount`/`uncertainCount`/`totalVacationDays` 추가), `NO_RECOMMENDATION_CANDIDATES` 에러·`ALL_ATTEND` 하드 필터 문구 삭제(`#50` 2026-07-30 개정과 동기화), UX 흐름(모드 선택→카드→확정/재추천/공유) 절 추가 |
 | 2026-07-24 | 사용자 요청으로 범위 분리 — 이 스펙은 API 설계·DTO·ERD·상태 전이·hard DELETE 트리거만, **추천 계산 로직 전체는 `#50`([`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md))로 이동** |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조도 `EXPIRED`로 동기화 |
-| 2026-07-24 | `unconfirm` 사유 입력 필수로 확정(기획자 답변) — `UnconfirmReason` enum 6종 + `reasonDetail`(`OTHER`). 관련 문서(`mvp.md`·`waves.md`·`erd.md`·`trip-room-api.md`·`figma-wireframe-v1.md`·`#48`) wave 재분류 동기화 |
+| 2026-07-24 | `unconfirm` 사유 입력 필수로 확정(기획자 답변) — `UnconfirmReason` enum 6종 + `reasonDetail`(`OTHER`). 관련 문서(`mvp.md`·`release-milestones.md`·`erd.md`·`trip-room-api.md`·`figma-wireframe-v1.md`·`#48`) wave 재분류 동기화 |
 | 2026-07-24 | `src/new_decision.md` 확정 반영 — `cancel`(→`CANCELED`) API를 **삭제**, `unconfirm`(CONFIRMED→ONGOING, 새 Status 없음) API로 교체. 관련 에러 코드·시나리오 갱신 |
 | 2026-07-08 | 초안 |
 | 2026-07-17 | #17 resolve 재사용(C1) · trip-room D4 ONGOING만 · calendar Implemented |

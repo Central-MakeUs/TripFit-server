@@ -1,6 +1,5 @@
 # 방 입장 전 달력 윈도우 — 미가입 참여자가 여행 기간을 조회하지 못하는 문제
 
-> wave: **[미정]** — `#110`/`#112`/`#114` 이슈엔 라벨이 붙어 있으나 이 스펙 헤더엔 아직 미반영, 확정 전까지 단정하지 않음 (`harness-wave.md`)
 > 상태: **Implemented** (2026-08-18) — 본래 증상(미가입 참여자에게 멤버 row가 없어 C1 상한이 확장되지 않던 문제)은 `#114`가 `join`을 일정 플로우 맨 앞으로 옮기면서 **자연히 해소**됐다(`SCHEDULE_PENDING` row도 `findMaxOngoingEndRangeByUserId` 계산에 포함된다). 남아 있던 **`GET /calendar` ↔ `PATCH /personal` 윈도우 검증 비대칭**은 **해결안 D(저장에도 같은 윈도우 적용)**로 확정·구현했다. 구 해결안 A/B는 불필요해졌다(B는 hold 폐지로 성립 자체가 불가)
 > MVP: 해당 없음 (기존 계약의 빈틈 보완)
 > GitHub: **[#110](https://github.com/Central-MakeUs/TripFit-server/issues/110)**

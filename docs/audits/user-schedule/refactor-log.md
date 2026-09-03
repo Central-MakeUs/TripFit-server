@@ -1,5 +1,7 @@
 # user-schedule Refactor Log
 
+사용자 일정(`user.schedule`) 도메인 아키텍처 감사에서 승인된 항목을 실제로 반영한 이력이다. 라운드별 수정 사항과 검증 결과를 기록한다. 감사 결과 원본은 `audit.md` 및 `audit-round2.md`에 있다.
+
 ## 2026-08-05 — 2차 감사(audit-round2.md) A-1, B-1 반영
 
 1차 반영(아래 절) 이후 재검사(`audit-round2.md`)에서 새로 찾은 A 1건, B 1건을 반영. C/D는 이번 라운드에서도 보류(스펙·API 계약 변경 필요 — `audit-round2.md` 참고).

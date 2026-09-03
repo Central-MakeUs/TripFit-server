@@ -1,15 +1,14 @@
 # schedule 분리 — 정기 일정 + 개별 일정
 
-> wave: 2  
-> implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-TRIP-006, BR-USER-008  
-> deferred: 연차 복수 행 집계 (#13) — Google Calendar OAuth는 [`google-calendar-oauth.md`](../user/google-calendar-oauth.md) **Implemented** (#44)  
-> 상태: Approved  
+> implements: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-TRIP-006, BR-USER-008
+> deferred: 연차 복수 행 집계 (#13) — Google Calendar OAuth는 [`google-calendar-oauth.md`](../user/google-calendar-oauth.md) **Implemented** (#44)
+> 상태: Approved
 > supersedes: A안 `schedule`; `Availability` → `PersonalSchedule`
 
 ## 목표
 
-- **정기** `regular_schedule` — 시계 구간 → `TimeSlot`별 POSSIBLE/IMPOSSIBLE 계산  
-- **개인** `personal_schedule` — **특정 날짜**에 오전/오후/저녁 가능·불가 + **날짜 단위 불확실(`uncertain`)**  
+- **정기** `regular_schedule` — 시계 구간 → `TimeSlot`별 POSSIBLE/IMPOSSIBLE 계산
+- **개인** `personal_schedule` — **특정 날짜**에 오전/오후/저녁 가능·불가 + **날짜 단위 불확실(`uncertain`)**
 - 슬롯 경계·상태 컬럼은 공통 `TimeSlot` + `SlotStatuses` embeddable
 
 ## 패키지

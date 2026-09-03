@@ -1,6 +1,5 @@
 # 추천 결과 계산 로직 (후보 윈도우 · 모드별 스코어링 · 동점)
 
-> wave: 2
 > implements: BR-TRIP-005, BR-TRIP-011, BR-TRIP-012
 > deferred: 공휴일 API 연동 (주말만 우선, static table/외부 API 방식은 `[미정]`) · 연차 신청 가능 시점(`vacationApplyPeriod`) 반영 (`[미정]`, 아래 amend 절)
 > 상태: **Approved**(2026-07-30 최초 확정본) — **2026-08-15 연차/반차 자동 반영 amend 구현 완료**(`fix/105-vacation-attendance` 브랜치, `./gradlew test` 486건 통과), PR·머지 전 최종 확인 대기
@@ -25,7 +24,7 @@
 - `#13` 작업 중 사용자 요청으로 분리 확정(2026-07-24): API 껍데기와 계산 로직을 별도 이슈로 관리
 - **2026-07-30 확정:** 기획자 알고리즘 확정본([`trip-recommendation-scoring-source.md`](trip-recommendation-scoring-source.md))을 그대로 반영 — 패널티 구간표·모드별 가중치·최종점수 공식·동점 기준까지 전부 확정값. **이전 초안**(이 문서 2026-07-24판)의 `w1*attendRate - w2*vacationDays - w3*tbdRate` 식·`ALL_ATTEND` **하드 필터**·`NO_RECOMMENDATION_CANDIDATES` 에러·동점 기준 "주말·공휴일"은 **전부 폐기**하고 이 버전으로 대체한다
 - `#13`은 이 스펙이 끝나기 전까지 `POST /recommendations`를 플레이스홀더 값으로 응답해 API 계약만 검증한다
-- Wave 2 MVP DoD("추천으로 최종 날짜 확정")가 실제로 동작하려면 `#13`과 이 이슈 **둘 다** Closed 필요 — Wave Backlog `#30` Must에 반영
+- MVP DoD("추천으로 최종 날짜 확정")가 실제로 동작하려면 `#13`과 이 이슈 **둘 다** Closed 필요 — Wave Backlog `#30` Must에 반영
 - **2026-07-30 화면 확인(추천 결과 카드, 방장 뷰):** 카드에 `참석률(%)`·`불확실 일정 인원`·`부분 참여 인원`·`연차 일수`가 노출됨 — 응답 DTO·`Recommendation` 엔티티에 이 4개 원시 지표를 그대로 담아야 한다(자연어 `reason`/`riskNote` 자동생성 Nice to have는 화면에 없어 **폐기**). 상세: `trip-recommendation.md` 데이터 모델 절
 - **2026-08-15 amend 배경:** 기획자가 `new_problem/p1.md`로 전달한 리포트 — "근무일과 여행이 겹쳐도 연차가 남아 있으면 참석 가능으로 판단해야 하는데, 현재는 연차 사용 가능 여부가 참석/불참 판단에 반영되지 않는다"는 이슈. 코드 조사 결과, `RegularSchedule.maxVacationDays`(여행당 사용 가능 최대 연차 일수)·`halfVacationAvailable`(반차 가능 여부) 필드는 이미 저장되고 있지만 `RecommendationEngine` 어디에서도 읽히지 않고 있었고, "연차 계산"은 사용자가 개별 일정(`PersonalSchedule`)에 **미리 수동으로 override 해둔 날짜**에 대해서만 사후적으로 몇 일 썼는지 집계(점수 페널티용)할 뿐, 근무일과 겹치는 후보 구간을 "연차를 쓰면 참석 가능"으로 **자동 판단하는 로직 자체가 없었다.** 이 amend는 이 갭을 메운다. `new_problem/test_set.md`(부스 이벤트용 5인 테스트셋)의 기대 1순위(10/24~10/26)도 이 자동 판단이 있어야 나오는 결과다.
 
@@ -76,7 +75,7 @@
 
 - API 요청/응답 DTO·Controller·상태 전이(`ONGOING`↔`CONFIRMED`)·hard DELETE 실행 — `#13`
 - 공휴일 API 연동 — 주말만 우선 `[제안]`, static table/외부 API 방식은 `[미정]`
-- 알림 발송(BR-NOTI-004) — Wave 3 `#21`
+- 알림 발송(BR-NOTI-004) — MVP 출시 `#21`
 - `attendRate`(카드 표시용 참석률 %) 계산식의 **최종 확정** — 아래 "카드 표시 지표" 절 참고, 화면 역산 기반 추론값이며 기획 확정 대기
 - **연차 신청 가능 시점(`vacationApplyPeriod`) 반영 (2026-08-15 amend, `[미정]`)** — `User.vacationApplyPeriod`(1주 전/2주 전/한달 전 등, `#52`로 `RegularSchedule`에서 이동)를 기준으로 "오늘부터 후보 날짜까지 리드타임이 부족하면 그 사용자는 연차 전환 자체를 적용하지 않는다"는 로직은 이번 amend에 포함하지 않는다. `new_problem/p1.md`에 이 필드에 대한 언급이 없고, 범위를 넓히면 "오늘 날짜" 기준 시점 의존성이 추천 계산에 새로 생겨 별도 검토가 필요 — 사용자 확인 후 후속 스펙으로 분리
 
@@ -299,7 +298,7 @@ interface RecommendationEngine {
 
 - [x] `./gradlew test` 통과 (`RecommendationEngineTest`)
 - [x] `#13`의 `TripRecommendationService`에서 플레이스홀더 대신 이 로직 호출로 교체
-- [x] Wave 2 MVP 완료 기준: 방장이 4모드 중 하나로 실제 계산된 TOP 3를 확인 가능
+- [x] MVP 완료 기준: 방장이 4모드 중 하나로 실제 계산된 TOP 3를 확인 가능
 - [x] (2026-08-15 amend) 위 "검증 시나리오" 신규 항목(test_set.md 실제 계정 수동 검증 제외) 전부 통과 · `./gradlew test` 전체 486건 통과
 - [ ] (2026-08-15 amend) `new_problem/test_set.md`의 5개 계정 데이터로 실제 TripFit에 입력 후 추천 결과 수동 확인(부스 이벤트 전 최종 확인 필요 항목과 동일) — 미실시. 단, 공휴일이 낀 비교 후보(10/9·10/3)는 `#107` 전까지 문서 근거대로 나오지 않고, D의 "아침 참여 가능"은 test_set 쪽 오류이므로 이 둘은 불일치로 보지 않는다(위 검증 시나리오 한계 2가지)
 

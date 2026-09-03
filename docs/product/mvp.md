@@ -16,7 +16,7 @@
 - [ ] 개인별 정기 일정 및 연차·휴일 정보 설정
 - [ ] 그룹 달력 내 응답 현황 시각화
 - [ ] 홈 여행방 — 진행 중/전체 2뷰 · Pin (`trip_member.is_pinned` + `pinned_at`) · `trip.last_activity_at` (D5)
-- [ ] 추천 모드 4종 및 가중치 기반 TOP 3 후보 산출 (기본 / 모두 참석 / 휴가 아끼기 / 확실하게 가기 — wave 2)
+- [ ] 추천 모드 4종 및 가중치 기반 TOP 3 후보 산출 (기본 / 모두 참석 / 휴가 아끼기 / 확실하게 가기 — MVP 출시)
 - [ ] 방장의 최종 일정 확정 및 취소 기능
 
 ## Out of Scope (v2 이후)
@@ -30,7 +30,7 @@
 
 ## 릴리즈 Milestone
 
-기능 우선순위·출시 단계는 Milestone `MVP 출시`(이 문서 In Scope) / `출시 이후` 2단계만 사용한다(2026-08-26 — 이전 Wave 1~4 도메인 축은 폐지). **운영·판단 SSOT:** [`development-wave.md`](development-wave.md).
+기능 우선순위·출시 단계는 Milestone `MVP 출시`(이 문서 In Scope) / `출시 이후` 2단계만 사용한다(2026-08-26 — 이전 MVP 출시~4 도메인 축은 폐지). **운영·판단 SSOT:** [`release-milestones.md`](release-milestones.md).
 
 ## MVP 완료 기준
 
@@ -38,12 +38,12 @@
 
 ## 의존성 / 선행 조건
 
-- **#22 확정 완료 (2026-07-21, #39 amend까지 반영)** — 일정 참여·submit·sparse·온보딩 skip SSOT 확정됨(wave 2). wave 2 일정 응답·추천(#13)은 이 SSOT 위에서 진행
-- 외부 캘린더(구글 등) API 연동 — Google Calendar OAuth(#44)로 wave 3 진행, Implemented. 상세: [`google-calendar-oauth.md`](../specs/user/google-calendar-oauth.md)
-- 가중치 기반 추천 엔진(4모드) 페널티 점수 산출 로직 검증 — wave 2, [`trip-recommendation.md`](../specs/trip/trip-recommendation.md) (Draft)
+- **#22 확정 완료 (2026-07-21, #39 amend까지 반영)** — 일정 참여·submit·sparse·온보딩 skip SSOT 확정됨(MVP 출시). MVP 출시 일정 응답·추천(#13)은 이 SSOT 위에서 진행
+- 외부 캘린더(구글 등) API 연동 — Google Calendar OAuth(#44)로 MVP 출시 진행, Implemented. 상세: [`google-calendar-oauth.md`](../specs/user/google-calendar-oauth.md)
+- 가중치 기반 추천 엔진(4모드) 페널티 점수 산출 로직 검증 — MVP 출시, [`trip-recommendation.md`](../specs/trip/trip-recommendation.md) (Draft)
 
 ## 기획 메모 (NotebookLM)
 
 - **근거 약한 In Scope:** 외부 캘린더 연동 — Pain Point 해결용 `[제안]`
-- **확정 (2026-07-08):** 참여자 소셜 로그인 필수, 추천 4모드 wave 2, `trip.destination` MVP In, ~~BR-NOTI-005 wave 4~~ (2026-07-23 번복)
-- **확정 (2026-07-23):** BR-NOTI-005 wave 4 → **wave 3** 재분류, 발송 주기 매월 1·15일 09:00, 채널 FCM 단일 (`docs/specs/notification/notification.md` D1·D4)
+- **확정 (2026-07-08):** 참여자 소셜 로그인 필수, 추천 4모드 MVP 출시, `trip.destination` MVP In, ~~BR-NOTI-005 출시 이후~~ (2026-07-23 번복)
+- **확정 (2026-07-23):** BR-NOTI-005 출시 이후 → **MVP 출시** 재분류, 발송 주기 매월 1·15일 09:00, 채널 FCM 단일 (`docs/specs/notification/notification.md` D1·D4)

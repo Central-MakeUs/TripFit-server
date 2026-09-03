@@ -1,7 +1,7 @@
 # Dev 전용 Mock 로그인
 
 > 상태: Removed (2026-08-15) — dev-login 자체가 더 이상 필요 없다는 사용자 결정으로 `DevAuthController`/`DevAuthService`/`DevLoginRequest`/`SecurityConfig`의 `dev-login` permitAll 전부 삭제. 후속으로 검토하던 `auth-dev-stub-verifier.md`(#52, `/auth/login` 계약을 유지하는 스텁 검증기 전환)도 함께 폐기 — 이슈 종료
-> MVP: N/A — 제품 기능이 아닌 개발 편의 도구 (Wave 분류 대상 아님)
+> MVP: N/A — 제품 기능이 아닌 개발 편의 도구 (Milestone 분류 대상 아님)
 > 관련 BR: N/A
 
 ## 목표

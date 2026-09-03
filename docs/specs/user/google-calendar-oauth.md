@@ -1,10 +1,9 @@
 # Google Calendar OAuth 연동
 
-> wave: 3 (2026-08-03 Wave 4→3 이동 — 외부 API 연동, 도메인축 재분류)
 > implements: (온보딩 `is_google_calendar_connected` 실연동 — BR 번호 N/A · decisions/007)
 > deferred: 네이버 캘린더 · 소셜 계정 다중 연결 → [#6](https://github.com/Central-MakeUs/TripFit-server/issues/6) · Calendar 전용 OAuth Client ID 분리(백엔드 배선·GCP 콘솔 발급·FE 전환 완료, 2026-08-08) → [`google-calendar-client-id-separation.md`](google-calendar-client-id-separation.md)
 > 상태: **Approved**
-> MVP: Out of scope (Wave 3)
+> MVP: Out of scope (MVP 출시)
 > Issue: [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44)
 > 선행: [`auth-social-login.md`](../auth/auth-social-login.md), [`user-onboarding.md`](user-onboarding.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md)
 
@@ -25,9 +24,9 @@
 
 ## 배경
 
-- wave 1: boolean 필드 + 온보딩 PATCH만 — OAuth 본체 없음 (`user-onboarding` Deferred)
-- `schedule-unified` · `auth-social-login`에서 Google Calendar OAuth는 **wave 4 Deferred**
-- Wave 4 Backlog `#32` 후보를 **#44**로 고정 (2026-07-22 · 레거시 이슈 재사용)
+- MVP 출시: boolean 필드 + 온보딩 PATCH만 — OAuth 본체 없음 (`user-onboarding` Deferred)
+- `schedule-unified` · `auth-social-login`에서 Google Calendar OAuth는 **출시 이후 Deferred**
+- 출시 이후 Backlog `#32` 후보를 **#44**로 고정 (2026-07-22 · 레거시 이슈 재사용)
 - ERD: `user.is_google_calendar_connected` — `docs/architecture/erd.md`
 - Google **로그인**(`#1`)과 Calendar **연동**은 별 scope · 별 API · 별 토큰 저장
 - 모바일 전제: decisions/001 — **서버 리다이렉트 OAuth2 Client 아님** · 앱이 토큰/code를 받아 REST로 전달

@@ -18,11 +18,11 @@
   1. `refreshToken`을 Redis에 저장
   2. 액세스 토큰 블랙리스트 폐기 (무상태성 강화)
   3. `accessToken`은 클라이언트 메모리 유지, `refreshToken`만 HttpOnly 쿠키로 전달 + 보안 옵션 추가
-- 관련 문서: [`docs/decisions/004-auth-token-rotation.md`](../../decisions/004-auth-token-rotation.md), [`docs/decisions/010-redis-infra.md`](../../decisions/010-redis-infra.md), [`docs/specs/auth/auth-token-rotation.md`](auth-token-rotation.md)(wave 4, Approved) — 이번 스펙은 그 wave 4 스펙의 핵심 전제 두 가지(refresh는 MySQL SSOT, access는 Blacklist)를 **뒤집는** 후속 개편이다.
+- 관련 문서: [`docs/decisions/004-auth-token-rotation.md`](../../decisions/004-auth-token-rotation.md), [`docs/decisions/010-redis-infra.md`](../../decisions/010-redis-infra.md), [`docs/specs/auth/auth-token-rotation.md`](auth-token-rotation.md)(출시 이후, Approved) — 이번 스펙은 그 출시 이후 스펙의 핵심 전제 두 가지(refresh는 MySQL SSOT, access는 Blacklist)를 **뒤집는** 후속 개편이다.
 
 ## 변경 범위 (기존 Approved 스펙 amend)
 
-`auth-token-rotation.md`(wave 4, Approved 2026-08-10)의 아래 전제를 변경한다:
+`auth-token-rotation.md`(출시 이후, Approved 2026-08-10)의 아래 전제를 변경한다:
 
 ### ADDED
 

@@ -1,7 +1,7 @@
 # OpenAPI 응답 스키마 제네릭 해석 (`SuccessResponse<T>`)
 
 > 상태: Approved
-> MVP: N/A — 제품 기능이 아닌 개발 인프라/도구 (Wave 분류 대상 아님)
+> MVP: N/A — 제품 기능이 아닌 개발 인프라/도구 (Milestone 분류 대상 아님)
 > 관련 BR: 해당 없음
 
 ## 목표

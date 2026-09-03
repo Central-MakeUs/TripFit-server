@@ -1,5 +1,7 @@
 # cross-cutting Refactor Log
 
+공통 계층(`cross-cutting`/`common`) 아키텍처 감사에서 승인된 항목을 실제로 반영한 이력이다. 라운드별 수정 사항과 검증 결과를 기록한다. 감사 결과 원본은 `audit.md` 및 `audit-round2.md`에 있다.
+
 ## 2026-08-14 (2차) — `Trip`·`User` 포함 전체 엔티티 `@Setter` 완전 제거
 
 1차 라운드(아래)에서 `Trip`·`User`는 "도메인 메서드가 거의 없어 라벨링만 바뀌는 수준"이라는 이유로 범위 밖으로 남겼는데, 사용자가 "그냥 `@Setter`를 아예 전부 제거할 수는 없냐"고 재요청 — 남은 항목을 전부 도메인 메서드로 옮기는 더 큰 작업을 이어서 진행했다.
@@ -31,7 +33,7 @@
 
 전체 엔티티 중 `@Setter`가 남은 곳은 다음 둘뿐:
 - **각 엔티티의 `id` 필드** — DB가 채워주는 값을 단위 테스트에서 흉내내기 위한 목적, 도메인 메서드로 대체 불가능한 테스트 배관(사용자와 합의된 예외)
-- **`RefreshToken.revokedAt`** — 이번 범위와 무관, `@Schema` 설명에 "wave 4 RTR(rotation) 예정"이라고 명시된 계획된 필드라 손대지 않음
+- **`RefreshToken.revokedAt`** — 이번 범위와 무관, `@Schema` 설명에 "출시 이후 RTR(rotation) 예정"이라고 명시된 계획된 필드라 손대지 않음
 
 ## 2026-08-14 — repo-wide: Service 생성자 주입 표준화(`@RequiredArgsConstructor`) + Entity `@Setter` 남발 정리
 

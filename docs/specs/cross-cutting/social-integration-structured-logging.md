@@ -1,7 +1,7 @@
 # 소셜 로그인·Google Calendar 연동 구조화 에러 로깅
 
 > 상태: Draft
-> MVP: N/A — 제품 기능이 아닌 개발 인프라/관측성 개선 (Wave 분류 대상 아님)
+> MVP: N/A — 제품 기능이 아닌 개발 인프라/관측성 개선 (Milestone 분류 대상 아님)
 > 관련 BR: 해당 없음
 > Issue: [#65](https://github.com/Central-MakeUs/TripFit-server/issues/65) (과거 Release Gate 메타 트래커 — 전부 Closed로 재사용, 2026-08-03)
 

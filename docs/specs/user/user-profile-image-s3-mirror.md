@@ -1,13 +1,12 @@
 # 프로필 이미지 S3 미러링 (B안)
 
-> wave: 4  
-> 선행: wave 1 [`auth-social-login.md`](../auth/auth-social-login.md) (A안 URL passthrough)  
-> 결정: [`docs/decisions/006-profile-image-url-storage.md`](../../decisions/006-profile-image-url-storage.md) — **B안 예정**  
+> 선행: MVP 출시 [`auth-social-login.md`](../auth/auth-social-login.md) (A안 URL passthrough)
+> 결정: [`docs/decisions/006-profile-image-url-storage.md`](../../decisions/006-profile-image-url-storage.md) — **B안 예정**
 > 상태: Draft
 
 ## 목표
 
-wave 1 A안(provider URL 그대로 DB 저장)을 **B안**으로 확장한다.
+MVP 출시 A안(provider URL 그대로 DB 저장)을 **B안**으로 확장한다.
 
 1. 소셜 login/upsert 시 provider 프로필 이미지 URL에서 **서버가 다운로드**
 2. TripFit **S3**(또는 동등 객체 스토리지)에 업로드
@@ -15,7 +14,7 @@ wave 1 A안(provider URL 그대로 DB 저장)을 **B안**으로 확장한다.
 
 ## 배경
 
-- wave 1: [`006`](../../decisions/006-profile-image-url-storage.md) A안 — `AuthService`가 `OAuthProfile.profileImageUrl`을 그대로 저장
+- MVP 출시: [`006`](../../decisions/006-profile-image-url-storage.md) A안 — `AuthService`가 `OAuthProfile.profileImageUrl`을 그대로 저장
 - 문제: provider URL 만료, hotlink 제한, 외부 의존, URL에 민감 쿼리 포함 가능
 - Apple: id_token에 이미지 없음 → B안 적용 대상은 주로 Google·Kakao
 
@@ -33,7 +32,7 @@ wave 1 A안(provider URL 그대로 DB 저장)을 **B안**으로 확장한다.
 |------------|------|
 | login upsert 훅에서 이미지 미러링 | 사용자 직접 아바타 업로드 API |
 | S3 bucket·IAM·공개 URL 정책 | 이미지 리사이즈·얼굴 인식 |
-| provider URL → S3 실패 시 fallback 정책 | wave 1 A안 코드 제거 전 마이그레이션 배치 (별도 작업) |
+| provider URL → S3 실패 시 fallback 정책 | MVP 출시 A안 코드 제거 전 마이그레이션 배치 (별도 작업) |
 | 기존 `profile_image_url` 컬럼 재사용 | 컬럼 rename |
 
 ## 설계 초안
@@ -68,7 +67,7 @@ user.profile_image_url = TripFit URL
 - **login / GET /auth/me** 응답 shape **변경 없음** — `profileImageUrl` 값만 TripFit 도메인 URL로 바뀜
 - 프론트: URL 호스트만 변경; 필드명 동일
 
-## 완료 기준 (wave 4)
+## 완료 기준 (출시 이후)
 
 - [ ] S3 업로드 + `ProfileImageMirrorService` 단위·통합 테스트
 - [ ] `AuthService.upsertUser` (또는 전용 listener)에서 B안 호출
@@ -79,4 +78,4 @@ user.profile_image_url = TripFit URL
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-07-07 | Draft — B안 wave 4 스펙 초안 |
+| 2026-07-07 | Draft — B안 출시 이후 스펙 초안 |

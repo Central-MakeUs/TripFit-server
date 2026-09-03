@@ -3,7 +3,7 @@
 - **상태:** 확정 (**2026-08-19 amend — 회원가입 온보딩에서 사전 일정 단계 제거**)
 - **날짜:** 2026-07-08
 - **관련:**
-  - [`docs/specs/user/user-onboarding.md`](../specs/user/user-onboarding.md) — wave 1 API·UI SSOT
+  - [`docs/specs/user/user-onboarding.md`](../specs/user/user-onboarding.md) — MVP 출시 API·UI SSOT
   - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — 소셜 login·JWT
   - [`docs/decisions/006-profile-image-url-storage.md`](006-profile-image-url-storage.md)
 
@@ -107,7 +107,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 - `"카카오 사용자"` 등 **fallback 문자열 사용 안 함**.
 - `first_name`/`last_name` 확정 후 재로그인 시 **소셜 nickname으로 덮어쓰지 않음**.
 
-### wave 1 범위
+### MVP 출시 범위
 
 | 포함 | 제외 (별도 스펙·이후) |
 |------|----------------------|
@@ -141,7 +141,7 @@ firstName 또는 lastName null?  → [이름 입력] (필수, 건너뛰기·뒤�
 
 ## Amend (2026-07-17) — #22
 
-`isScheduleRegistered`·사전 일정 skip·trip submit(BR-USER-007)과의 정합이 깨져 **사전 일정 단계 정책을 `[미정]`으로 되돌림**.  
+`isScheduleRegistered`·사전 일정 skip·trip submit(BR-USER-007)과의 정합이 깨져 **사전 일정 단계 정책을 `[미정]`으로 되돌림**.
 재설계 SSOT: [`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md) · GitHub **#22**.
 
 ## Amend (2026-07-20) — #22 부분 확정

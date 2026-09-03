@@ -1,7 +1,7 @@
 # TripFit ERD
 
 > NotebookLM 03 + 2026-07-08 확정 병합. 비즈니스 규칙: `docs/product/business-rules/`.
-> **구현 상태:** wave 1 UUID PK 전환 완료. wave 2 `#11` — **정기/개별 2테이블** (`regular_schedule` · `personal_schedule`). A안 단일 `schedule` 폐기. 여행방 CRUD(`#12`)·추천 4모드·확정·확정취소(`#13`·`#50`) 구현 완료.
+> **구현 상태:** MVP 출시 UUID PK 전환 완료. MVP 출시 `#11` — **정기/개별 2테이블** (`regular_schedule` · `personal_schedule`). A안 단일 `schedule` 폐기. 여행방 CRUD(`#12`)·추천 4모드·확정·확정취소(`#13`·`#50`) 구현 완료.
 
 ## 1. 개요
 
@@ -231,7 +231,7 @@ trip ||--o{ notification_history : relates_to
 
 ### `users`
 
-- **관련 BR:** BR-USER-001, BR-USER-003(wave 4)
+- **관련 BR:** BR-USER-001, BR-USER-003(출시 이후)
 - **관련 결정:** [`007-user-profile-onboarding.md`](../decisions/007-user-profile-onboarding.md), [`006-profile-image-url-storage.md`](../decisions/006-profile-image-url-storage.md)
 - **테이블명:** `users` (MySQL 예약어 `user` 회피). Java 엔티티는 `User`.
 
@@ -244,7 +244,7 @@ trip ||--o{ notification_history : relates_to
 | first_name | varchar | Y | | PATCH onboarding/name 필수 |
 | last_name | varchar | Y | | PATCH onboarding/name 필수 |
 | nickname | varchar | Y | | 소셜 prefill, fallback 없음 |
-| profile_image_url | varchar | Y | | wave 1 CDN / wave 4 S3 B안 |
+| profile_image_url | varchar | Y | | MVP 출시 CDN / 출시 이후 S3 B안 |
 | is_google_calendar_connected | boolean | N | | default false |
 | max_vacation_days | int | N | | default **2**, 허용 **0~10**. `#52`(2026-08-16) — `regular_schedule`에서 이동(사람 1명에게 붙는 값) |
 | vacation_apply_period | varchar | Y | | **사전 신청일.** enum: `ANY` · `ONE_WEEK_BEFORE` · `TWO_WEEKS_BEFORE` · `ONE_MONTH_BEFORE`. default **null**. `#52` — `regular_schedule`에서 이동. **2026-08-19부터 최초/갱신 입력 판정 마커** — `null`이면 사전 일정 입력 미완료(`hasCompletedPreSchedule=false`, `activate` 시 403 `PRE_SCHEDULE_REQUIRED`). `PATCH /users/schedule/vacation-policy`는 이 값을 **필수**로 요구하고, 탈퇴 스크럽만 다시 `null`로 되돌린다 |
@@ -396,7 +396,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | invite_code | varchar | N | | UNIQUE |
 | status | varchar | N | | `ONGOING`, `CONFIRMED`, `EXPIRED`(기간 만료·종료) — 구 `CANCELED`는 삭제, 구 `TERMINATED`는 `EXPIRED`로 리네임(#48) |
 | last_recommendation_mode | varchar | Y | | BASIC, ALL_ATTEND, SAVE_VACATION, CERTAIN |
-| unconfirm_reason | varchar | Y | | `unconfirm` 사유 enum. **wave 2**(#13) — 최신값만 저장(이력 아님) |
+| unconfirm_reason | varchar | Y | | `unconfirm` 사유 enum. **MVP 출시**(#13) — 최신값만 저장(이력 아님) |
 | unconfirm_reason_detail | varchar | Y | | `unconfirm_reason=OTHER`일 때만 직접 입력 텍스트 |
 | confirmed_start_date | date | Y | | |
 | confirmed_end_date | date | Y | | |
@@ -423,7 +423,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | trip_id | char(36) | N | FK → trip.id | |
 | user_id | char(36) | N | FK → users.id | NOT NULL |
 | role | varchar | N | | OWNER, MEMBER |
-| is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, wave 2 · D5) |
+| is_pinned | boolean | N | | default false. **진행 중 캐러셀** 고정 (MVP In, MVP 출시 · D5) |
 | pinned_at | timestamptz | Y | | Pin ON 시각. OFF면 null. Pin 그룹 내 정렬용 (D5) |
 | joined_at | timestamptz | N | | 멤버 row 생성 시각 (방장=create, 멤버=join) |
 | activated_at | timestamptz | Y | | 일정 확인 완료 시각. **SCHEDULE_PENDING면 null**, activate 시 set. **`status`(SCHEDULE_PENDING/ACTIVE) 파생 SSOT — 별도 컬럼 없음**(`TripMember.getStatus()`가 null 여부로 계산). `SCHEDULE_PENDING`=방장 create 직후·참여자 join 직후(activate 전, 입장·공유 불가), `ACTIVE`=방장·참여자 모두 activate 후(입장 가능 — **이 상태가 방 입장 판정의 SSOT**). 참여자도 중간 SCHEDULE_PENDING을 거친다(2026-08-18 `#114`) |
@@ -591,18 +591,18 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | 항목 | 내용 |
 |------|------|
 | `[미정]` | EXPIRED **전환 시점**(lazy vs 배치) · `attendRate`(카드 참석률 %) 계산식 최종 확정(현재 화면 역산 추론값) |
-| wave 2 | **완료** — `#12` trip CRUD·members schedule-calendar, `#13`·`#50` 추천 4모드·확정·확정취소(BR-TRIP-005 가중치·BR-TRIP-012 동점 포함) 전부 구현 |
+| MVP 출시 | **완료** — `#12` trip CRUD·members schedule-calendar, `#13`·`#50` 추천 4모드·확정·확정취소(BR-TRIP-005 가중치·BR-TRIP-012 동점 포함) 전부 구현 |
 
 ## 기획 메모 (NotebookLM + 확정)
 
 1. **MVP 핵심:** `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation` (refresh token은 Redis, MySQL 테이블 아님)
-2. **2026-07-08:** TERMINATED, Pin(`is_pinned`), cancel_reason wave 4, 전역 연동
+2. **2026-07-08:** TERMINATED, Pin(`is_pinned`), cancel_reason 출시 이후, 전역 연동
 3. **2026-07-13:** A안 폐기 → 정기/개별 2테이블, 정기 N행·title·범용 시간 필드
 4. **2026-07-20:** 홈 D5 — `trip.last_activity_at`, `trip_member.pinned_at` ([`trip-room-api.md`](../specs/trip/trip-room-api.md))
 5. **2026-07-21:** `#39` — `trip_member.status` **SCHEDULE_PENDING|ACTIVE** 부활 (방장 create=`SCHEDULE_PENDING` → confirm=`ACTIVE`)
 6. **2026-07-21:** `trip.duration_days` **nullable**(일정 미정) · 희망 기간 생성 후 불변 · API n박+m일
 6. **2026-07-21:** ERD 개선 반영 — `users` rename · `responded_at` · active UNIQUE(app) · `score`=#13 유지
-7. ~~알림 이력 테이블 — ERD 범위 외 (wave 3)~~ — 2026-07-30 `#21` 구현으로 아래 11번 참고
+7. ~~알림 이력 테이블 — ERD 범위 외 (MVP 출시)~~ — 2026-07-30 `#21` 구현으로 아래 11번 참고
 8. **2026-07-26:** `trip.duration_nights` 파생값 → 컬럼 영속화, 박/일 검증 범위 `nights+1~min(nights+2,T)`로 확장 ([`trip-duration-range.md`](../specs/trip/trip-duration-range.md))
 9. **2026-08-01:** `TripMemberStatus` 개명(`JOINED`→`SCHEDULE_PENDING`, `RESPONDED`→`ACTIVE`, [`trip-member-status-derive.md`](../specs/trip/trip-member-status-derive.md))에서 빠졌던 후속 정리 — `trip_member.responded_at`→`activated_at`, `markResponded()`→`activate()`, API 필드 `respondedCount`→`activeMemberCount`로 일괄 개명(이름을 상태 enum과 일치시켜 혼동 제거, 네이밍 우선 원칙)
 10. **2026-07-28 (#60):** `memberFillRate` 공식을 `joinedMemberCount ÷ memberCount` → `activeMemberCount ÷ memberCount`로 전환, `joinedMemberCount` API 미노출로 전환 · 여행방 상세에 `membersPreview`/`membersPreviewOverflow` 추가 ([`trip-member-fill-rate-refactor.md`](../specs/trip/trip-member-fill-rate-refactor.md))

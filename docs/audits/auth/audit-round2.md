@@ -1,5 +1,7 @@
 # Auth Architecture Audit — Round 2 (2026-08-05)
 
+`com.tripfit.tripfit.auth` 패키지를 대상으로 1차 리팩토링 반영 이후 진행한 2차 아키텍처 감사 문서다. 반드시 수정해야 하는 A 항목 1건과 유지보수성 리팩토링 B 항목 1건(참고 C 2건, 비권장 D 2건)을 도출했다. 도출된 항목은 승인 대기 상태로 정리되었으며, 이후 반영 내역은 `refactor-log.md`에 기록되었다.
+
 ## 범위
 
 - 패키지: `com.tripfit.tripfit.auth` (+ 하위 패키지 `config`, `controller`, `dev/controller`, `dev/service`, `domain`, `dto`, `exception`, `jwt`, `oauth`, `repository`, `security`, `service`)
@@ -53,7 +55,7 @@
 ## 🚫 D. 수정하지 않는 것이 더 좋은 사항
 
 - **`AuthLoginPersistenceService`/`DevAuthService`의 `revive(User)` private 래퍼 중복 — 추가 추출하지 않음** — 1차 B-2로 "탈퇴 부활" 실질 로직은 이미 `User.reviveIfWithdrawn()`으로 SSOT화됐다. 남은 것은 `Optional.map(this::revive)` 체이닝에 필요한 `{ user.reviveIfWithdrawn(); return user; }` 2~3줄짜리 어댑터 래퍼이며, 이는 각 클래스의 upsert 흐름(하나는 신규 생성 시 프로필 갱신까지 겸함, 하나는 고정 테스트 계정 생성)에 자연스럽게 붙어 있는 지역적 코드다. 이 이상 공통 유틸로 뽑으면 2줄짜리 메서드 참조 하나를 위해 새 파일·새 의존성을 만드는 과잉 추상화가 되어 오히려 각 클래스의 응집도만 떨어뜨린다.
-- **1차 `audit.md`의 D 항목 재검증 결과 — 4개 전부 여전히 유효**: `TokenRevocationChecker` 인터페이스+`NoOpTokenRevocationChecker` 단일 구현체(wave 4 RTR 확장점, `RefreshToken.familyId`/`revokedAt` 필드가 이미 이를 위해 준비돼 있음 — 여전히 임박한 계획된 확장), `AppleCredentialService`/`GoogleLoginCredentialService`를 `AuthService`로 합치지 않음(SRP, God Service 방지 — A-1(round2) 적용 후에도 이 분리 자체는 그대로 유지할 가치), `SocialTokenVerifier` 인터페이스+`SocialTokenVerifierRegistry`(Strategy+EnumMap, 이미 3개 provider로 실사용 검증됨), `AppleCredential`/`GoogleLoginCredential` 엔티티 미통합(update() 시맨틱이 근본적으로 다름 — Apple은 매번 덮어씀, Google은 조건부 갱신) — 모두 코드를 다시 읽어 확인했으며 1차 판단이 여전히 타당하다.
+- **1차 `audit.md`의 D 항목 재검증 결과 — 4개 전부 여전히 유효**: `TokenRevocationChecker` 인터페이스+`NoOpTokenRevocationChecker` 단일 구현체(출시 이후 RTR 확장점, `RefreshToken.familyId`/`revokedAt` 필드가 이미 이를 위해 준비돼 있음 — 여전히 임박한 계획된 확장), `AppleCredentialService`/`GoogleLoginCredentialService`를 `AuthService`로 합치지 않음(SRP, God Service 방지 — A-1(round2) 적용 후에도 이 분리 자체는 그대로 유지할 가치), `SocialTokenVerifier` 인터페이스+`SocialTokenVerifierRegistry`(Strategy+EnumMap, 이미 3개 provider로 실사용 검증됨), `AppleCredential`/`GoogleLoginCredential` 엔티티 미통합(update() 시맨틱이 근본적으로 다름 — Apple은 매번 덮어씀, Google은 조건부 갱신) — 모두 코드를 다시 읽어 확인했으며 1차 판단이 여전히 타당하다.
 
 **참고(감사만, 수정 대상 아님) — 도메인 외부 소비처 관찰**: `user/service/UserWithdrawalService.withdraw()`는 provider revoke 호출들(`googleLoginCredentialService.revokeAndDeleteIfPresent`, `appleCredentialService.revokeAndDeleteIfPresent`, `kakaoUnlinkClient.unlink`, Google Calendar revoke)을 **모두 `persistenceService.finalizeWithdrawal(userId)`(DB cascade+soft delete 짧은 트랜잭션) 호출 이전에** 끝내도록 이미 올바르게 구조화돼 있다(클래스 주석에 "A-2"로 명시). 즉 탈퇴 유스케이스 자체의 오케스트레이션은 1차 A-1의 원칙(외부 HTTP를 DB 쓰기 트랜잭션 밖으로)을 정확히 따르고 있다 — 다만 이번 A-1(round2)에서 지적했듯 그 안에서 호출되는 `appleCredentialService.revokeAndDeleteIfPresent()`/`googleLoginCredentialService.revokeAndDeleteIfPresent()` **자체가** 각자 `@Transactional`을 갖고 있어 HTTP 호출을 다시 트랜잭션 안으로 끌어들이고 있다는 점이 이번 A-1의 핵심이다. `UserWithdrawalService`는 `user` 도메인 코드라 이번 라운드(auth 도메인) 직접 수정 대상은 아니지만, auth 도메인의 A-1(round2)을 적용하면 이 소비처의 의도(오케스트레이션 레벨에서 HTTP를 트랜잭션 밖으로)가 실제로 완성된다.
 
@@ -61,7 +63,7 @@
 
 ## 15. 백엔드 아키텍처 개선 제안
 
-- 1차 `audit.md` §15의 4개 제안(Redis jti revocation 블랙리스트 / Resilience Circuit Breaker / Async 탈퇴 revoke / Security 로그인 Rate Limiting)을 코드베이스에서 재확인(`grep` — Redis·Resilience4j·`@Async`·rate limiting 관련 의존성·구현 전부 미검출)한 결과 **4개 전부 여전히 미구현**이며, 판단도 1차와 동일하게 모두 **Later**로 유효하다. 트래픽·wave 규모상 즉시 필요한 사고가 아직 없고, wave 4 RTR·Redis 도입과 자연스럽게 묶어 설계하는 편이 중복 작업을 피한다.
+- 1차 `audit.md` §15의 4개 제안(Redis jti revocation 블랙리스트 / Resilience Circuit Breaker / Async 탈퇴 revoke / Security 로그인 Rate Limiting)을 코드베이스에서 재확인(`grep` — Redis·Resilience4j·`@Async`·rate limiting 관련 의존성·구현 전부 미검출)한 결과 **4개 전부 여전히 미구현**이며, 판단도 1차와 동일하게 모두 **Later**로 유효하다. 트래픽·Milestone 규모상 즉시 필요한 사고가 아직 없고, 출시 이후 RTR·Redis 도입과 자연스럽게 묶어 설계하는 편이 중복 작업을 피한다.
 - **Resilience — Now로 격상 검토는 아님, 다만 A-1(round2)과 연계 확인**: A-1(round2)이 반영되면 `AppleCredentialService`/`GoogleLoginCredentialService`의 HTTP 호출도 트랜잭션 밖에서 실행되므로, 이후 Circuit Breaker(1차 제안, Later) 도입 시 대상 호출 지점이 `AuthLoginPersistenceService.persist()`와 대칭적인 구조가 되어 설계가 더 단순해진다 — 별도 Now 사유는 아니고, Later 항목의 선행 조건이 하나 더 명확해졌다는 참고.
 - 그 외 카테고리(Concurrency/Event/Database/Monitoring/API)는 1차와 동일하게 해당 없음(YAGNI) — auth 도메인의 외부 I/O는 소셜 provider 3종(Kakao/Google/Apple)뿐이고, A-1(round2)·기존 A-3(타임아웃) 적용만으로 성능·가용성 리스크가 충분히 해소된다.
 

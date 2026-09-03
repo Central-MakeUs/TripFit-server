@@ -129,7 +129,7 @@ public TripMembersResponse removeMember(...) {
 // 이미 iss까지 검증하고 있어서 방식을 맞추는 게 낫다 — docs/specs/apple-oauth-multi-audience.md
 ```
 
-이슈 번호·스펙 경로가 없는 TODO를 새로 남기게 되면, 바로 이슈를 만들지 말고(생성 전 사용자 확인 필요 — `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절) 우선 관련 스펙에 `[미정]`으로 표기해두는 걸 검토한다 — `harness-wave.md` `[미정]` 처리 절.
+이슈 번호·스펙 경로가 없는 TODO를 새로 남기게 되면, 바로 이슈를 만들지 말고(생성 전 사용자 확인 필요 — `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절) 우선 관련 스펙에 `[미정]`으로 표기해두는 걸 검토한다 — `harness-milestone.md` `[미정]` 처리 절.
 
 ## Javadoc (`/** */`)
 

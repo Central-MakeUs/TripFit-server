@@ -1,7 +1,6 @@
 # AuthErrorCode 세분화 — 소셜 로그인 토큰 검증 실패 분리
 
 > 상태: Implemented (2026-07-27 · #57)
-> wave: 무관 (wave 1 `auth-social-login.md` 리팩터)
 > amend: [`auth-social-login.md`](auth-social-login.md) 공통 에러 응답 표
 > MVP: In scope (관측성·프론트 UX 분기 개선)
 > 관련 BR: N/A
