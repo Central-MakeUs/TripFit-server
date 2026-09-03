@@ -97,7 +97,7 @@
 
 | 항목 | 값 |
 |------|-----|
-| **윈도우** | **`today` ~ `today+2년−1`** (Asia/Seoul) = 마이페이지 **C1** |
+| **윈도우** | **`today` ~ `max(today+2년−1, 참여 중 ONGOING 여행 endRange 최댓값)`** (Asia/Seoul) = 마이페이지 **C1**(#53 R4 반영, `GoogleCalendarService`가 `ScheduleService.resolveCalendarWindowEnd` 재사용) |
 | **과거** | 미조회 |
 | **매 sync** | 슬라이딩 · 윈도우 밖 Google busy 행 **삭제** |
 

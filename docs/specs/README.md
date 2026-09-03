@@ -32,7 +32,7 @@
 | [`auth-social-login.md`](auth/auth-social-login.md) | 1 | **Approved** / Implemented | Google·Kakao·Apple · JWT access/refresh | — |
 | [`apple-oauth-multi-audience.md`](auth/apple-oauth-multi-audience.md) | 1 | Implemented (`#64` amend) | Apple 로그인 Bundle ID(네이티브)/Services ID(웹) 이원화 `aud` 검증 | auth-social-login |
 | [`google-login-revoke.md`](auth/google-login-revoke.md) | 2 | **Implemented** (`#64` 후속, Closed) · 구 Release Gate | Google 로그인 시 authorization code 확보·저장 → 탈퇴 시 revoke | auth-social-login · user-account-withdrawal |
-| [`auth-error-code-granularity.md`](auth/auth-error-code-granularity.md) | 4 | **Approved** (#57) · 구현 중 | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` | auth-social-login |
+| [`auth-error-code-granularity.md`](auth/auth-error-code-granularity.md) | 무관 | **Implemented** (#57, Closed) | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` | auth-social-login |
 | [`auth-token-rotation.md`](auth/auth-token-rotation.md) | 4 | Draft | RTR + Redis | auth-social-login · decision 004 |
 | [`auth-apple-server-notifications.md`](auth/auth-apple-server-notifications.md) | 4 | Approved | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`auth-dev-stub-verifier.md`](auth/auth-dev-stub-verifier.md) | 4 | Draft (#52) | `/auth/login` 계약 유지형 dev 스텁 검증기 — `dev-mock-login` 대체 예정 | dev-mock-login |
@@ -46,7 +46,7 @@
 | [`user-onboarding.md`](user/user-onboarding.md) | 1 | **Approved** | 성·이름 · 재진입 D-REENTRY | auth-social-login |
 | [`user-my-page.md`](user/user-my-page.md) | 1 | **Approved** / Implemented | 마이페이지 이름 PATCH | user-onboarding |
 | [`google-calendar-oauth.md`](user/google-calendar-oauth.md) | 3 | **Approved** (#44) · **Wave 4→3 이동**(2026-08-03) | Google Calendar OAuth · busy Merge · AES-256 | auth-social-login · user-onboarding |
-| [`google-calendar-client-id-separation.md`](user/google-calendar-client-id-separation.md) | 3 | Draft (#78, 백엔드 배선 완료·콘솔 발급·FE 전환 대기) · **Wave 4→3 이동** | 로그인·Calendar OAuth Client ID 분리 — GCP 콘솔 발급 가이드 포함 | google-calendar-oauth · google-login-revoke |
+| [`google-calendar-client-id-separation.md`](user/google-calendar-client-id-separation.md) | 3 | **Implemented** (#78, Closed) · **Wave 4→3 이동** | 로그인·Calendar OAuth Client ID 분리 — GCP 콘솔 발급 가이드 포함 | google-calendar-oauth · google-login-revoke |
 | [`user-account-withdrawal.md`](user/user-account-withdrawal.md) | 2 | cascade·soft delete **Implemented**(`#47`) · `#64` provider revoke **Implemented** · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · cascade · PII 스크럽 · Google/Kakao/Apple revoke | trip-member-leave · user-my-page |
 | [`user-profile-image-s3-mirror.md`](user/user-profile-image-s3-mirror.md) | 4 | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
 
@@ -78,7 +78,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`trip-recommendation.md`](trip/trip-recommendation.md) | 2 | Draft (#13) | 추천 API 설계·요청/응답 껍데기·DTO·ERD·상태 전이·확정·취소 (계산 로직 제외) | #12 · #17 · #22 |
 | [`trip-recommendation-algorithm.md`](trip/trip-recommendation-algorithm.md) | 2 | Draft (#50) | 추천 계산 로직 A to Z — 후보 윈도우·모드별 스코어링·`ALL_ATTEND` 필터·동점 | #13 · #17 |
 | [`trip-recommendation-scoring-source.md`](trip/trip-recommendation-scoring-source.md) | 2 | 확정 (기획자 승인) | 추천 스코어링 원본 자료 — `trip-recommendation-algorithm`이 구현하는 패널티 구간표·가중치·동점 기준의 원본 출처(참고 자료, SSOT 아님) | trip-recommendation-algorithm |
-| [`trip-join-capacity-hold.md`](trip/trip-join-capacity-hold.md) | 4 | **Draft** (#35) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
+| [`trip-join-capacity-hold.md`](trip/trip-join-capacity-hold.md) | 4 | **Implemented** (#35, Open — 미머지) | join 정원 hold/TTL — MVP는 409 감수 | #22 late-join |
 | [`package-structure-refactor.md`](trip/package-structure-refactor.md) | 4 | Draft (설계 확정, 구현 착수 전 이슈·decision 003 amend 필요) | trip 도메인 패키지 포트/어댑터 재설계 — flat 구조 재검토 | decision 003 amend |
 | [`kakao-invite-share.md`](trip/kakao-invite-share.md) | 3 | **Approved** (#19) | 카카오·링크 공유 A/B/C · create에 inviteCode 없음 · 신규 API 없음 | trip-room-api D3 · #12 |
 | [`trip-thumbnail-image.md`](trip/trip-thumbnail-image.md) | 미정 (#62) | Draft | 여행방 확정 기간을 베이스 이미지에 합성해 카카오 공유용 동적 썸네일 자동 생성 · S3 등 오브젝트 스토리지 신규 구축 필요 | kakao-invite-share (#19) |
@@ -117,7 +117,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#27** | trip-home-schedulers | Implemented |
 | **#54** | trip-member-status-derive | Implemented |
 | **#22** | schedule-participation-onboarding | Closed · **Wave 2**(2026-08-03 Wave 1→2 이동) |
-| **#35** | trip-join-capacity-hold (Draft — wave 4) | Open |
+| **#35** | trip-join-capacity-hold (Implemented — wave 4, 미머지) | Open |
 | **#37** | trip-schedule-calendar-window | Closed |
 | **#38** | trip-schedule-snapshot | Closed |
 | **#44** | google-calendar-oauth | Open · **Wave 3 Must**(2026-08-03 Wave 4→3 이동, 구 Swagger chore 폐기) |
@@ -127,7 +127,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT · Google 부분은 `google-login-revoke` | **Closed** · 구 Release Gate(2026-08-03 완료 확인) |
 | **#65** | social-integration-structured-logging — 과거 Release Gate 메타 트래커(전부 Closed)를 이 스펙 이슈로 재사용(2026-08-03) | Open |
 | **#77** | google-login-native-sdk-decision (Resolved, 결정 불필요로 정정) | Open — 클로즈 검토 필요 |
-| **#78** | google-calendar-client-id-separation (백엔드 배선 완료, GCP 콘솔 발급·FE 전환 대기, **Wave 3**(2026-08-03 Wave 4→3 이동)) | Open |
+| **#78** | google-calendar-client-id-separation (Implemented — 백엔드 배선·GCP 콘솔 발급·FE 전환 완료, **Wave 3**(2026-08-03 Wave 4→3 이동)) | Closed |
 | **#62** | trip-thumbnail-image (Draft) — 2026-08-02 재작성, 구 "OAuth 콘솔 설정값" 내용은 `#86`으로 이관 | Open |
 | **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
 

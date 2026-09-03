@@ -57,6 +57,6 @@ wave 1(MVP)은 `POST /auth/login`, `/refresh`, `/logout`과 DB 기반 opaque ref
 
 ## 후속 작업
 
-- [ ] [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) Draft → Approved
+- [x] [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) Draft → Approved (2026-08-10)
 - [ ] Redis access 전략(blacklist vs whitelist) 팀 합의 → 본 decisions amend
-- [ ] wave 1 구현 완료 후 wave 4 착수 (JwtFilter + Redis + RTR)
+- [x] wave 1 구현 완료 후 wave 4 착수 (JwtFilter + Redis + RTR) — 코드·테스트 완료, 배포 검증 대기

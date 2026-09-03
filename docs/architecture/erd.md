@@ -373,7 +373,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 
 ### `google_calendar_busy_day` (Google freeBusy 캐시)
 
-날짜×슬롯 busy boolean. **sparse** — busy 슬롯이 있는 날만 저장. C1 윈도우(`today`~`today+2년−1`) 내 sync.
+날짜×슬롯 busy boolean. **sparse** — busy 슬롯이 있는 날만 저장. C1 윈도우(`today`~`max(today+2년−1, 참여 중 ONGOING 여행 endRange 최댓값)`, #53 R4) 내 sync.
 
 | 컬럼 | 타입 | Nullable | PK/FK | 설명 |
 |------|------|----------|-------|------|
