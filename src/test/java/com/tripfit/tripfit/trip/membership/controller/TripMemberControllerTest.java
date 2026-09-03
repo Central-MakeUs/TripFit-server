@@ -113,8 +113,8 @@ class TripMemberControllerTest {
     when(tripService.getMemberScheduleCalendar(TRIP_ID, USER_ID))
         .thenReturn(
             new MemberScheduleCalendarResponse(
-                LocalDate.of(2026, 8, 1),
-                LocalDate.of(2026, 8, 10),
+                LocalDate.now(),
+                LocalDate.now().plusDays(9),
                 false,
                 List.of(
                     new MemberCalendar(
@@ -124,7 +124,7 @@ class TripMemberControllerTest {
                         TripMemberStatus.ACTIVE,
                         List.of(
                             new CalendarDay(
-                                LocalDate.of(2026, 8, 3),
+                                LocalDate.now().plusDays(2),
                                 ScheduleStatus.IMPOSSIBLE,
                                 ScheduleStatus.POSSIBLE,
                                 ScheduleStatus.POSSIBLE,
