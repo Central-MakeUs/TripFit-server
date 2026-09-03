@@ -48,7 +48,9 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 - 「나중에 하면 좋겠다」만 나열하고 **근거·우선순위** 없이 장문
 - 완료 선언 전 검증(테스트·체크리스트) **대신** 제안만 하고 완료 선언
 
-**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.claude/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `harness-workflow.md` G4 회고 게이트와 동일).
+**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.claude/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `harness-workflow.md` G4 회고 게이트와 동일). 이 승격 절차는 **`retro` 스킬**([`.claude/skills/retro/SKILL.md`](../skills/retro/SKILL.md))이 SSOT다 — 승인 후 `docs/audits/harness-retro.md`에 후보로 남긴다.
+
+**이 절과 `retro`의 경계:** 여기(💡 후속 제안)는 **코드·설계** 개선(ERD·API 설계·쿼리 성능·패키지 구조)을 다루고, `retro`는 **하네스 자체**(규칙·스킬·에이전트·훅)의 결함을 다룬다. 같은 항목을 양쪽에 중복해 남기지 않는다.
 
 ## ✅ 후속 작업 이슈 분리 (Defer)
 

@@ -27,8 +27,8 @@ Harness 형제: `harness-milestone.md` (Milestone·priority·`[미정]`) · `har
 |--------|-------------|---------|
 | **G1 리서치** | `WebFetch`/`WebSearch` · `Agent` 서브에이전트 | 2개 이상 문서 비교면 **`researcher`**(`.claude/agents/researcher.md`), 단일 페이지면 인라인 `WebFetch`. 소스 우선순위·버전 고정은 `harness-workflow.md` G1 |
 | **G2 승인** | `AskUserQuestion` · 채팅 확인 | A=스펙 승인 · B=`audit.md` A/B 항목 승인 · C=원인 가설 승인. 새 이슈·브랜치·PR 생성은 **항상 먼저 확인** |
-| **G3 검증** | **`verify`** 스킬 · `code-review`/`simplify` 서브에이전트 | `./gradlew test` + 이슈·스펙 체크리스트 + API 변경 시 `oasdiff`. 문서 50줄+ 변경·신규 문서면 **`doc-reviewer`**(기준: `doc-writing.md`) |
-| **G4 회고** | — | 프로젝트 문서 갱신 점검(승인 후 반영) · `harness-follow-up.md` 💡 후속 제안 · 「다른 이슈로」는 **`defer-followup`** 스킬 · B 트랙은 `refactor-log.md` append |
+| **G3 검증** | **`verify`** 스킬 · `code-review`/`simplify` 서브에이전트 | `./gradlew test` + 이슈·스펙 체크리스트 + API 변경 시 `oasdiff`. 문서 50줄+ 변경·신규 문서면 **`doc-reviewer`**(기준: `doc-writing.md`), Java 3파일+·API·DB 변경이면 **`senior-spring-backend-reviewer`**(기준: `spring-boot-java.md`) |
+| **G4 회고** | — | 프로젝트 문서 갱신 점검(승인 후 반영) · `harness-follow-up.md` 💡 후속 제안 · 「다른 이슈로」는 **`defer-followup`** 스킬 · 하네스 개선 후보는 **`retro`** 스킬 · B 트랙은 `refactor-log.md` append |
 
 ### 그 외
 

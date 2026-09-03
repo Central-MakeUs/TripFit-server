@@ -17,8 +17,13 @@
 | `debug-bug` | **C 트랙** | [`.claude/skills/debug-bug/SKILL.md`](../../.claude/skills/debug-bug/SKILL.md) | 버그 리포트·테스트 실패 | 없음(조사 절차) | 없음 |
 | `verify` | **G3 게이트** | [`.claude/skills/verify/SKILL.md`](../../.claude/skills/verify/SKILL.md) | "완료/통과" 선언 직전 | 없음(검증 절차) | 없음 |
 | `defer-followup` | **G4 게이트** | [`.claude/skills/defer-followup/SKILL.md`](../../.claude/skills/defer-followup/SKILL.md) | 「다른 이슈로 빼」 | Draft 스펙 + 스펙 amend + (확인 후) 이슈 | **있음** (이슈 생성 전) |
+| `retro` | **G4 게이트** | [`.claude/skills/retro/SKILL.md`](../../.claude/skills/retro/SKILL.md) | 작업 완료 후 회고·「이번에 배운 거 정리」 | `docs/audits/harness-retro.md` append | **있음** (파일 기록 전 · 규칙 반영 전 2단계) |
 
-**서브에이전트 (`.claude/agents/`, 2026-09-03 신설):** 스킬이 "절차"라면 에이전트는 "게이트에서 부르는 전담 인력"입니다. `researcher`(G1 — 외부 문서 조사)와 `doc-reviewer`(G3 — 문서 품질 리뷰) 둘 다 `Edit`/`Write` 도구가 없어 파일을 고칠 수 없고, 별도 컨텍스트에서 돌아 문서 원문이 메인 대화를 오염시키지 않습니다. **`.claude/agents/*.md`는 파일을 만들면 등록**됩니다 — 2026-09-03 신설 당시 첫 호출은 `Agent type not found`로 실패했다가 잠시 뒤 사용 가능해졌으므로, 새 에이전트를 만든 직후 호출이 실패하면 재시도하거나 새 세션에서 확인합니다.
+**`retro`만 메인 컨텍스트에서 돕니다 (2026-09-04 신설):** 다른 스킬과 달리 이 스킬은 서브에이전트나 `context: fork`로 돌리면 **망가집니다** — 회고의 입력이 세션 대화 이력 자체인데, 서브에이전트는 그 이력에 접근할 수 없고 트랜스크립트 파일 경로도 공식 규약이 아닙니다. `refactor-audit`이 self-grading 편향을 피하려 일부러 컨텍스트를 격리하는 것과 정확히 **반대 방향**입니다. 같은 저장소 안에서 "격리가 이득인 작업"과 "격리가 손해인 작업"이 갈린다는 게 이 스킬의 설계 포인트입니다.
+
+**서브에이전트 (`.claude/agents/`, 2026-09-03 신설):** 스킬이 "절차"라면 에이전트는 "게이트에서 부르는 전담 인력"입니다. `researcher`(G1 — 외부 문서 조사), `doc-reviewer`(G3 — 문서 품질 리뷰), `senior-spring-backend-reviewer`(G3 — Java 변경 리뷰, 2026-09-04 추가) 셋 다 `tools` 화이트리스트에서 `Edit`/`Write`를 뺐고, 별도 컨텍스트에서 돌아 원문이 메인 대화를 오염시키지 않습니다. 다만 셋 다 `Bash`를 갖고 있어 **도구 목록만으로 쓰기가 완전히 봉쇄되지는 않습니다**(`sed -i` 우회 가능) — 마지막 한 겹은 지침의 규범입니다. 훅(L3)의 `Edit|Write` 매처도 Bash 경유 수정은 잡지 못하므로, 이 층을 "결정론적 차단"으로 오해하지 않는 것이 중요합니다.
+
+> **`senior-spring-backend-reviewer`가 ArchUnit과 역할을 나누는 방식:** 이 에이전트는 `ArchitectureTest`가 이미 `./gradlew test`마다 검증하는 7개 규칙(레이어 의존, 필드 주입 금지, UUID PK 등)을 **지적 대상에서 명시적으로 제외**합니다. 기계가 결정론적으로 잡는 것을 LLM이 다시 보는 건 비용만 늘고 신호를 흐리기 때문입니다. 대신 트랜잭션 경계·N+1·`ErrorCode`/`@TripActivity` 누락처럼 **정적 규칙으로 표현할 수 없어 ArchUnit이 못 잡는 것**에 집중합니다. 조사한 공개 컬렉션 3종(wshobson·VoltAgent·hesreallyhim)은 모두 `tools`를 제한하지 않거나 `Write`/`Edit`을 포함시켜 리뷰어가 코드를 고칠 수 있게 방치돼 있어, 그 부분은 채택하지 않고 기존 `doc-reviewer` 구조를 따랐습니다. **`.claude/agents/*.md`는 파일을 만들면 등록**됩니다 — 2026-09-03 신설 당시 첫 호출은 `Agent type not found`로 실패했다가 잠시 뒤 사용 가능해졌으므로, 새 에이전트를 만든 직후 호출이 실패하면 재시도하거나 새 세션에서 확인합니다.
 
 **로딩 메커니즘:** 스킬은 `name` + `description` 한 줄만 항상 컨텍스트에 노출되고, 에이전트가 그 작업을 인식해 호출할 때 **SKILL.md 전문이 로드**됩니다. 규칙(Layer 1)이 "항상 켜져 있는 배경"이라면 스킬은 "필요할 때 꺼내 읽는 절차서"입니다.
 
@@ -87,15 +92,16 @@
 
 ### `verify`가 SSOT인 지점
 
-`refactor-audit`의 4단계는 검증 절차를 자체 정의하지 않고 `verify` 스킬을 참조합니다(중복 정의 방지). `verify`의 7단계:
+`refactor-audit`의 4단계는 검증 절차를 자체 정의하지 않고 `verify` 스킬을 참조합니다(중복 정의 방지). `verify`의 8단계:
 
 1. `./gradlew test` 실제 실행
 2. 스펙·이슈 체크리스트를 **실제 코드**와 대조 (STOP §1.5)
 3. API 계약 변경 시 트레일러 필요 여부 재확인 + `oasdiff`로 의도한 diff만 있는지
 4. 레거시 재점검 (STOP §4)
 5. 문서를 새로 만들었거나 50줄 이상 고쳤으면 `doc-reviewer` 서브에이전트 (advisory, 2026-09-03 추가)
-6. Must Have급이면 `code-review`/`simplify`를 서브에이전트로 한 번 더
-7. 실제 통과한 항목만 `[x]`, 실패·미검증은 숨기지 않고 그대로 보고
+6. Java를 3파일 이상·API·DB 범위로 고쳤으면 `senior-spring-backend-reviewer` 서브에이전트 (2026-09-04 추가)
+7. Must Have급이면 `code-review`/`simplify`를 서브에이전트로 한 번 더
+8. 실제 통과한 항목만 `[x]`, 실패·미검증은 숨기지 않고 그대로 보고
 
 ## 3. 실제 사례 — `auth` 도메인 (2026-08-04)
 

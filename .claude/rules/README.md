@@ -23,7 +23,8 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 │   └── format-java.sh
 ├── agents/                ← 서브에이전트 정의 (파일 생성 시 즉시 등록)
 │   ├── researcher.md              # G1 외부 문서 조사 전용 (Edit/Write 없음)
-│   └── doc-reviewer.md            # G3 문서 품질 리뷰 전용 (Edit/Write 없음)
+│   ├── doc-reviewer.md            # G3 문서 품질 리뷰 전용 (Edit/Write 없음)
+│   └── senior-spring-backend-reviewer.md  # G3 Java 변경 리뷰 전용 (Edit/Write 없음)
 ├── rules/                 ← 상황별 AI 규칙 (.md + paths frontmatter)
 │   ├── README.md                  ← 이 파일 (구조·사용법)
 │   ├── harness-workflow.md        # ⛔ STOP · 3 트랙 × 4 게이트 (코어, always-load)
@@ -52,7 +53,9 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
     │   └── SKILL.md
     ├── defer-followup/
     │   └── SKILL.md
-    └── debug-bug/
+    ├── debug-bug/
+    │   └── SKILL.md
+    └── retro/
         └── SKILL.md
 ```
 
@@ -115,19 +118,23 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `debug-bug` | **C 트랙** — 버그 리포트·`./gradlew test` 실패 (로컬 재현 + 프로덕션 전용 재현) | 없음(재현·조사 절차) — Superpowers `systematic-debugging` 대체, 승인 게이트 없는 절차형 스킬 |
 | `verify` | **G3 게이트** — "완료/통과" 선언 전, 특히 Must Have급·API·DB 변경 | 없음(검증 절차) — `./gradlew test` + 스펙·이슈 체크리스트 대조 + API 변경 시 `oasdiff` + 문서 50줄+ 변경 시 `doc-reviewer` |
 | `defer-followup` | **G4 게이트** — 「다른 이슈로 빼」·「후속 이슈로」·「이번 Milestone 밖」 | Draft 스펙 + Approved 스펙 amend + `docs/specs/README.md` 갱신 + (확인 후) GitHub 이슈 |
+| `retro` | **G4 게이트** — 작업 완료 후 회고, 「이번에 배운 거 정리」 | `docs/audits/harness-retro.md` append (승인 후) — 하네스 개선 후보만, 코드·설계 개선은 `harness-follow-up.md` 담당. **메인 컨텍스트 실행**(세션 대화 이력이 입력이라 fork 금지) |
 
 **워크플로:** `트랙 분류 → G1 리서치 → G2 승인 → 구현 → G3 검증 → G4 회고 → gh issue/PR`
 
 ## Agents (`agents/`)
 
-트랙과 무관하게 **게이트에서 호출하는 조사·리뷰 전용 서브에이전트**다. 둘 다 `Edit`/`Write` 도구가 없어 파일을 고칠 수 없고, 별도 컨텍스트에서 실행돼 메인 대화의 토큰을 아낀다.
+트랙과 무관하게 **게이트에서 호출하는 조사·리뷰 전용 서브에이전트**다. 셋 다 `tools` 화이트리스트에서 `Edit`/`Write`를 뺐고, 별도 컨텍스트에서 실행돼 메인 대화의 토큰을 아낀다.
+
+⚠️ **도구 목록이 쓰기를 완전히 막지는 못한다.** 셋 다 `Bash`를 갖고 있어 `sed -i`·리다이렉션으로 파일을 고칠 수 있고, `format-java.sh` 훅은 `Edit|Write` 매처라 Bash 경유 수정을 잡지 못한다. 마지막 한 겹은 각 에이전트 지침의 "수정하지 않는다" 규범이다 — 이 층을 결정론적 차단으로 오해하지 않는다 (2026-09-04 `senior-spring-backend-reviewer` 스모크 테스트에서 발견).
 
 | 에이전트 | 게이트 | 역할 |
 |----------|--------|------|
 | `researcher` | G1 | 외부 라이브러리·SDK·provider 문서 조사. **로컬 `build.gradle` 버전 확인 → 공식 문서(버전 고정) → 릴리즈 노트** 순서 강제, 블로그·StackOverflow 근거 인용 금지. 결론·근거 URL·문서 버전만 고정 포맷으로 반환 |
 | `doc-reviewer` | G3 | 문서 유형·정보 구조·문장 3단계 리뷰 (기준: `doc-writing.md`). advisory — 커밋을 막지 않음 |
+| `senior-spring-backend-reviewer` | G3 | Java 변경 diff를 트랜잭션 경계·N+1·하네스 계약(ErrorCode·`@TripActivity`·트레일러)·레이어 재사용·캡슐화 5축으로 리뷰 (기준: `spring-boot-java.md`). Critical/High/Medium/Low 4등급 + `파일:줄` 강제. **ArchUnit이 이미 검증하는 규칙은 지적 대상에서 제외** |
 
-**호출 기준:** 2개 이상 문서를 비교해야 하면 `researcher`, 단일 페이지면 인라인 `WebFetch`. 새 문서·50줄+ 문서 변경이면 `doc-reviewer`, 오타 수정이면 생략.
+**호출 기준:** 2개 이상 문서를 비교해야 하면 `researcher`, 단일 페이지면 인라인 `WebFetch`. 새 문서·50줄+ 문서 변경이면 `doc-reviewer`, 오타 수정이면 생략. Java를 3파일 이상·API·DB 범위로 고쳤으면 커밋 전 `senior-spring-backend-reviewer` — 범용 `code-review` 스킬과 **대체 관계가 아니다**(그쪽은 언어 무관 일반 결함, 이쪽은 이 저장소의 Spring·JPA·하네스 계약).
 
 상세: `.claude/rules/workflow-tools.md`
 

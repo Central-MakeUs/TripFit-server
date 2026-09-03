@@ -159,12 +159,13 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - **보안·아키텍처 성격 변경:** STOP §6 대상(토큰·세션·결제·개인정보 저장 방식 등)이면 `docs/how-it-works.md` 해당 절 갱신 확인
 - **레거시 재점검:** 이번 변경이 대체한 구 경로·상수·문서 ‘현행’ 문구가 남았는지 확인 후 **삭제/amend**. 요청 밖·정책 무관 dead code만 언급. **정책 불일치·교체 잔존 → STOP §4 삭제**
 - **문서 품질:** 새 문서를 만들었거나 기존 문서를 **50줄 이상** 고쳤으면 **`doc-reviewer` 서브에이전트**([`.claude/agents/doc-reviewer.md`](../agents/doc-reviewer.md), 기준 SSOT: `doc-writing.md`). 오타·한 줄 수정은 대상 아님 — 문체는 exit code로 판정할 수 없어 **advisory**(훅 아님)
+- **Java 변경 리뷰:** Java를 **3파일 이상**·API·DB 범위로 고쳤으면 **`senior-spring-backend-reviewer` 서브에이전트**([`.claude/agents/senior-spring-backend-reviewer.md`](../agents/senior-spring-backend-reviewer.md), 기준 SSOT: `spring-boot-java.md`). 트랜잭션 경계·N+1·ErrorCode/`@TripActivity` 누락처럼 **ArchUnit이 잡지 못하는** 결함이 대상이다 — 한 줄·단일 파일 수정은 대상 아님
 - **규모 게이트:** Must Have급(3파일+·API·DB)이면 `code-review` 또는 `simplify`를 서브에이전트 컨텍스트에서 한 번 더 — self-grading 편향 회피
 
 ## G4. 회고 게이트 — 남길 것 남기기
 
 - **프로젝트 문서 갱신 점검 (매 작업 필수):** 이번 작업에서 새로 확정된 설계 결정·컨벤션·자주 틀리기 쉬운 함정이 있으면 `AGENTS.md`/`CLAUDE.md` 또는 해당 `.claude/rules/*.md` 갱신이 필요한지 검토한다. 필요하면 구체적 수정안을 사용자에게 제안한다 — **자동 갱신 금지, 승인 후 반영.** 아래 "같은 실수 2회+" 문턱과 별개로 **매 작업 종료 시** 확인 대상이며, 새로 배운 게 없으면 조용히 스킵한다(보고에 언급 불필요)
-- 같은 실수 2회+ → `.claude/rules/` 추가 **제안** (자동 추가 금지)
+- 같은 실수 2회+ → `.claude/rules/` 추가 **제안** (자동 추가 금지) — 절차는 **`retro` 스킬**([`.claude/skills/retro/SKILL.md`](../skills/retro/SKILL.md)), 승인 후 `docs/audits/harness-retro.md`에 후보로 append. 코드·설계 개선은 여기가 아니라 `harness-follow-up.md` 💡 후속 제안 담당
 - **트랙별 기록:** B 트랙은 `docs/audits/{domain}/refactor-log.md`에 반영 이력 append
 - Entity·스키마 후 ERD 개선 → `harness-follow-up.md` 💡 ERD
 - Must Have급 완료 / 사용자 요청 시 후속 제안 → `harness-follow-up.md`

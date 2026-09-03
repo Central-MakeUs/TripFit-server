@@ -66,6 +66,7 @@ paths:
 | `docs/specs/` | 작업 산출물(설계) | `spec-template.md` |
 | `docs/audits/{domain}/` | 작업 산출물(코드 감사) | `audit-template.md` |
 | `docs/audits/doc-writing-audit.md` | 작업 산출물(문서 품질 감사) | 도메인 축이 아니라 저장소 전체 대상 — `audits/` 루트에 둠 |
+| `docs/audits/harness-retro.md` | 작업 산출물(하네스 회고) | 규칙·스킬·에이전트·훅이 놓친 것을 쌓는 백로그 — 도메인 축이 아니라 `audits/` 루트에 둠 (`retro` 스킬 산출물) |
 | `deploy/README.md` | 문제 해결 | 배포·HTTPS 발급·롤백 절차 (2026-09-03 env 표를 아래로 분리) |
 | `deploy/environment-reference.md` | 참조 | GitHub Secrets·EC2 인프라·환경 변수 표 |
 
