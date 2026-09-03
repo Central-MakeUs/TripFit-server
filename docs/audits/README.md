@@ -1,12 +1,19 @@
-# 아키텍처 감사 (`docs/audits/`)
+# 감사 기록 (`docs/audits/`)
 
-`refactor-audit` 스킬([`.claude/skills/refactor-audit/SKILL.md`](../../.claude/skills/refactor-audit/SKILL.md))의 산출물. 새 기능 스펙(`docs/specs/`)과 달리, **기존 코드**를 API 계약·비즈니스 로직 변경 없이 리팩토링한 감사·이력 기록이다.
+새 기능 스펙(`docs/specs/`)이 "앞으로 만들 것"이라면, 이 폴더는 **이미 있는 것을 점검한 결과와 그 반영 이력**이다. 두 종류가 있다.
+
+| 종류 | 대상 | 위치 | 만드는 주체 |
+|------|------|------|-------------|
+| **코드 감사** | 도메인별 구현 코드 — API 계약·비즈니스 로직은 바꾸지 않고 내부 품질만 개선 | `docs/audits/{domain}/` | [`refactor-audit`](../../.claude/skills/refactor-audit/SKILL.md) 스킬 (B 트랙) |
+| **문서 품질 감사** | 저장소 전체 마크다운 문서 — 유형·구조·문장·용어 | [`doc-writing-audit.md`](doc-writing-audit.md) (이 폴더 루트) | G3 문서 품질 게이트 · [`doc-reviewer`](../../.claude/agents/doc-reviewer.md) |
+
+문서 품질 감사는 도메인 축에 속하지 않으므로 **도메인 폴더 안이 아니라 루트에 둔다.** `{domain}/` 하위는 `refactor-audit` 산출물 전용으로 유지해, 폴더만 보고 무엇이 들어 있는지 예측할 수 있게 한다.
 
 `auth` 도메인 라운드는 이 스킬을 처음으로 전체 사이클(감사→승인→구현→검증) 적용한 사례로 [`docs/harness-engineering.md`](../harness-engineering.md) §4에서 케이스 스터디로 다룬다.
 
 **폴더 = 도메인** — `docs/specs/`와 동일 축(`auth`, `user`, `user-schedule`, `trip`, `notification`, `cross-cutting`).
 
-## 폴더당 파일
+## 도메인 폴더당 파일 (코드 감사)
 
 | 파일 | 내용 |
 |------|------|

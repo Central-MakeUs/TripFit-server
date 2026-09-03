@@ -1,62 +1,22 @@
 # TripFit Server Architecture
 
-## Overview
+TripFit 백엔드 API 서버의 전체 시스템 아키텍처 원칙과 레이어 구조를 설명하는 문서다. Spring Boot 기반 도메인 계층형 아키텍처의 설계 의도, 계층별 책임 규칙, 설정 및 데이터 모델 개요를 다룬다. 패키지별 상세 구성과 소유 클래스 트리는 [`docs/architecture/package-layout.md`](architecture/package-layout.md)를 참고한다.
 
-Spring Boot 4.x 기반 단일 모듈 Gradle 프로젝트.  
+## 시스템 아키텍처 개요
+
+Spring Boot 4.x 기반 단일 모듈 Gradle 프로젝트.
 **도메인 기반 레이어드 아키텍처**로 `auth`, `user`, `trip`, `notification`, `common` 단위로 코드를 묶고, 각 도메인 내부는 **Controller / DTO / Service / Domain / Repository** (+ 필요 시 Client) 레이어를 사용합니다. 풀 DDD는 적용하지 않으며, JPA 연관관계를 자유롭게 활용합니다.
 
 > 아키텍처 결정: [`decisions/003-architecture-guide.md`](decisions/003-architecture-guide.md)
 
-## Package Layout (Domain-Driven Layered)
+## Package Layout (도메인 기반 계층형)
 
-도메인 단위로 코드를 묶고, 도메인 내부에서 controller → dto → service → domain → repository 레이어를 둡니다.  
-공통 설정·예외·베이스 엔티티는 `common/`에 둡니다.
+도메인 단위로 코드를 묶고, 도메인 내부에서 `controller → dto → service → domain → repository` 레이어를 둡니다. 공통 설정·예외·베이스 엔티티는 `common/`에 둡니다.
 
-```
-com.tripfit.tripfit
-├── TripfitApplication.java
-├── common/
-│   ├── api/                        # SuccessResponse, ErrorResponse, FieldError
-│   ├── config/                     # JpaConfig, SchedulingConfig
-│   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
-│   ├── exception/                  # ErrorCode, CommonErrorCode, TripFitException, GlobalExceptionHandler
-│   ├── logging/                    # PiiMasker, SocialIntegrationLog, SocialLogContext, SocialIntegrationAction
-│   └── security/                   # SocialTokenCrypto, SocialTokenCryptoProperties
-├── auth/
-│   ├── controller/                 # AuthController
-│   ├── dto/                        # LoginRequest, LoginResponse, ...
-│   ├── service/                    # AuthService, RefreshTokenService
-│   ├── domain/                     # RefreshToken
-│   ├── repository/                 # RefreshTokenRepository
-│   ├── jwt/                        # JwtService, Filter, AuthorizedUser, JwtProperties
-│   ├── oauth/                      # SocialTokenVerifier*, OAuthProperties
-│   ├── security/                   # SecurityConfig, AppConfig
-│   └── exception/                  # AuthErrorCode
-├── user/
-│   ├── controller|dto|service|domain|repository|exception   # 프로필·온보딩
-│   └── schedule/                   # feature: 정기·개별 일정
-│       ├── controller|dto|service|domain|repository
-│       └── exception/              # ScheduleErrorCode
-├── trip/
-│   ├── controller|dto|domain|exception|config|scheduler
-│   ├── service/                    # TripService(facade), TripCommandService, TripQueryService, TripServiceSupport,
-│   │                                #   TripDisplayNameHelper, TripHomeMaintenanceService (공용 — feature 무관)
-│   ├── repository/                 # TripRepository
-│   ├── event/                      # TripInfoChangedEvent 등 — trip이 발행하는 이벤트(발행 주체가 소유)
-│   ├── membership/                 # feature: 참여·멤버 관리
-│   │   └── controller|dto|service|domain|repository(+projection)
-│   ├── recommendation/             # feature: 추천 + 피드백
-│   │   ├── controller|dto|domain|service|repository
-│   │   └── algorithm/              # RecommendationEngine, RecommendationCandidate, MemberAttendanceDetail (순수 계산)
-│   └── schedule/                   # feature: 여행방 내 스케줄 합산/스냅샷
-│       └── dto|domain|service|repository
-└── notification/
-    ├── controller|dto|domain|exception|config
-    ├── service|repository|event    # NotificationEventListener 등
-    └── scheduler/                  # ScheduleReminderBatch 등
-```
-
-새 기능 추가 시 `com.tripfit.tripfit.{domain}/` 레이어 규칙을 따른다. 도메인 안 기능이 커지면 `{domain}/{feature}/`에 동일 레이어를 둘 수 있다 (`user/schedule`, `user/googlecalendar`, `trip/membership`, `trip/recommendation`, `trip/schedule`). 여러 기능이 공유하는 코드(예: `TripServiceSupport`)는 도메인 루트에 둔다. 크로스 도메인 조회는 포트/어댑터 인터페이스 없이 제공 도메인의 concrete 서비스를 직접 주입한다(`decisions/003-architecture-guide.md` 결정 11, 2026-08-26 폐기 — 상세: [`docs/audits/trip/refactor-log.md`](audits/trip/refactor-log.md)).
+- **상세 패키지 트리 및 클래스 목록**: [`docs/architecture/package-layout.md`](architecture/package-layout.md) 참조 (SSOT)
+- **Feature 서브패키지 규칙**: 도메인 안 기능이 커지면 `{domain}/{feature}/`에 동일 레이어를 둘 수 있다 (`user/schedule`, `user/googlecalendar`, `trip/membership`, `trip/recommendation`, `trip/schedule`).
+- **도메인 내 공유 코드**: 여러 기능이 공유하는 코드(예: `TripServiceSupport`, `TripDisplayNameHelper`)는 도메인 루트 `service/`에 둔다.
+- **크로스 도메인 의존**: 포트/어댑터 인터페이스 없이 제공 도메인의 concrete 서비스를 직접 주입한다 (`decisions/003-architecture-guide.md` 결정 11, 2026-08-26 폐기 — 상세: [`docs/audits/trip/refactor-log.md`](audits/trip/refactor-log.md)).
 
 ## Layer Rules (도메인 내부)
 
@@ -78,7 +38,7 @@ com.tripfit.tripfit
 
 ## API Response
 
-JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (확정).  
+JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (확정).
 확정 전에는 스펙·구현이 **제안안 기준** — 프론트와 맞춘 뒤 SSOT로 승격.
 
 ## Configuration
@@ -116,7 +76,7 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 
 ## Deployment
 
-운영 절차·환경변수·검증 스크립트는 [`deploy/README.md`](../deploy/README.md)가 SSOT입니다.  
+운영 절차·환경변수·검증 스크립트는 [`deploy/README.md`](../deploy/README.md)가 SSOT입니다.
 VPC·SG·1→2 EC2 마이그레이션 심화: [`ec2-split-deployment.md`](../deploy/ec2-split-deployment.md).
 
 CI/CD: `.github/workflows/ci-cd.yml` — PR은 test, `main` push는 test → GHCR push → EC2 A deploy.

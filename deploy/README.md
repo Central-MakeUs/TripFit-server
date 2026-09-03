@@ -1,9 +1,10 @@
 # TripFit 배포 (`deploy/`)
 
-Docker Compose 기반 배포 설정. **배포 운영 SSOT** — 절차·환경변수·검증 스크립트는 이 문서를 기준으로 합니다.
+TripFit 서버의 로컬 개발 구동, EC2 4대 인프라 배포 절차, HTTPS 인증서 발급 및 운영 스크립트 실행법을 다루는 가이드다. 각 서버별 기동 순서, Let's Encrypt TLS 발급, CI/CD 자동 배포 흐름, 스토어 심사 전 OAuth 콘솔 등록 체크리스트를 설명한다. 상세 인프라 사양 및 환경 변수(GitHub Secrets) 전체 목록은 [`deploy/environment-reference.md`](environment-reference.md)를 참고한다.
 
 | 관련 문서 | 용도 |
 |-----------|------|
+| [`environment-reference.md`](environment-reference.md) | **인프라 사양 및 환경 변수(Secrets) 전체 표 (SSOT)** |
 | [`docs/decisions/002-domain-split-vercel-api.md`](../docs/decisions/002-domain-split-vercel-api.md) | 도메인 분리 확정 |
 | [`docs/architecture.md`](../docs/architecture.md) | 프로필·ddl-auto·레이어 |
 | [`ec2-split-deployment.md`](ec2-split-deployment.md) | VPC·SG·1→2 EC2 심화 |
@@ -175,63 +176,18 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 - **CI/CD 대상 아님** — `main` push 자동 배포는 EC2 A(app)만 다룬다. EC2 C는 위 명령으로 수동 배포·갱신.
 - 이 서버는 A/B와 달리 git 체크아웃이 아니라 `~/monitoring`·`~/scripts`에 파일을 직접 올린 상태 — 향후 git 체크아웃으로 전환 권장(009 후속 작업).
 
-## 환경 변수
+## 환경 변수 관리
 
-### GitHub Actions Secrets (전체 — push 시 자동 주입, EC2 SSH·`.env` 수정 불필요)
+애플리케이션 실행 및 배포에 필요한 GitHub Actions Secrets 32개 전체 목록과 기본값, 필수 여부는 [`deploy/environment-reference.md`](environment-reference.md)에서 관리합니다.
 
-**`main` push → CI/CD deploy** 단계에서 아래 Secrets를 SSH 세션 env로 받아 EC2에서 `export` 후 `docker compose up -d`를 실행한다.
-**한 번 등록해두면 이후 배포는 GitHub Secrets만 갱신하면 되고, EC2에 SSH로 들어가 `deploy/app/.env`를 만들거나 수정할 필요가 없다.**
+### 주요 관리 원칙
 
-| Secret | 필수 | 설명 |
-|--------|------|------|
-| `MYSQL_HOST` | ✅ | EC2 B private IP |
-| `MYSQL_PORT` | | 기본 3306 |
-| `MYSQL_DATABASE` | ✅ | DB 이름 (`tripfit`) |
-| `SPRING_DATASOURCE_USERNAME` | ✅ | DB 계정 |
-| `SPRING_DATASOURCE_PASSWORD` | ✅ | DB 비밀번호 |
-| `SPRING_PROFILES_ACTIVE` | | 기본 `dev` |
-| `APP_PORT` | | Spring 컨테이너 바인딩 포트, 기본 8080 |
-| `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | | 기본 80 / 443 |
-| `CERTBOT_DOMAIN` | | 기본 `api.tripfit.online` |
-| `LOKI_HOST` | | EC2 C(모니터링) private IP — 기본 `172.31.38.217`. 미등록이어도 `docker-compose.yml`의 동일 기본값으로 fail-safe(로깅 미동작 대신 컨테이너는 정상 기동) |
-| `REDIS_HOST` | | EC2 D(Redis) private IP — 기본 `172.31.38.246`(TP-redis). 미등록이어도 `docker-compose.yml`의 동일 기본값으로 fail-safe. `docs/decisions/010-redis-infra.md` |
-| `REDIS_PORT` | | 기본 6379 |
-| `REDIS_PASSWORD` | ✅ | Redis `requirepass` — GitHub Secret 등록 완료(2026-08-10) |
-| `JWT_SECRET` | ✅ | Access JWT 서명 키 (256bit+ random) |
-| `JWT_ACCESS_EXPIRATION` | | 기본 900초(15분) |
-| `JWT_REFRESH_EXPIRATION_DAYS` | | 기본 30일 |
-| `GOOGLE_CLIENT_ID` | | Google 로그인 web client ID (`aud` 검증 · authorization code 교환) |
-| `GOOGLE_CLIENT_SECRET` | | Google 로그인 web client secret (authorization code 교환) |
-| `GOOGLE_CLIENT_ID_IOS` | | Google iOS client ID |
-| `GOOGLE_CLIENT_ID_ANDROID` | | Google Android client ID |
-| `GOOGLE_CALENDAR_CLIENT_ID` | | Google Calendar 연동 전용 client ID — 로그인과 분리(`docs/specs/user/google-calendar-client-id-separation.md`), Calendar FE 착수 전까지는 미등록 상태 |
-| `GOOGLE_CALENDAR_CLIENT_SECRET` | | 위 Calendar 전용 client의 secret — authorization code·refresh token 교환 |
-| `SOCIAL_TOKEN_AES_KEY` | ✅ (Calendar 연동 시) | Base64 인코딩 32바이트 AES-256 키 — 없으면 연동 API 호출 시 500 |
-| `APPLE_BUNDLE_ID` | | Apple App ID(Bundle ID, 예: `com.tripfit.app`) — iOS 네이티브 앱 로그인 `aud` 검증·토큰교환/revoke `client_id` |
-| `APPLE_SERVICE_ID` | | Apple Services ID — 모바일 브라우저 로그인 경로 `aud` 검증·토큰교환/revoke `client_id` (`docs/specs/auth/apple-oauth-multi-audience.md`) |
-| `APPLE_TEAM_ID` | ✅ (Apple 로그인 시) | Apple Developer Team ID — client_secret JWT `iss` |
-| `APPLE_KEY_ID` | ✅ (Apple 로그인 시) | Sign in with Apple용 `.p8` 키의 Key ID — client_secret JWT `kid` |
-| `APPLE_PRIVATE_KEY` | ✅ (Apple 로그인 시) | 위 `.p8` 키 원문 — client_secret JWT ES256 서명 |
-| `KAKAO_ADMIN_KEY` | ✅ (Kakao 로그인 시) | Kakao Developers 앱 Admin Key — 탈퇴 시 unlink 호출 전용(로그인 검증 자체에는 불필요) |
-| `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
-| `HOLIDAY_API_SERVICE_KEY` | ✅ (공휴일 반영 시) | 공공데이터포털 특일 정보 API 인증키 — 반드시 **Decoding** 키. 발급·검증 절차는 [`holiday-api-setup.md`](holiday-api-setup.md). 비어 있으면 동기화를 건너뛰고 "공휴일 없음"으로 동작(앱은 정상 기동) |
-
-**`LOKI_HOST`**: EC2 A는 위 Secret으로 관리(값 `172.31.38.217` — TP-monitoring private IP). EC2 C를 재생성해 private IP가 바뀌면 **이 Secret만 갱신**하면 된다. `deploy/app/docker-compose.yml`·`deploy/mysql/docker-compose.yml`의 `${LOKI_HOST:-172.31.38.217}` 기본값은 Secret 미설정 시에도 컨테이너가 죽지 않게 하는 fail-safe 용도로 남겨뒀다 — IP가 실제로 바뀌면 이 기본값도 함께 갱신해 두 값이 계속 일치하도록 한다. **EC2 B(MySQL)는 CI/CD 대상이 아니라 이 Secret이 적용되지 않음** — B의 `deploy/mysql/.env`에 `LOKI_HOST`를 직접 수정해야 한다.
-
-**`REDIS_HOST`**: 2026-08-10 EC2 D(`TP-redis`, `i-06fb8540484834192`) 프로비저닝 후 GitHub Secret 등록 완료(값 `172.31.38.246`). EC2 D를 재생성해 private IP가 바뀌면 **이 Secret과 `deploy/app/docker-compose.yml`의 `${REDIS_HOST:-172.31.38.246}` 기본값을 함께 갱신**한다(LOKI_HOST와 동일 패턴). Redis는 fail-open 설계(`RedisTokenRevocationChecker`)라 연결이 안 돼도 앱 자체는 죽지 않고 즉시무효화 기능만 비활성화된다.
-
-등록 위치: GitHub repo → **Settings → Secrets and variables → Actions**
-
-기존 SSH·이미지 Secrets(`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_DEPLOY_PATH`, `GHCR_PAT`, `GHCR_USERNAME`)와 함께 사용한다.
-`deploy/app/docker-compose.yml`의 `app.environment`가 위 변수를 Spring Boot 컨테이너로 넘긴다.
-
-`MYSQL_HOST`·`MYSQL_DATABASE`·`SPRING_DATASOURCE_*`·`JWT_SECRET`·`SOCIAL_TOKEN_AES_KEY`(Calendar 연동 시)는 **필수** — 미등록 상태로 push하면 CI/CD 배포 단계가 즉시 실패한다(fail-fast). 나머지는 비어 있으면 `docker-compose.yml`에 박힌 기본값을 그대로 쓴다.
-
-`FRONTEND_IMAGE` **사용하지 않음** — 프론트는 Vercel.
-
-**`deploy/app/.env`는 이제 필수 아님** — CI/CD 자동 배포는 위 Secrets만으로 완결된다. 다만 `scripts/ec2-deploy-app.sh`로 **수동** 배포하거나 로컬에서 직접 `docker compose`를 띄울 때는 여전히 `.env` 또는 `export`로 값을 넘겨야 한다 (`deploy/app/.env.example` 참고). `CERTBOT_EMAIL`은 최초 1회 `init-letsencrypt.sh`/`setup-api-https.sh` 수동 실행 시에만 필요해 CI/CD 화이트리스트에는 포함하지 않았다.
-
-로컬: 루트 `.env` 또는 `deploy/app/.env.example` 참고. 상세 스펙: `docs/specs/auth/auth-social-login.md`
+- **자동 주입**: `main` push → CI/CD deploy 단계에서 GitHub Secrets를 SSH 세션 환경 변수로 주입받아 EC2에서 `export` 후 `docker compose up -d`를 실행합니다. 한 번 등록해두면 이후 배포는 GitHub Secrets만 갱신하면 되며, EC2에 SSH로 접속해 `deploy/app/.env`를 생성하거나 수정할 필요가 없습니다.
+- **Fail-Fast 필수 변수**: 필수로 지정된 Secret이 미등록인 채로 push되면 CI/CD 배포 단계가 즉시 실패합니다. **어떤 변수가 필수인지는 [`environment-reference.md`](environment-reference.md)의 표가 SSOT** — 목록을 이 문서에 옮겨 적지 않습니다(양쪽에 두면 한쪽만 고쳤을 때 어긋납니다).
+- **Fail-Safe 호스트 변수**: 모니터링(EC2 C)·Redis(EC2 D) 호스트 변수는 Secret 미설정 시에도 compose 기본값으로 컨테이너가 정상 기동되도록 처리돼 있습니다. 사설 IP가 바뀌면 GitHub Secret과 compose 기본값을 **함께** 갱신해야 합니다 — 변수명·현재 기본값은 [`environment-reference.md`](environment-reference.md) 참조.
+- **`FRONTEND_IMAGE` 사용 금지**: `FRONTEND_IMAGE` **사용하지 않음** — 프론트는 Vercel. EC2에 프론트엔드 컨테이너가 없으므로 변수를 사용하거나 추가하지 않습니다.
+- **수동 배포 및 로컬**: `scripts/ec2-deploy-app.sh` 수동 실행이나 로컬 docker compose 시에는 `.env` 또는 `export`로 값을 전달합니다 (`deploy/app/.env.example` 및 루트 `.env` 참고).
+- **전체 환경 변수 표 및 상세 설명**: [`deploy/environment-reference.md`](environment-reference.md) 참조
 
 ### 스토어 제출 전 OAuth 콘솔 설정 체크리스트
 
