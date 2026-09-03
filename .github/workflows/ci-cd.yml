@@ -120,39 +120,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/api/openapi.json
           git commit -m "Chore: OpenAPI 스펙 스냅샷 갱신 [skip ci]"
-          # update-readme-badge job과 동시에 main에 push하므로 경쟁 시 rebase 후 재시도(#4·#35 병합 사고 재발 방지)
-          for i in 1 2 3 4 5; do
-            if git push; then
-              break
-            fi
-            echo "push 거부됨(동시 push, 시도 ${i}/5) — main rebase 후 재시도"
-            sleep $((i * 2))
-            git pull --rebase origin main
-          done
-
-  update-readme-badge:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Update AI co-authored commit badge
-        run: |
-          ./scripts/update-ai-commit-badge.sh
-          if git diff --quiet -- .github/badges/ai-commits.json; then
-            echo "배지 수치 변경 없음 — 커밋 스킵"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/badges/ai-commits.json
-          git commit -m "Chore: AI co-authored commit 배지 자동 갱신 [skip ci]"
-          # api-contract-check job과 동시에 main에 push하므로 경쟁 시 rebase 후 재시도(#4·#35 병합 사고 재발 방지)
+          # main에 동시 push가 겹치면 거부되므로 rebase 후 재시도(#4·#35 병합 사고 재발 방지)
           for i in 1 2 3 4 5; do
             if git push; then
               break
