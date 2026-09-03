@@ -1,3 +1,8 @@
+---
+paths:
+  - ".claude/**"
+---
+
 # TripFit `.claude/rules` — AI 에이전트 규칙
 
 Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전용 AI 설정**입니다.  
@@ -40,7 +45,9 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
     │       └── audit-checklist.md
     ├── verify/
     │   └── SKILL.md
-    └── defer-followup/
+    ├── defer-followup/
+    │   └── SKILL.md
+    └── debug-bug/
         └── SKILL.md
 ```
 
@@ -80,6 +87,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `deployment.md` | yml, Docker, deploy | 배포 가드레일 — 절차는 `deploy/README.md` (MySQL 예약어·quoting은 `spring-boot-java.md`로 이동) |
 | `testing.md` | `**/*Test.java`, `src/test/**` | JUnit 5·프로필·테스트 네이밍 |
 | `fe-context.md` | `docs/product/fe-context/**` | 도메인별 폴더(user/user-schedule/trip)·드리프트 체크리스트·상호 링크 규칙 |
+| `README.md`(이 파일) | `.claude/**` | 구조 인덱스 — 사람이 보는 디렉터리 맵이라 행동 규칙이 아님, 2026-08-11부터 `.claude/` 작업 시에만 로드 |
 
 ### 규칙 추가·분리 가이드
 
@@ -99,6 +107,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `refactor-audit` | 기존 코드 아키텍처 감사·무손실 리팩토링 (API 계약·비즈니스 로직 불변) | `docs/audits/{domain}/audit.md`(A/B/C/D 분류) · `refactor-log.md`(반영 이력) — 도메인 1개씩 순차, 매 단계 승인 게이트 |
 | `verify` | "완료/통과" 선언 전, 특히 Must Have급·API·DB 변경 | 없음(검증 절차) — `./gradlew test` + 스펙·이슈 체크리스트 대조 + API 변경 시 `oasdiff` |
 | `defer-followup` | 「다른 이슈로 빼」·「후속 이슈로」·「wave 밖」 | Draft 스펙 + Approved 스펙 amend + `docs/specs/README.md` 갱신 + (확인 후) GitHub 이슈 |
+| `debug-bug` | 버그 리포트·`./gradlew test` 실패 (로컬 재현 + 프로덕션 전용 재현) | 없음(재현·조사 절차) — Superpowers `systematic-debugging` 대체, 승인 게이트 없는 절차형 스킬 |
 
 **워크플로:** `wave 확인 → (Plan Mode) → specify/Approved → 구현 → ./gradlew test → verify → (후속 제안) → gh issue/PR`
 
