@@ -177,16 +177,13 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 ## 금지 (요약)
 
-- **사용자 확인 없이 새 이슈·새 브랜치·새 PR 생성** — G2 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
-- 이슈 번호 없는 브랜치명 — CONTRIBUTING 위반
-- **G1 없이 외부 라이브러리 동작을 추측으로 구현** · 블로그·StackOverflow를 근거로 인용
-- **G3 문서 품질 게이트 생략** — 새 문서 생성·50줄+ 문서 변경인데 `doc-reviewer` 미실행
-- 문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋 — STOP §1
-- **교체 후 구 경로·상수·‘현행’ 문서 방치** — STOP §4 (dev에서 호환 레이어 불필요)
-- **프론트 대응이 필요한 API 계약 변경에 `Breaking-Change-Reason` 트레일러 누락** — STOP §5 (optional 필드 추가·enum 값 추가도 대상)
-- **보안·아키텍처 성격 로직을 바꾸고 `docs/how-it-works.md` 미갱신** — STOP §6 (사용자가 나중에야 알게 됨)
-- `git push --force` (main/master), `rm -rf`, 운영 DB 파괴
-- `.env`·API 키를 코드·커밋에 포함
+위 절들의 **스캔용 목록**이다. 조건·근거는 각 절이 SSOT이므로 여기서 다시 설명하지 않는다 — 항목이 걸리면 해당 절을 편다.
+
+| 축 | 하지 않는다 |
+|----|-------------|
+| **STOP** | §1 문서 충돌 무시 · §2 ErrorCode/AOP 미갱신 · §3 마이그레이션 작성 · §4 교체 후 구 경로 방치 · §5 `Breaking-Change-Reason` 누락 · §6 `how-it-works.md` 미갱신 |
+| **게이트** | G1 리서치 없이 추측 구현·블로그 인용 · G2 확인 없이 이슈/브랜치/PR 생성 · G3 `doc-reviewer` 생략 · 이슈 번호 없는 브랜치명(CONTRIBUTING) |
+| **환경** | `git push --force`(main/master) · `rm -rf` · 운영 DB 파괴 · `.env`·API 키 커밋 |
 
 ## 도메인·배포 (확정 — 재질문 금지)
 

@@ -24,7 +24,7 @@
 | `deployment.md` | rule | **yml·docker-compose 접근 시에만** | 배포 가드레일 |
 | `testing.md` | rule | **`*Test.java`·`src/test/**` 접근 시에만** | JUnit·Testcontainers |
 | `doc-writing.md` | rule | **`docs/**/*.md`·`.claude/**/*.md` 접근 시에만** | 문서 유형·정보 구조·문장 (2026-09-03 신설) |
-| `.claude/rules/README.md`(이 표 자체가 실린 파일) | rule(구조 인덱스) | **`.claude/**` 접근 시에만** | 위 path-scoped 7개 + 이 파일 자체 = **총 8개** (아래 §4 "path-scoped 8개"의 근거) |
+| `.claude/rules/README.md`(이 표 자체가 실린 파일) | rule(구조 인덱스) | **`agents/`·`skills/`·`hooks/`·`settings*.json`·이 파일** 접근 시 (2026-09-04 축소, 이전 `.claude/**`) | 위 path-scoped 7개 + 이 파일 자체 = **총 8개** (아래 §4 "path-scoped 8개"의 근거) |
 
 **로딩 메커니즘:** `.claude/rules/*.md`에 YAML frontmatter `paths:`가 **없으면** 세션 시작 시 항상 주입되고, **있으면** 그 glob에 매칭되는 파일을 읽거나 쓸 때만 주입됩니다(Cursor `.mdc`의 `alwaysApply`/`globs`에 대응). 이렇게 나눈 이유는 토큰 절약입니다 — Java를 안 건드리는 세션에서 Spring 컨벤션 전체를 매번 실을 필요가 없습니다.
 
@@ -97,9 +97,26 @@ ls src/main/java/com/tripfit/tripfit/auth/service/
 
 | 순위 | 강조할 것 | 근거 |
 |---|---|---|
-| 1 | **path-scoped 규칙 로딩으로 컨텍스트 예산을 설계했다** | always-load 5개 + path-scoped 8개로 분리(2026-09-03 `doc-writing.md` 추가). "규칙을 많이 쓰면 좋다"가 아니라 "언제 무엇을 실을지"를 토큰 비용 관점에서 설계했다는 점이 차별점 |
+| 1 | **path-scoped 규칙 로딩으로 컨텍스트 예산을 설계했다** | always-load 5개 + path-scoped 8개로 분리(2026-09-03 `doc-writing.md` 추가). "규칙을 많이 쓰면 좋다"가 아니라 "언제 무엇을 실을지"를 토큰 비용 관점에서 설계했다는 점이 차별점. **2026-09-04에 실측으로 재조정**했다 — 아래 절 참고 |
 | 2 | **문서 드리프트를 실패 모드로 인정하고 절차를 만들었다** | STOP §1.5·§1.6은 "문서를 믿지 말고 코드/생성물을 확인하라"는 규칙. 문서 SSOT를 만들면서 동시에 그 SSOT가 썩는다는 걸 전제한 설계 |
 | 3 | 충돌 시 임의 판단 금지 (STOP §1) | 흔한 주장이라 단독으로는 약함. 위 2번 사례와 묶어서 말해야 설득력이 생김 |
+
+### 4-1. 실측으로 재조정한 컨텍스트 예산 (2026-09-04)
+
+"컨텍스트 예산을 설계했다"고 말하려면 숫자가 있어야 합니다. 이날 처음 실제 크기를 쟀고, 그 결과로 세 가지를 고쳤습니다.
+
+| 항목 | 크기 | 언제 지불하나 |
+|---|---|---|
+| always-load 규칙 5개 | 약 42KB | **매 세션 무조건** |
+| `AGENTS.md` + `CLAUDE.md` | 약 7.7KB | **매 세션 무조건** |
+| Java 규칙 3개(`spring-boot-java`·`openapi-conventions`·`java-comments`) | 약 46KB | `**/*.java` **한 개만 열어도 전부** |
+| `.claude/rules/README.md` | 약 16KB | 구 설정에서는 `.claude/` 안 어디든 건드리면 |
+
+**드러난 것 ①** — Java 파일 하나를 여는 순간 붙는 46KB가 **always-load 전체(42KB)보다 큽니다.** 세 규칙이 모두 `**/*.java`에 걸려 있어 테스트 한 줄을 고쳐도 셋 다 실립니다.
+
+**드러난 것 ②** — `.claude/rules/README.md`는 자기 파일에 "사람이 보는 디렉터리 맵이라 행동 규칙이 아님"이라고 적어두고도, `.claude/**` 스코프라 규칙 *내용*만 고치는 세션에도 17KB가 실렸습니다. **구성 요소를 추가·삭제할 때**(유지보수 체크리스트가 실제로 필요할 때)만 로드되도록 좁혔습니다.
+
+**기각한 것** — "Swagger 규칙을 Controller·DTO 경로로 좁히자"는 안은 실제 코드를 확인하고 폐기했습니다. `@Schema`가 `domain`·`exception`·`schedule` 등 전 패키지에 퍼져 있어, 좁히면 필요한 자리에 규칙이 **안 실리는** 사고가 납니다. 측정 없이 직관으로 좁혔으면 통제가 약해졌을 지점입니다.
 
 **주의 — 면접에서 이 레이어만 강조하면 약합니다.** "AI에게 규칙 파일을 잘 써줬다"는 프롬프트 엔지니어링에 가깝고, 누구나 보여줄 수 있습니다. 이 레이어는 [Layer 3](layer3-deterministic-hooks.md)의 결정론적 강제와 **대비**시킬 때 가치가 살아납니다 — "소프트 가드레일로 되는 것과 안 되는 것을 구분했다"는 판단이 핵심입니다.
 

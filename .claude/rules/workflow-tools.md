@@ -30,6 +30,16 @@ Harness 형제: `harness-milestone.md` (Milestone·priority·`[미정]`) · `har
 | **G3 검증** | **`verify`** 스킬 · `code-review`/`simplify` 서브에이전트 | `./gradlew test` + 이슈·스펙 체크리스트 + API 변경 시 `oasdiff`. 문서 50줄+ 변경·신규 문서면 **`doc-reviewer`**(기준: `doc-writing.md`), Java 3파일+·API·DB 변경이면 **`senior-spring-backend-reviewer`**(기준: `spring-boot-java.md`) |
 | **G4 회고** | — | 프로젝트 문서 갱신 점검(승인 후 반영) · `harness-follow-up.md` 💡 후속 제안 · 「다른 이슈로」는 **`defer-followup`** 스킬 · 하네스 개선 후보는 **`retro`** 스킬 · B 트랙은 `refactor-log.md` append |
 
+### 서브에이전트 호출 규약
+
+**에이전트 지침에 이미 적힌 읽기 범위를 호출자가 덮어쓰지 않는다** — 비용을 지배하는 건 모델이 아니라 입력 크기다.
+
+- 대상은 **경로 목록으로만** 넘기고, 어디까지 읽을지는 에이전트 지침에 맡긴다
+- "전문을 읽어라"는 **신규 파일에만** 지시한다 (기존 파일은 diff로 충분)
+- 대상이 10개를 넘으면 **나눠 부른다**
+
+계기·실측: [`docs/harness/layer2-workflow-skills.md`](../../docs/harness/layer2-workflow-skills.md) "호출 비용" 절
+
 ### 그 외
 
 | 상황 | 도구 |

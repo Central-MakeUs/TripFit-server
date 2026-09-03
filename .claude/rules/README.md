@@ -1,6 +1,10 @@
 ---
 paths:
-  - ".claude/**"
+  - ".claude/agents/**"
+  - ".claude/skills/**"
+  - ".claude/hooks/**"
+  - ".claude/settings*.json"
+  - ".claude/rules/README.md"
 ---
 
 # TripFit `.claude/rules` — AI 에이전트 규칙
@@ -97,7 +101,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 | `deployment.md` | yml, Docker, deploy | 배포 가드레일 — 절차는 `deploy/README.md` (MySQL 예약어·quoting은 `spring-boot-java.md`로 이동) |
 | `testing.md` | `**/*Test.java`, `src/test/**` | JUnit 5·프로필·테스트 네이밍 |
 | `doc-writing.md` | `docs/**/*.md`, `.claude/**/*.md` | 문서 유형(학습·문제해결·참조·설명) → 정보 구조(개요 필수·가치 먼저·제목) → 문장(한 문장 한 생각·메타 담화 제거·용어 일관). **채팅 보고는 `plain-language-reporting.md`, 코드 주석은 `java-comments.md`** — 독자가 달라 겹치지 않음 |
-| `README.md`(이 파일) | `.claude/**` | 구조 인덱스 — 사람이 보는 디렉터리 맵이라 행동 규칙이 아님, 2026-08-11부터 `.claude/` 작업 시에만 로드 |
+| `README.md`(이 파일) | `agents/**`·`skills/**`·`hooks/**`·`settings*.json`·이 파일 | 구조 인덱스 — 사람이 보는 디렉터리 맵이라 행동 규칙이 아님. **구성 요소를 추가·삭제할 때**(아래 유지보수 체크리스트가 실제로 필요할 때)만 로드된다. 계기·실측: [`docs/harness/layer1-human-gate.md`](../../docs/harness/layer1-human-gate.md) §4-1 |
 
 ### 규칙 추가·분리 가이드
 
