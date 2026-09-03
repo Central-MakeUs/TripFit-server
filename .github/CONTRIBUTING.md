@@ -2,7 +2,7 @@
 
 Issue · PR · Milestone · CI를 TripFit 하네스(`docs/`, `.claude/`)와 연결합니다.
 
-계획·우선순위 SSOT: [`docs/product/development-wave.md`](../docs/product/development-wave.md)
+계획·우선순위 SSOT: [`docs/product/release-milestones.md`](../docs/product/release-milestones.md)
 
 ## 브랜치 전략
 
@@ -88,6 +88,31 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 저장소 설정: Settings → General → Pull Requests → **Allow squash merging** 끄기.
 
+## 이슈·PR 본문 작성
+
+문서 작성 기준([`.claude/rules/doc-writing.md`](../.claude/rules/doc-writing.md))을 이슈·PR 본문에도 적용한다. 템플릿이 이 순서를 이미 강제하므로, 템플릿을 지우고 자유 서술하지 않는다.
+
+### 제목
+
+- **핵심 키워드를 넣는다** — "에러 해결"(X) → "`TRIP_NOT_FOUND` 에러 해결"(O). 목록에서 제목만 보고 무슨 일인지 알 수 있어야 한다.
+- **30자 이내 평서문.** `?`·`!`를 쓰지 않는다.
+- 접두사는 유지 — 이슈 `[Feat]`/`[Fix]`/`[Chore]`/`[Docs]`, PR `{Type}: {한글 설명}`.
+
+### 본문
+
+| 원칙 | 이슈·PR에서의 의미 |
+|------|--------------------|
+| **결과를 먼저, 배경은 나중에** | 이슈는 `목표`(완료되면 뭐가 달라지는가)가 `배경`보다 앞에 온다. PR은 `Summary`에 merge 후 달라지는 결과부터 쓴다. 버그 이슈는 `실제 동작(증상)`을 먼저 보여준다 |
+| **한 문장에 하나의 생각** | "한 줄 요약"은 진짜 한 문장으로. 나열이 3개를 넘으면 목록으로 바꾼다 |
+| **메타 담화 제거** | "아시다시피", "결론적으로" 같은 말은 정보를 담지 않는다 |
+| **용어 일관** | 도메인 용어는 [`docs/product/glossary.md`](../docs/product/glossary.md)가 SSOT. 같은 개념을 다른 말로 부르지 않는다 |
+
+### 금지
+
+- 템플릿 섹션을 지우고 자유 서술 — 섹션 순서 자체가 읽는 순서를 보장한다
+- 폐지된 용어 사용 — 릴리즈 구분은 Milestone(`MVP 출시`/`출시 이후`), 우선순위는 `priority: must`/`could`
+- 제목에 이슈 번호만 적고 내용을 본문에만 두기 — 목록에서 안 읽힌다
+
 ## 코드 리뷰 — PN 룰
 
 리뷰 코멘트 등급 (**Milestone과 무관**).
@@ -112,17 +137,17 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 | prefix | 값 | 용도 |
 |--------|-----|------|
-| `priority:` | must, could | **MoSCoW 우선순위** — 성능 개선·구조 정리·리팩터·최적화만 could, 그 외 기능 구현·버그 수정은 전부 must (2026-08-26 재정의). **Agent는 스스로 판단해 부여 금지 — 항상 사용자 확인** (`harness-wave.md`) |
+| `priority:` | must, could | **MoSCoW 우선순위** — 성능 개선·구조 정리·리팩터·최적화만 could, 그 외 기능 구현·버그 수정은 전부 must (2026-08-26 재정의). **Agent는 스스로 판단해 부여 금지 — 항상 사용자 확인** (`harness-milestone.md`) |
 | `kind:` | feature, bug, chore, docs | 이슈 종류 |
 | `meta:` | blocked, duplicate, wontfix | 상태 |
 
-Must/Could 구분은 **이슈에 직접 붙는 `priority:` 라벨**로 표현한다. 상세: [`development-wave.md` §2](../docs/product/development-wave.md#2-priority-must--priority-could).
+Must/Could 구분은 **이슈에 직접 붙는 `priority:` 라벨**로 표현한다. 상세: [`release-milestones.md` §2](../docs/product/release-milestones.md#2-priority-must--priority-could).
 
 이슈당 **Milestone 1개** + priority 1개 + kind 1개 권장.
 
 ### `[미정]` 항목 처리
 
-기획·스펙·BR의 `[미정]` 항목은 별도 중앙 트래커 없이 해당 문서에 표기만 남긴다. 상세: `.claude/rules/harness-wave.md`.
+기획·스펙·BR의 `[미정]` 항목은 별도 중앙 트래커 없이 해당 문서에 표기만 남긴다. 상세: `.claude/rules/harness-milestone.md`.
 
 ### 마일스톤
 

@@ -8,13 +8,13 @@ body:
     attributes:
       value: |
         재현 단계를 모르면 **배경**만 채우고 Agent에게 로그·코드 기반으로 채워 달라고 요청해도 됩니다.
-        Milestone(`MVP 출시`/`출시 이후`)은 이슈 생성 시 사이드바에서 직접 지정 — 기준: [`docs/product/development-wave.md`](../../docs/product/development-wave.md). 회귀 버그면 **관련 PR·스펙**을 배경에 적어 주세요.
+        Milestone(`MVP 출시`/`출시 이후`)은 이슈 생성 시 사이드바에서 직접 지정 — 기준: [`docs/product/release-milestones.md`](../../docs/product/release-milestones.md). 회귀 버그면 **관련 PR·스펙**을 배경에 적어 주세요.
 
   - type: dropdown
     id: priority
     attributes:
       label: priority (우선순위)
-      description: "버그 수정은 거의 항상 must. ⚠️ Agent는 스스로 판단해 채우지 말고 사용자에게 확인받을 것 — harness-wave.md"
+      description: "버그 수정은 거의 항상 must. ⚠️ Agent는 스스로 판단해 채우지 말고 사용자에게 확인받을 것 — harness-milestone.md"
       options:
         - "must — 기능 구현 자체·버그 수정"
         - "could — 성능 개선·폴더/패키지 구조 정리·리팩터·최적화"
@@ -43,13 +43,18 @@ body:
       required: true
 
   - type: textarea
-    id: background
+    id: actual
     attributes:
-      label: 배경
-      description: 언제·어떤 변경 이후 발생했는지, 영향 범위
-      placeholder: |
-        - #12 D5 merge 이후 prod에서 재현
-        - 관련 API: PATCH /api/v1/trips/{id}/pin
+      label: 실제 동작 (증상)
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+    validations:
+      required: true
 
   - type: textarea
     id: reproduction
@@ -62,18 +67,13 @@ body:
       required: true
 
   - type: textarea
-    id: expected
+    id: background
     attributes:
-      label: 기대 동작
-    validations:
-      required: true
-
-  - type: textarea
-    id: actual
-    attributes:
-      label: 실제 동작
-    validations:
-      required: true
+      label: 배경 (원인 추정·관련 변경)
+      description: 언제·어떤 변경 이후 발생했는지, 영향 범위
+      placeholder: |
+        - #12 D5 merge 이후 prod에서 재현
+        - 관련 API: PATCH /api/v1/trips/{id}/pin
 
   - type: textarea
     id: requirements

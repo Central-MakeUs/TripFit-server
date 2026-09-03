@@ -7,15 +7,18 @@ body:
   - type: markdown
     attributes:
       value: |
-        계획 축: [`docs/product/development-wave.md`](../../docs/product/development-wave.md) — Milestone(`MVP 출시`/`출시 이후`)은 이슈 생성 시 사이드바에서 직접 지정
+        **제목**: `[Feat] ` 뒤에 핵심 키워드를 넣어 30자 이내 평서문으로. 목록에서 제목만 보고 무슨 일인지 알 수 있어야 합니다.
+        예) `[Feat] 에러 해결` (X) → `[Feat] 여행방 생성 시 TRIP_NOT_FOUND 해결` (O)
+
+        계획 축: [`docs/product/release-milestones.md`](../../docs/product/release-milestones.md) — Milestone(`MVP 출시`/`출시 이후`)은 이슈 생성 시 사이드바에서 직접 지정
         DB·인증·다파일 변경 시 merge 전 [`docs/specs/`](../../docs/specs/) 스펙 링크 필요.
-        본문은 아래 섹션 순서를 유지하면 Agent·PR과 연동하기 쉽습니다.
+        본문 작성 기준: [`.claude/rules/doc-writing.md`](../../.claude/rules/doc-writing.md) — **결과를 먼저, 배경은 나중에**.
 
   - type: dropdown
     id: priority
     attributes:
       label: priority (우선순위)
-      description: "성능 개선·폴더/패키지 구조 정리·리팩터·최적화면 could, 그 외 기능 구현 자체·버그 수정이면 must. ⚠️ Agent는 스스로 판단해 채우지 말고 사용자에게 확인받을 것 — harness-wave.md"
+      description: "성능 개선·폴더/패키지 구조 정리·리팩터·최적화면 could, 그 외 기능 구현 자체·버그 수정이면 must. ⚠️ Agent는 스스로 판단해 채우지 말고 사용자에게 확인받을 것 — harness-milestone.md"
       options:
         - "must — 기능 구현 자체·버그 수정"
         - "could — 성능 개선·폴더/패키지 구조 정리·리팩터·최적화"
@@ -27,28 +30,28 @@ body:
     id: summary
     attributes:
       label: 한 줄 요약
-      description: 이슈 목록·알림에서 바로 읽히는 한 문장
+      description: "이슈 목록·알림에서 제목 다음으로 읽히는 한 문장. 한 문장에 하나의 생각만 담고, 용어는 docs/product/glossary.md를 따릅니다."
       placeholder: 방장이 여행방을 생성하고 초대 코드를 받을 수 있다.
-    validations:
-      required: true
-
-  - type: textarea
-    id: background
-    attributes:
-      label: 배경
-      description: 왜 지금 이 이슈가 생겼는지 — 문제·모순·트리거·분리/defer 사유
-      placeholder: |
-        - D5 구현 중 last_activity_at hook이 create/join만 있어 #26으로 분리
-        - submit·sparse·온보딩 skip이 한 세트로 모순 → 재설계 필요
     validations:
       required: true
 
   - type: textarea
     id: goal
     attributes:
-      label: 목표
-      description: 완료 후 달라지는 상태 (한~두 문장)
-      placeholder: REST API로 여행방 생성·참여·홈 Pin까지 제공한다.
+      label: 목표 (완료되면 무엇이 달라지는가)
+      description: "결과를 먼저 씁니다. '~을 구현한다'가 아니라 '~을 할 수 있게 된다'로 — 읽는 사람이 이 이슈의 가치를 바로 알 수 있어야 합니다."
+      placeholder: 방장이 REST API로 여행방을 만들고 참여자를 받아 홈에 Pin할 수 있게 된다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 배경 (왜 지금 필요한가)
+      description: 문제·모순·트리거·분리 사유. 목표를 읽고도 "왜 지금?"이 남을 때 그 답이 되는 자리입니다.
+      placeholder: |
+        - D5 구현 중 last_activity_at hook이 create/join만 있어 #26으로 분리
+        - submit·sparse·온보딩 skip이 한 세트로 모순 → 재설계 필요
     validations:
       required: true
 
