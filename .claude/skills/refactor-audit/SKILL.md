@@ -7,6 +7,17 @@ description: 기존 도메인 코드를 아키텍처 감사 후 API 계약·비�
 
 새 기능 개발이 아니라 **기존 코드 품질 개선**이 목적일 때 쓰는 스킬. `specify`가 "구현 전 스펙"을 강제하듯, 이 스킬은 "감사 → 승인 → 구현 → 기계적 검증" 순서를 강제한다.
 
+**이 스킬은 `harness-workflow.md` 사이클의 B 트랙이다.** 아래 6단계는 트랙 공통 게이트와 이렇게 대응한다 — 게이트의 내용 자체는 `harness-workflow.md`가 SSOT이며 여기서 중복 정의하지 않는다.
+
+| 이 스킬 | 공통 게이트 |
+|---------|-------------|
+| 1. Audit | 진입 + **G1 리서치**(외부 라이브러리·Spring 기능 판단이 필요하면 `researcher`) |
+| 2. 승인 | **G2 승인** — A/B 항목 확정 |
+| 3. Implement | 구현 — 코딩 중 지킬 것 |
+| 4. Verify | **G3 검증** — `verify` 스킬 + `oasdiff` diff 0 |
+| 5. Report | **G4 회고** — `refactor-log.md` append + 문서 갱신 점검 |
+| 6. 다음 도메인 | 다음 사이클 진입 (승인 필요) |
+
 점검 항목·A/B/C/D 분류 체계는 [`references/audit-checklist.md`](references/audit-checklist.md)·[`references/audit-template.md`](references/audit-template.md)가 SSOT. 이 스킬은 그걸 한 번에 실행하는 대신 **도메인 단위로 쪼개고 매 단계 승인 게이트를 둔다.**
 
 ## 절대 원칙 (변경 불가)
@@ -52,7 +63,7 @@ description: 기존 도메인 코드를 아키텍처 감사 후 API 계약·비�
 ### 3. Implement
 
 - 승인된 A/B 항목만, 우선순위(Critical → High → Medium → Low) 순으로 구현한다.
-- `harness-workflow.md` While Coding 절 전체 준수 — 요청 범위만, drive-by 리팩터 금지, 레거시는 같은 변경에서 삭제.
+- `harness-workflow.md` "구현 — 코딩 중 지킬 것" 절 전체 준수 — 요청 범위만, drive-by 리팩터 금지, 레거시는 같은 변경에서 삭제.
 - 구현 중 API 계약·ErrorCode·엔드포인트를 건드리게 되면 **즉시 멈추고 사용자에게 확인** (원칙 위반 신호).
 
 ### 4. Verify — 무손실을 기계적으로 증명
@@ -78,7 +89,9 @@ oasdiff breaking docs/api/openapi.json build/openapi/openapi.json
 
 - `docs/audits/{domain}/refactor-log.md`에 append (Changelog 스타일):
   - 실행 날짜, 반영한 A/B 항목 목록, 변경 파일·라인 수, 검증 결과(`./gradlew test`, oasdiff diff 0 확인), 남겨둔 C/D 항목과 이유
-- 사용자에게 짧게 요약 보고.
+  - **H1 바로 아래에는 이 로그가 무엇인지 설명하는 개요 한 문단을 유지한다** (`doc-writing.md` — 날짜 섹션부터 시작하지 않는다)
+- `audit.md`·`refactor-log.md`를 새로 만들었거나 50줄 이상 고쳤으면 **`doc-reviewer`** 서브에이전트로 확인 (G3 문서 품질 게이트).
+- 사용자에게 짧게 요약 보고 — 설명 문체는 `plain-language-reporting.md`를 따른다.
 
 ### 6. 다음 도메인
 

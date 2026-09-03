@@ -7,16 +7,31 @@
 | 문서 | 포트폴리오 계층 | 분류 | 강제 수단 |
 |---|---|---|---|
 | [`layer1-human-gate.md`](layer1-human-gate.md) | 1. Probabilistic / 2. Human Decision | **rule** (`.claude/rules/`) | 프롬프트 (소프트) |
-| [`layer2-workflow-skills.md`](layer2-workflow-skills.md) | 1. Probabilistic / 2. Human Decision | **skill** (`.claude/skills/`) | 절차 + 승인 게이트 |
+| [`layer2-workflow-skills.md`](layer2-workflow-skills.md) | 1. Probabilistic / 2. Human Decision | **skill** (`.claude/skills/`) + **agent** (`.claude/agents/`) | 절차 + 승인 게이트 · 조사·리뷰는 별도 컨텍스트 |
 | [`layer3-deterministic-hooks.md`](layer3-deterministic-hooks.md) | 3. Deterministic Layer | **hook** (`.claude/hooks/`) | **shell exit code** (하드) |
 | [`layer4-api-contract-safety.md`](layer4-api-contract-safety.md) | 4. Mechanical Verification | **CI + script** (`.github/workflows/`) | 저장소 밖 독립 3중 검증 |
+
+## 레이어와 사이클의 관계
+
+위 표가 **무엇으로 강제하는가**(레이어)라면, 실제 작업은 **3 트랙 × 4 게이트** 사이클을 따라 흐릅니다(2026-09-03 개편, `#127`). 두 축은 직교합니다 — 같은 게이트라도 어느 레이어가 강제하는지가 다릅니다.
+
+| 사이클 단계 | 담당 | 강제 레이어 |
+|---|---|---|
+| 진입 — 트랙 판정 (A 기능 / B 감사·리팩터 / C 버그) | `specify` · `refactor-audit` · `debug-bug` | L1 규칙(프롬프트) |
+| **G1 리서치** | `researcher` 서브에이전트 | L1 규칙 — 강제 수단 없음, 절차로만 |
+| **G2 승인** | Human Gate | L1·L2 — 사람이 끊음 |
+| 구현 | AI Agent | **L3 훅**(위험 명령·DB 마이그레이션 차단) |
+| **G3 검증** | `verify` 스킬 + `doc-reviewer` | **L4 CI**(oasdiff·테스트) + advisory |
+| **G4 회고** | 문서 갱신 점검 · `defer-followup` | L1 규칙 |
+
+**강제력이 가장 약한 곳은 G1과 G4입니다** — 둘 다 훅이나 CI로 판정할 수 없는 성격(조사를 했는지, 배운 걸 기록했는지)이라 규칙과 절차에만 의존합니다. 이 한계를 아는 것이 설계의 일부입니다.
 
 ## 한 장으로 보는 관심사 분리와 통제력 스펙트럼
 
 ```text
 확률적 (약한 통제) ←──────────────────────────────────────────────→ 결정론적 (강한 통제)
 Probabilistic Layer   Human Decision Layer  Deterministic Layer   Mechanical Verification
-규칙 & 스킬 (L1, L2)  Human Gate (L1, L2)   로컬 훅 (L3)          CI 파이프라인 (L4)
+규칙·스킬·에이전트     Human Gate (L1, L2)   로컬 훅 (L3)          CI 파이프라인 (L4)
 "AI가 맥락을 따름"    "사람이 예외를 판단"  "AI 판단과 무관하게   "AI가 관여할 수
                                             기계가 강제 차단"     없는 곳에서 교차 검증"
 ```
@@ -47,7 +62,7 @@ Probabilistic Layer   Human Decision Layer  Deterministic Layer   Mechanical Ver
 
 ### 4순위 — Probabilistic Layer (L1): path-scoped 규칙 로딩
 
-**왜 4순위인가:** "규칙 파일을 잘 썼다"는 프롬프트 엔지니어링에 가깝고 누구나 보여줄 수 있습니다. 여기서 그나마 차별화되는 건 **컨텍스트 예산 설계**입니다 — always-load 5개 + path-scoped 7개로 나눠 Java를 안 건드리는 세션에는 Spring 컨벤션을 아예 싣지 않습니다.
+**왜 4순위인가:** "규칙 파일을 잘 썼다"는 프롬프트 엔지니어링에 가깝고 누구나 보여줄 수 있습니다. 여기서 그나마 차별화되는 건 **컨텍스트 예산 설계**입니다 — always-load 5개 + path-scoped 8개로 나눠 Java를 안 건드리는 세션에는 Spring 컨벤션을, 문서를 안 건드리는 세션에는 문서 작성 규칙을 아예 싣지 않습니다.
 
 **함께 말할 것:** 문서 SSOT를 만들면서 동시에 **그 SSOT가 썩는다는 걸 전제**하고 STOP §1.5·§1.6("문서 말고 코드/생성물을 확인하라")을 넣은 점. 실제로 2026-08-28에 Redis ADR이 stale해 잘못된 답변을 했다가 그 절차로 복구하고 19개 문서를 정정했습니다.
 
@@ -57,4 +72,4 @@ Probabilistic Layer   Human Decision Layer  Deterministic Layer   Mechanical Ver
 
 ## 유지보수
 
-이 폴더의 문서는 `.claude/` 구조가 바뀌면 stale해집니다. 훅·규칙·스킬 개수가 바뀌면 [`.claude/rules/README.md`](../../.claude/rules/README.md)(구조 SSOT)를 먼저 고치고, 이 폴더와 [`harness-engineering.md`](../harness-engineering.md)를 뒤따라 갱신하세요. **내용이 어긋나면 `.claude/rules/README.md`가 맞습니다.**
+이 폴더의 문서는 `.claude/` 구조가 바뀌면 stale해집니다. 훅·규칙·스킬·서브에이전트 개수가 바뀌면 [`.claude/rules/README.md`](../../.claude/rules/README.md)(구조 SSOT)를 먼저 고치고, 이 폴더와 [`harness-engineering.md`](../harness-engineering.md)를 뒤따라 갱신하세요. **내용이 어긋나면 `.claude/rules/README.md`가 맞습니다.**

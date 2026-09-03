@@ -7,6 +7,8 @@ description: 버그 재현·원인 분리·수정 절차 (Superpowers systematic
 
 전용 스킬이 없던 자리를 대신한다 — `workflow-tools.md` "도구 우선순위" 판단 근거 참고. 추측으로 고치지 않고 아래 순서를 따른다.
 
+**이 스킬은 `harness-workflow.md` 사이클의 C 트랙이다.** 재현·원인 분리가 **G1 리서치**(원인이 외부 라이브러리 동작이면 `researcher`로 공식 문서 확인 — 버전 차이가 원인인 경우가 많다), 수정 범위 합의가 **G2 승인**, 회귀 확인이 **G3 검증**에 대응한다.
+
 ## When to Use
 
 - 버그 리포트를 받았거나 `./gradlew test`가 실패했을 때

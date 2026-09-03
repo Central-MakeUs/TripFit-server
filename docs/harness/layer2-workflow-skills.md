@@ -10,13 +10,15 @@
 
 ### 파일 위치와 분류
 
-| 스킬 | 파일 | 트리거 | 산출물 | 승인 게이트 |
-|---|---|---|---|---|
-| `specify` | [`.claude/skills/specify/SKILL.md`](../../.claude/skills/specify/SKILL.md) + `references/spec-template.md` | 새 API·엔티티·인증 흐름, DB 스키마 변경, 3파일+ 리팩터 | `docs/specs/{domain}/{feature}.md` | **있음** (Approved 전 구현 금지) |
-| `refactor-audit` | [`.claude/skills/refactor-audit/SKILL.md`](../../.claude/skills/refactor-audit/SKILL.md) + `references/audit-checklist.md`·`audit-template.md` | 기존 코드 아키텍처 감사·무손실 리팩터 | `docs/audits/{domain}/audit.md` · `refactor-log.md` | **있음** (감사·구현 각각) |
-| `verify` | [`.claude/skills/verify/SKILL.md`](../../.claude/skills/verify/SKILL.md) | "완료/통과" 선언 직전 | 없음(검증 절차) | 없음 |
-| `defer-followup` | [`.claude/skills/defer-followup/SKILL.md`](../../.claude/skills/defer-followup/SKILL.md) | 「다른 이슈로 빼」 | Draft 스펙 + 스펙 amend + (확인 후) 이슈 | **있음** (이슈 생성 전) |
-| `debug-bug` | [`.claude/skills/debug-bug/SKILL.md`](../../.claude/skills/debug-bug/SKILL.md) | 버그 리포트·테스트 실패 | 없음(조사 절차) | 없음 |
+| 스킬 | 사이클 위치 | 파일 | 트리거 | 산출물 | 승인 게이트 |
+|---|---|---|---|---|---|
+| `specify` | **A 트랙** | [`.claude/skills/specify/SKILL.md`](../../.claude/skills/specify/SKILL.md) + `references/spec-template.md` | 새 API·엔티티·인증 흐름, DB 스키마 변경, 3파일+ 리팩터 | `docs/specs/{domain}/{feature}.md` | **있음** (Approved 전 구현 금지) |
+| `refactor-audit` | **B 트랙** | [`.claude/skills/refactor-audit/SKILL.md`](../../.claude/skills/refactor-audit/SKILL.md) + `references/audit-checklist.md`·`audit-template.md` | 기존 코드 아키텍처 감사·무손실 리팩터 | `docs/audits/{domain}/audit.md` · `refactor-log.md` | **있음** (감사·구현 각각) |
+| `debug-bug` | **C 트랙** | [`.claude/skills/debug-bug/SKILL.md`](../../.claude/skills/debug-bug/SKILL.md) | 버그 리포트·테스트 실패 | 없음(조사 절차) | 없음 |
+| `verify` | **G3 게이트** | [`.claude/skills/verify/SKILL.md`](../../.claude/skills/verify/SKILL.md) | "완료/통과" 선언 직전 | 없음(검증 절차) | 없음 |
+| `defer-followup` | **G4 게이트** | [`.claude/skills/defer-followup/SKILL.md`](../../.claude/skills/defer-followup/SKILL.md) | 「다른 이슈로 빼」 | Draft 스펙 + 스펙 amend + (확인 후) 이슈 | **있음** (이슈 생성 전) |
+
+**서브에이전트 (`.claude/agents/`, 2026-09-03 신설):** 스킬이 "절차"라면 에이전트는 "게이트에서 부르는 전담 인력"입니다. `researcher`(G1 — 외부 문서 조사)와 `doc-reviewer`(G3 — 문서 품질 리뷰) 둘 다 `Edit`/`Write` 도구가 없어 파일을 고칠 수 없고, 별도 컨텍스트에서 돌아 문서 원문이 메인 대화를 오염시키지 않습니다. **`.claude/agents/*.md`는 파일을 만들면 등록**됩니다 — 2026-09-03 신설 당시 첫 호출은 `Agent type not found`로 실패했다가 잠시 뒤 사용 가능해졌으므로, 새 에이전트를 만든 직후 호출이 실패하면 재시도하거나 새 세션에서 확인합니다.
 
 **로딩 메커니즘:** 스킬은 `name` + `description` 한 줄만 항상 컨텍스트에 노출되고, 에이전트가 그 작업을 인식해 호출할 때 **SKILL.md 전문이 로드**됩니다. 규칙(Layer 1)이 "항상 켜져 있는 배경"이라면 스킬은 "필요할 때 꺼내 읽는 절차서"입니다.
 
@@ -77,20 +79,23 @@
 [6] 다음 도메인 — 사용자 승인 없이 자동 진행 금지
 ```
 
+이 6단계는 `harness-workflow.md`의 **트랙 공통 게이트**와 1:1로 대응합니다 — `[1] Audit`은 진입 + G1 리서치, `[2] 승인`은 G2, `[4] Verify`는 G3, `[5] Report`는 G4입니다. 게이트의 내용 자체는 `harness-workflow.md`가 SSOT이고 `SKILL.md`는 대응 관계만 표로 두어 중복을 피합니다(2026-09-03 `#127`).
+
 ### 왜 1단계가 서브에이전트인가
 
 방금 짠 코드를 같은 대화에서 스스로 평가하면 자기 판단을 재확인하는 **self-grading 편향**이 생깁니다. `code-review`/`simplify` 스킬이 별도 컨텍스트를 쓰는 것과 같은 이유입니다. SKILL.md는 여기서 한 발 더 나가서, **이번 세션에서 안 건드린 도메인이라도** 신선한 컨텍스트를 쓰라고 명시합니다 — 같은 대화 맥락 자체가 편향원이라고 보기 때문입니다.
 
 ### `verify`가 SSOT인 지점
 
-`refactor-audit`의 4단계는 검증 절차를 자체 정의하지 않고 `verify` 스킬을 참조합니다(중복 정의 방지). `verify`의 6단계:
+`refactor-audit`의 4단계는 검증 절차를 자체 정의하지 않고 `verify` 스킬을 참조합니다(중복 정의 방지). `verify`의 7단계:
 
 1. `./gradlew test` 실제 실행
 2. 스펙·이슈 체크리스트를 **실제 코드**와 대조 (STOP §1.5)
 3. API 계약 변경 시 트레일러 필요 여부 재확인 + `oasdiff`로 의도한 diff만 있는지
 4. 레거시 재점검 (STOP §4)
-5. Must Have급이면 `code-review`/`simplify`를 서브에이전트로 한 번 더
-6. 실제 통과한 항목만 `[x]`, 실패·미검증은 숨기지 않고 그대로 보고
+5. 문서를 새로 만들었거나 50줄 이상 고쳤으면 `doc-reviewer` 서브에이전트 (advisory, 2026-09-03 추가)
+6. Must Have급이면 `code-review`/`simplify`를 서브에이전트로 한 번 더
+7. 실제 통과한 항목만 `[x]`, 실패·미검증은 숨기지 않고 그대로 보고
 
 ## 3. 실제 사례 — `auth` 도메인 (2026-08-04)
 
@@ -114,7 +119,7 @@
 |---|---|---|
 | 1 | **컨텍스트 격리로 self-grading 편향을 구조적으로 차단** | 감사 1단계를 강제로 별도 서브에이전트에 위임. "AI가 자기 결과를 평가하면 안 된다"는 인지적 한계를 알고 아키텍처로 푼 것 — 프롬프트로 "객관적으로 봐줘"라고 부탁하는 것과 질적으로 다름 |
 | 2 | **검증 기준이 "breaking 없음"이 아니라 "diff 0"** | 무손실 리팩터의 정의를 도구 출력으로 환원. LLM이 "계약 안 바꿨다"고 말할 여지 자체를 없앰 |
-| 3 | **미검증 항목을 숨기지 않는 것을 규칙화** | `verify` 6단계 + auth 사례의 "oasdiff 보류" 기록. 완료율을 부풀리지 않는 게 오히려 신뢰 신호 |
+| 3 | **미검증 항목을 숨기지 않는 것을 규칙화** | `verify` 7단계 + auth 사례의 "oasdiff 보류" 기록. 완료율을 부풀리지 않는 게 오히려 신뢰 신호 |
 | 4 | 승인 게이트 (A/B만 구현, C/D는 범위 밖) | 흔한 패턴이라 단독으로는 약함 |
 
 **면접 활용 팁:** 이 레이어는 [Layer 3](layer3-deterministic-hooks.md)보다 한 단계 약합니다 — 결국 에이전트가 "절차를 따르기로 선택"해야 작동하기 때문입니다. 그래서 "절차로 되는 것(Layer 2)과 절차로 안 되는 것(Layer 3)을 어떻게 나눴는가"를 함께 말하는 게 가장 강한 구성입니다.

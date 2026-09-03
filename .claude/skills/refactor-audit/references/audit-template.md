@@ -7,6 +7,8 @@
 ```markdown
 # {Domain} Architecture Audit — {YYYY-MM-DD}
 
+{개요 — 필수. 이 감사가 무엇을 대상으로 했고, A/B로 몇 건이 나왔으며, 지금 어떤 상태(승인 대기·반영 완료)인지 2~3문장. 처음 여는 사람이 이 문단만 읽고 문서의 정체를 알 수 있어야 한다 — `.claude/rules/doc-writing.md` "H1 바로 아래에 개요를 둔다".}
+
 ## 범위
 
 - 패키지: `com.tripfit.tripfit.{domain}` (+ 하위 패키지 나열)

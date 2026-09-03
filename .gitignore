@@ -39,4 +39,41 @@ out/
 
 ### Docker ###
 .env
+.env.*
+!.env.example
 .DS_Store
+
+### Logs & Crash Reports ###
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+*.hprof
+.attach_pid*
+
+### Agents & Temporary ###
+scratch/
+.claude/settings.local.json
+.claude/worktrees/
+.gemini/
+
+### Windows ###
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
+
+### Merge / Patch leftovers ###
+*.orig
+*.rej
+
+### Terraform (infra/terraform — #125 대비) ###
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+### Java/Build fallback ###
+*.class
+*.war
+*.ear

@@ -1,6 +1,8 @@
 # Harness Workflow
 
-**형제 규칙 (내용 분리 SSOT):** `harness-wave.md` · `harness-follow-up.md` · `workflow-tools.md`  
+이 저장소에서 작업할 때 **무엇을 하기 전에 멈춰야 하는지(⛔ STOP 6개)**와 **어떤 순서로 일하는지(트랙 1개 선택 → 게이트 4개 공통 통과)**를 정의한다. 작업 성격에 따라 트랙 A(기능)·B(감사·리팩터)·C(버그) 중 하나를 고르고, 트랙이 달라도 G1 리서치 → G2 승인 → G3 검증 → G4 회고는 모두 통과한다.
+
+**형제 규칙 (내용 분리 SSOT):** `harness-milestone.md` · `harness-follow-up.md` · `workflow-tools.md`
 Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 
 ## ⛔ STOP (모든 규칙보다 우선)
@@ -42,7 +44,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 ### 4. 레거시·정책 불일치 코드 제거 (호환 레이어 금지 · **같은 변경에서 즉시**)
 
-현행 Approved 스펙·BR·decisions·구현 계약과 다른 코드·경로·문서를 “호환용”으로 남기지 않는다.  
+현행 Approved 스펙·BR·decisions·구현 계약과 다른 코드·경로·문서를 “호환용”으로 남기지 않는다.
 **dev·상용 보존 데이터 없음** → 듀얼 패스·구 클라/DB 호환·orphan 유지 **불필요·금지**.
 
 1. **삭제 대상:** 폐기 API/path · 정책상 폐기 enum/`ErrorCode`/필드 · 구 상수·검증(예: 대체된 730일 A1) · 대체된 Repository 메서드·벌크 쿼리 · 구 스키마 매핑 · 호환 if · `@Deprecated` 방치 · stale `@Schema`/메시지 · “나중에 지울” TODO · 스펙·OpenAPI의 **현행 계약으로 적힌** 구 수치·구 API명
@@ -77,32 +79,65 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 **금지:** `docs/specs/`에만 적어두고 `how-it-works.md`는 방치 · "사소한 변경"이라며 임의로 갱신 생략 · 기술 용어를 그대로 옮겨적기(사용자가 다른 문서 없이도 읽히게 — `plain-language-reporting.md` 준수).
 
-## 작업 분류 (시작 전 30초)
+## 사이클 — 3 트랙 × 4 게이트
 
-1. `docs/product/development-wave.md` 활성 Milestone(MVP 출시/출시 이후)·Must
-2. GitHub 이슈 — 범위·완료 기준 확인/생성 (**브랜치용 `#n` 확정**, 새 이슈 생성은 아래 ⚠️ 확인 필수)
-3. DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현
-4. 그 외 → `AGENTS.md` + 관련 `docs/product/` 후 바로 구현
+작업 성격에 따라 **트랙**을 고르고, 트랙이 달라도 **게이트 4개는 공통**으로 통과한다.
 
-**Wave / `[미정]` / 일정 용어:** `harness-wave.md` (단정 금지 · 중앙 트래커는 폐지됨, 2026-08-19)
+```
+진입(트랙 분류) → G1 리서치 → G2 승인 → 구현 → G3 검증 → G4 회고
+                    │
+                    ├─ A 트랙: 기능·API·DB        → specify
+                    ├─ B 트랙: 감사·무손실 리팩터  → refactor-audit
+                    └─ C 트랙: 버그·테스트 실패    → debug-bug
+```
+
+**⛔ STOP은 모든 게이트보다 우선한다** — 게이트를 진행하는 것보다 **중단·질문이 먼저**다.
+
+## 진입 — 트랙 분류 (시작 전 30초)
+
+1. `docs/product/release-milestones.md` 활성 Milestone(MVP 출시/출시 이후)·Must
+2. GitHub 이슈 — 범위·완료 기준 확인/생성 (**브랜치용 `#n` 확정**, 새 이슈 생성은 G2 ⚠️ 절 확인 필수)
+3. 트랙 판정
+
+| 트랙 | 언제 | 진입 |
+|------|------|------|
+| **A. 기능** | 새 기능·API·엔티티·정책 변경 | DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현 · 그 외 → `AGENTS.md` + 관련 `docs/product/` 확인 후 바로 구현 |
+| **B. 감사·리팩터** | 기존 코드 품질 개선 (API 계약·비즈니스 로직 불변) | `refactor-audit` — 도메인 1개씩, 매 단계 승인 |
+| **C. 버그** | 버그 리포트·`./gradlew test` 실패 | `debug-bug` — 재현 → 원인 분리 → 최소 수정 |
+
+4. 문서 확인 순서: `AGENTS.md` → `docs/architecture.md` → `docs/product/release-milestones.md` → `docs/product/platform.md` → `docs/decisions/002-domain-split-vercel-api.md` → `docs/product/mvp.md`
+
+**스펙 신호(A 트랙):** DB 스키마, 3파일+, BR-*, 프로필/배포, **인증·푸시·딥링크·결제** 등 클라 연동 API
+
+**Milestone·priority / `[미정]` / 일정 용어:** `harness-milestone.md` (단정 금지 · 도메인 축 "Wave"와 중앙 트래커는 폐지됨 — 2026-08-19·2026-08-26)
+
+## G1. 리서치 게이트 — 외부 지식 확인
+
+외부 라이브러리·SDK·API(Spring Boot 버전 차이, 소셜 로그인 provider 스펙 등)에 의존하거나 처음 다루는 프레임워크 기능이면 **구현 전에** 확인한다. 학습 데이터가 stale하거나 실제 설치된 버전과 다를 수 있다. 이미 아는 내부 코드·컨벤션 확인은 위 진입 4번으로 충분하며 이 게이트 대상이 아니다.
+
+**소스 우선순위 (위에서 답이 나오면 멈춤):** ① 로컬 실물(`build.gradle`·`./gradlew dependencies`·실제 jar) → ② 공식 문서(**버전 고정 필수**) → ③ 릴리즈 노트·마이그레이션 가이드 → ④ provider 공식 문서. **블로그·StackOverflow는 근거로 인용 금지** — 힌트로만 쓰고 ①②로 재확인한다.
+
+⚠️ **이 저장소 고유 함정:** Spring Boot **4.1.0** — 웹 예제 대다수가 3.x 기준이라 그대로 쓰면 깨진다. `docs.spring.io`는 **최신 stable이면 버전 경로가 버전 없는 URL로 리다이렉트되므로 URL로 버전을 고정할 수 없다**(2026-09-03 실측). 도착 페이지 상단의 버전 표시를 확인하고, 우리 버전과 다르면 **로컬 jar·BOM 실물로 교차 확인**한다.
+
+**도구 선택:** 2개 이상 문서를 비교해야 하면 **`researcher` 서브에이전트**([`.claude/agents/researcher.md`](../agents/researcher.md) — 소스 우선순위·출력 포맷 SSOT), 단일 페이지 확인이면 인라인 `WebFetch`(서브에이전트 오버헤드가 더 큼).
+
+## G2. 승인 게이트 — 사람이 끊는 지점
+
+- **트랙별 승인 대상:** A = 스펙(`docs/specs/`) · B = `audit.md`의 A/B 항목 · C = 원인 가설과 수정 범위
+- 가정 명시 · 해석이 여러 개면 질문 · 더 단순한 방법 있으면 말하기
+- 모호·문서 충돌 → **STOP §1** (구현 시작 금지)
+- 변경 파일 목록 확정 (drive-by 리팩터 금지)
+- 다단계: `1. [단계] → verify: [확인]`
 
 **브랜치:** `main`에서 `{type}/{issue-number}-{description}` — 이슈 번호 생략 금지. SSOT: [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md)
 
-**⚠️ 새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인 (2026-08-04 사용자 결정):** `gh issue create` · 새 작업 브랜치 분기(`git checkout -b` 등) · `gh pr create`를 실행하기 전에는 사용자가 이미 명시적으로 요청한 경우가 아니면 **채팅으로 먼저 묻는다.** "이슈 번호 없는 브랜치 금지"(CONTRIBUTING) 같은 형식 규칙과 별개로, **만들지 여부 자체**를 임의 판단하지 않는다 — 이번 작업은 현재 브랜치에서 바로 진행하고 이슈·브랜치 생성은 생략해 달라는 요청이 계기, 이후 PR 생성까지 동일 원칙으로 확장(2026-08-05). `defer-followup` 스킬의 `gh issue create` 단계, After Coding의 PR 생성 단계 등 이슈·브랜치·PR을 만들 수 있는 모든 지점에 동일하게 적용. **구현·커밋까지는 요청받았어도 "PR까지 올려줘"라고 별도로 확인받지 않았다면 PR 생성 전에 다시 묻는다** — 커밋 승인이 PR 승인을 자동으로 포함하지 않는다.
+**⚠️ 새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인** (2026-08-04 사용자 결정, 2026-08-05 PR까지 확장)
 
-**스펙 신호:** DB 스키마, 3파일+, BR-*, 프로필/배포, **인증·푸시·딥링크·결제** 등 클라 연동 API
+- **규칙:** `gh issue create` · 새 작업 브랜치 분기(`git checkout -b` 등) · `gh pr create`는 사용자가 이미 명시적으로 요청한 경우가 아니면 **실행 전 채팅으로 먼저 묻는다.** "이슈 번호 없는 브랜치 금지"(CONTRIBUTING) 같은 형식 규칙과 별개로, **만들지 여부 자체**를 임의 판단하지 않는다.
+- **적용 지점:** `defer-followup` 스킬의 `gh issue create` 단계, G4의 PR 생성 단계 등 이슈·브랜치·PR을 만들 수 있는 **모든** 지점.
+- **승인 범위:** **커밋 승인이 PR 승인을 포함하지 않는다.** 구현·커밋까지 요청받았어도 "PR까지 올려줘"를 별도로 확인받지 않았다면 PR 생성 전에 다시 묻는다.
 
-## Before Coding
-
-1. `AGENTS.md` → `docs/architecture.md` → `docs/product/development-wave.md` → `docs/product/waves.md` → `docs/product/platform.md` → `docs/decisions/002-domain-split-vercel-api.md` → `docs/product/mvp.md`
-2. 스펙 필요 시 Plan 또는 `specify` → **사용자 승인 후** 구현
-3. 가정 명시 · 해석이 여러 개면 질문 · 더 단순한 방법 있으면 말하기
-4. 모호·문서 충돌 → **STOP §1** (구현 시작 금지)
-5. 변경 파일 목록 확정 (drive-by 리팩터 금지)
-6. **`main`에서 `{type}/{issue-number}-{description}` 분기**
-7. 다단계: `1. [단계] → verify: [확인]`
-
-## While Coding
+## 구현 — 코딩 중 지킬 것
 
 - 요청 범위만 · 인접 “개선”·깨지지 않은 리팩터 금지
 - 요청 밖 기능·단일 사용 추상화·불필요 설정 금지
@@ -114,26 +149,37 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - 핵심 로직 변경 시 `./gradlew test`
 - 변경한 모든 줄은 사용자 요청에 직접 연결
 
-## After Coding
+## G3. 검증 게이트 — "완료" 보고 전
 
-- 변경 요약 + 검증 (`./gradlew test` 등)
-- 스펙 있으면 완료 기준 체크리스트 대조
-- **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`) + STOP §5 대상이면 커밋에 `Breaking-Change-Reason:` 트레일러 포함 확인
+절차 SSOT: [`verify` 스킬](../skills/verify/SKILL.md). 자기 보고를 믿지 않고 **기계적으로** 확인한다.
+
+- 변경 요약 + `./gradlew test` — 실행 없이 "통과했을 것"이라고 보고 금지
+- 스펙·이슈 완료 기준을 **실제 코드**와 대조 (STOP §1.5 — 문서 문구만 보고 단정 금지)
+- **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`) + STOP §5 대상이면 커밋에 `Breaking-Change-Reason:` 트레일러 포함 확인 + `oasdiff`로 의도한 diff만 있는지 확인
 - **보안·아키텍처 성격 변경:** STOP §6 대상(토큰·세션·결제·개인정보 저장 방식 등)이면 `docs/how-it-works.md` 해당 절 갱신 확인
-- **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지. **`gh pr create` 실행 전 사용자에게 먼저 확인** — 위 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
-- 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
-- **PR merge 확인 후:** 작업 브랜치 삭제 (원격+로컬) — CONTRIBUTING Pull Request "merge 후" 절. merge 안 된 브랜치는 삭제 금지
-- **커밋 요청 시:** 주제별 **최대 3개** (구현/테스트/문서·하네스). 억지 분할 금지
+- **레거시 재점검:** 이번 변경이 대체한 구 경로·상수·문서 ‘현행’ 문구가 남았는지 확인 후 **삭제/amend**. 요청 밖·정책 무관 dead code만 언급. **정책 불일치·교체 잔존 → STOP §4 삭제**
+- **문서 품질:** 새 문서를 만들었거나 기존 문서를 **50줄 이상** 고쳤으면 **`doc-reviewer` 서브에이전트**([`.claude/agents/doc-reviewer.md`](../agents/doc-reviewer.md), 기준 SSOT: `doc-writing.md`). 오타·한 줄 수정은 대상 아님 — 문체는 exit code로 판정할 수 없어 **advisory**(훅 아님)
+- **규모 게이트:** Must Have급(3파일+·API·DB)이면 `code-review` 또는 `simplify`를 서브에이전트 컨텍스트에서 한 번 더 — self-grading 편향 회피
+
+## G4. 회고 게이트 — 남길 것 남기기
+
+- **프로젝트 문서 갱신 점검 (매 작업 필수):** 이번 작업에서 새로 확정된 설계 결정·컨벤션·자주 틀리기 쉬운 함정이 있으면 `AGENTS.md`/`CLAUDE.md` 또는 해당 `.claude/rules/*.md` 갱신이 필요한지 검토한다. 필요하면 구체적 수정안을 사용자에게 제안한다 — **자동 갱신 금지, 승인 후 반영.** 아래 "같은 실수 2회+" 문턱과 별개로 **매 작업 종료 시** 확인 대상이며, 새로 배운 게 없으면 조용히 스킵한다(보고에 언급 불필요)
 - 같은 실수 2회+ → `.claude/rules/` 추가 **제안** (자동 추가 금지)
-- **레거시 재점검:** 이번 PR이 대체한 구 경로·상수·문서 ‘현행’ 문구가 남았는지 확인 후 **삭제/amend**. 요청 밖·정책 무관 dead code만 언급. **정책 불일치·교체 잔존 → STOP §4 삭제**
+- **트랙별 기록:** B 트랙은 `docs/audits/{domain}/refactor-log.md`에 반영 이력 append
 - Entity·스키마 후 ERD 개선 → `harness-follow-up.md` 💡 ERD
 - Must Have급 완료 / 사용자 요청 시 후속 제안 → `harness-follow-up.md`
 - 「다른 이슈로」범위 미루기 → `harness-follow-up.md` ✅ Defer (**이슈만 만들고 끝내지 않음**)
+- **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·현재 Milestone 밖은 체크 금지. **`gh pr create` 실행 전 사용자에게 먼저 확인** — G2 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
+- 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
+- **커밋 요청 시:** 주제별 **최대 3개** (구현/테스트/문서·하네스). 억지 분할 금지
+- **PR merge 확인 후:** 작업 브랜치 삭제 (원격+로컬) — CONTRIBUTING Pull Request "merge 후" 절. merge 안 된 브랜치는 삭제 금지
 
 ## 금지 (요약)
 
-- **사용자 확인 없이 새 이슈·새 브랜치·새 PR 생성** — 위 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
+- **사용자 확인 없이 새 이슈·새 브랜치·새 PR 생성** — G2 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
 - 이슈 번호 없는 브랜치명 — CONTRIBUTING 위반
+- **G1 없이 외부 라이브러리 동작을 추측으로 구현** · 블로그·StackOverflow를 근거로 인용
+- **G3 문서 품질 게이트 생략** — 새 문서 생성·50줄+ 문서 변경인데 `doc-reviewer` 미실행
 - 문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋 — STOP §1
 - **교체 후 구 경로·상수·‘현행’ 문서 방치** — STOP §4 (dev에서 호환 레이어 불필요)
 - **프론트 대응이 필요한 API 계약 변경에 `Breaking-Change-Reason` 트레일러 누락** — STOP §5 (optional 필드 추가·enum 값 추가도 대상)

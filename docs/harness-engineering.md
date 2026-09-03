@@ -20,7 +20,7 @@ AI 코딩 에이전트는 매 세션 컨텍스트가 없는 상태로 시작합�
 ## 2. 다층 문서 SSOT (기획 → 계약 → 규칙)
 
 ```
-docs/product/       기획 SSOT (PRD, MVP, BR-*, glossary, wave 운영)
+docs/product/       기획 SSOT (PRD, MVP, BR-*, glossary, Milestone 운영)
   ↓
 docs/specs/         기능 계약 SSOT (API·DB·에러코드 — 구현 전 Approved 필수)
   ↓
@@ -39,7 +39,7 @@ src/, deploy/        실제 구현
 
 Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontmatter가 없으면 **매 세션 항상 로드**, 있으면 **매칭되는 파일에 접근할 때만 로드**됩니다. 구조 SSOT: [`.claude/rules/README.md`](../.claude/rules/README.md).
 
-Always-load 규칙 5개(`harness-workflow`·`harness-wave`·`harness-follow-up`·`workflow-tools`·`plain-language-reporting`) + path-scoped 규칙 7개(`spring-boot-java`·`openapi-conventions`·`java-comments`·`client-platform`·`deployment`·`testing`·`README`)로 나뉩니다(2026-08-27, `spring-boot-java.md`에서 OpenAPI·주석 규칙을 2개 파일로 분리하고, 다른 문서와 80% 이상 중복이던 `figma-product.md`는 폐기 — 표기 규칙만 `spring-boot-java.md`로 이관. `docs/product/fe-context/`가 더 이상 쓰이지 않게 되며 `fe-context.md`도 함께 폐기). 파일별 정확한 역할·`paths:` 패턴은 여기서 다시 나열하지 않습니다 — 표가 바뀔 때마다 이 문서까지 손으로 맞춰야 해서 실제로 드리프트가 난 적이 있습니다. 최신 표: [`.claude/rules/README.md`](../.claude/rules/README.md) "Rules" 절.
+Always-load 규칙 5개(`harness-workflow`·`harness-milestone`·`harness-follow-up`·`workflow-tools`·`plain-language-reporting`) + path-scoped 규칙 8개(`spring-boot-java`·`openapi-conventions`·`java-comments`·`client-platform`·`deployment`·`testing`·`doc-writing`·`README`)로 나뉩니다(2026-09-03 `doc-writing.md` 추가 — `docs/`·`.claude/` 마크다운 작성 규칙. 채팅 보고용 `plain-language-reporting.md`, 코드 주석용 `java-comments.md`와 독자가 달라 별도 파일로 뒀습니다)(2026-08-27, `spring-boot-java.md`에서 OpenAPI·주석 규칙을 2개 파일로 분리하고, 다른 문서와 80% 이상 중복이던 `figma-product.md`는 폐기 — 표기 규칙만 `spring-boot-java.md`로 이관. `docs/product/fe-context/`가 더 이상 쓰이지 않게 되며 `fe-context.md`도 함께 폐기). 파일별 정확한 역할·`paths:` 패턴은 여기서 다시 나열하지 않습니다 — 표가 바뀔 때마다 이 문서까지 손으로 맞춰야 해서 실제로 드리프트가 난 적이 있습니다. 최신 표: [`.claude/rules/README.md`](../.claude/rules/README.md) "Rules" 절.
 
 이렇게 나눈 이유는 토큰 낭비 방지입니다 — Java 파일을 안 건드리는 세션에서 Spring 컨벤션 전체를 매번 로드할 필요가 없습니다.
 
@@ -50,6 +50,13 @@ Always-load 규칙 5개(`harness-workflow`·`harness-wave`·`harness-follow-up`�
 **공통 설계 원칙:** 세 스킬(`specify`/`refactor-audit`/`verify`) 모두 "LLM의 자기 보고를 신뢰하지 않는다"가 핵심입니다 — `refactor-audit`은 "안 바꿨다"는 말 대신 `oasdiff` diff가 정말 0인지, `verify`는 "테스트 통과했다"는 말 대신 `./gradlew test`를 실제로 돌린 결과를 요구합니다.
 
 **5번째 스킬 — 절차형, 승인 게이트 없음:** `debug-bug`(버그 재현·원인 분리, 로컬 + 프로덕션 EC2 조사 절차)는 위 4개와 달리 "문서 승인"을 강제하지 않는 반복 조사 절차 캡슐화라 표에서 분리했습니다. 2026-08-11에 `workflow-tools.md`(always-load 규칙 파일) 안에 있던 프로즈 절차를 이 스킬로 옮겼습니다 — 그 내용은 "어떤 파일을 건드리는가"가 아니라 "버그 리포트를 받았는가"라는 상황 트리거라 `paths:` 스코프(파일 경로 기반)로는 옮길 수 없었고, 스킬(이름+한 줄 설명만 항상 노출되다가 필요할 때 전체 내용을 불러오는 방식)로 옮기는 게 always-load 규칙 파일의 토큰 크기를 줄이면서도 트리거 신뢰성을 유지하는 방법이었습니다.
+
+**3 트랙 × 4 게이트로의 재구성 (2026-09-03, `#127`):** 위 스킬들은 원래 각자 다른 상황에서 독립적으로 트리거되는 구조였습니다. 그래서 동작은 하지만 "하나의 사이클"로 읽히지 않았고, `refactor-audit`은 사실상 별도 진입점이었습니다. 이를 **트랙 3개(A 기능=`specify` · B 감사·리팩터=`refactor-audit` · C 버그=`debug-bug`)가 공통 게이트 4개(G1 리서치 · G2 승인 · G3 검증 · G4 회고)를 통과하는 구조**로 재구성했습니다. 게이트 정의 SSOT는 `harness-workflow.md`이고, 스킬 문서는 자기 단계가 어느 게이트에 대응하는지만 표시합니다(중복 정의 금지).
+
+**서브에이전트 (`.claude/agents/`, 2026-09-03 신설):** 게이트에서 호출하는 조사·리뷰 전용 에이전트 2개입니다. 둘 다 `Edit`/`Write` 도구가 없어 파일을 고칠 수 없습니다.
+
+- **`researcher`(G1)** — 외부 라이브러리 문서 조사. **로컬 `build.gradle`·jar 실물 확인을 웹 조회보다 먼저** 하도록 강제하고, 블로그·StackOverflow 인용을 금지합니다. 이 저장소가 Spring Boot 4.1.0을 쓰는데 웹 예제 대다수가 3.x 기준이라 그대로 옮기면 깨지기 때문입니다. 도입 당시 스모크 테스트에서 이 에이전트가 **지침 자체의 오류를 잡아냈습니다** — "`docs.spring.io`는 `/4.1/` 경로로 고정하라"고 썼는데 실측해 보니 그 경로도 리다이렉트돼 URL로는 버전 고정이 불가능했고, 지침을 "도착 페이지의 버전 표시를 확인하고 로컬 jar로 교차 확인"으로 고쳤습니다.
+- **`doc-reviewer`(G3)** — 문서 유형·정보 구조·문장 3단계 리뷰(기준: `doc-writing.md`). advisory라 커밋을 막지 않습니다.
 
 ### 실제 적용 사례 — `auth` 도메인 리팩터 감사 (2026-08-04)
 
@@ -74,7 +81,7 @@ Always-load 규칙 5개(`harness-workflow`·`harness-wave`·`harness-follow-up`�
 | 신규 `ErrorCode` "신규 vs 변경" 오분류(#75, 2026-07-31) | 기존 상수의 `HttpStatus`만 바뀐 것도 diff의 `+` 줄만 보고 "완전 신규"로 오판 | `-`(제거)에도 같은 이름이 있으면 "변경"으로 분리 표시하도록 스크립트 보정 |
 | PR 없이 main에 직접 push(#67) | merge-push는 중복 알림 방지로 breaking-change 알림을 skip하는데, PR 없이 직접 push하면 이 휴리스틱이 안 걸려 알림 자체가 안 나감 | `docs/api/README.md`에 이 사각지대를 명시적으로 기록 — PR 경유가 알림의 전제 조건임을 문서화 |
 | `warn-breaking-change.sh` 오차단 | §5 참고 | agent-type → command-type 훅으로 전환 |
-| Wave `Nice`/`Out` 혼용 표기(#19/#20) | 두 개념을 한 칸에 섞어 써서 "이번 wave에서 하는 건지 안 하는 건지" 불명확해짐 | 당시 `harness-wave.md`에 Must/Nice/Out을 Backlog 없이 단정 금지 + Nice·Out 혼용 표기 금지를 명문화 (2026-08-26: Nice→Could로 개명, Backlog 텍스트 방식은 폐지하고 `priority:` 라벨로 이관 — `harness-wave.md` 참고) |
+| Wave `Nice`/`Out` 혼용 표기(#19/#20) | 두 개념을 한 칸에 섞어 써서 "이번 wave에서 하는 건지 안 하는 건지" 불명확해짐 | 당시 `harness-milestone.md`에 Must/Nice/Out을 Backlog 없이 단정 금지 + Nice·Out 혼용 표기 금지를 명문화 (2026-08-26: Nice→Could로 개명, Backlog 텍스트 방식은 폐지하고 `priority:` 라벨로 이관 — `harness-milestone.md` 참고) |
 | Google Calendar의 Wave 축 재분류 | "로그인 자격증명"(Wave 1)과 "로그인이 매개하는 외부 서비스 연동"(Wave 3)의 경계가 헷갈려 재분류가 필요했음 | 이후 이 경계에 걸리는 새 이슈는 에이전트가 스스로 확정하지 않고 사용자에게 한 줄 확인을 받도록 규칙화 |
 | `NotificationController` Swagger 스키마 소실 | 제네릭 wrapper(`SuccessResponse<T>`)를 raw 타입으로 `@Schema(implementation=...)`에 지정하면 springdoc이 실제 `data` 타입을 못 읽어 스키마 전체가 사라짐 | "`@Schema` 존재 ≠ 실제 Swagger 노출"이라는 STOP §1.6 규칙 + `useReturnTypeSchema=true` 해결책을 `openapi-conventions.md`에 고정 |
 
@@ -103,7 +110,7 @@ push/PR → OpenApiSpecExportTest → oasdiff breaking (스키마 diff)
 
 - **새 이슈·새 브랜치·새 PR 생성**은 사용자가 이미 명시적으로 요청한 게 아니면 항상 먼저 채팅으로 확인합니다(2026-08-04/08-05 사용자 결정) — 구현·커밋까지 승인받았다고 PR 생성까지 자동으로 승인된 게 아닙니다.
 - **DB·인증·다파일 변경**은 `specify` 스킬의 Approved 스펙 없이 구현을 시작하지 않습니다.
-- **priority: must/could**는 이슈나 스펙 문구만으로 단정하지 않고, 이슈의 `priority:` 라벨(`development-wave.md` §2가 SSOT)로 확인합니다.
+- **priority: must/could**는 이슈나 스펙 문구만으로 단정하지 않고, 이슈의 `priority:` 라벨(`release-milestones.md` §2가 SSOT)로 확인합니다.
 - **커밋은 사용자가 명시적으로 요청할 때만** 생성합니다 — 통상 주제별 최대 3개로 분할.
 
 ## 10. 컨텍스트 격리 — 자기 채점 편향을 피하는 구조
@@ -128,7 +135,8 @@ Superpowers 같은 서드파티 플러그인(`brainstorming`, `writing-plans`, `
 2026-08-05 기준 `git log` 측정:
 
 - 전체 커밋 383개 중 **155개**가 `Co-Authored-By: Claude` 트레일러 포함 (`git log --grep "Co-Authored-By: Claude" --oneline | wc -l`)
-- 스펙 문서 42개(`docs/specs/` 전 도메인 합계), ADR 9개, always-load 규칙 5개 + path-scoped 규칙 9개, 스킬 5개, 훅 4개
+- 스펙 문서 42개(`docs/specs/` 전 도메인 합계), ADR 9개 — 2026-08-05 시점 수치
+- 하네스 구성 요소는 2026-09-03 기준: always-load 규칙 5개 + path-scoped 규칙 8개, 스킬 5개, 서브에이전트 2개, 훅 4개 (정확한 목록 SSOT: [`.claude/rules/README.md`](../.claude/rules/README.md))
 
 이 수치는 "AI가 얼마나 많이 타이핑했는가"가 아니라 — 위 §1~§12의 장치들이 실제로 매 세션 반복 적용됐다는 근거로 읽는 게 맞습니다. 코드 자체뿐 아니라 이 문서를 포함한 스펙·ADR·규칙 문서 대부분도 AI가 초안을 작성하고 사람이 승인·확정하는 방식으로 만들어졌습니다.
 

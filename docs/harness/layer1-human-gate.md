@@ -14,15 +14,17 @@
 |---|---|---|---|
 | [`CLAUDE.md`](../../CLAUDE.md) | rule (진입점) | 세션 시작 시 항상 | `@AGENTS.md` import + Claude Code 전용 보충 |
 | [`AGENTS.md`](../../AGENTS.md) | rule (프로젝트 지도) | 세션 시작 시 항상 | 기술 스택·컨벤션·경로 맵 |
-| [`.claude/rules/harness-workflow.md`](../../.claude/rules/harness-workflow.md) | rule (**코어**) | 세션 시작 시 항상 | ⛔ STOP §1~§6 · Before/While/After Coding |
-| [`.claude/rules/harness-wave.md`](../../.claude/rules/harness-wave.md) | rule | 세션 시작 시 항상 | priority(must/could) 단정 금지 · Release Gate · `[미정]` 처리 |
+| [`.claude/rules/harness-workflow.md`](../../.claude/rules/harness-workflow.md) | rule (**코어**) | 세션 시작 시 항상 | ⛔ STOP §1~§6 · 3 트랙 × 4 게이트 사이클 |
+| [`.claude/rules/harness-milestone.md`](../../.claude/rules/harness-milestone.md) | rule | 세션 시작 시 항상 | priority(must/could) 단정 금지 · Release Gate · `[미정]` 처리 |
 | [`.claude/rules/harness-follow-up.md`](../../.claude/rules/harness-follow-up.md) | rule | 세션 시작 시 항상 | 후속 제안 · Defer · ERD 개선 제안 |
-| [`.claude/rules/workflow-tools.md`](../../.claude/rules/workflow-tools.md) | rule | 세션 시작 시 항상 | 도구 우선순위·작업유형→도구 매핑 |
+| [`.claude/rules/workflow-tools.md`](../../.claude/rules/workflow-tools.md) | rule | 세션 시작 시 항상 | 도구 우선순위·트랙×게이트→도구 매핑 |
 | [`.claude/rules/plain-language-reporting.md`](../../.claude/rules/plain-language-reporting.md) | rule | 세션 시작 시 항상 | 사용자 보고는 쉬운 말로 (코드 주석은 제외) |
 | `spring-boot-java.md` · `openapi-conventions.md` · `java-comments.md` | rule | **`**/*.java` 접근 시에만** | Java 레이어·`@Schema`·주석 스타일 |
 | `client-platform.md` | rule | **controller/service 접근 시에만** | 클라이언트 계약·인증 전제 |
 | `deployment.md` | rule | **yml·docker-compose 접근 시에만** | 배포 가드레일 |
 | `testing.md` | rule | **`*Test.java`·`src/test/**` 접근 시에만** | JUnit·Testcontainers |
+| `doc-writing.md` | rule | **`docs/**/*.md`·`.claude/**/*.md` 접근 시에만** | 문서 유형·정보 구조·문장 (2026-09-03 신설) |
+| `.claude/rules/README.md`(이 표 자체가 실린 파일) | rule(구조 인덱스) | **`.claude/**` 접근 시에만** | 위 path-scoped 7개 + 이 파일 자체 = **총 8개** (아래 §4 "path-scoped 8개"의 근거) |
 
 **로딩 메커니즘:** `.claude/rules/*.md`에 YAML frontmatter `paths:`가 **없으면** 세션 시작 시 항상 주입되고, **있으면** 그 glob에 매칭되는 파일을 읽거나 쓸 때만 주입됩니다(Cursor `.mdc`의 `alwaysApply`/`globs`에 대응). 이렇게 나눈 이유는 토큰 절약입니다 — Java를 안 건드리는 세션에서 Spring 컨벤션 전체를 매번 실을 필요가 없습니다.
 
@@ -38,7 +40,7 @@
 1. 세션 시작
    → CLAUDE.md 주입 → 그 안의 @AGENTS.md import 따라 AGENTS.md 주입
    → .claude/rules/ 중 frontmatter 없는 5개 주입
-     (harness-workflow · harness-wave · harness-follow-up
+     (harness-workflow · harness-milestone · harness-follow-up
       · workflow-tools · plain-language-reporting)
 
 2. 에이전트가 src/main/java/.../JwtProperties.java 를 Read
@@ -95,7 +97,7 @@ ls src/main/java/com/tripfit/tripfit/auth/service/
 
 | 순위 | 강조할 것 | 근거 |
 |---|---|---|
-| 1 | **path-scoped 규칙 로딩으로 컨텍스트 예산을 설계했다** | always-load 5개 + path-scoped 7개로 분리. "규칙을 많이 쓰면 좋다"가 아니라 "언제 무엇을 실을지"를 토큰 비용 관점에서 설계했다는 점이 차별점 |
+| 1 | **path-scoped 규칙 로딩으로 컨텍스트 예산을 설계했다** | always-load 5개 + path-scoped 8개로 분리(2026-09-03 `doc-writing.md` 추가). "규칙을 많이 쓰면 좋다"가 아니라 "언제 무엇을 실을지"를 토큰 비용 관점에서 설계했다는 점이 차별점 |
 | 2 | **문서 드리프트를 실패 모드로 인정하고 절차를 만들었다** | STOP §1.5·§1.6은 "문서를 믿지 말고 코드/생성물을 확인하라"는 규칙. 문서 SSOT를 만들면서 동시에 그 SSOT가 썩는다는 걸 전제한 설계 |
 | 3 | 충돌 시 임의 판단 금지 (STOP §1) | 흔한 주장이라 단독으로는 약함. 위 2번 사례와 묶어서 말해야 설득력이 생김 |
 

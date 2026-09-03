@@ -1,25 +1,25 @@
 ---
 name: defer-followup
-description: 사용자가 「다른 이슈로 빼」·「후속 이슈로」·「wave 밖」 등으로 범위를 미루라고 할 때, Draft 스펙 작성부터 이슈 생성까지 같은 턴에 수행한다.
+description: 사용자가 「다른 이슈로 빼」·「후속 이슈로」·「이번 Milestone 밖」 등으로 범위를 미루라고 할 때, Draft 스펙 작성부터 이슈 생성까지 같은 턴에 수행한다.
 ---
 
 # Defer Follow-up Workflow
 
-이번 요청 범위에서 일부를 **다음 이슈·다음 wave로 미룰 때** 쓰는 스킬. 이슈만 만들고 끝내면 문서·구현·트래킹이 어긋나므로, 아래 단계를 **같은 턴**에 전부 수행한다.
+이번 요청 범위에서 일부를 **다음 이슈·다음 Milestone으로 미룰 때** 쓰는 스킬. 이슈만 만들고 끝내면 문서·구현·트래킹이 어긋나므로, 아래 단계를 **같은 턴**에 전부 수행한다.
 
 `specify`가 "구현 전 스펙"을, `refactor-audit`이 "감사 전 승인"을 강제하듯, 이 스킬은 "범위를 뺄 때도 문서화 없이 이슈만 던지지 않기"를 강제한다.
 
 ## When to Use
 
-- 사용자가 「다른 이슈로 빼」, 「후속 이슈로」, 「wave 밖」 등으로 범위를 미루라고 지시할 때
+- 사용자가 「다른 이슈로 빼」, 「후속 이슈로」, 「이번 Milestone 밖」 등으로 범위를 미루라고 지시할 때 (폐지된 「wave 밖」 표현을 쓰더라도 같은 의도로 받는다)
 - Must Have급 구현 완료 후 발견한 개선점을 별도 이슈로 분리할 때 (`harness-follow-up.md` 💡 후속 제안과는 별개 — 제안 자체가 아니라 **실제로 분리하기로 확정**된 경우)
 
 ## Steps
 
-1. **`docs/specs/{domain}/{kebab-case}.md`** — Draft 스펙 작성 (`specify` 템플릿 축약 가능). Must Have·완료 기준·선행·wave 밖·Out of Scope 포함
+1. **`docs/specs/{domain}/{kebab-case}.md`** — Draft 스펙 작성 (`specify` 템플릿 축약 가능). Must Have·완료 기준·선행·Out of Scope 포함
 2. **관련 Approved 스펙** — `deferred:` 헤더 또는 Out of Scope 표에 **스펙 경로 + `#n` 링크** 추가 · 본문에서 lazy/임시 구현을 **`#n` 위임**으로 명시
-3. **`docs/specs/README.md`** — wave 표·이슈 매핑에 행 추가
-4. **이슈 생성 — ⚠️ 먼저 사용자에게 확인** — `gh issue create`는 새 이슈 생성이므로 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절이 적용된다. 사용자가 이 스킬을 트리거하며 이미 "이슈 만들어줘"까지 명시했다면 그대로 진행, 범위 분리만 요청했다면 이슈 생성 여부를 짧게 재확인한 뒤 진행. 
+3. **`docs/specs/README.md`** — 도메인 폴더 표·이슈 매핑에 행 추가
+4. **이슈 생성 — ⚠️ 먼저 사용자에게 확인** — `gh issue create`는 새 이슈 생성이므로 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절이 적용된다. 사용자가 이 스킬을 트리거하며 이미 "이슈 만들어줘"까지 명시했다면 그대로 진행, 범위 분리만 요청했다면 이슈 생성 여부를 짧게 재확인한 뒤 진행.
    **⚠️ 중요 (이슈 템플릿 준수):** 이슈 생성 시 반드시 `.github/CONTRIBUTING.md`와 `.github/ISSUE_TEMPLATE/`의 양식을 준수하여 다음 항목을 정확히 포함할 것:
    - 제목: `[Type] 한글 설명` 형식 (예: `[Feat]`, `[Chore]`)
    - 메타데이터: `gh issue create --label "kind:..." --label "priority:..." --milestone "..."` 플래그를 사용하여 라벨과 마일스톤 필수 지정

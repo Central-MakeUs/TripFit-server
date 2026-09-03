@@ -1,7 +1,7 @@
 # Harness — 후속 제안 · Defer · ERD
 
-코어 STOP·코딩 흐름: `harness-workflow.md`  
-Wave·용어: `harness-wave.md`
+코어 STOP·코딩 흐름: `harness-workflow.md`
+Milestone·용어: `harness-milestone.md`
 
 ## 💡 ERD 적극 제안 (스키마는 고정이 아님)
 
@@ -28,7 +28,7 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 
 - 제목: `## 후속 제안` (또는 동등한 한 줄 섹션)
 - **3~8개** bullet, 영향 큰 순
-- 각 bullet: **무엇이 아쉬운지** → **권장 방향** → (선택) wave 밖 / 별도 이슈 / 스펙 amend 필요
+- 각 bullet: **무엇이 아쉬운지** → **권장 방향** → (선택) 현재 Milestone 밖 / 별도 이슈 / 스펙 amend 필요
 - **이번 PR·커밋에 포함하지 않음** — 사용자 승인·이슈 확정 후 진행
 
 **점검 축 (해당할 때만 골라서)**
@@ -48,8 +48,8 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 - 「나중에 하면 좋겠다」만 나열하고 **근거·우선순위** 없이 장문
 - 완료 선언 전 검증(테스트·체크리스트) **대신** 제안만 하고 완료 선언
 
-**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.claude/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `harness-workflow.md` After Coding과 동일).
+**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.claude/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `harness-workflow.md` G4 회고 게이트와 동일).
 
 ## ✅ 후속 작업 이슈 분리 (Defer)
 
-사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「wave 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** Draft 스펙 작성 → Approved 스펙 amend → README 갱신 → 이슈 생성 → 구현 트림 → 보고까지 전체 절차는 **`defer-followup` 스킬** SSOT (이슈 생성 단계는 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용).
+사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「이번 Milestone 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** Draft 스펙 작성 → Approved 스펙 amend → README 갱신 → 이슈 생성 → 구현 트림 → 보고까지 전체 절차는 **`defer-followup` 스킬** SSOT (이슈 생성 단계는 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용).

@@ -79,7 +79,7 @@ prometheus > grafana
 
 ### 2. AI-Native Engineering Workflow (End-to-End Control Loop)
 
-> **"AI의 판단과 실행을 분리하고, 사람의 승인이 필요한 영역과 시스템이 강제해야 하는 영역을 구분했습니다. 직접 구축한 5대 커스텀 스킬과 4대 로컬 훅을 통해 AI의 작업 범위를 구조화하고, 위험한 도구 사용을 결정론적으로 통제하며, 변경 결과를 기계적으로 검증합니다."**
+> **"AI의 판단과 실행을 분리하고, 사람의 승인이 필요한 영역과 시스템이 강제해야 하는 영역을 구분했습니다. 모든 작업은 성격에 따라 3개 트랙 중 하나로 진입해 공통 게이트 4개(리서치·승인·검증·회고)를 통과합니다. 직접 구축한 5대 커스텀 스킬·2대 서브에이전트·4대 로컬 훅으로 AI의 작업 범위를 구조화하고, 위험한 도구 사용을 결정론적으로 통제하며, 변경 결과를 기계적으로 검증합니다."**
 
 ```eraser
 typeface clean
@@ -90,21 +90,22 @@ direction down
 probabilistic_layer [label: "1. Probabilistic Layer\n(AI Agent & Skills)", color: blue] {
   rules [label: "Rules\n(코어 룰 주입)", icon: file-text, color: blue]
   ai_agent [label: "AI Agent\n(Claude Code)", icon: bot, color: blue]
-  plan_skills [label: "Custom Skills (사전 분석 및 계획)", color: purple] {
-    specify [label: "specify", icon: file-plus]
-    refactor_audit [label: "refactor-audit", icon: search]
-    debug_bug [label: "debug-bug", icon: tool]
+  plan_skills [label: "트랙 선택 (택 1)", color: purple] {
+    specify [label: "A 트랙: specify\n(기능·API·DB)", icon: file-plus]
+    refactor_audit [label: "B 트랙: refactor-audit\n(감사·무손실 리팩터)", icon: search]
+    debug_bug [label: "C 트랙: debug-bug\n(버그·테스트 실패)", icon: tool]
   }
+  researcher [label: "G1 리서치\nresearcher 서브에이전트\n(로컬 버전 → 공식 문서)", icon: book-open, color: blue]
 }
 
 // 2. Human Decision Layer (사람의 개입 및 의사결정)
 human_layer [label: "2. Human Decision Layer", color: orange] {
-  human_gate [label: "Human Gate\n(STOP & Ask User)", icon: alert-triangle, color: orange]
+  human_gate [label: "G2 승인 게이트\n(STOP & Ask User)", icon: alert-triangle, color: orange]
 }
 defer_followup [label: "GitHub Issue\n(defer-followup 분리)", icon: github, color: gray]
 
 // 3. Implementation (코드 생성)
-implement_phase [label: "Implementation\n(승인된 범위 내 코드 생성)", icon: edit, color: purple]
+implement_phase [label: "구현\n(승인된 범위 내 코드 생성)", icon: edit, color: purple]
 
 // 4. Deterministic Layer (결정론적 가드레일 통제)
 deterministic_layer [label: "3. Deterministic Layer\n(Custom Hooks)", color: red, icon: shield] {
@@ -115,17 +116,20 @@ deterministic_layer [label: "3. Deterministic Layer\n(Custom Hooks)", color: red
 }
 
 // 5. Mechanical Verification (기계적 최종 검증)
-verification_layer [label: "4. Mechanical Verification\n(기계적 검증)", color: green] {
+verification_layer [label: "4. Mechanical Verification\n(G3 검증 게이트)", color: green] {
   verify [label: "verify Skill\n(Tests / oasdiff)", icon: check-circle, color: yellow]
+  doc_reviewer [label: "doc-reviewer 서브에이전트\n(문서 품질 · advisory)", icon: file-text, color: yellow]
 }
 
+retro [label: "G4 회고 게이트\n(문서 갱신 점검 · 후속 제안 · 로그)", icon: repeat, color: orange]
 safe_change [label: "Safe Change\n(안전한 변경 완료)", icon: check, color: green]
 
 // ============================================================
 // Workflow Pipeline
 // ============================================================
 rules > ai_agent
-ai_agent > plan_skills
+ai_agent > plan_skills: "작업 성격으로 트랙 판정"
+plan_skills > researcher: "외부 지식 필요 시"
 
 probabilistic_layer > human_gate
 
@@ -134,7 +138,8 @@ human_gate > defer_followup: "Defer"
 
 implement_phase > deterministic_layer: "Tool 실행 시 가로채기"
 deterministic_layer > verification_layer
-verification_layer > safe_change
+verification_layer > retro
+retro > safe_change
 ```
 
 ### 3. AI-Safe API Contract Validation (계약 안전성 검증)
@@ -195,7 +200,7 @@ direction right
 // 1. 규칙 로딩 (컨텍스트 예산)
 rules_group [label: "Rules (Context Budget)", color: blue, icon: file] {
   always_load [label: "Always-load 규칙 (기본 5개)"]
-  path_scoped [label: "Path-scoped 규칙 (조건부 7개)"]
+  path_scoped [label: "Path-scoped 규칙 (조건부 8개)"]
 }
 
 // 2. 상태 정의
@@ -223,7 +228,7 @@ gate_4 > proceed: "포함하여 진행"
 gates_group > proceed: "전부 Pass"
 ```
 
-### 5. Layer 2: Custom Skills (상세)
+### 5. Layer 2: Custom Skills & Subagents (상세)
 
 ```eraser
 typeface clean
@@ -233,29 +238,44 @@ direction right
 // 1. Trigger
 ai_agent [label: "AI Agent", icon: bot, color: purple]
 
-// 2. 5대 스킬 (병렬 분기)
-skills_group [label: "Custom Skills (.claude/skills/)", color: blue, icon: folder] {
-  specify [label: "specify\n(기능/설계 스펙 작성)", icon: file-plus]
-  refactor_audit [label: "refactor-audit\n(서브에이전트 무손실 감사)", icon: search]
-  debug_bug [label: "debug-bug\n(버그 재현 및 분석)", icon: tool]
-  defer_followup [label: "defer-followup\n(후속 이슈 분리)", icon: log-out]
-  verify [label: "verify\n(기계적 검증)", icon: check-circle]
+// 2. 트랙 스킬 (택 1 — 작업 성격으로 분기)
+track_skills [label: "트랙 스킬 (.claude/skills/)", color: blue, icon: folder] {
+  specify [label: "A 트랙: specify\n(기능/설계 스펙 작성)", icon: file-plus]
+  refactor_audit [label: "B 트랙: refactor-audit\n(무손실 감사·리팩터)", icon: search]
+  debug_bug [label: "C 트랙: debug-bug\n(버그 재현 및 분석)", icon: tool]
 }
 
-// 3. Outcomes
+// 3. 게이트 스킬 (트랙 공통)
+gate_skills [label: "게이트 스킬 (트랙 공통)", color: green, icon: folder] {
+  verify [label: "G3: verify\n(기계적 검증)", icon: check-circle]
+  defer_followup [label: "G4: defer-followup\n(후속 이슈 분리)", icon: log-out]
+}
+
+// 4. 서브에이전트 (.claude/agents/ — Edit/Write 없음)
+agents_group [label: "서브에이전트 (.claude/agents/)", color: purple, icon: users] {
+  researcher [label: "G1: researcher\n(외부 문서 조사)", icon: book-open]
+  doc_reviewer [label: "G3: doc-reviewer\n(문서 품질 리뷰)", icon: file-text]
+}
+
+// 5. Outcomes
 outcome_spec [label: "docs/specs/", icon: file-text, color: purple]
 outcome_audit [label: "audit.md / refactor-log.md", icon: file-text, color: purple]
 outcome_issue [label: "GitHub Issue (Draft 스펙)", icon: github, color: black]
 outcome_verify [label: "oasdiff / gradlew 통과", icon: check-circle, color: green]
+outcome_research [label: "결론 + 근거 URL + 확인 버전", icon: book, color: blue]
 
 // === 플로우 ===
-ai_agent > skills_group: "상황에 따라 자동 트리거"
+ai_agent > track_skills: "작업 성격으로 트랙 판정"
+track_skills > agents_group: "G1 — 외부 지식 필요 시"
+track_skills > gate_skills: "구현 후 공통 게이트"
 
 specify > outcome_spec
 refactor_audit > outcome_audit
 defer_followup > outcome_issue
 verify > outcome_verify
+researcher > outcome_research
 debug_bug > verify: "수정 후 검증"
+doc_reviewer > verify: "문서 50줄+ 변경 시"
 ```
 
 ### 6. Layer 3: Deterministic Guardrails (상세)
