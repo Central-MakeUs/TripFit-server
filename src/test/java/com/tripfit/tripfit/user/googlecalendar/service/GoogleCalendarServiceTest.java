@@ -229,7 +229,7 @@ class GoogleCalendarServiceTest {
 
   @Test
   void syncUser_onAuthFailure_delegatesPermanentAuthFailure() {
-    user.setGoogleCalendarConnected(true);
+    user.connectGoogleCalendar();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     GoogleCalendarCredential credential =
         GoogleCalendarCredential.create(
@@ -254,7 +254,7 @@ class GoogleCalendarServiceTest {
   // 실제 DB 반영은 persistenceService가 담당하므로, 여기서는 applySyncSuccess에 넘어가는 windowEnd 인자로 확인
   @Test
   void syncUser_whenOngoingTripEndRangeBeyondWindow_extendsSyncWindowEnd() {
-    user.setGoogleCalendarConnected(true);
+    user.connectGoogleCalendar();
     LocalDate extendedEnd = LocalDate.now(ZoneId.of("Asia/Seoul")).plusYears(2).plusDays(30);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     GoogleCalendarCredential credential =
@@ -279,7 +279,7 @@ class GoogleCalendarServiceTest {
 
   @Test
   void syncUser_whenCredentialMissing_clearsConnectedFlag() {
-    user.setGoogleCalendarConnected(true);
+    user.connectGoogleCalendar();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(credentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
 
@@ -291,7 +291,7 @@ class GoogleCalendarServiceTest {
 
   @Test
   void disconnect_keepsPersonalSchedules() {
-    user.setGoogleCalendarConnected(true);
+    user.connectGoogleCalendar();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     GoogleCalendarCredential credential =
         GoogleCalendarCredential.create(user, "enc-refresh", null, null, "a@gmail.com");

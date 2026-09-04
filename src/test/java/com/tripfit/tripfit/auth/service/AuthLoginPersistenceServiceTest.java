@@ -90,8 +90,7 @@ class AuthLoginPersistenceServiceTest {
   void persist_whenExistingUser_updatesEmailNicknameImageButPreservesNames() {
     User existing =
         new User("google-sub", SocialProvider.GOOGLE, "old@example.com", "old-nick", null);
-    existing.setFirstName("길동");
-    existing.setLastName("홍");
+    existing.applyProfilePatch("길동", "홍", null);
     OAuthProfile profile =
         new OAuthProfile(
             SocialProvider.GOOGLE,
@@ -116,8 +115,8 @@ class AuthLoginPersistenceServiceTest {
   @Test
   void persist_whenExistingAccountIsWithdrawn_revivesAccount() {
     User withdrawn = new User("google-sub", SocialProvider.GOOGLE, null, null, null);
-    withdrawn.setDeletedAt(LocalDateTime.now());
-    withdrawn.setAllFree(true);
+    withdrawn.markDeleted();
+    withdrawn.applyAllFree(true);
     OAuthProfile profile =
         new OAuthProfile(
             SocialProvider.GOOGLE,

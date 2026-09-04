@@ -54,15 +54,7 @@ public class AuthLoginPersistenceService {
   // 재로그인 시 소셜에서 온 이메일·닉네임·프로필 이미지만 갱신 — 성·이름은 PATCH profile 전용
   // profileImageUrl: 현재는 provider URL 그대로. S3 미러는 추후
   private User updateFromProfile(User user, OAuthProfile profile) {
-    if (profile.email() != null && !profile.email().isBlank()) {
-      user.setEmail(profile.email());
-    }
-    if (profile.nickname() != null && !profile.nickname().isBlank()) {
-      user.setNickname(profile.nickname());
-    }
-    if (profile.profileImageUrl() != null && !profile.profileImageUrl().isBlank()) {
-      user.setProfileImageUrl(profile.profileImageUrl());
-    }
+    user.applySocialProfile(profile.email(), profile.nickname(), profile.profileImageUrl());
     return user;
   }
 

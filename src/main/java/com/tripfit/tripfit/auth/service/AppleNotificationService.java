@@ -8,7 +8,6 @@ import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +74,7 @@ public class AppleNotificationService {
 
   // account-delete: Apple ID 자체가 영구 삭제됐으므로 soft delete + refresh_token 전부 폐기
   private void softDelete(User user) {
-    user.setDeletedAt(LocalDateTime.now());
+    user.markDeleted();
     refreshTokenService.revokeAllForUser(user.getId());
   }
 

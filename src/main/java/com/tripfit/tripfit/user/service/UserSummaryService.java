@@ -67,14 +67,14 @@ public class UserSummaryService {
   // Skip+0행 / create·join / 일정 CLEAR 후 — 일정이 없으면 is_all_free=true (이미 일정이면 유지)
   public void markAllFreeIfNoSchedules(User user) {
     if (!hasPreSchedule(user.getId())) {
-      user.setAllFree(true);
+      user.applyAllFree(true);
     }
   }
 
   // 일정이 한 건이라도 생기면 전부 free 선언을 해제한다
   public void clearAllFreeOnScheduleAdded(User user) {
     if (user.isAllFree()) {
-      user.setAllFree(false);
+      user.applyAllFree(false);
     }
   }
 }

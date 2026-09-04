@@ -96,7 +96,7 @@ public class TripRecommendationService {
               candidate.score()));
     }
     recommendationRepository.saveAll(rows);
-    trip.setLastRecommendationMode(mode);
+    trip.applyLastRecommendationMode(mode);
 
     return toListResponse(mode, rows);
   }
@@ -211,12 +211,12 @@ public class TripRecommendationService {
     int uncertainMemberCount =
         (int) details.stream().filter(detail -> detail.uncertainDays() > 0).count();
 
-    trip.setStatus(TripStatus.CONFIRMED);
-    trip.setConfirmedStartDate(confirmedStartDate);
-    trip.setConfirmedEndDate(confirmedEndDate);
-    trip.setConfirmedAttendCount(attendCount);
-    trip.setConfirmedVacationMemberCount(vacationMemberCount);
-    trip.setConfirmedUncertainCount(uncertainMemberCount);
+    trip.confirm(
+        confirmedStartDate,
+        confirmedEndDate,
+        attendCount,
+        vacationMemberCount,
+        uncertainMemberCount);
 
     tripScheduleSnapshotService.freezeTrip(trip);
     applicationEventPublisher.publishEvent(new TripConfirmedEvent(tripId));
@@ -235,15 +235,7 @@ public class TripRecommendationService {
     }
     requireValidUnconfirmReason(request);
 
-    trip.setUnconfirmReason(request.reason());
-    trip.setUnconfirmReasonDetail(
-        request.reason() == UnconfirmReason.OTHER ? request.reasonDetail() : null);
-    trip.setStatus(TripStatus.ONGOING);
-    trip.setConfirmedStartDate(null);
-    trip.setConfirmedEndDate(null);
-    trip.setConfirmedAttendCount(null);
-    trip.setConfirmedVacationMemberCount(null);
-    trip.setConfirmedUncertainCount(null);
+    trip.unconfirm(request.reason(), request.reasonDetail());
 
     recommendationRepository.deleteByTripId(tripId);
     tripMemberScheduleSnapshotRepository.deleteByTripId(tripId);

@@ -60,7 +60,7 @@ public class GoogleCalendarSyncPersistenceService {
                     googleAccountEmail));
     // 신규 엔티티일 수 있어 명시적 save 필요 — 기존 행 업데이트는 managed 상태라 dirty checking으로 충분
     credentialRepository.save(credential);
-    user.setGoogleCalendarConnected(true);
+    user.connectGoogleCalendar();
   }
 
   // freeBusy 조회 성공 결과를 busy_day에 반영하고 credential 캐시·sync 상태를 갱신한다. 파라미터로 받은
@@ -82,7 +82,7 @@ public class GoogleCalendarSyncPersistenceService {
           resolution.refreshedAccessCiphertext(),
           resolution.refreshedAccessExpiresAt());
       if (resolution.refreshedRefreshCiphertext() != null) {
-        credential.setRefreshTokenCiphertext(resolution.refreshedRefreshCiphertext());
+        credential.applyRotatedRefreshToken(resolution.refreshedRefreshCiphertext());
       }
     }
     replaceBusyDays(credential.getUser(), windowStart, windowEnd, intervals);
@@ -103,13 +103,13 @@ public class GoogleCalendarSyncPersistenceService {
   public void disconnectGoogleCalendar(UUID userId) {
     credentialRepository.deleteByUser_Id(userId);
     busyDayRepository.deleteByUser_Id(userId);
-    userLookupService.requireUser(userId).setGoogleCalendarConnected(false);
+    userLookupService.requireUser(userId).disconnectGoogleCalendar();
   }
 
   // credential row는 없는데 flag만 true로 남은 데이터 불일치 복구
   @Transactional
   public void clearConnectedFlag(UUID userId) {
-    userLookupService.requireUser(userId).setGoogleCalendarConnected(false);
+    userLookupService.requireUser(userId).disconnectGoogleCalendar();
   }
 
   private void replaceBusyDays(

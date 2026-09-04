@@ -96,8 +96,7 @@ public class DevAuthService {
             null);
     TestIdentityName name = KNOWN_TEST_USER_NAMES.get(key);
     if (name != null) {
-      user.setLastName(name.lastName());
-      user.setFirstName(name.firstName());
+      user.applyProfilePatch(name.firstName(), name.lastName(), null);
     }
     return user;
   }

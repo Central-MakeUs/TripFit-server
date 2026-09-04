@@ -55,6 +55,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class TripRecommendationServiceTest {
@@ -158,7 +159,7 @@ class TripRecommendationServiceTest {
 
   @Test
   void generateRecommendations_notOngoing_throwsNotOngoing() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
 
     assertThatThrownBy(
         () -> service.generateRecommendations(TRIP_ID, OWNER_ID, RecommendationMode.BASIC))
@@ -348,12 +349,7 @@ class TripRecommendationServiceTest {
 
   @Test
   void unconfirm_success_clearsConfirmedFieldsAndDeletesRecommendationsAndSnapshot() {
-    trip.setStatus(TripStatus.CONFIRMED);
-    trip.setConfirmedStartDate(LocalDate.now().plusDays(2));
-    trip.setConfirmedEndDate(LocalDate.now().plusDays(4));
-    trip.setConfirmedAttendCount(5);
-    trip.setConfirmedVacationMemberCount(1);
-    trip.setConfirmedUncertainCount(0);
+    trip.confirm(LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), 5, 1, 0);
 
     service.unconfirm(
         TRIP_ID,
@@ -383,7 +379,7 @@ class TripRecommendationServiceTest {
 
   @Test
   void unconfirm_missingReason_throwsInvalidUnconfirmReason() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
 
     assertThatThrownBy(
         () -> service.unconfirm(TRIP_ID, OWNER_ID, new UnconfirmTripRequest(null, null)))
@@ -394,7 +390,7 @@ class TripRecommendationServiceTest {
 
   @Test
   void unconfirm_otherReasonWithoutDetail_throwsInvalidUnconfirmReason() {
-    trip.setStatus(TripStatus.CONFIRMED);
+    ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
 
     assertThatThrownBy(
         () -> service
@@ -505,9 +501,7 @@ class TripRecommendationServiceTest {
 
   @Test
   void unconfirm_success_doesNotCascadeDeleteRecommendationFeedback() {
-    trip.setStatus(TripStatus.CONFIRMED);
-    trip.setConfirmedStartDate(LocalDate.now().plusDays(2));
-    trip.setConfirmedEndDate(LocalDate.now().plusDays(4));
+    trip.confirm(LocalDate.now().plusDays(2), LocalDate.now().plusDays(4), null, null, null);
 
     service.unconfirm(
         TRIP_ID,

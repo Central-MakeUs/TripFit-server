@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.trip.service;
 
-import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
 import com.tripfit.tripfit.trip.recommendation.service.TripRecommendationService;
 import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
@@ -21,11 +20,13 @@ import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.recommendation.dto.UnconfirmTripRequest;
 import com.tripfit.tripfit.trip.dto.UpdateTripPinRequest;
 import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
 // trip API facade — Command / Query / MemberQuery / Recommendation에 위임
-@RequiredArgsConstructor
 public class TripService {
 
   private final TripCommandService tripCommandService;

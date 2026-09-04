@@ -25,8 +25,7 @@ public class UserProfileService {
   @Transactional
   public UserSummaryResponse registerOnboardingName(UUID userId, OnboardingNameRequest request) {
     User user = userLookupService.requireUser(userId);
-    user.setFirstName(request.firstName().trim());
-    user.setLastName(request.lastName().trim());
+    user.applyProfilePatch(request.firstName().trim(), request.lastName().trim(), null);
     // hasPreSchedule은 userSummaryService가 일정 테이블 EXISTS로 매번 파생
     return userSummaryService.toSummary(user);
   }
@@ -41,15 +40,10 @@ public class UserProfileService {
     }
 
     User user = userLookupService.requireUser(userId);
-    if (request.firstName() != null) {
-      user.setFirstName(requireNonBlank(request.firstName()));
-    }
-    if (request.lastName() != null) {
-      user.setLastName(requireNonBlank(request.lastName()));
-    }
-    if (request.notificationEnabled() != null) {
-      user.setNotificationEnabled(request.notificationEnabled());
-    }
+    user.applyProfilePatch(
+        request.firstName() != null ? requireNonBlank(request.firstName()) : null,
+        request.lastName() != null ? requireNonBlank(request.lastName()) : null,
+        request.notificationEnabled());
     return userSummaryService.toSummary(user);
   }
 

@@ -3,7 +3,6 @@ package com.tripfit.tripfit.trip.service;
 import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.schedule.service.TripScheduleSnapshotService;
 import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import java.time.LocalDate;
@@ -29,7 +28,7 @@ public class TripHomeMaintenanceService {
     List<Trip> expired = tripRepository.findExpiredOngoing(today);
     for (Trip trip : expired) {
       tripScheduleSnapshotService.freezeTrip(trip);
-      trip.setStatus(TripStatus.EXPIRED);
+      trip.expire();
     }
     // 2. Pin 해제 (soft-deleted trip·member 제외)
     tripMemberRepository.clearExpiredPins(today);

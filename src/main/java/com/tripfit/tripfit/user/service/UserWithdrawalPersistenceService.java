@@ -8,7 +8,6 @@ import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayR
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,12 +54,6 @@ public class UserWithdrawalPersistenceService {
     refreshTokenService.revokeAllForUser(userId);
 
     // 3. User soft delete + PII 스크럽 — socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지
-    user.setDeletedAt(LocalDateTime.now());
-    user.setEmail(null);
-    user.setFirstName(null);
-    user.setLastName(null);
-    user.setNickname(null);
-    user.setProfileImageUrl(null);
-    user.setGoogleCalendarConnected(false);
+    user.scrubPiiForWithdrawal();
   }
 }

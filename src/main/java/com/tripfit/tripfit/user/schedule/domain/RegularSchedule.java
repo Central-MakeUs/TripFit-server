@@ -26,7 +26,6 @@ import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "regular_schedule")
@@ -45,6 +44,7 @@ public class RegularSchedule extends BaseTimeEntity {
   @UuidGenerator
   @JdbcTypeCode(SqlTypes.CHAR)
   @Column(length = 36, nullable = false, updatable = false)
+  @Setter
   private UUID id;
 
   @Schema(description = "소유 사용자")

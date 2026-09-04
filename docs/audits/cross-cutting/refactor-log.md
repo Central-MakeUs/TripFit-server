@@ -1,5 +1,68 @@
 # cross-cutting Refactor Log
 
+## 2026-08-14 (2차) — `Trip`·`User` 포함 전체 엔티티 `@Setter` 완전 제거
+
+1차 라운드(아래)에서 `Trip`·`User`는 "도메인 메서드가 거의 없어 라벨링만 바뀌는 수준"이라는 이유로 범위 밖으로 남겼는데, 사용자가 "그냥 `@Setter`를 아예 전부 제거할 수는 없냐"고 재요청 — 남은 항목을 전부 도메인 메서드로 옮기는 더 큰 작업을 이어서 진행했다.
+
+### 쉽게 설명하면
+
+- **`Trip`(여행방)**: 확정(`confirm`)·확정취소(`unconfirm`)·종료(`expire`)·메타수정(`applyPatch`) 같은 실제 업무 흐름을 엔티티 메서드로 새로 만들고, `TripRecommendationService`·`TripCommandService`·`TripHomeMaintenanceService` 3곳에 흩어져 있던 "여러 필드를 한 번에 바꾸는" 코드를 그 메서드 안으로 옮겼어요. 예를 들어 "여행 확정"은 상태값 하나만 바뀌는 게 아니라 확정 날짜·참석 인원 수·연차 필요 인원 수·불확실 인원 수까지 5개 값이 한 번에 같이 바뀌는데, 이제는 `trip.confirm(...)` 한 줄만 호출하면 이 5개가 항상 같이 정확하게 바뀌도록 보장돼요. 예전에는 이 5줄 중 하나를 실수로 빠뜨려도 컴파일러가 못 잡아냈는데, 이제는 그럴 걱정이 없어요.
+- **`User`(사용자)**: 이름 변경, 소셜 재로그인 시 프로필 동기화, 구글 캘린더 연동 on/off, 탈퇴 시 개인정보 지우기(PII 스크럽) 같은 흐름 각각을 전용 메서드로 만들었어요. 특히 탈퇴 처리는 원래 "삭제 시각 찍고 + 이메일 지우고 + 이름 지우고 + 닉네임 지우고 + 프로필사진 지우고 + 연동 끄고" 6줄을 매번 순서대로 정확히 다 호출해야 했는데, 이제 `scrubPiiForWithdrawal()` 하나만 부르면 됩니다.
+- **테스트 코드의 "DB 흉내" 자리는 그대로 남김**: 실제 DB 없이 테스트를 돌리다 보니, "이 사용자는 이미 DB에 저장돼서 ID값이 있다"를 흉내내야 하는 경우가 많아요(`user.setId(...)` 같은 것). 이건 업무 규칙이 아니라 테스트 준비 작업이라 도메인 메서드로 옮길 수가 없어서, id 필드 하나만 예외로 남겨뒀어요(사용자와 합의됨). 그 외 소수의 "테스트에서만 특정 값을 강제로 넣어야 하는" 자리(예: 정기 일정 슬롯 상태를 특정 조합으로 고정)는 Spring이 제공하는 테스트 전용 도구(`ReflectionTestUtils`)로 옮겨서, 운영 코드에는 뒷문이 전혀 남지 않게 했어요.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| 1 | `SoftDeleteEntity.markDeleted()`/`clearDeleted()` 신설 — soft delete·부활 로직 공통화, `Trip`·`TripMember`·`User` 6개 호출부 교체 | `common/domain/SoftDeleteEntity.java`, `trip/service/TripCommandService.java`, `auth/service/AppleNotificationService.java`, `user/domain/User.java` |
+| 2 | `GoogleCalendarCredential.applyRotatedRefreshToken()` 신설 — refresh token 회전 갱신 전용 메서드, 필드 레벨 `@Setter` 제거 | `user/googlecalendar/domain/GoogleCalendarCredential.java`, `user/googlecalendar/service/GoogleCalendarSyncPersistenceService.java` |
+| 3 | `PersonalSchedule`/`RegularSchedule.slotStatuses` 필드 레벨 `@Setter` 제거 — 테스트 전용 우회 3곳을 `ReflectionTestUtils`로 전환 | 도메인 2개 + 테스트 2개 |
+| 4 | `TripMember.joinedAt` 필드 레벨 `@Setter` 제거 — 테스트가 생성자 파라미터로 직접 값을 넘기도록 헬퍼 오버로드 추가 | `trip/membership/domain/TripMember.java`, `trip/service/TripServiceTest.java` |
+| 5 | `User` 나머지 9개 필드 도메인 메서드화: `applySocialProfile`·`applyProfilePatch`·`connectGoogleCalendar`·`disconnectGoogleCalendar`·`applyAllFree`·`scrubPiiForWithdrawal` 신설, `id` 제외 필드 레벨 `@Setter` 전부 제거 | `user/domain/User.java` + 5개 Service + 약 20개 테스트 파일 |
+| 6 | `Trip` 나머지 18개 필드 도메인 메서드화: `confirm`·`unconfirm`·`expire`·`applyPatch`·`applyDestination`·`applyLastRecommendationMode` 신설, `id` 제외 필드 레벨 `@Setter` 전부 제거. 순수 테스트 픽스처(예: "이미 CONFIRMED 상태"를 가정하되 확정 통계는 무관한 테스트)는 `ReflectionTestUtils`로 전환 | `trip/domain/Trip.java` + `TripRecommendationService`·`TripCommandService`·`TripHomeMaintenanceService` + 4개 테스트 파일 |
+
+### 검증 결과
+
+- `./gradlew compileJava compileTestJava` — 통과
+- `./gradlew test`(전체) — 통과, 실패 0건
+- API 계약 변경 없음(순수 내부 구현, Controller·DTO·`ErrorCode` 미변경) — oasdiff 재실행 불필요
+
+### 최종 상태
+
+전체 엔티티 중 `@Setter`가 남은 곳은 다음 둘뿐:
+- **각 엔티티의 `id` 필드** — DB가 채워주는 값을 단위 테스트에서 흉내내기 위한 목적, 도메인 메서드로 대체 불가능한 테스트 배관(사용자와 합의된 예외)
+- **`RefreshToken.revokedAt`** — 이번 범위와 무관, `@Schema` 설명에 "wave 4 RTR(rotation) 예정"이라고 명시된 계획된 필드라 손대지 않음
+
+## 2026-08-14 — repo-wide: Service 생성자 주입 표준화(`@RequiredArgsConstructor`) + Entity `@Setter` 남발 정리
+
+사용자가 "SOLID·객체지향 4대 원칙·`@RequiredArgsConstructor` 미적용·`@Setter` 남발"을 지적하며 `/refactor-audit`로 개선을 요청. 그런데 `@Setter` 남발은 이미 auth·trip·user-schedule·notification 4개 도메인 감사에서 "저장소 전역 컨벤션이라 도메인 하나만 좁혀 고치면 일관성이 깨진다"는 이유로 반복해서 C로 미뤄져 있던 사안이었다(`harness-follow-up.md` "반복 주제" 기준 충족) — 그래서 도메인별 순차 진행 대신, 먼저 사용자와 함께 **저장소 전체에 적용할 정책**을 정하고 한 번에 적용했다.
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **생성자 자동 생성(`@RequiredArgsConstructor`)**: 스프링에서는 한 클래스가 다른 클래스(의존성)를 여러 개 가져다 쓸 때, 그걸 전달받는 "생성자"라는 코드를 직접 손으로 써줘야 했어요. 필드 개수만큼 똑같은 패턴의 코드가 반복돼서, 필드 하나를 추가·삭제할 때마다 생성자도 같이 고쳐야 하는 번거로움과 실수 여지가 있었습니다. Lombok이라는 도구의 `@RequiredArgsConstructor`를 쓰면 이 반복 코드를 자동으로 만들어줘서, 27개 서비스 클래스에서 총 190줄 넘는 보일러플레이트를 지웠어요.
+- **`@Setter` 남발 정리**: 지금까지 데이터 저장 클래스(엔티티) 대부분이 "모든 필드를 아무 데서나 마음대로 바꿀 수 있게" 열어두고 있었어요(클래스 전체에 `@Setter`를 붙이는 방식). 이미 "이 필드는 이런 규칙으로만 바뀌어야 한다"는 전용 메서드(예: 예약 확정, 알림 토큰 갱신)가 있는데도, 그 규칙을 건너뛰고 아무 값이나 바로 집어넣을 수 있는 뒷문이 같이 열려 있던 셈이죠. 8개 엔티티를 검토해서, 실제로 그 뒷문을 아무도 안 쓰는 필드는 완전히 잠그고, 테스트 코드에서만 꼭 필요한 자리(예: DB가 채워주는 ID값을 테스트에서 흉내내는 경우)만 그 필드 하나에만 열쇠를 남겨뒀어요.
+- **작업 중 발견한 버그**: 자동 변환 과정에서 `FcmService`(푸시 알림 발송) 하나가 원래 "필요할 때만 늦게 초기화"(`@Lazy`)하도록 돼 있던 게, 자동 생성 방식으로 바꾸면서 이 설정이 유실될 뻔했어요. 이 설정이 없으면 앱이 켜질 때마다 Firebase(구글 푸시 서버) 인증키를 바로 요구해서, 로컬 개발 환경처럼 그 키가 없는 곳에서는 아예 서버가 안 켜지는 문제가 생길 뻔했습니다. 테스트로 미리 잡아서 그 파일만 예외로 손으로 쓴 생성자를 유지하도록 되돌렸어요.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| 1 | `spring-boot-java.md` Lombok 규칙 개정 — Service도 `@RequiredArgsConstructor` 허용(기존엔 Entity·`@ConfigurationProperties`만). 생성자 바디에 검증·파생 로직이 있거나(`JwtService`) `@Lazy`처럼 파라미터 전용 애너테이션이 필요하면(`FcmService`) 수동 생성자 예외 명시 | `.claude/rules/spring-boot-java.md` |
+| 2 | `TripService.java`에 남아있던 커밋 안 된 주석 처리 구 생성자(dead code) 삭제 — `@RequiredArgsConstructor` 적용은 이미 돼 있었음 | `trip/service/TripService.java` |
+| 3 | 수동 생성자를 쓰던 Service 27개를 `@RequiredArgsConstructor`로 전환(순수 필드 대입 생성자만 대상) — `JwtService`(secret 길이 검증), `FcmService`(`@Lazy` 파라미터)는 로직·애너테이션 유지 목적으로 수동 생성자 예외 | auth 9개·notification 3개·trip 8개·user 7개 Service 파일(목록은 diff 참고) |
+| 4 | Entity 8개의 클래스 레벨 `@Setter`(모든 필드 raw 접근 허용)를 제거하고, 이미 도메인 메서드(`applyPin`·`applyFeedback`·`updateTokens`·`applySlots` 등)가 커버하는 필드는 setter 자체를 삭제, 남은 필드만 **필드 레벨** `@Setter`로 좁힘 | `Recommendation`·`RecommendationFeedback`·`TripMemberScheduleSnapshot`·`GoogleCalendarBusyDay`(setter 전부 삭제, 외부 raw 호출 0건 확인) / `TripMember`(id·joinedAt만 유지) / `GoogleCalendarCredential`(refreshTokenCiphertext만 유지) / `PersonalSchedule`·`RegularSchedule`(id·slotStatuses만 유지) / `User`(socialId·provider 완전 삭제, 나머지 9필드는 필드 레벨 유지 — 도메인 메서드 커버리지가 낮아 실질 캡슐화 이득은 제한적) |
+
+### 남겨둔 항목과 이유
+
+- **`Trip` 엔티티는 이번 라운드에서 손대지 않음**: 18개 필드 중 도메인 메서드가 있는 건 `touchLastActivity()`(1개)뿐이라, 클래스 레벨→필드 레벨로 바꿔도 사실상 모든 필드가 그대로 열린 채 남아 실질적 캡슐화 이득이 없다(순수 라벨링 변경). 진짜 개선(예: `confirm()`/`unconfirm()`/`expire()` 도메인 메서드 신설 + `TripRecommendationService`/`TripCommandService`/`TripHomeMaintenanceService` 3개 서비스의 필드 직접 대입 로직 이관)은 비즈니스 로직 이동을 동반하는 별도 설계 결정이라 이번 스코프 밖으로 분리 — 후속 이슈 후보.
+- **`RefreshToken`·`SoftDeleteEntity`는 이미 준수 상태**라 변경 없음 — `RefreshToken`은 이미 필드 레벨 `@Setter`만 쓰고 있었고, `SoftDeleteEntity`는 필드가 `deletedAt` 하나뿐이라 클래스 레벨=필드 레벨이라 실질 차이 없음.
+
+### 검증 결과
+
+- `./gradlew compileJava compileTestJava` — 통과
+- `./gradlew test`(전체) — 통과, 실패 0건(진행 중 `FcmService` `@Lazy` 유실로 컨텍스트 로딩 실패 37건 발생 → 원인 파악 후 수동 생성자로 되돌려 재검증 완료)
+- API 계약 변경 없음(Controller·DTO·`ErrorCode` 미변경, 순수 내부 구현) — oasdiff 재실행 불필요
+
 ## 2026-08-08 — 후속 제안 2건 반영 (스케줄러 스레드풀 공유, Lombok 규칙 문서 drift)
 
 `user/audit-round2.md` §15("신규 — Concurrency: `@Scheduled` 기본 단일 스레드 풀을 3개 도메인 스케줄러가 공유")와 `cross-cutting/audit-round2.md`(1차 C/D 재확인, `common/domain` Lombok vs 룰 문서 drift)에서 Later/문서 후속으로 남겨뒀던 2건을 사용자 요청으로 반영. 둘 다 API 계약·비즈니스 로직에 영향 없음.

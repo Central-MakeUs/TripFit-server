@@ -88,8 +88,7 @@ class PersonalScheduleOverrideIntegrationTest {
             .build();
 
     user = new User("google-sub-o14", SocialProvider.GOOGLE, "o14@example.com", "유저A", null);
-    user.setFirstName("길동");
-    user.setLastName("홍");
+    user.applyProfilePatch("길동", "홍", null);
     user = userRepository.save(user);
     accessToken = jwtService.createAccessToken(user.getId());
 

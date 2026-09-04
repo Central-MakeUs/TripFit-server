@@ -43,7 +43,7 @@ class UserSummaryServiceTest {
 
   @Test
   void toSummary_includesIsAllFreeFromUser() {
-    user.setAllFree(true);
+    user.applyAllFree(true);
     when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
 
@@ -55,13 +55,13 @@ class UserSummaryServiceTest {
 
   @Test
   void canEnterRoom_trueWhenAllFree() {
-    user.setAllFree(true);
+    user.applyAllFree(true);
     assertThat(userSummaryService.canEnterRoom(user)).isTrue();
   }
 
   @Test
   void canEnterRoom_trueWhenHasSchedule() {
-    user.setAllFree(false);
+    user.applyAllFree(false);
     when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(true);
 
     assertThat(userSummaryService.canEnterRoom(user)).isTrue();
@@ -69,7 +69,7 @@ class UserSummaryServiceTest {
 
   @Test
   void canEnterRoom_falseWhenEmptyAndNotAllFree() {
-    user.setAllFree(false);
+    user.applyAllFree(false);
     when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
 
@@ -78,7 +78,7 @@ class UserSummaryServiceTest {
 
   @Test
   void requireCanEnterRoom_throwsWhenBlocked() {
-    user.setAllFree(false);
+    user.applyAllFree(false);
     when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
 
@@ -90,7 +90,7 @@ class UserSummaryServiceTest {
 
   @Test
   void markAllFreeIfNoSchedules_setsTrueWhenEmpty() {
-    user.setAllFree(false);
+    user.applyAllFree(false);
     when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
     when(personalScheduleRepository.existsByUserId(user.getId())).thenReturn(false);
 
@@ -101,7 +101,7 @@ class UserSummaryServiceTest {
 
   @Test
   void markAllFreeIfNoSchedules_keepsFalseWhenHasSchedule() {
-    user.setAllFree(false);
+    user.applyAllFree(false);
     when(regularScheduleRepository.existsByUserId(user.getId())).thenReturn(true);
 
     userSummaryService.markAllFreeIfNoSchedules(user);
