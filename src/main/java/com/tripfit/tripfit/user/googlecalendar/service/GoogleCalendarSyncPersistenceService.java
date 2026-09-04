@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.googlecalendar.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleFreeBusyInterval;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 // 9청크) DB 접속을 붙잡지 않도록, 통신이 끝난 뒤 결과만 짧게 반영하는 DB 쓰기 전용 계층
 // (auth 도메인 AuthLoginPersistenceService와 동일 패턴)
 @Service
+@RequiredArgsConstructor
 public class GoogleCalendarSyncPersistenceService {
 
   private final GoogleCalendarCredentialRepository credentialRepository;
@@ -27,15 +29,6 @@ public class GoogleCalendarSyncPersistenceService {
   private final GoogleCalendarBusyDayRepository busyDayRepository;
 
   private final UserLookupService userLookupService;
-
-  public GoogleCalendarSyncPersistenceService(
-      GoogleCalendarCredentialRepository credentialRepository,
-      GoogleCalendarBusyDayRepository busyDayRepository,
-      UserLookupService userLookupService) {
-    this.credentialRepository = credentialRepository;
-    this.busyDayRepository = busyDayRepository;
-    this.userLookupService = userLookupService;
-  }
 
   // authorization code 교환 결과(토큰 암호문)를 credential에 반영하고 연동 플래그를 켠다
   @Transactional

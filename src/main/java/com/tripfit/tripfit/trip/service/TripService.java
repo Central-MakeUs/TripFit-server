@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
 import com.tripfit.tripfit.trip.recommendation.service.TripRecommendationService;
 import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 // trip API facade — Command / Query / MemberQuery / Recommendation에 위임
+@RequiredArgsConstructor
 public class TripService {
 
   private final TripCommandService tripCommandService;
@@ -33,17 +35,6 @@ public class TripService {
   private final TripMemberQueryService tripMemberQueryService;
 
   private final TripRecommendationService tripRecommendationService;
-
-  public TripService(
-      TripCommandService tripCommandService,
-      TripQueryService tripQueryService,
-      TripMemberQueryService tripMemberQueryService,
-      TripRecommendationService tripRecommendationService) {
-    this.tripCommandService = tripCommandService;
-    this.tripQueryService = tripQueryService;
-    this.tripMemberQueryService = tripMemberQueryService;
-    this.tripRecommendationService = tripRecommendationService;
-  }
 
   // facade: 여행방 생성 → TripCommandService
   public CreateTripResponse createTrip(UUID userId, CreateTripRequest request) {

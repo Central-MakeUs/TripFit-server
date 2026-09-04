@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.oauth.AppleNotificationEvent;
 import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
 import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 // Apple S2S notification 이벤트 타입별로 user.deleted_at·refresh_token을 반영함
 // (docs/specs/auth-apple-server-notifications.md)
 @Service
+@RequiredArgsConstructor
 public class AppleNotificationService {
 
   private static final Logger log = LoggerFactory.getLogger(AppleNotificationService.class);
@@ -32,12 +34,6 @@ public class AppleNotificationService {
   private final UserRepository userRepository;
 
   private final RefreshTokenService refreshTokenService;
-
-  public AppleNotificationService(
-      UserRepository userRepository, RefreshTokenService refreshTokenService) {
-    this.userRepository = userRepository;
-    this.refreshTokenService = refreshTokenService;
-  }
 
   // 이벤트 type별 최소 처리 — 미인식 type·존재하지 않는 sub는 로그만 남기고 no-op(idempotent, 재시도 방지 위해 200 유지)
   @Transactional

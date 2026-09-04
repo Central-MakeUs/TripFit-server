@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.notification.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.notification.domain.NotificationHistory;
 import com.tripfit.tripfit.notification.dto.NotificationResponse;
@@ -12,14 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 // 알림센터 목록 조회·읽음 처리(D5)
 public class NotificationQueryService {
 
   private final NotificationHistoryRepository notificationHistoryRepository;
-
-  public NotificationQueryService(NotificationHistoryRepository notificationHistoryRepository) {
-    this.notificationHistoryRepository = notificationHistoryRepository;
-  }
 
   // 최근 7일 알림 이력을 최신순으로 조회한다(D9)
   @Transactional(readOnly = true)

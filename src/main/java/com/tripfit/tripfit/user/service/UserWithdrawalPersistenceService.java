@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.service.RefreshTokenService;
 import com.tripfit.tripfit.trip.service.TripService;
 import com.tripfit.tripfit.user.domain.User;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 // 뒤에만 호출하는 DB 쓰기 전용 계층 — cascade·개인 데이터 hard delete·User soft delete를 하나의 짧은
 // 트랜잭션으로 묶는다 (A-2, GoogleCalendarSyncPersistenceService와 동일 패턴)
 @Service
+@RequiredArgsConstructor
 public class UserWithdrawalPersistenceService {
 
   private final UserLookupService userLookupService;
@@ -31,23 +33,6 @@ public class UserWithdrawalPersistenceService {
   private final GoogleCalendarBusyDayRepository googleCalendarBusyDayRepository;
 
   private final RefreshTokenService refreshTokenService;
-
-  public UserWithdrawalPersistenceService(
-      UserLookupService userLookupService,
-      TripService tripService,
-      PersonalScheduleRepository personalScheduleRepository,
-      RegularScheduleRepository regularScheduleRepository,
-      GoogleCalendarCredentialRepository googleCalendarCredentialRepository,
-      GoogleCalendarBusyDayRepository googleCalendarBusyDayRepository,
-      RefreshTokenService refreshTokenService) {
-    this.userLookupService = userLookupService;
-    this.tripService = tripService;
-    this.personalScheduleRepository = personalScheduleRepository;
-    this.regularScheduleRepository = regularScheduleRepository;
-    this.googleCalendarCredentialRepository = googleCalendarCredentialRepository;
-    this.googleCalendarBusyDayRepository = googleCalendarBusyDayRepository;
-    this.refreshTokenService = refreshTokenService;
-  }
 
   // cascade(참여 방 나가기·소유 방 삭제) → 개인 데이터 hard delete → User soft delete+PII 스크럽을 원자적으로 처리
   @Transactional

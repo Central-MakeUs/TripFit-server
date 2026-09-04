@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
 import com.tripfit.tripfit.common.security.SocialTokenCrypto;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 // 회원 탈퇴 유스케이스 — 소셜 provider revoke(외부 HTTP 최대 4회, best-effort)를 먼저 끝내고, cascade(참여
 // 방 나가기·소유 방 삭제)·개인 데이터 hard delete·User soft delete는 UserWithdrawalPersistenceService의
 // 짧은 트랜잭션에 위임한다 (A-2 — provider 장애가 DB 커넥션을 오래 붙잡지 않도록)
@@ -37,25 +39,6 @@ public class UserWithdrawalService {
   private final GoogleLoginCredentialService googleLoginCredentialService;
 
   private final UserWithdrawalPersistenceService persistenceService;
-
-  public UserWithdrawalService(
-      UserLookupService userLookupService,
-      GoogleCalendarCredentialRepository googleCalendarCredentialRepository,
-      GoogleCalendarOAuthClient googleCalendarOAuthClient,
-      SocialTokenCrypto tokenCrypto,
-      KakaoUnlinkClient kakaoUnlinkClient,
-      AppleCredentialService appleCredentialService,
-      GoogleLoginCredentialService googleLoginCredentialService,
-      UserWithdrawalPersistenceService persistenceService) {
-    this.userLookupService = userLookupService;
-    this.googleCalendarCredentialRepository = googleCalendarCredentialRepository;
-    this.googleCalendarOAuthClient = googleCalendarOAuthClient;
-    this.tokenCrypto = tokenCrypto;
-    this.kakaoUnlinkClient = kakaoUnlinkClient;
-    this.appleCredentialService = appleCredentialService;
-    this.googleLoginCredentialService = googleLoginCredentialService;
-    this.persistenceService = persistenceService;
-  }
 
   // 차단 없이 항상 진행 — provider revoke(외부 HTTP, best-effort)를 트랜잭션 밖에서 먼저 끝낸 뒤, cascade·hard
   // delete·soft delete는 persistenceService의 짧은 트랜잭션으로 처리한다(A-2)

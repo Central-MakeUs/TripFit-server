@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.membership.service.TripJoinService;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
 import com.tripfit.tripfit.trip.recommendation.service.TripRecommendationService;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 // 여행방 생성·참여·멤버십 activate·메타 수정·삭제·Pin·내보내기 등 쓰기 유스케이스
 class TripCommandService {
   private final TripRepository tripRepository;
@@ -50,25 +52,6 @@ class TripCommandService {
   private final UserDirectoryPort userDirectoryPort;
 
   private final ApplicationEventPublisher applicationEventPublisher;
-
-  TripCommandService(
-      TripRepository tripRepository,
-      TripMemberRepository tripMemberRepository,
-      TripServiceSupport support,
-      TripJoinService tripJoinService,
-      TripRecommendationService tripRecommendationService,
-      TripMemberQueryService tripMemberQueryService,
-      UserDirectoryPort userDirectoryPort,
-      ApplicationEventPublisher applicationEventPublisher) {
-    this.tripRepository = tripRepository;
-    this.tripMemberRepository = tripMemberRepository;
-    this.support = support;
-    this.tripJoinService = tripJoinService;
-    this.tripRecommendationService = tripRecommendationService;
-    this.tripMemberQueryService = tripMemberQueryService;
-    this.userDirectoryPort = userDirectoryPort;
-    this.applicationEventPublisher = applicationEventPublisher;
-  }
 
   // 여행방 생성 — 방장은 SCHEDULE_PENDING(일정 확인 전). activate 전에는 ACTIVE가 아님
   @Transactional

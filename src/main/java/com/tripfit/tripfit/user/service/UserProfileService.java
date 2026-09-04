@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.user.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.User;
@@ -12,18 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 // 성·이름 PATCH 및 trip 핵심 API 진입 전 이름 완료 검증 — UserSummary는 UserSummaryService에 위임
 public class UserProfileService {
 
   private final UserLookupService userLookupService;
 
   private final UserSummaryService userSummaryService;
-
-  public UserProfileService(
-      UserLookupService userLookupService, UserSummaryService userSummaryService) {
-    this.userLookupService = userLookupService;
-    this.userSummaryService = userSummaryService;
-  }
 
   // 온보딩 최초 성·이름 등록
   @Transactional

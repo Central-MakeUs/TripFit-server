@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.domain.GoogleLoginCredential;
 import com.tripfit.tripfit.auth.repository.GoogleLoginCredentialRepository;
 import com.tripfit.tripfit.user.domain.User;
@@ -12,14 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 // 토큰 엔드포인트 HTTP 호출(교환·revoke)을 이 트랜잭션 밖에서 먼저 끝내도록 분리한 것(AppleCredentialPersistenceService와
 // 동일 패턴). self-invocation 때문에 별도 빈으로 둔다
 @Service
+@RequiredArgsConstructor
 public class GoogleLoginCredentialPersistenceService {
 
   private final GoogleLoginCredentialRepository googleLoginCredentialRepository;
-
-  public GoogleLoginCredentialPersistenceService(
-      GoogleLoginCredentialRepository googleLoginCredentialRepository) {
-    this.googleLoginCredentialRepository = googleLoginCredentialRepository;
-  }
 
   @Transactional(readOnly = true)
   public Optional<GoogleLoginCredential> findByUserId(UUID userId) {

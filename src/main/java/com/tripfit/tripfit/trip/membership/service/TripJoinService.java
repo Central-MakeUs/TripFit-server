@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.membership.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import com.tripfit.tripfit.trip.config.TripActivity;
 import com.tripfit.tripfit.trip.domain.Trip;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 신규 초대 참여만 분리 — 이미 멤버인 재접속(idempotent)은 last_activity touch를 하지 않는다. */
 @Service
+@RequiredArgsConstructor
 public class TripJoinService {
 
   private final TripMemberRepository tripMemberRepository;
@@ -23,15 +25,6 @@ public class TripJoinService {
   private final TripServiceSupport support;
 
   private final UserDirectoryPort userDirectoryPort;
-
-  public TripJoinService(
-      TripMemberRepository tripMemberRepository,
-      TripServiceSupport support,
-      UserDirectoryPort userDirectoryPort) {
-    this.tripMemberRepository = tripMemberRepository;
-    this.support = support;
-    this.userDirectoryPort = userDirectoryPort;
-  }
 
   // 신규 멤버를 ACTIVE로 등록하고 상세를 반환한다 — 일정 0건이면 전부 free 처리
   @Transactional

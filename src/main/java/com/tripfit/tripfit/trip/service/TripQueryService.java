@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
@@ -18,16 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 // 여행방 목록·상세 조회 (쓰기 없음)
 @Service
+@RequiredArgsConstructor
 class TripQueryService {
 
   private final TripMemberRepository tripMemberRepository;
 
   private final TripServiceSupport support;
-
-  TripQueryService(TripMemberRepository tripMemberRepository, TripServiceSupport support) {
-    this.tripMemberRepository = tripMemberRepository;
-    this.support = support;
-  }
 
   // 내 여행방 홈 카드 목록을 scope(ongoing|all)·status·ownerOnly로 조회한다
   @Transactional(readOnly = true)

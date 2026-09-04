@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.domain.AppleCredential;
 import com.tripfit.tripfit.auth.oauth.AppleOAuthClient;
 import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 // Apple 토큰 엔드포인트 HTTP 호출은 여기서 트랜잭션 밖에서 수행하고, DB 조회·저장·삭제는 짧은 트랜잭션을 가진
 // AppleCredentialPersistenceService에 위임한다(DB 커넥션이 provider 응답을 기다리며 열려 있지 않도록)
 @Service
+@RequiredArgsConstructor
 public class AppleCredentialService {
 
   private static final Logger log = LoggerFactory.getLogger(AppleCredentialService.class);
@@ -26,15 +28,6 @@ public class AppleCredentialService {
   private final SocialTokenCrypto tokenCrypto;
 
   private final AppleCredentialPersistenceService persistenceService;
-
-  public AppleCredentialService(
-      AppleOAuthClient appleOAuthClient,
-      SocialTokenCrypto tokenCrypto,
-      AppleCredentialPersistenceService persistenceService) {
-    this.appleOAuthClient = appleOAuthClient;
-    this.tokenCrypto = tokenCrypto;
-    this.persistenceService = persistenceService;
-  }
 
   // authorizationCode를 refresh token으로 교환해 암호화 저장 — 재로그인마다 최신 code·client_id로 덮어씀. 실패해도
   // 로그인 자체는 계속 진행(best-effort). clientId는 로그인 aud 검증에서 실제로 매칭된 값(Bundle ID/Services ID)이라야

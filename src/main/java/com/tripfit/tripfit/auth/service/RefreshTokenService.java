@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.jwt.JwtProperties;
 import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
@@ -11,17 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class RefreshTokenService {
 
   private final RefreshTokenRepository refreshTokenRepository;
 
   private final JwtProperties jwtProperties;
-
-  public RefreshTokenService(
-      RefreshTokenRepository refreshTokenRepository, JwtProperties jwtProperties) {
-    this.refreshTokenRepository = refreshTokenRepository;
-    this.jwtProperties = jwtProperties;
-  }
 
   // 사용자 ID 기준으로 새 리프레시 토큰을 발급해 저장함
   @Transactional
