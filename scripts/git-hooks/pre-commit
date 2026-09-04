@@ -5,17 +5,34 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 # src/가 stage에 없으면 Spotless 생략 — build.gradle·docs 등 인프라-only 커밋 보호
-staged_src="$(git diff --cached --name-only -- 'src/')"
+# core.quotepath=false: 파일명에 비ASCII(한글 등)가 있어도 이스케이프 없이 그대로 받음 —
+# 이스케이프된 문자열은 아래 -e 체크·git add pathspec과 매칭되지 않아 조용히 누락됨
+staged_src="$(git -c core.quotepath=false diff --cached --name-only -- 'src/')"
 if [ -z "$staged_src" ]; then
 	exit 0
 fi
+
+# git add -p로 일부 hunk만 스테이징했거나 src/ 안에 이번 커밋과 무관한 dirty 파일이 있으면,
+# spotlessApply(전체 대상)·재add가 그 변경까지 커밋에 끌어들일 수 있다 — 워킹 디렉터리를
+# 잠깐 index 상태로만 맞춰두고, 끝나면(성공·실패 무관) 반드시 stash pop으로 복원한다
+stashed=0
+if ! git diff --quiet -- 'src/'; then
+	git stash push --keep-index --quiet -m "pre-commit: temp stash unstaged src/ changes"
+	stashed=1
+fi
+restore_stash() {
+	if [ "$stashed" -eq 1 ]; then
+		git stash pop --quiet
+	fi
+}
+trap restore_stash EXIT
 
 ./gradlew spotlessApply -q
 
 # git add -u src/는 src/ 전체의 수정 파일을 쓸어담아 partial commit(git commit --only -- <path>)에
 # 관련 없는 파일까지 딸려 들어가게 함 — 원래 스테이징했던 파일만 다시 add
 # 삭제된 파일은 워킹트리에 없어 최신 git의 pathspec 매칭이 실패함 — spotless 재포맷 대상도 아니므로 제외
-existing_staged_src="$(printf '%s\n' "$staged_src" | while IFS= read -r f; do [ -e "$f" ] && printf '%s\n' "$f"; done)"
+existing_staged_src="$(printf '%s\n' "$staged_src" | while IFS= read -r f; do if [ -e "$f" ]; then printf '%s\n' "$f"; fi; done)"
 if [ -n "$existing_staged_src" ]; then
 	printf '%s\n' "$existing_staged_src" | git add --pathspec-from-file=-
 fi

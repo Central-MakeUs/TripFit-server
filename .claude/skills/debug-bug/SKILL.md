@@ -25,7 +25,6 @@ description: 버그 재현·원인 분리·수정 절차 (Superpowers systematic
 - SSH 접속 정보를 에이전트 메모리(reference 타입)에서 먼저 확인 — 있으면 사용자에게 다시 묻지 않고 바로 접속해 `docker logs`/DB 조회로 원인을 좁힌다. 없으면 사용자에게 요청
 - **EC2 A(App+Nginx)·B(MySQL)·C(Monitoring: Loki+Grafana) 전부 직접 접근 가능** — 셋 중 필요한 인스턴스에 바로 SSH해 조사한다. 실제 IP·키 경로는 에이전트 메모리(`ec2-ssh-access`)에서 확인
 - **AWS CLI는 항상 `--profile tripfit`으로 실행** — 프로필 생략 시 무관한 개인 기본 계정으로 빠진다(TripFit 인프라 계정이 아님). 상세: 에이전트 메모리(`aws-cli-profile`)
-- `dev` 프로필의 `POST /api/v1/auth/dev-login`으로 즉시 유효 토큰을 발급받아 실제 엔드포인트를 직접 호출해본다 — 클라이언트 재현을 기다리지 않는다
 - **읽기(로그 조회·DB SELECT)는 바로 진행**하되, 원인이 애플리케이션 코드면 이 레포에서 고쳐 정상 워크플로(PR·CI/CD)로 배포 — 운영 서버에 직접 手patch·설정 변경은 하지 않음
 - 이 정책 자체는 커밋되지만 실제 IP·키 경로 등 민감한 접속 정보는 여기 적지 않는다 — 에이전트 메모리에만 보관
 

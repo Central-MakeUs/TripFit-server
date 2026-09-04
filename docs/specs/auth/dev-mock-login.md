@@ -1,9 +1,8 @@
 # Dev 전용 Mock 로그인
 
-> 상태: Approved (사용자 요청 즉시 승인 — 이슈 미생성, 긴급 처리)
+> 상태: Removed (2026-08-15) — dev-login 자체가 더 이상 필요 없다는 사용자 결정으로 `DevAuthController`/`DevAuthService`/`DevLoginRequest`/`SecurityConfig`의 `dev-login` permitAll 전부 삭제. 후속으로 검토하던 `auth-dev-stub-verifier.md`(#52, `/auth/login` 계약을 유지하는 스텁 검증기 전환)도 함께 폐기 — 이슈 종료
 > MVP: N/A — 제품 기능이 아닌 개발 편의 도구 (Wave 분류 대상 아님)
 > 관련 BR: N/A
-> deferred: [`auth-dev-stub-verifier.md`](auth-dev-stub-verifier.md) (#52, wave 4) — `/auth/login` 계약을 유지하는 스텁 검증기로 전환 예정. 전환 완료 시 이 스펙의 `DevAuthController`/`DevAuthService`/`DevLoginRequest`는 같은 PR에서 삭제
 
 ## 목표
 
@@ -27,9 +26,9 @@
 ### Out of Scope (이번 스펙에서 하지 않음)
 
 - 테스트 계정 관리 UI·계정 목록 조회 API
-- 별도 prod 환경에서의 비활성화 — **해당 없음.** prod 환경 자체가 없어 `@Profile({"local","dev"})`은 실질적인 노출 차단이 아니다. 실제 제거는 [`auth-dev-stub-verifier.md`](auth-dev-stub-verifier.md)(#52)에서 `/auth/login` 계약으로 흡수하는 방식으로만 이뤄진다
+- 별도 prod 환경에서의 비활성화 — **해당 없음.** prod 환경 자체가 없어 `@Profile({"local","dev"})`은 실질적인 노출 차단이 아니었다. (2026-08-15 amend: 결국 `/auth/login` 계약 흡수가 아니라 API 자체를 삭제하는 방식으로 해소됨 — 아래 상태·변경 이력 참고)
 - 소셜 로그인 흐름 자체 변경
-- shared secret 등 추가 인증 계층 (요청으로 skip — #52에서 이 API 자체를 삭제할 예정이므로 별도 인증 계층 추가는 불필요 판단)
+- shared secret 등 추가 인증 계층 (요청으로 skip)
 
 ## API / 인터페이스
 
@@ -72,7 +71,7 @@
 
 - `@Profile({"local", "dev"})`을 컨트롤러·서비스 양쪽에 적용 — 형식상 `test` 프로필(CI)에서는 빈이 생성되지 않지만, **`dev`가 실제 배포 환경이므로 이 게이팅이 배포된 서버에서 API를 숨기지는 못한다.**
 - `SecurityConfig`에 `POST /api/v1/auth/dev-login` permitAll 추가 (login/refresh/logout과 동일 패턴)
-- **알려진 임시 리스크(2026-07-27):** 배포 환경에서 인증 없이 임의 테스트 계정으로 로그인할 수 있다. 프론트 의존성 때문에 지금 당장 차단하지 않기로 확정 — 실제 제거는 `#52`(wave 4) 완료 시점으로 미룬다. 그 전까지 새로운 완화 조치(shared secret 등)를 추가하려면 프론트와 먼저 조율한다.
+- **알려진 임시 리스크(2026-07-27, 2026-08-15 해소):** 배포 환경에서 인증 없이 임의 테스트 계정으로 로그인할 수 있었다. 프론트 의존성 때문에 당시엔 차단하지 않기로 했으나, 2026-08-15 dev-login 자체가 더 이상 필요 없다는 판단에 따라 API 전체를 삭제하며 리스크도 함께 사라짐.
 
 ## 검증 시나리오
 
@@ -104,3 +103,4 @@
 | 2026-07-24 | 팀원 3인 실명 기준 고정 계정으로 확정 — `chaeyeon`/`soeun`/`giyeon`, 기본값 `chaeyeon` |
 | 2026-07-24 | 팀원 3인 성·이름 프리필 추가(손채연·김소은·방기연) — trip 생성·참여가 이름 미입력으로 막히지 않도록. 참여(join) 쪽 `PROFILE_NAME_REQUIRED` 가드 누락도 같은 턴에 수정(`TripCommandService.joinTrip`) |
 | 2026-07-27 | `application-prod.yml` 삭제에 맞춰 "prod 노출 차단" 서술 정정 — 실제로는 별도 prod 환경이 없어 `dev`가 곧 배포 환경이고, 이 API는 프론트 의존성 때문에 배포 서버에도 그대로 노출됨을 명시. 제거는 `#52`로 위임 |
+| 2026-08-15 | **Removed** — dev-login 자체가 더 이상 필요 없다는 사용자 결정. `DevAuthController`/`DevAuthService`/`DevLoginRequest`/`SecurityConfig`의 `dev-login` permitAll·`scripts/notify-test-trigger.sh`(dev-login 전용 알림 테스트 스크립트) 전부 삭제. 대체 예정이던 `auth-dev-stub-verifier.md`(#52)도 착수 전 함께 폐기 — 이슈 종료 |

@@ -11,6 +11,7 @@ if [[ ! -d "${hooks_dir}" ]]; then
 fi
 
 for hook in "${source_dir}"/*; do
+	[[ -f "${hook}" ]] || continue
 	hook_name="$(basename "${hook}")"
 	install_path="${hooks_dir}/${hook_name}"
 	cp "${hook}" "${install_path}"

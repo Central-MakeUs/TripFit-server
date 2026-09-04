@@ -6,7 +6,7 @@
 
 | 폴더 | 대응 패키지 | 개수 |
 |------|-------------|------|
-| [`auth/`](auth/) | `auth` | 9 |
+| [`auth/`](auth/) | `auth` | 8 |
 | [`user/`](user/) | `user` (+`user/googlecalendar`) | 6 |
 | [`user-schedule/`](user-schedule/) | `user/schedule` | 3 |
 | [`trip/`](trip/) | `trip` (recommendation 포함 — 별도 최상위 패키지 아님, flat) | 18 |
@@ -35,8 +35,7 @@
 | [`auth-error-code-granularity.md`](auth/auth-error-code-granularity.md) | 무관 | **Implemented** (#57, Closed) | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` | auth-social-login |
 | [`auth-token-rotation.md`](auth/auth-token-rotation.md) | 4 | **Approved** (`#4`) · 코드·인프라(EC2 D) 구현 완료, 배포 검증 대기 | RTR + Redis Blacklist | auth-social-login · decision 004·010 |
 | [`auth-apple-server-notifications.md`](auth/auth-apple-server-notifications.md) | 4 | Approved | Apple S2S webhook (스토어 제출 전) | auth-social-login |
-| [`auth-dev-stub-verifier.md`](auth/auth-dev-stub-verifier.md) | 4 | Draft (#52) | `/auth/login` 계약 유지형 dev 스텁 검증기 — `dev-mock-login` 대체 예정 | dev-mock-login |
-| [`dev-mock-login.md`](auth/dev-mock-login.md) | 도구 | **Approved** (이슈 미생성) · **deferred→#52** | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 | auth-social-login |
+| [`dev-mock-login.md`](auth/dev-mock-login.md) | 도구 | **Removed** (2026-08-15) | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 — 더 이상 필요 없어 삭제 | auth-social-login |
 | [`google-login-native-sdk-decision.md`](auth/google-login-native-sdk-decision.md) | 도구 | **Resolved** (#77, 결정 불필요로 정정) | WebView 앱 Google 로그인 방식 — FE 확인 결과 네이티브 SDK 이미 구현·배포 완료 | google-login-revoke |
 
 ## `user/`
@@ -123,7 +122,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#44** | google-calendar-oauth | Open · **Wave 3 Must**(2026-08-03 Wave 4→3 이동, 구 Swagger chore 폐기) |
 | **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
 | **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |
-| **#52** | auth-dev-stub-verifier (`dev-mock-login` 후속, wave 4) | Open |
+| **#52** | auth-dev-stub-verifier (`dev-mock-login` 후속, wave 4) — 착수 전 폐기, dev-login 자체를 삭제하는 쪽으로 결정 | **Closed**(2026-08-15) |
 | **#64** | 탈퇴 시 소셜 provider revoke 호출(Google/Kakao/Apple) — `user-account-withdrawal` 정책 SSOT · Google 부분은 `google-login-revoke` | **Closed** · 구 Release Gate(2026-08-03 완료 확인) |
 | **#65** | social-integration-structured-logging — 과거 Release Gate 메타 트래커(전부 Closed)를 이 스펙 이슈로 재사용(2026-08-03) | Open |
 | **#77** | google-login-native-sdk-decision (Resolved, 결정 불필요로 정정) | Open — 클로즈 검토 필요 |
