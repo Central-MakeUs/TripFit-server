@@ -1,5 +1,41 @@
 # Auth Refactor Log
 
+## 2026-08-15 — 3차 라운드(SOLID/OOP 중심) A-1/B-1 반영
+
+3차 감사([`audit-round3.md`](audit-round3.md)) 기준 A(반드시 수정) 1개, B(유지보수성) 1개 전부 반영. 사용자 승인: "A-1, B-1 두 개 다 구현".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **A-1:** 이번 세션에서 다른 모든 엔티티는 "필드를 아무 값이나 바꿀 수 있는 setter" 대신 "토큰을 폐기한다"처럼 의미가 분명한 메서드로 바꿨는데, 리프레시 토큰(로그인 상태를 유지해주는 토큰)만 이 정리에서 빠져 있었어요. `RefreshToken`에 폐기 시각(`revokedAt`)을 아무 값이나 넣을 수 있는 setter가 남아 있었고, 실제로 지금 쓰는 곳은 전부 "지금 시각"만 넣고 있었지만 코드만 봐서는 "왜 항상 지금 시각이어야 하는지"가 전혀 강제되지 않았어요. 이제 `revoke()`라는 메서드로 바꿔서, 토큰을 폐기할 때 항상 지금 시각으로만 기록되도록 코드 자체에 규칙을 박아뒀습니다. 동작 자체는 그대로예요.
+- **B-1:** 애플/구글 로그인 토큰을 검증하는 두 코드가 인터넷에서 공개 열쇠를 받아오는 주소(URL) 하나만 다르고 나머지는 완전히 똑같이 복사돼 있었어요. 공통 부분을 한 곳으로 모아서, 나중에 다른 소셜 로그인(예: 네이버)이 추가돼도 주소 한 줄짜리 코드만 추가하면 되게 정리했습니다. 검증 로직 자체는 바뀌지 않았어요.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| A-1 | `RefreshToken.revokedAt` 필드 레벨 `@Setter` 제거, `revoke()` 도메인 메서드 신설(`this.revokedAt = LocalDateTime.now()`). `RefreshTokenService.rotate()`/`revokeFamily()`의 `setRevokedAt(...)` 호출부를 `revoke()`로 교체 | `RefreshToken.java`, `RefreshTokenService.java`, `RefreshTokenServiceTest.java` |
+| B-1 | `AppleJwkVerifier`/`GoogleJwkVerifier`의 동일한 RS256 JWKS 서명 검증 로직을 `AbstractRemoteJwkVerifier`(신규)로 추출. 두 서브클래스는 각자의 JWKS URL만 `super(...)`로 전달 | `AppleJwkVerifier.java`, `GoogleJwkVerifier.java`, `AbstractRemoteJwkVerifier.java`(신규) |
+
+### 변경 규모
+
+- 기존 파일 수정 5개 (main 4 · test 1): `RefreshToken.java`, `RefreshTokenService.java`, `AppleJwkVerifier.java`, `GoogleJwkVerifier.java`, `RefreshTokenServiceTest.java`
+- 신규 파일 1개 (main): `AbstractRemoteJwkVerifier.java`
+- API 계약(Request/Response/HTTP Status/ErrorCode/Endpoint) 변경 없음 — Controller·DTO·`ErrorCode` enum·`@Operation`/`@Schema` 파일 전부 미변경
+
+### 검증 결과
+
+- `./gradlew test` (전체) — **BUILD SUCCESSFUL, 전부 통과**
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **`{}`** (스키마 변화 전혀 없음)
+
+**결론: auth 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목
+
+`audit-round3.md`의 C 3개(credential 서비스 구조적 유사성 미통합, `OAuthProfile.appleMatchedClientId` sealed 미전환, credential 저장 if/else 미승격), D 5개(`AuthController`·`AuthService`·`SocialTokenVerifier`·`JwtClaimsVerificationSupport` 현행 유지, `TokenRevocationChecker` 문서 최신화만) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round3.md` 해당 절 참고.
+
 ## 2026-08-04 — A-1~4, B-1~5 반영
 
 감사([`audit.md`](audit.md)) 기준 A(반드시 수정) 4개, B(유지보수성) 5개 전부 반영. 사용자 승인: "A/B 전부".
