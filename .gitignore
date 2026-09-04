@@ -40,4 +40,3 @@ out/
 ### Docker ###
 .env
 .DS_Store
-scripts/.notify-test-trigger.*
