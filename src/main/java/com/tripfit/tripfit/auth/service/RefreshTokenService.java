@@ -44,7 +44,7 @@ public class RefreshTokenService {
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH);
     }
 
-    current.setRevokedAt(LocalDateTime.now());
+    current.revoke();
     return createInFamily(current.getUserId(), current.getFamilyId());
   }
 
@@ -57,10 +57,9 @@ public class RefreshTokenService {
 
   // 재사용 탐지 — 같은 로그인 체인에서 아직 안 죽은 토큰 전부를 폐기함(공격자가 새로 받아간 토큰 포함)
   private void revokeFamily(String familyId) {
-    LocalDateTime now = LocalDateTime.now();
     refreshTokenRepository
         .findAllByFamilyIdAndRevokedAtIsNull(familyId)
-        .forEach(refreshToken -> refreshToken.setRevokedAt(now));
+        .forEach(RefreshToken::revoke);
   }
 
   // 주어진 리프레시 토큰 값을 저장소에서 삭제함

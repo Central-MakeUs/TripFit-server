@@ -14,7 +14,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
@@ -63,7 +62,6 @@ public class RefreshToken extends BaseTimeEntity {
 
   @Schema(description = "폐기 시각. refresh로 rotate되거나 재사용 탐지로 체인 전체 폐기될 때 설정. logout은 row delete",
       nullable = true)
-  @Setter
   @Column(name = "revoked_at")
   private LocalDateTime revokedAt;
 
@@ -84,5 +82,10 @@ public class RefreshToken extends BaseTimeEntity {
 
   public boolean isRevoked() {
     return revokedAt != null;
+  }
+
+  // 토큰을 지금 시각으로 폐기함 — rotate 시 구 토큰, 재사용 탐지 시 family 전체에 사용
+  public void revoke() {
+    this.revokedAt = LocalDateTime.now();
   }
 }

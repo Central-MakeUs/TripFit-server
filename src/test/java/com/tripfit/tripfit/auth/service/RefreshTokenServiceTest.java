@@ -100,7 +100,7 @@ class RefreshTokenServiceTest {
   void rotate_alreadyRevokedToken_revokesWholeFamilyAndThrowsReuse() {
     String familyId = UUID.randomUUID().toString();
     RefreshToken reusedToken = tokenOf("rotated-away", familyId, LocalDateTime.now().plusDays(10));
-    reusedToken.setRevokedAt(LocalDateTime.now().minusMinutes(5));
+    reusedToken.revoke();
     when(refreshTokenRepository.findByToken("rotated-away")).thenReturn(Optional.of(reusedToken));
 
     RefreshToken siblingInFamily =
