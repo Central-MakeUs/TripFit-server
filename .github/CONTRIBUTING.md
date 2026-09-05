@@ -6,7 +6,7 @@ Issue · PR · Milestone · CI를 TripFit 하네스(`docs/`, `.claude/`)와 연�
 
 ## 브랜치 전략
 
-**에이전트 주의:** 새 이슈·새 브랜치·새 PR을 만들지는 사용자가 명시적으로 요청하지 않는 한 항상 먼저 확인한다 — `.claude/rules/harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절.
+**에이전트 주의:** 새 이슈·새 브랜치·새 PR을 만들지는 사용자가 명시적으로 요청하지 않는 한 항상 먼저 확인한다 — `.claude/rules/core-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절.
 
 ```
 main  ←  {type}/{issue-number}-{description}
@@ -48,20 +48,21 @@ Fix: 마이페이지 응답 필드명 정리
 Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자인 시스템 용어 정합)
 ```
 
-상세 기준·Discord 알림 흐름: [`docs/api/README.md`](../docs/api/README.md) · [`harness-workflow.md`](../.claude/rules/harness-workflow.md) STOP §5.
+상세 기준·Discord 알림 흐름: [`docs/api/README.md`](../docs/api/README.md) · [`core-guardrails.md`](../.claude/rules/core-guardrails.md) STOP §5.
 
 ### 커밋 분할 (에이전트)
 
-사용자가 **커밋을 요청**했을 때, staged되지 않은 전체 변경을 **주제별로 나눠 최대 3개** 커밋으로 만든다.
+작업이 끝나면 에이전트는 **사용자가 묻지 않아도 커밋을 어떻게 나눌지 먼저 제안한다.** 다만 **제안까지가 에이전트의 몫이고, 실행은 사용자 승인 후에만** 한다 — 승인 없이 `git commit`을 실행하지 않는다.
 
 | 원칙 | 내용 |
 |------|------|
-| **최대 개수** | 3개 — 더 쪼개지 않음 |
-| **분할 기준** | 독립된 주제 (예: 기능 구현 / 테스트 / 문서·하네스·설정) |
-| **1개로 충분할 때** | 변경이 한 주제면 1커밋 |
-| **금지** | 의미 없는 파일 단위 쪼개기, 빌드 깨지는 중간 커밋, 사용자 요청 없는 커밋 |
+| **최대 개수** | **5개** — 목적·주제별로 나누되 그 이상 쪼개지 않음 |
+| **분할 기준** | 독립된 목적·주제 (예: 기능 구현 / 테스트 / 문서 / 규칙·하네스 / 설정·스크립트) |
+| **1개로 충분할 때** | 변경이 한 주제면 1커밋 — 개수를 채우려고 억지로 쪼개지 않음 |
+| **제안 시점** | 작업 완료 보고와 같은 턴. 사용자가 "커밋해줘"라고 말하기 전에 먼저 |
+| **금지** | **승인 없는 커밋 실행**, 의미 없는 파일 단위 쪼개기, 빌드 깨지는 중간 커밋 |
 
-분할 순서 예: (1) 핵심 구현 → (2) 테스트 → (3) 문서·규칙·설정. 각 커밋은 `{Type}: {한글}` 형식을 따른다.
+분할 순서 예: (1) 핵심 구현 → (2) 테스트 → (3) 문서 → (4) 규칙·하네스 → (5) 설정·스크립트. 각 커밋은 `{Type}: {한글}` 형식을 따른다.
 
 ## Pull Request
 
@@ -137,7 +138,7 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 | prefix | 값 | 용도 |
 |--------|-----|------|
-| `priority:` | must, could | **MoSCoW 우선순위** — 성능 개선·구조 정리·리팩터·최적화만 could, 그 외 기능 구현·버그 수정은 전부 must (2026-08-26 재정의). **Agent는 스스로 판단해 부여 금지 — 항상 사용자 확인** (`harness-milestone.md`) |
+| `priority:` | must, could | **MoSCoW 우선순위** — 성능 개선·구조 정리·리팩터·최적화만 could, 그 외 기능 구현·버그 수정은 전부 must (2026-08-26 재정의). **Agent는 스스로 판단해 부여 금지 — 항상 사용자 확인** (`core-scope.md`) |
 | `kind:` | feature, bug, chore, docs | 이슈 종류 |
 | `meta:` | blocked, duplicate, wontfix | 상태 |
 
@@ -147,7 +148,7 @@ Must/Could 구분은 **이슈에 직접 붙는 `priority:` 라벨**로 표현한
 
 ### `[미정]` 항목 처리
 
-기획·스펙·BR의 `[미정]` 항목은 별도 중앙 트래커 없이 해당 문서에 표기만 남긴다. 상세: `.claude/rules/harness-milestone.md`.
+기획·스펙·BR의 `[미정]` 항목은 별도 중앙 트래커 없이 해당 문서에 표기만 남긴다. 상세: `.claude/rules/core-scope.md`.
 
 ### 마일스톤
 

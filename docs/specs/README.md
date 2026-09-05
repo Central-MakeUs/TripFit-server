@@ -11,7 +11,7 @@
 | [`user-schedule/`](user-schedule/) | `user/schedule` | 6 |
 | [`trip/`](trip/) | `trip` (recommendation 포함 — 별도 최상위 패키지 아님, flat) | 20 |
 | [`notification/`](notification/) | `notification` | 1 |
-| [`cross-cutting/`](cross-cutting/) | 도메인 무관 (PK 전략·OpenAPI·CI·에이전트 하네스 등) | 8 |
+| [`cross-cutting/`](cross-cutting/) | 도메인 무관 (PK 전략·OpenAPI·CI·에이전트 하네스 등) | 9 |
 
 새 스펙은 어느 도메인 패키지를 다루는지 먼저 정하고 그 폴더에 넣는다 (두 도메인에 걸치면 주로 바뀌는 상태가 속한 도메인 기준). 도메인 무관(PK 전략, CI, Swagger 설정 등)은 `cross-cutting/`.
 
@@ -20,8 +20,6 @@
 ### 구 도메인 축("MVP 출시~4")은 폐지됐다 (2026-08-26)
 
 과거에는 스펙·이슈를 MVP 출시~4라는 도메인 축으로 나눴다. 2026-09-03에 그 표기를 **전부 현행 Milestone으로 치환**했다 — 이슈 39건을 대조한 결과 MVP 출시·2·3은 예외 없이 `MVP 출시`, 출시 이후는 `출시 이후`에 대응했다.
-
-남아 있는 `wave` 언급은 **폐지 사실 자체를 설명하는 문서**(`release-milestones.md` 스텁, `release-milestones.md` §0, `harness-milestone.md`, `glossary.md`)와 **변경 이력 기록**뿐이다. 새 문서에는 쓰지 않는다.
 
 ## 작성 방법
 
@@ -114,6 +112,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`terraform-iac-migration.md`](cross-cutting/terraform-iac-migration.md) | 무관 | Draft (`#125`) | 수동 생성된 AWS 인프라(EC2 4대·SG·EIP·Route 53)를 Terraform으로 1:1 import — `infra/terraform/`, S3+native lockfile state | decision 002·009·010 |
 | [`add-prometheus.md`](cross-cutting/add-prometheus.md) | 무관 | Draft (`#126`) | Prometheus 지표 수집 및 Grafana 연동 | decision 009 |
 | [`harness-track-gate-restructure.md`](cross-cutting/harness-track-gate-restructure.md) | 무관 | Draft (`#127`) | 에이전트 하네스를 3 트랙(기능·감사/리팩터·버그) × 4 게이트(리서치·승인·검증·회고)로 재구성 + `researcher`·`doc-reviewer` 서브에이전트와 `doc-writing.md` 문서 작성 규칙 신설 | — |
+| [`harness-component-rename.md`](cross-cutting/harness-component-rename.md) | 무관 | Draft (`#128`) | 하네스 구성요소 개명·분리 — `harness-*` → `core-*`/`tripfit-*`, 스킬·훅·에이전트 작명 규칙 통일, `core-guardrails`(STOP)/`core-workflow`(게이트) 분리 | harness-track-gate-restructure |
 
 **구현 순서 (MVP 출시):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
