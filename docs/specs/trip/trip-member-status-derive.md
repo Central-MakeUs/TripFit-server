@@ -14,7 +14,7 @@
 - `markResponded()`: `status = ACTIVE`와 `respondedAt = now()`를 항상 동시에 세팅한다.
 - 즉 `respondedAt == null` 여부만으로 `status`를 100% 복원할 수 있어 `status` 컬럼은 파생값을 별도 컬럼에 중복 저장하고 있는 것과 같다.
 - 관련 이슈: [#54](https://github.com/Central-MakeUs/TripFit-server/issues/54)
-- 관련 규칙: `.claude/rules/harness-follow-up.md` 💡 ERD (스키마는 고정 아님, 파생→저장 전환·역방향 모두 적극 제안 대상)
+- 관련 규칙: `.claude/rules/core-followup.md` 💡 ERD (스키마는 고정 아님, 파생→저장 전환·역방향 모두 적극 제안 대상)
 
 ## 요구사항
 

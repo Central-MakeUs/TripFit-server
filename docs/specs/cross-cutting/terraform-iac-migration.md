@@ -148,7 +148,7 @@
 
 ## 데이터 모델
 
-**DB 스키마 변경 없음** — 엔티티·ERD 무관. Flyway 등 마이그레이션도 해당 없음(`harness-workflow.md` STOP §3).
+**DB 스키마 변경 없음** — 엔티티·ERD 무관. Flyway 등 마이그레이션도 해당 없음(`core-guardrails.md` STOP §3).
 
 Terraform state 파일이 새 "상태 저장소"로 추가된다:
 

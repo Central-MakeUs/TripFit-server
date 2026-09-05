@@ -12,7 +12,7 @@
 - 테스트: `src/test/java/com/tripfit/tripfit/notification/**` 9개 파일 전수 확인(controller 3·scheduler 1·service 5) — 사용처 검증(dead code 확인)·회귀 테스트 성격 파악에 활용
 - 교차 확인: `trip.repository.TripMemberRepository.findByTripIdAndDeletedAtIsNull`(`JOIN FETCH tm.user`로 N+1 없음 재확인), `trip.event.*`(5종 이벤트 record — 발행 지점 재확인), `user.repository.UserRepository.findIdsForScheduleReminder`, `docs/specs/notification/notification.md` D4(FCM 단일 채널 결정)
 - 감사자: 현재 세션(신선한 컨텍스트, 이번 대화에서 `notification` 도메인 코드를 수정한 적 없음), 읽기 전용
-- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `core-guardrails.md` ⛔ STOP
 
 ## ✅ A. 반드시 수정해야 하는 사항
 

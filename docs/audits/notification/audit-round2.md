@@ -9,7 +9,7 @@
 - 스펙: `docs/specs/notification/notification.md` (D1~D12, 변경 이력 전체 재확인)
 - 교차 참조(수정 대상 아님): `trip/service/TripCommandService`·`TripRecommendationService`(이벤트 발행부 — 발행 지점 5곳 재확인, 변경 없음), `common/exception/GlobalExceptionHandler`(도메인 예외 매핑 확인)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP
 
 ### 1차 감사 대비
 

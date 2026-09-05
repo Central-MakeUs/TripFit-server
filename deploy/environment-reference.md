@@ -109,7 +109,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 ### `FRONTEND_IMAGE` 사용 금지 (프론트는 Vercel)
 
 `FRONTEND_IMAGE` **사용하지 않음** — 프론트는 Vercel.  
-프론트엔드는 Vercel(`tripfit.online`)에서 호스팅되므로 EC2 인프라에 frontend 컨테이너가 존재하지 않으며, `FRONTEND_IMAGE` 변수를 사용하거나 추가해서는 안 된다 (`.claude/rules/harness-workflow.md` 확정 사항).
+프론트엔드는 Vercel(`tripfit.online`)에서 호스팅되므로 EC2 인프라에 frontend 컨테이너가 존재하지 않으며, `FRONTEND_IMAGE` 변수를 사용하거나 추가해서는 안 된다 (`.claude/rules/tripfit-release.md` 확정 사항).
 
 ### `.env` 파일 필수 여부 및 수동 배포
 

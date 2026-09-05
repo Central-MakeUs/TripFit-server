@@ -366,7 +366,7 @@ Authorization: Bearer <accessToken>
 | 금지 (별도 스펙·승인 필요) | 이유 |
 |---------------------------|------|
 | `user_identity` 분리·`user` 구조 대규모 개편 | BR-USER-003 계정 연결 — 출시 이후 |
-| Flyway/`V*__*.sql` 마이그레이션 추가 | **작성 금지** — ddl-auto + DB 리셋 (`harness-workflow`) |
+| Flyway/`V*__*.sql` 마이그레이션 추가 | **작성 금지** — ddl-auto + DB 리셋 (`core-guardrails`) |
 
 **후속**: 스키마를 바꿨으면 구현 PR 전에 `docs/architecture/erd.md` 동기화. DB는 폐기·재생성으로 맞춤.
 
@@ -444,7 +444,7 @@ Authorization: Bearer <accessToken>
 ### 스키마 반영 (ddl-auto)
 
 - Hibernate `ddl-auto: update`(local/dev/prod) / `create-drop`(test)로 엔티티 반영
-- **SQL 마이그레이션 파일 없음·작성 금지.** 스키마 불일치 시 DB volume 삭제 후 재기동 (`harness-workflow` ⛔ DB 스키마)
+- **SQL 마이그레이션 파일 없음·작성 금지.** 스키마 불일치 시 DB volume 삭제 후 재기동 (`core-guardrails` ⛔ DB 스키마)
 
 ## Provider별 구현 메모
 

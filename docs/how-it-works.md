@@ -5,9 +5,9 @@
 **이 문서가 아닌 것:**
 - 스펙·ADR이 아닙니다 — "왜 이렇게 결정했는지"의 논의 과정·후보안 비교는 각 절 끝 "더 자세히" 링크를 따라가세요.
 - 변경 이력이 아닙니다 — 과거에 어땠는지가 아니라 **지금** 어떤지만 담습니다. 로직이 바뀌면 이 문서도 그 자리에서 바로 고쳐 쓰고, 예전 방식은 지웁니다.
-- 글쓰기 스타일은 [`.claude/rules/plain-language-reporting.md`](../.claude/rules/plain-language-reporting.md)를 따릅니다 — 용어를 풀어쓰고, 결과 중심으로 설명합니다.
+- 글쓰기 스타일은 [`.claude/rules/core-reporting.md`](../.claude/rules/core-reporting.md)를 따릅니다 — 용어를 풀어쓰고, 결과 중심으로 설명합니다.
 
-**갱신 규칙:** 인증·결제·데이터 저장 방식처럼 보안·아키텍처 성격이 있는 로직을 바꾸면, 그 작업과 **같은 턴**에 이 문서의 해당 절도 고칩니다 (`.claude/rules/harness-workflow.md` ⛔ STOP §6).
+**갱신 규칙:** 인증·결제·데이터 저장 방식처럼 보안·아키텍처 성격이 있는 로직을 바꾸면, 그 작업과 **같은 턴**에 이 문서의 해당 절도 고칩니다 (`.claude/rules/core-guardrails.md` ⛔ STOP §6).
 
 **차례**
 

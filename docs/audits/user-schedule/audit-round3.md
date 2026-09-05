@@ -12,7 +12,7 @@
 - 테스트: `src/test/java/com/tripfit/tripfit/user/schedule/**` 참고용 확인
 - 교차 확인: `trip/recommendation/algorithm/RecommendationEngine`, `trip/membership/service/TripMemberQueryService`, `trip/schedule/service/TripScheduleSnapshotService`(`ScheduleAvailabilityService` 소비처), `user/service/UserWithdrawalPersistenceService`, `user/googlecalendar/service/GoogleCalendarService`(협력 관계)
 - 감사자: 서브에이전트(`Agent` 툴, 읽기 전용) + 상위 세션에서 핵심 주장(파일 경로·줄번호·중복 파싱·전용 테스트 부재·`decisions/003` 인용) 재확인
-- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `core-guardrails.md` ⛔ STOP
 
 ## ✅ A. 반드시 수정해야 하는 사항
 

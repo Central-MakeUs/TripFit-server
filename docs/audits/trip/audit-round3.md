@@ -14,7 +14,7 @@
 - 테스트: `src/test/java/com/tripfit/tripfit/trip/**` 20개 파일 참고용 확인(사용처 검증 — grep 기반 dead code 확인에 활용)
 - 교차 확인: `user.schedule.service.ScheduleAvailabilityService`(trip이 유일하게 직접 주입받는 크로스 도메인 서비스), `user.schedule.domain.RegularSchedule`/`PersonalSchedule`(trip 소유 `SlotStatuses` 임베더블을 재사용), `user.domain.User`의 연차 정책 getter(`RecommendationEngine`이 직접 읽는 지점), `docs/decisions/003-architecture-guide.md` 결정 11(포트 폐기 확정 문구)
 - 감사자: 현재 세션(신선한 컨텍스트, 이번 대화에서 `trip` 도메인 코드를 수정한 적 없음), 읽기 전용
-- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `core-guardrails.md` ⛔ STOP
 
 ## ✅ A. 반드시 수정해야 하는 사항
 

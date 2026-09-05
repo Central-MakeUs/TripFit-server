@@ -7,7 +7,7 @@
 - 패키지: `com.tripfit.tripfit.user` (`client`, `controller`, `domain`, `dto`, `exception`, `repository`, `service`) + `com.tripfit.tripfit.user.googlecalendar` (`client`, `controller`, `domain`, `dto`, `exception`, `repository`, `scheduler`, `service`)
 - 제외: `user/schedule/**` (별도 "user-schedule" 도메인, 별도 감사 — 이미 2차 라운드까지 완료됨)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용) — 1차 반영(커밋 `e7ce06c` Refactor) 이후 재검사
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP, `spring-boot-java.md`
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP, `spring-boot-java.md`
 - main 26개 파일(`user` 15 + `user/googlecalendar` 11) 전수 재검토 + 관련 호출부 교차 확인: `auth/service/AuthService`·`auth/dev/service/DevAuthService`가 `UserLookupService`/`UserSummaryService` 사용하는 지점, `trip` 도메인이 `UserSummaryService`/`UserErrorCode.SCHEDULE_ACTIVATION_REQUIRED`/`GoogleCalendarService`를 사용하는 지점, `user/service/UserWithdrawalService`가 `auth/service/AppleCredentialService`·`GoogleLoginCredentialService`를 호출하는 지점
 - `docs/audits/user/audit.md`(1차 A 2·B 6·C 3·D 4)와 `refactor-log.md`(반영 diff) 원문 대조, `docs/audits/user-schedule/audit-round2.md`·`docs/audits/auth/audit-round2.md`(같은 세션 직전 라운드) 선례 대조
 

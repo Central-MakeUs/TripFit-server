@@ -43,7 +43,7 @@
 ### Out of Scope (이번 스펙에서 하지 않음)
 
 - BR-TRIP-010(PATCH 시 `duration_days` 변경 → `recommendation` hard delete 훅) 로직 자체는 변경하지 않음 — 트리거 조건(“일수 변경”) 그대로 유지
-- 기존 dev DB 데이터 마이그레이션 — 상용 보존 데이터 없음(dev), 컬럼 추가는 `ddl-auto` + 필요 시 DB 리셋으로 처리 (`harness-workflow.md` STOP §3)
+- 기존 dev DB 데이터 마이그레이션 — 상용 보존 데이터 없음(dev), 컬럼 추가는 `ddl-auto` + 필요 시 DB 리셋으로 처리 (`core-guardrails.md` STOP §3)
 
 ## API / 인터페이스
 

@@ -20,7 +20,7 @@
 | 문서 | 템플릿 | 만드는 시점 |
 |------|--------|-------------|
 | 기능 스펙 (`docs/specs/`) | [`spec-template.md`](../../.claude/skills/specify/references/spec-template.md) | A 트랙 — 구현 전 |
-| 아키텍처 감사 (`docs/audits/`) | [`audit-template.md`](../../.claude/skills/refactor-audit/references/audit-template.md) | B 트랙 — 리팩터 전 |
+| 아키텍처 감사 (`docs/audits/`) | [`audit-template.md`](../../.claude/skills/safe-refactor/references/audit-template.md) | B 트랙 — 리팩터 전 |
 | 기술 결정 (`docs/decisions/`) | [`decisions/README.md`](../decisions/README.md) 내장 | 되돌리기 어려운 선택을 할 때 |
 
 ## 쓰는 법

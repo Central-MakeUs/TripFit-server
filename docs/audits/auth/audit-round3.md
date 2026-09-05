@@ -6,7 +6,7 @@
 
 - 패키지: `com.tripfit.tripfit.auth` (`config`, `controller`, `domain`, `dto`, `exception`, `jwt`, `oauth`, `repository`, `security`, `service`) — 전체 49개 main 파일 전수 재검토(`dev` 하위 패키지는 현재 코드베이스에 존재하지 않음)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `core-guardrails.md` ⛔ STOP
 - 이번 세션에서 이미 반영된 두 가지 리포지토리 공통 변경(모든 Service `@RequiredArgsConstructor`, 모든 Entity 클래스 레벨 `@Setter` 제거 → 도메인 메서드)은 전제로 두고 재발견하지 않음
 
 ## ✅ A. 반드시 수정해야 하는 사항

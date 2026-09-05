@@ -9,7 +9,7 @@
 - 패키지: `com.tripfit.tripfit.user` (`client`, `controller`, `domain`, `dto`, `exception`, `repository`, `service`) + `com.tripfit.tripfit.user.googlecalendar` (`client`, `controller`, `domain`, `dto`, `exception`, `repository`, `scheduler`, `service`)
 - 제외: `user/schedule/**` (별도 "user-schedule" 도메인, 별도 감사)
 - 감사자: 이번 세션(신선한 컨텍스트, 이번 대화에서 `user` 도메인 코드를 아직 수정한 적 없음), 읽기 전용
-- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목 + 사용자 지정 우선 렌즈(SRP·OCP·LSP·ISP·DIP·캡슐화·God class/method·feature envy·inappropriate intimacy), `core-guardrails.md` ⛔ STOP
 - main 30개 파일(`user` 10 + `user/googlecalendar` 20) 전수 재검토 + 교차 확인: `trip/service/TripServiceSupport`(`UserDirectoryService` 소비처), `auth/service/AuthService`·`notification/service/DeviceTokenService`(`UserLookupService` 소비처), 관련 테스트 16개 파일
 
 ## ✅ A. 반드시 수정해야 하는 사항

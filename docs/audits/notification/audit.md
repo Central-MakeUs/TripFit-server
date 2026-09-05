@@ -8,7 +8,7 @@
 - 테스트: `src/test/java/com/tripfit/tripfit/notification/**` (controller 3개, scheduler 1개, service 4개)
 - 교차 참조(감사만, 수정 대상 아님): `trip/service/TripCommandService`·`TripRecommendationService`(이벤트 발행부), `trip/repository/TripMemberRepository`(`findByTripIdAndDeletedAtIsNull` — 이미 `JOIN FETCH tm.user`로 N+1 없음 확인), `user/domain/User`(`notificationEnabled`, `displayName()`), `user/repository/UserRepository`(`findIdsForScheduleReminder`), `auth/security/AppConfig`(`FcmProperties` Bean 등록)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP
 - main 24개 파일, test 8개 파일 전수 검토 (`FcmProperties`, `FirebaseConfig`, `DeviceTokenController`, `NotificationController`, `DeviceType`, `LandingType`, `NotificationHistory`, `NotificationType`, `UserDeviceToken`, `DeviceTokenRegisterRequest`, `NotificationResponse`, `AllMembersSubmittedEvent`, `ScheduleReminderEvent`, `TripConfirmCanceledEvent`, `TripConfirmedEvent`, `TripInfoChangedEvent`, `TripJoinCompletedEvent`, `NotificationErrorCode`, `NotificationHistoryRepository`, `UserDeviceTokenRepository`, `ScheduleReminderBatch`, `DeviceTokenService`, `FcmService`, `NotificationEventListener`, `NotificationQueryService`)
 
 ## ✅ A. 반드시 수정해야 하는 사항
@@ -34,7 +34,7 @@
 - **Priority**: Medium
 - **Category**: Readability / Convention
 - **문제**: `spring-boot-java.md`의 "OpenAPI 설명 어노테이션 (전부)" 절은 `@Schema(description)`을 포함한 모든 설명 어노테이션에 "GitHub 이슈 번호·BR/스펙 ID(`BR-USER-007`, `D5` 등) 금지"를 명시한다. 그런데 `NotificationHistory.java:30`(`...알림센터 조회·읽음 상태를 포함한다(D5)`), `UserDeviceToken.java:28`(`...재할당될 수 있다(D7)`)·`:39`(`...재등록 시 재할당(D7)`), `NotificationType.java:5`(`(BR-NOTI-001~005·009)`)와 6개 enum 상수 전부(`:7,10,13,16,19,22`, 각각 `(BR-NOTI-00X)`)에 이 스펙 ID들이 그대로 남아 있다. 이 문자열은 실제로 `/v3/api-docs`·Swagger UI에 노출된다(`NotificationSwaggerSchemaTest`가 검증하는 바로 그 스키마).
-- **왜 문제인가**: 이 도메인은 이미 `@Schema`를 잘못 써서 사고가 난 전례(raw `SuccessResponse` 타입 지정으로 스키마가 통째로 사라진 사고, `harness-workflow.md` STOP §1-6에 "NotificationController 사고 사례"로 명시)가 있는 도메인이다. Swagger 문서 독자(프론트·신규 개발자)는 `D7`·`BR-NOTI-002` 같은 내부 스펙 식별자의 의미를 알 수 없고, 스펙 문서 쪽에서 D-번호가 바뀌거나 BR 번호가 재편되면(예: `docs/decisions/` 개편) 코드 쪽 문자열은 조용히 stale해진다.
+- **왜 문제인가**: 이 도메인은 이미 `@Schema`를 잘못 써서 사고가 난 전례(raw `SuccessResponse` 타입 지정으로 스키마가 통째로 사라진 사고, `core-guardrails.md` STOP §1-6에 "NotificationController 사고 사례"로 명시)가 있는 도메인이다. Swagger 문서 독자(프론트·신규 개발자)는 `D7`·`BR-NOTI-002` 같은 내부 스펙 식별자의 의미를 알 수 없고, 스펙 문서 쪽에서 D-번호가 바뀌거나 BR 번호가 재편되면(예: `docs/decisions/` 개편) 코드 쪽 문자열은 조용히 stale해진다.
 - **개선 방법**: 각 `@Schema(description)`에서 `(D5)`/`(D7)`/`(BR-NOTI-XXX)` 괄호 부분만 제거하고 나머지 설명(도메인 의미)은 그대로 유지한다. 예: `"사용자 기기별 FCM 디바이스 토큰. 재로그인 시 소유자가 재할당될 수 있다(D7)"` → `"사용자 기기별 FCM 디바이스 토큰. 재로그인 시 소유자가 재할당될 수 있다"`. 스펙 근거가 필요하면 `docs/specs/notification/notification.md`에 이미 D1~D12 표로 정리돼 있으므로 중복 불필요.
 - **API 영향**: No Impact — `description` 문자열만 편집, 필드·타입·enum 값·에러코드·경로는 변경 없음. `Breaking-Change-Reason` 트레일러 대상(필드/enum 값/ErrorCode/경로 변경)에 해당하지 않음.
 - **예상 변경 파일**: `notification/domain/NotificationHistory.java`, `notification/domain/UserDeviceToken.java`, `notification/domain/NotificationType.java`
@@ -48,7 +48,7 @@
 - **Priority**: Low
 - **Category**: Cleanup / Legacy
 - **문제**: `TripConfirmCanceledEvent.java:5`의 주석은 `"// BR-NOTI-009 — 방장이 확정 취소 시 참여자(방장 제외)에게 발송. #13 취소 API 구현 후 해당 서비스에서 발행 예정(현재 미발행)"`이라고 돼 있다. 하지만 실제로는 `TripRecommendationService.unconfirm()`(`trip/service/TripRecommendationService.java:260`)에서 이미 `applicationEventPublisher.publishEvent(new TripConfirmCanceledEvent(tripId))`를 호출하고 있고, `NotificationEventListener.onTripConfirmCanceled()`도 구현·테스트(`NotificationEventListenerTest.onTripConfirmCanceled_notifiesMembersExcludingOwner`)까지 존재한다. `docs/specs/notification/notification.md` 변경 이력(2026-07-31)에도 "`#13`이 이미 Closed·구현 완료 상태인데 본 문서가 미구현으로 stale하게 남아 있었음"을 정정한 기록이 있다 — 정작 이벤트 record 파일의 주석만 그 정정이 반영되지 않았다.
-- **왜 문제인가**: 이 주석만 보고 "BR-NOTI-009는 아직 미발행"이라고 오판하면 harness-workflow.md STOP §1-5("구현 상태 보고 전 코드 우선 확인")가 경계하는 바로 그 실수(스펙/주석 문구만 보고 미구현이라 단정)로 이어질 수 있다.
+- **왜 문제인가**: 이 주석만 보고 "BR-NOTI-009는 아직 미발행"이라고 오판하면 core-guardrails.md STOP §1-5("구현 상태 보고 전 코드 우선 확인")가 경계하는 바로 그 실수(스펙/주석 문구만 보고 미구현이라 단정)로 이어질 수 있다.
 - **개선 방법**: 주석을 실제 발행 지점에 맞게 수정한다. 예: `"// BR-NOTI-009 — 방장이 확정 취소 시 참여자(방장 제외)에게 발송. TripRecommendationService.unconfirm에서 커밋 후 발행"` — 다른 5개 이벤트 파일(`TripConfirmedEvent` 등)과 동일한 문체로 통일.
 - **API 영향**: No Impact — 주석만 수정, 코드 동작 변경 없음.
 - **예상 변경 파일**: `notification/event/TripConfirmCanceledEvent.java`

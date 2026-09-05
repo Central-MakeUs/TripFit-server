@@ -6,7 +6,7 @@
 
 - 패키지: `com.tripfit.tripfit.trip` (+ 하위 패키지: recommendation, membership, schedule, scheduler, port)
 - 감사자: 서브에이전트 (Agent 툴, 읽기 전용)
-- 기준: audit-checklist.md 1~15항목, harness-workflow.md ⛔ STOP
+- 기준: audit-checklist.md 1~15항목, core-guardrails.md ⛔ STOP
 - 가중치: 9번(패키지 구조)·14번(테스트 가능성)에 우선순위 — `trip/port/out` 3개 인터페이스(`SchedulePort`·`GoogleCalendarPort`·`UserDirectoryPort`) 제거 결정 때문
 
 ## ✅ A. 반드시 수정해야 하는 사항

@@ -6,7 +6,7 @@
 
 - 패키지: `com.tripfit.tripfit.trip` — `config`, `controller`, `domain`, `dto`, `exception`, `repository`, `repository.projection`, `scheduler`, `service` (추천/recommendation은 별도 패키지 없이 `service/`에 flat 포함)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP
 - 전수 검토: main 71개 파일, test 17개 파일(1차 라운드 이후 `TripServiceSupportTest` 신설분 포함), 관련 스펙(`docs/specs/trip/*`), `docs/architecture/erd.md`, `docs/product/business-rules/trip.md`
 - **1차 감사 대비**: 1차(`docs/audits/trip/audit.md`, `refactor-log.md`)는 N+1(정기·개별 일정 배치 조회), 방장 검증 헬퍼 통합, `TripQueryService.toDetail` 패스스루 제거, 추천 삭제 책임 이관(A-1·A-2·B-1~B-3)을 이미 반영 완료. 이번 라운드는 그 결과물을 전제로 **① 도메인/임베더블의 미사용 API 표면(dead code), ② 빈(bean) 가시성/캡슐화, ③ ERD·감사 관점에서 "겹쳐 보이지만 실제로는 다른" 로직 구분, ④ JPA 엔티티 identity 설계, ⑤ 스키마 문서와의 정합성**이라는, 1차가 다루지 않은 시각으로 재검토했다. 1차 C/D 항목(초대코드 alphabet 명칭, `deleteTrip` cascade 개별 UPDATE, `requireValidFeedback`/`requireValidUnconfirmReason` 중복, `TripServiceSupport` 다책임, `TripHomeMaintenanceService` 단일 트랜잭션, interceptor EXISTS 2회, DTO 필드 중복, `TripServiceTest` 수동 조립, `requireOwner` 재검증, anemic 모델, `TripJoinService` 분리, `RecommendationFeedback` FK 미설정)는 보류 사유가 여전히 유효함을 확인했고, 별도 근거 없이 재상정하지 않았다.
 

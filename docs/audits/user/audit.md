@@ -7,7 +7,7 @@
 - 패키지: `com.tripfit.tripfit.user` (`client`, `controller`, `domain`, `dto`, `exception`, `repository`, `service`) + `com.tripfit.tripfit.user.googlecalendar` (`client`, `controller`, `domain`, `dto`, `exception`, `repository`, `scheduler`, `service`)
 - 제외: `user/schedule/**` (별도 "user-schedule" 도메인, 별도 감사)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `.claude/skills/refactor-audit/references/audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP, `spring-boot-java.md`, `testing.md`
+- 기준: `.claude/skills/safe-refactor/references/audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP, `spring-boot-java.md`, `testing.md`
 - main 21개 파일, test 10개 파일 전수 검토
 
 ## ✅ A. 반드시 수정해야 하는 사항

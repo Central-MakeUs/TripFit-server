@@ -7,7 +7,7 @@
 - 패키지: `com.tripfit.tripfit.auth` (`controller`, `dev/controller`, `dev/service`, `domain`, `dto`, `exception`, `jwt`, `oauth`, `repository`, `security`, `service`)
 - 참고(감사만, 수정 대상 아님): `common/exception`, `common/logging`, `common/security` — auth가 의존하는 공용 컴포넌트 확인용
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `.claude/skills/refactor-audit/references/audit-checklist.md` 1~15항목(구 `refacotr-command.md`), `harness-workflow.md` ⛔ STOP, `spring-boot-java.md`, `testing.md`
+- 기준: `.claude/skills/safe-refactor/references/audit-checklist.md` 1~15항목(구 `refacotr-command.md`), `core-guardrails.md` ⛔ STOP, `spring-boot-java.md`, `testing.md`
 - 총 39개 파일(main 45개 — dev 포함, test 14개) 전수 검토
 
 ## ✅ A. 반드시 수정해야 하는 사항

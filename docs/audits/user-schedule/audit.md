@@ -8,7 +8,7 @@
 - 테스트: `src/test/java/com/tripfit/tripfit/user/schedule/**` (controller 2개, service 2개, domain 1개)
 - 교차 참조(감사만, 수정 대상 아님): `trip/service/ScheduleCalendarResolver` 소비처(`RecommendationEngine`, `TripServiceSupport`), `user/service/UserSummaryService`·`UserLookupService`, `user/googlecalendar/service/GoogleCalendarService`, `notification/service/NotificationEventListener`(`ScheduleService.displayName` 호출)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP
 - main 15개 파일, test 6개 파일 전수 검토 (`UserScheduleController`, `PersonalSchedule`, `RegularSchedule`, `VacationApplyPeriod`, `Weekday`, `CreateRegularScheduleRequest`, `PersonalScheduleResponse`, `RegularScheduleResponse`, `ScheduleCalendarResponse`, `UpdatePersonalScheduleRequest`, `UpdateRegularScheduleRequest`, `ScheduleErrorCode`, `PersonalScheduleRepository`, `RegularScheduleRepository`, `ScheduleService`, `ScheduleCalendarResolver`)
 
 ## ✅ A. 반드시 수정해야 하는 사항
