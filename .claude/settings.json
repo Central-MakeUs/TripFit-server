@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-dangerous.sh"
+            "command": ".claude/hooks/deny-dangerous-bash.sh"
           },
           {
             "type": "command",
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-db-migration.sh"
+            "command": ".claude/hooks/deny-db-migration.sh"
           }
         ]
       }
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/format-java.sh",
+            "command": ".claude/hooks/auto-format-java.sh",
             "timeout": 60
           }
         ]
