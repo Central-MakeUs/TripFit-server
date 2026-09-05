@@ -39,7 +39,6 @@ LEGACY=(
   "priority: P0" "priority: P1" "priority: P2" "priority: out" "priority: nice"
   "size: S" "size: M" "size: T"
   "area: api" "area: domain" "area: deploy" "area: docs" "area: infra"
-  "wave:1" "wave:2" "wave:3" "wave:4"
 )
 for label in "${LEGACY[@]}"; do
   delete_label "$label"
@@ -100,15 +99,7 @@ for old in \
   "MVP — 일정·조건·추천" \
   "MVP — 확정·시각화" \
   "MVP — 알림·공유 (P1)" \
-  "Backlog — P2+" \
-  "Wave 1 — 준비" \
-  "Wave 2 — 핵심 MVP" \
-  "Wave 3 — 출시 UX" \
-  "Wave 4 — 운영·확장" \
-  "Wave 1 — 소셜 로그인" \
-  "Wave 2 — MVP 로직" \
-  "Wave 3 — 외부 API 연동" \
-  "Wave 4 — 리팩토링·성능·런칭 후 UX"; do
+  "Backlog — P2+"; do
   close_milestone "$old"
 done
 
