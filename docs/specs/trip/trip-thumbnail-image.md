@@ -77,7 +77,7 @@ GET /api/v1/trips/{tripId} 응답에 thumbnailImageUrl 필드로 노출 (B 모�
 |--------|------|------|------|
 | `GET` | `/api/v1/trips/{tripId}` | JWT | 기존 응답에 `thumbnailImageUrl`(nullable) 필드 추가만 — 신규 엔드포인트 없음 |
 
-**Breaking-Change-Reason 대상 여부:** optional 필드 추가이지만 프론트가 카카오 템플릿 조립 로직에서 이 필드를 실제로 써야 하므로 `harness-workflow.md` STOP §5 기준 트레일러 대상 — 구현 커밋에 포함 필요.
+**Breaking-Change-Reason 대상 여부:** optional 필드 추가이지만 프론트가 카카오 템플릿 조립 로직에서 이 필드를 실제로 써야 하므로 `core-guardrails.md` STOP §5 기준 트레일러 대상 — 구현 커밋에 포함 필요.
 
 ## 데이터 모델
 
@@ -103,7 +103,7 @@ GET /api/v1/trips/{tripId} 응답에 thumbnailImageUrl 필드로 노출 (B 모�
 | 날짜 텍스트에 한글 포함 여부("6월 12일" vs "6.12") | [미정] | 한글 폰트 번들링 필요 여부에 영향 |
 | 재생성 정책(확정 후 일정 변경 시) | [미정] | 확정 후 일정이 실제로 변경될 수 있는지 `trip-schedule-snapshot.md`와 대조 필요 |
 | 카카오 클라이언트/크롤러의 이미지 캐싱 동작 | [미정] | 공식 문서에 명시 없음 — 실기기 테스트로 확인 필요 |
-| Milestone 배치 | [미정] | 이 스펙 상단 메타에 미반영 — `#62` 이슈의 Milestone·`priority: could` 라벨과 맞는지 사용자 확인 필요 (구 `wave:4` 라벨은 2026-08-26 폐지) |
+| Milestone 배치 | [미정] | 이 스펙 상단 메타에 미반영 — `#62` 이슈의 Milestone·`priority: could` 라벨과 맞는지 사용자 확인 필요 |
 
 ## 완료 기준
 

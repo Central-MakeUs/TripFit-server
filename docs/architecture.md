@@ -46,7 +46,7 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 - `src/main/resources/application.yml` — 공통 (DataSource driver, Hikari)
 - 프로필별: `application-{local|dev|test}.yml`
 - 민감 정보: 환경 변수 — `.env` (git 제외), EC2에서는 `deploy/*/.env`
-- **Flyway / SQL 마이그레이션 미사용·작성 금지** — 스키마는 JPA 엔티티(최신 하나) + Hibernate `ddl-auto`. **상용 보존 데이터 없음** → DB 리셋 허용. (`.claude/rules/harness-workflow.md`)
+- **Flyway / SQL 마이그레이션 미사용·작성 금지** — 스키마는 JPA 엔티티(최신 하나) + Hibernate `ddl-auto`. **상용 보존 데이터 없음** → DB 리셋 허용. (`.claude/rules/core-guardrails.md`)
 - **`dev` = 유일한 실제 배포 환경** (`api.tripfit.online`, EC2). 별도 `prod` 프로필·환경은 없음 — `application-prod.yml`은 실제로 활성화된 적 없는 죽은 설정이라 삭제했다. Swagger는 `dev`에서도 계속 노출.
 
 | 프로필 | 용도 | ddl-auto |

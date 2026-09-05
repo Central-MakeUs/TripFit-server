@@ -382,7 +382,7 @@
 | 2026-07-30 | 카드 UI 확인 반영 — 응답 DTO 필드 개정(`reason`/`riskNote`/`score` 제거, `attendRate`/`partialAttendCount`/`uncertainCount`/`totalVacationDays` 추가), `NO_RECOMMENDATION_CANDIDATES` 에러·`ALL_ATTEND` 하드 필터 문구 삭제(`#50` 2026-07-30 개정과 동기화), UX 흐름(모드 선택→카드→확정/재추천/공유) 절 추가 |
 | 2026-07-24 | 사용자 요청으로 범위 분리 — 이 스펙은 API 설계·DTO·ERD·상태 전이·hard DELETE 트리거만, **추천 계산 로직 전체는 `#50`([`trip-recommendation-algorithm.md`](trip-recommendation-algorithm.md))로 이동** |
 | 2026-07-24 | **#48 Implemented** — `TripStatus.CANCELED` enum 삭제, `TERMINATED` → `EXPIRED` 리네임. 본 스펙 코드 참조도 `EXPIRED`로 동기화 |
-| 2026-07-24 | `unconfirm` 사유 입력 필수로 확정(기획자 답변) — `UnconfirmReason` enum 6종 + `reasonDetail`(`OTHER`). 관련 문서(`mvp.md`·`release-milestones.md`·`erd.md`·`trip-room-api.md`·`figma-wireframe-v1.md`·`#48`) wave 재분류 동기화 |
+| 2026-07-24 | `unconfirm` 사유 입력 필수로 확정(기획자 답변) — `UnconfirmReason` enum 6종 + `reasonDetail`(`OTHER`). 관련 문서(`mvp.md`·`release-milestones.md`·`erd.md`·`trip-room-api.md`·`figma-wireframe-v1.md`·`#48`) 릴리즈 축 재분류 동기화 |
 | 2026-07-24 | `src/new_decision.md` 확정 반영 — `cancel`(→`CANCELED`) API를 **삭제**, `unconfirm`(CONFIRMED→ONGOING, 새 Status 없음) API로 교체. 관련 에러 코드·시나리오 갱신 |
 | 2026-07-08 | 초안 |
 | 2026-07-17 | #17 resolve 재사용(C1) · trip-room D4 ONGOING만 · calendar Implemented |

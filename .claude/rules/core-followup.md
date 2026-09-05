@@ -1,7 +1,7 @@
 # Harness — 후속 제안 · Defer · ERD
 
-코어 STOP·코딩 흐름: `harness-workflow.md`
-Milestone·용어: `harness-milestone.md`
+코어 STOP·코딩 흐름: `core-guardrails.md`
+Milestone·용어: `core-scope.md`
 
 ## 💡 ERD 적극 제안 (스키마는 고정이 아님)
 
@@ -9,7 +9,7 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 
 1. **언제:** Entity·API·BR 작업 중, Must Have 완료 후 후속 제안, 또는 사용자가 ERD/스키마를 물을 때
 2. **무엇을:** 컬럼 위치·nullable·상태 표현(enum vs 시각)·인덱스·예약어 rename·파생→저장 전환 등 — **아쉬운 점 → 권장 형태 → (선택) 스펙 amend**를 짧게
-3. **적용:** 사용자 승인 또는 Approved 스펙이 스키마를 바꾸면 **엔티티 + `erd.md`를 최신 하나**로 맞춘다 (Flyway·호환 레이어 금지 — `harness-workflow.md` ⛔ STOP — DB 스키마 절)
+3. **적용:** 사용자 승인 또는 Approved 스펙이 스키마를 바꾸면 **엔티티 + `erd.md`를 최신 하나**로 맞춘다 (Flyway·호환 레이어 금지 — `core-guardrails.md` ⛔ STOP — DB 스키마 절)
 4. **금지:** 제안 없이 임시/중복 컬럼 누적 · ERD drift를 코드 주석으로만 방치
 
 ## 💡 구현 후 후속 제안 (Follow-up)
@@ -48,10 +48,10 @@ dev · 마이그레이션 없음 → **`docs/architecture/erd.md`·엔티티는 
 - 「나중에 하면 좋겠다」만 나열하고 **근거·우선순위** 없이 장문
 - 완료 선언 전 검증(테스트·체크리스트) **대신** 제안만 하고 완료 선언
 
-**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.claude/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `harness-workflow.md` G4 회고 게이트와 동일). 이 승격 절차는 **`retro` 스킬**([`.claude/skills/retro/SKILL.md`](../skills/retro/SKILL.md))이 SSOT다 — 승인 후 `docs/audits/harness-retro.md`에 후보로 남긴다.
+**반복 주제:** 같은 후속 제안이 2회 이상 나오면 `.claude/rules/` 또는 스펙 amend를 **사용자에게 제안** (자동 추가 금지 — `core-workflow.md` G4 회고 게이트와 동일). 이 승격 절차는 **`retro` 스킬**([`.claude/skills/retro/SKILL.md`](../skills/retro/SKILL.md))이 SSOT다 — 승인 후 `docs/audits/harness-retro.md`에 후보로 남긴다.
 
 **이 절과 `retro`의 경계:** 여기(💡 후속 제안)는 **코드·설계** 개선(ERD·API 설계·쿼리 성능·패키지 구조)을 다루고, `retro`는 **하네스 자체**(규칙·스킬·에이전트·훅)의 결함을 다룬다. 같은 항목을 양쪽에 중복해 남기지 않는다.
 
 ## ✅ 후속 작업 이슈 분리 (Defer)
 
-사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「이번 Milestone 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** Draft 스펙 작성 → Approved 스펙 amend → README 갱신 → 이슈 생성 → 구현 트림 → 보고까지 전체 절차는 **`defer-followup` 스킬** SSOT (이슈 생성 단계는 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용).
+사용자가 **「다른 이슈로 빼」**, **「후속 이슈로」**, **「이번 Milestone 밖」** 등으로 범위를 미루라고 하면 **이슈만 만들고 끝내지 않는다.** Draft 스펙 작성 → Approved 스펙 amend → README 갱신 → 이슈 생성 → 구현 트림 → 보고까지 전체 절차는 **`defer` 스킬** SSOT (이슈 생성 단계는 `core-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용).

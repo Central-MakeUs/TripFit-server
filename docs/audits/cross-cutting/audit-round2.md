@@ -6,7 +6,7 @@
 
 - 패키지: `com.tripfit.tripfit.common` (api, config, domain, exception, logging, security 전부)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP
 - 1차 감사 대비:
   - **1차에서 반영 완료 확인**: `WebConfig` 삭제(A-1), `SocialTokenCrypto.secretKey` `volatile`(A-2), `SocialIntegrationLog` PII 마스킹(A-3), `OpenApiConfig` → `auth/config/` 이동 + ArchUnit `commonPackageDoesNotDependOnOtherDomains`(B-1), `common` 보안 클래스 단위테스트 4종 신설(B-2) — 코드·테스트 모두 현재 상태와 일치함을 재확인했다.
   - **1차 C/D 재확인**: `JpaConfig`/`SchedulingConfig` 분리(둘 다 실제 사용 중 — `@Async`는 `NotificationEventListener`, `@Scheduled`는 3개 스케줄러에서 확인), `ConstraintViolationException`/`AccessDeniedException`/`HttpRequestMethodNotSupportedException`/`NoResourceFoundException` 미추가(여전히 던지는 코드 0건, `@Validated` 미사용 확인), `CommonErrorCode` 2종 유지(타 도메인 ErrorCode가 중복 정의 안 함 확인), `SocialTokenCrypto.decrypt()` 방어코드 미추가, `PiiMasker` 이메일 전용 스코프, `common/domain` Lombok vs 룰 문서 drift — **전부 상황 변화 없어 그대로 유지**, 재상정하지 않음.

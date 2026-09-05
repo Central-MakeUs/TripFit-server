@@ -53,7 +53,7 @@ AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_TOKEN",
 
 Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap 안 함 (`config/tripfit-java-format.xml`).
 
-**새 실패 분기 추가 시 (같은 턴):** enum 상수 → Service/Interceptor throw → 스펙 에러 표 → (필요 시) `api-response.md` 예시. Harness: `.claude/rules/harness-workflow.md` ⛔ ErrorCode 절.
+**새 실패 분기 추가 시 (같은 턴):** enum 상수 → Service/Interceptor throw → 스펙 에러 표 → (필요 시) `api-response.md` 예시. Harness: `.claude/rules/core-guardrails.md` ⛔ ErrorCode 절.
 
 ### 교차관심사 (AOP · Interceptor)
 
@@ -135,7 +135,7 @@ public enum VacationApplyPeriod {
 
 - 새 enum 상수·필드명을 짓거나 리뷰할 때: "이 이름만 보고 신규 개발자·프론트가 오해하지 않을까?"를 먼저 묻는다. 오해 소지가 있으면 `@Schema`로 땜질하지 말고 **이름을 먼저 교체**한다.
 - **같은 개념 = 같은 필드명.** 같은 enum을 가리키는데 DTO마다 `status`/`memberStatus`/`myMemberStatus`처럼 이름이 흩어지면 안 된다 — "내 것" vs "타인 것" 구분만 접두사(`my`)로 통일하고 나머지는 동일한 이름을 쓴다.
-- 이름을 바꾸면 **같은 턴에** 전부 최신화한다: enum·DTO·테스트 · `docs/specs/` · `docs/architecture/erd.md` · `docs/product/glossary.md`. 한 곳이라도 구 이름이 남으면 "구 이름 방치"로 `harness-workflow.md` STOP §4(레거시)와 동일하게 취급한다.
+- 이름을 바꾸면 **같은 턴에** 전부 최신화한다: enum·DTO·테스트 · `docs/specs/` · `docs/architecture/erd.md` · `docs/product/glossary.md`. 한 곳이라도 구 이름이 남으면 "구 이름 방치"로 `core-guardrails.md` STOP §4(레거시)와 동일하게 취급한다.
 - `@Schema`/`@Operation` 설명이 **3문단 넘게** 길어지거나 값별로 "의미"를 장황하게 반복해야 한다면, 우선 이름부터 다시 의심할 것 — 설명으로 이름의 결함을 메우지 않는다.
 - 예: `TripMemberStatus`의 구 `JOINED`→`SCHEDULE_PENDING`, 구 `RESPONDED`→`ACTIVE` 개명 — "방에 참여했다"로 오독되던 이름을 "일정 확인 대기중 / 방 활동 가능"으로 이름만으로 뜻이 드러나게 바꾼 사례 (`docs/specs/trip/trip-member-status-derive.md` 변경 이력).
 
@@ -225,7 +225,7 @@ ResponseEntity<...> updateProfile(
 - 예외: `@RestControllerAdvice` + `{ code, message }`
 - 문서: springdoc — `@Tag`·`@Operation`·`@Schema` 작성 규칙은 `openapi-conventions.md`, enum 목록은 위 **Enum** 절
 - Controller 파라미터 스타일: 위 **Controller 메서드 파라미터** 절 준수
-- **계약 변경(필드 추가·삭제·이름변경·타입변경·필수화, enum 값, `ErrorCode`, 경로·메서드):** optional 필드 추가라도 커밋 본문에 `Breaking-Change-Reason:` 트레일러 필수 — `harness-workflow.md` STOP §5 · `docs/api/README.md`
+- **계약 변경(필드 추가·삭제·이름변경·타입변경·필수화, enum 값, `ErrorCode`, 경로·메서드):** optional 필드 추가라도 커밋 본문에 `Breaking-Change-Reason:` 트레일러 필수 — `core-guardrails.md` STOP §5 · `docs/api/README.md`
 
 ## Configuration
 

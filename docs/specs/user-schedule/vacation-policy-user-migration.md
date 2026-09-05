@@ -93,7 +93,7 @@ PATCH 요청 / GET·PATCH 응답(`data`) 공통 형태:
 
 - ERD 참조: `docs/architecture/erd.md` `users`/`regular_schedule` 절
 - `users` 테이블에 4개 컬럼 추가(컬럼명은 `RegularSchedule`과 동일하게 `max_vacation_days`·`vacation_apply_period`·`is_half_vacation_available`·`is_holiday_rest`), `regular_schedule`에서 동일 4개 컬럼 제거
-- 로컬/dev: `ddl-auto`로 스키마 재생성 (마이그레이션 파일 작성 금지 — `harness-workflow.md` STOP §3)
+- 로컬/dev: `ddl-auto`로 스키마 재생성 (마이그레이션 파일 작성 금지 — `core-guardrails.md` STOP §3)
 - 상용: 이 스펙 범위 밖 (별도 진행)
 
 ## 비즈니스 규칙
@@ -127,7 +127,7 @@ PATCH 요청 / GET·PATCH 응답(`data`) 공통 형태:
 
 ### 수동 / 통합 (해당 시)
 
-- [ ] `docs/api/openapi.json` 재생성 후 4개 필드 위치가 실제로 바뀌었는지 확인 (harness-workflow.md STOP §1-6)
+- [ ] `docs/api/openapi.json` 재생성 후 4개 필드 위치가 실제로 바뀌었는지 확인 (core-guardrails.md STOP §1-6)
 
 ## 완료 기준
 

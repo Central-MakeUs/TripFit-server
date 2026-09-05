@@ -14,14 +14,16 @@ Layer 1(규칙)·Layer 2(스킬)는 결국 **에이전트가 읽고 따라줘야
 
 | 훅 | 파일 | 이벤트 | 매처 | 동작 |
 |---|---|---|---|---|
-| 위험 명령 차단 | [`.claude/hooks/block-dangerous.sh`](../../.claude/hooks/block-dangerous.sh) | `PreToolUse` | `Bash` | **exit 2 (차단)** |
+| 위험 명령 차단 | [`.claude/hooks/deny-dangerous-bash.sh`](../../.claude/hooks/deny-dangerous-bash.sh) | `PreToolUse` | `Bash` | **exit 2 (차단)** |
 | Breaking-Change 경고 | [`.claude/hooks/warn-breaking-change.sh`](../../.claude/hooks/warn-breaking-change.sh) | `PreToolUse` | `Bash` | **항상 exit 0** (advisory) |
-| DB 마이그레이션 차단 | [`.claude/hooks/block-db-migration.sh`](../../.claude/hooks/block-db-migration.sh) | `PreToolUse` | `Write\|Edit` | **exit 2 (차단)** |
-| Java 자동 포맷 | [`.claude/hooks/format-java.sh`](../../.claude/hooks/format-java.sh) | `PostToolUse` | `Edit\|Write` | **항상 exit 0** (non-blocking) |
+| DB 마이그레이션 차단 | [`.claude/hooks/deny-db-migration.sh`](../../.claude/hooks/deny-db-migration.sh) | `PreToolUse` | `Write\|Edit` | **exit 2 (차단)** |
+| Java 자동 포맷 | [`.claude/hooks/auto-format-java.sh`](../../.claude/hooks/auto-format-java.sh) | `PostToolUse` | `Edit\|Write` | **항상 exit 0** (non-blocking) |
 
 등록 위치: [`.claude/settings.json`](../../.claude/settings.json) (팀 공통, 버전 관리됨)
 
-> **다이어그램을 볼 때 주의:** 훅은 "하나의 관문"이 아니라 **트리거가 서로 다른 4개의 독립 스크립트**입니다. `rm -rf`는 Bash 경로에만 걸리고 파일 변경 경로로는 애초에 지나가지 않습니다. `block-db-migration.sh`는 그 반대입니다.
+**파일명이 강도를 말합니다 (2026-09-04 `#128`에서 규칙화):** 차단은 `deny-`, 경고는 `warn-`, 자동 실행은 `auto-`. 이전 이름(`block-dangerous.sh`·`format-java.sh`)은 그 훅이 커밋을 막는지 그냥 도와주는지를 파일명만 보고 알 수 없었습니다. 아래 fail-closed / fail-open 비대칭이 이름에 그대로 드러나도록 맞춘 것입니다 — `deny-`는 exit 2로 막고, `warn-`은 무조건 exit 0입니다.
+
+> **다이어그램을 볼 때 주의:** 훅은 "하나의 관문"이 아니라 **트리거가 서로 다른 4개의 독립 스크립트**입니다. `rm -rf`는 Bash 경로에만 걸리고 파일 변경 경로로는 애초에 지나가지 않습니다. `deny-db-migration.sh`는 그 반대입니다.
 
 ## 2. 언제 발동하고, 어떤 흐름을 타는가
 
@@ -43,7 +45,7 @@ print(data.get('tool_input', {}).get('command', ''))
 ```
 에이전트가 Bash 도구 호출
   ↓
-[1] block-dangerous.sh
+[1] deny-dangerous-bash.sh
      tool_input.command 를 정규식으로 검사
      패턴: git push --force|-f
            rm -rf (플래그 순서·조합 무관하게 매칭)
@@ -67,16 +69,16 @@ print(data.get('tool_input', {}).get('command', ''))
 ```
 에이전트가 Write 또는 Edit 도구 호출
   ↓
-[1] block-db-migration.sh (PreToolUse)
+[1] deny-db-migration.sh (PreToolUse)
      tool_input.file_path 를 검사
      패턴: /db/migration/  또는  V1__x.sql · V1.2__x.sql · R__x.sql
      매칭 → exit 2 → 파일 생성 안 됨
-     사유: harness-workflow.md STOP §3 (상용 보존 데이터 없음,
+     사유: core-guardrails.md STOP §3 (상용 보존 데이터 없음,
            스키마 SSOT는 JPA 엔티티 + ddl-auto)
   ↓
 파일 저장
   ↓
-[2] format-java.sh (PostToolUse)
+[2] auto-format-java.sh (PostToolUse)
      .java 가 아니면 즉시 exit 0 (비용 0)
      git rev-parse --show-toplevel 으로 repo root 이동
      ./gradlew -PspotlessIdeHook=<file> ... 으로 그 파일 하나만 포맷
@@ -111,10 +113,10 @@ print(data.get('tool_input', {}).get('command', ''))
 
 | 훅 | 실패 시 | 이유 |
 |---|---|---|
-| `block-dangerous.sh` | **fail-closed** (막음) | 오탐으로 한 번 막히는 비용 < `rm -rf`가 한 번 통과하는 비용 |
-| `block-db-migration.sh` | **fail-closed** (막음) | 위와 동일. 정말 필요하면 사람이 확인 후 진행 |
+| `deny-dangerous-bash.sh` | **fail-closed** (막음) | 오탐으로 한 번 막히는 비용 < `rm -rf`가 한 번 통과하는 비용 |
+| `deny-db-migration.sh` | **fail-closed** (막음) | 위와 동일. 정말 필요하면 사람이 확인 후 진행 |
 | `warn-breaking-change.sh` | **fail-open** (통과) | 커밋을 막는 건 워크플로 파괴. 놓쳐도 CI([Layer 4](layer4-api-contract-safety.md))가 다시 잡음 |
-| `format-java.sh` | **fail-open** (통과) | 포맷 실패로 작업을 막을 이유가 없음 |
+| `auto-format-java.sh` | **fail-open** (통과) | 포맷 실패로 작업을 막을 이유가 없음 |
 
 이 비대칭이 의도적이라는 점이 중요합니다 — "전부 차단"이 아니라 **되돌리기 비용에 따라 차단 강도를 다르게** 설계했습니다.
 

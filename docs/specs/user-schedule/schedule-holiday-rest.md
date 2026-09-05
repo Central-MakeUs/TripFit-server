@@ -73,7 +73,7 @@
 | PATCH | `/api/v1/users/schedule/personal` | 응답이 최종 확정값이므로 동일 영향 |
 | POST | 추천 생성 | 후보 점수·`totalVacationDays`가 달라질 수 있음 |
 
-> **`Breaking-Change-Reason` 대상.** 필드·enum·경로는 그대로지만 같은 입력에 대한 응답 값이 달라져 프론트 화면 표시가 바뀐다. 커밋 본문에 트레일러를 넣는다 (`harness-workflow.md` STOP §5 — "optional이라 breaking 아님"으로 좁혀 해석하지 않음).
+> **`Breaking-Change-Reason` 대상.** 필드·enum·경로는 그대로지만 같은 입력에 대한 응답 값이 달라져 프론트 화면 표시가 바뀐다. 커밋 본문에 트레일러를 넣는다 (`core-guardrails.md` STOP §5 — "optional이라 breaking 아님"으로 좁혀 해석하지 않음).
 
 ### 외부 API (공공데이터포털)
 
@@ -217,7 +217,7 @@ regularsAppliedOn(matched, date, holidays, holidayRest):
 - [x] `schedule-calendar-resolve.md` A4 amend (REMOVED 문구 실제 삭제 확인)
 - [x] `trip-recommendation-algorithm.md` 리스크 표 amend
 - [x] `#2` 공휴일 항목 종결 확인 (2026-08-16 처리 완료)
-- [x] `Breaking-Change-Reason:` 트레일러 — **대상**으로 판정, 구현 커밋(`055dc24`)에 포함 (2026-09-08 정정 — 위 78번째 줄과 모순되던 "해당 없음" 판정을 철회). 요청·응답 필드·enum·`ErrorCode`·경로는 무변경이지만, 같은 계약 위에서 공휴일 슬롯이 `IMPOSSIBLE`→`POSSIBLE`로 바뀌고 `totalVacationDays`·순위가 달라져 **프론트 화면 표시가 바뀐다** — "optional·값만 변화"로 좁혀 트레일러를 생략할 사유가 아니다(`harness-workflow.md` STOP §5)
+- [x] `Breaking-Change-Reason:` 트레일러 — **대상**으로 판정, 구현 커밋(`055dc24`)에 포함 (2026-09-08 정정 — 위 78번째 줄과 모순되던 "해당 없음" 판정을 철회). 요청·응답 필드·enum·`ErrorCode`·경로는 무변경이지만, 같은 계약 위에서 공휴일 슬롯이 `IMPOSSIBLE`→`POSSIBLE`로 바뀌고 `totalVacationDays`·순위가 달라져 **프론트 화면 표시가 바뀐다** — "optional·값만 변화"로 좁혀 트레일러를 생략할 사유가 아니다(`core-guardrails.md` STOP §5)
 - [x] 배포 환경변수 배선 (2026-08-16 — CI/CD `envs` 화이트리스트·`export`·`docker-compose` app 환경변수에 `HOLIDAY_API_SERVICE_KEY` 추가. 누락 상태였으면 Secret을 등록해도 컨테이너까지 전달되지 않았음)
 - [x] `docs/specs/README.md` 인덱스에 본 스펙 등록 (2026-08-16, 스펙 작성 시 완료)
 - [x] OpenAPI 변경 없음 확인 (스키마 무변경 — 값만 변화)

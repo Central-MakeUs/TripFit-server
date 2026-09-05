@@ -92,8 +92,8 @@ probabilistic_layer [label: "1. Probabilistic Layer\n(AI Agent & Skills)", color
   ai_agent [label: "AI Agent\n(Claude Code)", icon: bot, color: blue]
   plan_skills [label: "트랙 선택 (택 1)", color: purple] {
     specify [label: "A 트랙: specify\n(기능·API·DB)", icon: file-plus]
-    refactor_audit [label: "B 트랙: refactor-audit\n(감사·무손실 리팩터)", icon: search]
-    debug_bug [label: "C 트랙: debug-bug\n(버그·테스트 실패)", icon: tool]
+    refactor_audit [label: "B 트랙: safe-refactor\n(감사·무손실 리팩터)", icon: search]
+    debug_bug [label: "C 트랙: debug\n(버그·테스트 실패)", icon: tool]
   }
   researcher [label: "G1 리서치\nresearcher 서브에이전트\n(로컬 버전 → 공식 문서)", icon: book-open, color: blue]
 }
@@ -102,22 +102,22 @@ probabilistic_layer [label: "1. Probabilistic Layer\n(AI Agent & Skills)", color
 human_layer [label: "2. Human Decision Layer", color: orange] {
   human_gate [label: "G2 승인 게이트\n(STOP & Ask User)", icon: alert-triangle, color: orange]
 }
-defer_followup [label: "GitHub Issue\n(defer-followup 분리)", icon: github, color: gray]
+defer_followup [label: "GitHub Issue\n(defer 분리)", icon: github, color: gray]
 
 // 3. Implementation (코드 생성)
 implement_phase [label: "구현\n(승인된 범위 내 코드 생성)", icon: edit, color: purple]
 
 // 4. Deterministic Layer (결정론적 가드레일 통제)
 deterministic_layer [label: "3. Deterministic Layer\n(Custom Hooks)", color: red, icon: shield] {
-  block_dangerous [label: "block-dangerous.sh\n(Fail-Closed)", icon: x-octagon, color: red]
-  block_db [label: "block-db-migration.sh\n(Fail-Closed)", icon: database, color: red]
+  block_dangerous [label: "deny-dangerous-bash.sh\n(Fail-Closed)", icon: x-octagon, color: red]
+  block_db [label: "deny-db-migration.sh\n(Fail-Closed)", icon: database, color: red]
   warn_breaking [label: "warn-breaking.sh\n(Fail-Open)", icon: alert-circle, color: orange]
-  format_java [label: "format-java.sh\n(Non-blocking)", icon: code, color: blue]
+  format_java [label: "auto-format-java.sh\n(Non-blocking)", icon: code, color: blue]
 }
 
 // 5. Mechanical Verification (기계적 최종 검증)
 verification_layer [label: "4. Mechanical Verification\n(G3 검증 게이트)", color: green] {
-  verify [label: "verify Skill\n(Tests / oasdiff)", icon: check-circle, color: yellow]
+  preflight [label: "preflight Skill\n(Tests / oasdiff)", icon: check-circle, color: yellow]
   doc_reviewer [label: "doc-reviewer 서브에이전트\n(문서 품질 · advisory)", icon: file-text, color: yellow]
 }
 
@@ -199,7 +199,7 @@ direction right
 
 // 1. 규칙 로딩 (컨텍스트 예산)
 rules_group [label: "Rules (Context Budget)", color: blue, icon: file] {
-  always_load [label: "Always-load 규칙 (기본 5개)"]
+  always_load [label: "Always-load 규칙 (기본 7개)"]
   path_scoped [label: "Path-scoped 규칙 (조건부 8개)"]
 }
 
@@ -241,14 +241,14 @@ ai_agent [label: "AI Agent", icon: bot, color: purple]
 // 2. 트랙 스킬 (택 1 — 작업 성격으로 분기)
 track_skills [label: "트랙 스킬 (.claude/skills/)", color: blue, icon: folder] {
   specify [label: "A 트랙: specify\n(기능/설계 스펙 작성)", icon: file-plus]
-  refactor_audit [label: "B 트랙: refactor-audit\n(무손실 감사·리팩터)", icon: search]
-  debug_bug [label: "C 트랙: debug-bug\n(버그 재현 및 분석)", icon: tool]
+  refactor_audit [label: "B 트랙: safe-refactor\n(무손실 감사·리팩터)", icon: search]
+  debug_bug [label: "C 트랙: debug\n(버그 재현 및 분석)", icon: tool]
 }
 
 // 3. 게이트 스킬 (트랙 공통)
 gate_skills [label: "게이트 스킬 (트랙 공통)", color: green, icon: folder] {
-  verify [label: "G3: verify\n(기계적 검증)", icon: check-circle]
-  defer_followup [label: "G4: defer-followup\n(후속 이슈 분리)", icon: log-out]
+  preflight [label: "G3: preflight\n(기계적 검증)", icon: check-circle]
+  defer_followup [label: "G4: defer\n(후속 이슈 분리)", icon: log-out]
 }
 
 // 4. 서브에이전트 (.claude/agents/ — Edit/Write 없음)
@@ -272,10 +272,10 @@ track_skills > gate_skills: "구현 후 공통 게이트"
 specify > outcome_spec
 refactor_audit > outcome_audit
 defer_followup > outcome_issue
-verify > outcome_verify
+preflight > outcome_verify
 researcher > outcome_research
-debug_bug > verify: "수정 후 검증"
-doc_reviewer > verify: "문서 50줄+ 변경 시"
+debug_bug > preflight: "수정 후 검증"
+doc_reviewer > preflight: "문서 50줄+ 변경 시"
 ```
 
 ### 6. Layer 3: Deterministic Guardrails (상세)
@@ -290,10 +290,10 @@ agent_action [label: "Agent Tool Use", icon: terminal, color: gray]
 
 // 2. 결정론적 훅 (비대칭 설계)
 hooks_group [label: "Custom Hooks (.claude/settings.json)", color: red, icon: shield] {
-  block_dangerous [label: "block-dangerous.sh\n(PreToolUse/Bash, Fail-Closed)", icon: x-octagon, color: red]
+  block_dangerous [label: "deny-dangerous-bash.sh\n(PreToolUse/Bash, Fail-Closed)", icon: x-octagon, color: red]
   warn_breaking [label: "warn-breaking-change.sh\n(PreToolUse/Bash, Fail-Open)", icon: alert-circle, color: orange]
-  block_db [label: "block-db-migration.sh\n(PreToolUse/Write, Fail-Closed)", icon: database, color: red]
-  format_java [label: "format-java.sh\n(PostToolUse/Write, Non-blocking)", icon: code, color: blue]
+  block_db [label: "deny-db-migration.sh\n(PreToolUse/Write, Fail-Closed)", icon: database, color: red]
+  format_java [label: "auto-format-java.sh\n(PostToolUse/Write, Non-blocking)", icon: code, color: blue]
 }
 
 // 3. 결과

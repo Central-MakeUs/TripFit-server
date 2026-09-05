@@ -24,7 +24,7 @@
 - `#13` 작업 중 사용자 요청으로 분리 확정(2026-07-24): API 껍데기와 계산 로직을 별도 이슈로 관리
 - **2026-07-30 확정:** 기획자 알고리즘 확정본([`trip-recommendation-scoring-source.md`](trip-recommendation-scoring-source.md))을 그대로 반영 — 패널티 구간표·모드별 가중치·최종점수 공식·동점 기준까지 전부 확정값. **이전 초안**(이 문서 2026-07-24판)의 `w1*attendRate - w2*vacationDays - w3*tbdRate` 식·`ALL_ATTEND` **하드 필터**·`NO_RECOMMENDATION_CANDIDATES` 에러·동점 기준 "주말·공휴일"은 **전부 폐기**하고 이 버전으로 대체한다
 - `#13`은 이 스펙이 끝나기 전까지 `POST /recommendations`를 플레이스홀더 값으로 응답해 API 계약만 검증한다
-- MVP DoD("추천으로 최종 날짜 확정")가 실제로 동작하려면 `#13`과 이 이슈 **둘 다** Closed 필요 — Wave Backlog `#30` Must에 반영
+- MVP DoD("추천으로 최종 날짜 확정")가 실제로 동작하려면 `#13`과 이 이슈 **둘 다** Closed 필요
 - **2026-07-30 화면 확인(추천 결과 카드, 방장 뷰):** 카드에 `참석률(%)`·`불확실 일정 인원`·`부분 참여 인원`·`연차 일수`가 노출됨 — 응답 DTO·`Recommendation` 엔티티에 이 4개 원시 지표를 그대로 담아야 한다(자연어 `reason`/`riskNote` 자동생성 Nice to have는 화면에 없어 **폐기**). 상세: `trip-recommendation.md` 데이터 모델 절
 - **2026-08-15 amend 배경:** 기획자가 `new_problem/p1.md`로 전달한 리포트 — "근무일과 여행이 겹쳐도 연차가 남아 있으면 참석 가능으로 판단해야 하는데, 현재는 연차 사용 가능 여부가 참석/불참 판단에 반영되지 않는다"는 이슈. 코드 조사 결과, `RegularSchedule.maxVacationDays`(여행당 사용 가능 최대 연차 일수)·`halfVacationAvailable`(반차 가능 여부) 필드는 이미 저장되고 있지만 `RecommendationEngine` 어디에서도 읽히지 않고 있었고, "연차 계산"은 사용자가 개별 일정(`PersonalSchedule`)에 **미리 수동으로 override 해둔 날짜**에 대해서만 사후적으로 몇 일 썼는지 집계(점수 페널티용)할 뿐, 근무일과 겹치는 후보 구간을 "연차를 쓰면 참석 가능"으로 **자동 판단하는 로직 자체가 없었다.** 이 amend는 이 갭을 메운다. `new_problem/test_set.md`(부스 이벤트용 5인 테스트셋)의 기대 1순위(10/24~10/26)도 이 자동 판단이 있어야 나오는 결과다.
 

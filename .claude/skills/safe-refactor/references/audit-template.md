@@ -13,7 +13,7 @@
 
 - 패키지: `com.tripfit.tripfit.{domain}` (+ 하위 패키지 나열)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP
 
 ## ✅ A. 반드시 수정해야 하는 사항
 

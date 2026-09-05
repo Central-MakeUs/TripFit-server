@@ -6,7 +6,7 @@
 
 - 패키지: `com.tripfit.tripfit.auth` (+ 하위 패키지 `config`, `controller`, `dev/controller`, `dev/service`, `domain`, `dto`, `exception`, `jwt`, `oauth`, `repository`, `security`, `service`)
 - 감사자: 서브에이전트 (읽기 전용) — 1차 반영(커밋 `0905d19` Refactor, `09def02` Test, `481c3de` Docs) 이후 재검사
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP, `spring-boot-java.md`
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP, `spring-boot-java.md`
 - main 49개 파일(dev 포함) 전수 재검토 + 관련 호출부(`user/service/UserWithdrawalService`, `UserWithdrawalPersistenceService`, `User.reviveIfWithdrawn()`, `notification/controller/*`의 `@AuthorizedUser` 사용처) 교차 확인
 - `docs/audits/auth/audit.md`(1차 A 4·B 5·C 3·D 4)와 `refactor-log.md`(반영 diff) 원문 대조, `git log 0905d19 09def02 481c3de`로 실제 반영 이력 확인
 

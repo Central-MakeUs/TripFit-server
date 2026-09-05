@@ -10,21 +10,21 @@
 
 ## 배경
 
-- 개편 직전 하네스는 always-load 규칙 5개 + path-scoped 규칙 7개 + 스킬 5개 + 훅 4개가 **조건별로 흩어져 트리거**됐다. 동작에는 문제가 없었지만 "하나의 사이클"로 읽히지 않아, `refactor-audit`이 사실상 별도 진입점으로 취급됐다.
+- 개편 직전 하네스는 always-load 규칙 5개 + path-scoped 규칙 7개 + 스킬 5개 + 훅 4개가 **조건별로 흩어져 트리거**됐다. 동작에는 문제가 없었지만 "하나의 사이클"로 읽히지 않아, `safe-refactor`이 사실상 별도 진입점으로 취급됐다.
 - **사용자가 공유한 외부 하네스 사례**(다른 개발자가 구축한 0~11단계 선형 파이프라인 — 저장소 탐색 → 요구사항 분석 → 불변조건 정의 → 리서치 → 아키텍처 결정 기록 → CLAUDE.md 갱신 → 작업 분해 → 환경 검증 → 구현 루프 → 동시성·부하 테스트 → 독립 코드리뷰 → 문서화)를 검토한 결과, **선형 복제는 증분 개발에 낭비**다 — 매 작업마다 저장소 탐색·환경 검증을 반복하게 되는데, TripFit은 always-load 규칙이 이미 그 맥락을 상시 제공한다. 대신 그 사이클의 장점(단계가 하나로 이어져 보임, 리서치·문서갱신이 절차로 존재함)만 취해 **트랙 × 게이트** 구조로 재구성했다.
-- 2026-09-03 세션에서 `harness-workflow.md`의 당시 `Before Coding`·`After Coding` 절에 리서치·문서 갱신 점검을 **선반영**했으나(두 절은 이번 개편으로 게이트에 흡수돼 지금은 없다), 트랙·게이트 구조 정리와 리서치 절차 구체화는 미완이었다.
+- 2026-09-03 세션에서 `core-workflow.md`의 당시 `Before Coding`·`After Coding` 절에 리서치·문서 갱신 점검을 **선반영**했으나(두 절은 이번 개편으로 게이트에 흡수돼 지금은 없다), 트랙·게이트 구조 정리와 리서치 절차 구체화는 미완이었다.
 - 이 저장소는 **Spring Boot 4.1.0 / Java 21**을 쓴다. 4.x는 정식 출시(GA)된 지 얼마 되지 않아 웹 예제 대다수가 3.x 기준이고, `docs.spring.io`는 최신 stable이면 **버전 경로마저 버전 없는 URL로 리다이렉트**된다(2026-09-03 실측, 도착 페이지는 4.1.1) — URL로 버전을 고정할 수 없으므로 도착 페이지 버전을 확인하지 않으면 우리 버전과 다른 결론을 낳는다. 리서치 게이트가 필요한 실제 이유.
-- **문서 품질 규칙의 빈칸 (2026-09-03 [toss/technical-writing](https://github.com/toss/technical-writing) 검토 후 확인)** — 현재 규칙 체계는 `plain-language-reporting.md`(채팅·보고, 독자=비전공자)와 `java-comments.md`(코드 주석, 독자=서버 개발자)를 덮지만, **`docs/*.md` 본문 자체의 작성 규칙은 없다**. 문서 118개·17,027줄이 쌓인 시점에 이 빈칸을 메웠다.
+- **문서 품질 규칙의 빈칸 (2026-09-03 [toss/technical-writing](https://github.com/toss/technical-writing) 검토 후 확인)** — 현재 규칙 체계는 `core-reporting.md`(채팅·보고, 독자=비전공자)와 `java-comments.md`(코드 주석, 독자=서버 개발자)를 덮지만, **`docs/*.md` 본문 자체의 작성 규칙은 없다**. 문서 118개·17,027줄이 쌓인 시점에 이 빈칸을 메웠다.
   - 실측 진단: `####`(H4) 사용이 3곳(파일 2개)뿐이라 "한 페이지에 하나만" 원칙은 이미 지켜지고 있고, `glossary.md`가 용어 SSOT 역할을 하고 있다. 반면 **H1 바로 아래 개요가 없는 문서가 19개**이며 그중 18개가 `audits/`다 — 개별 문서가 아니라 `audit-template.md`를 고쳐야 하는 구조적 문제.
   - **라이선스 주의:** 해당 저장소는 CC BY-NC-SA 4.0이다. 원칙·체크리스트 아이디어는 참고하되 **문장을 그대로 옮기지 않는다** — 우리 문맥으로 재작성하고 출처만 링크한다.
-- 관련 문서: [`.claude/rules/harness-workflow.md`](../../../.claude/rules/harness-workflow.md) · [`.claude/rules/workflow-tools.md`](../../../.claude/rules/workflow-tools.md) · [`.claude/rules/README.md`](../../../.claude/rules/README.md)
+- 관련 문서: [`.claude/rules/core-workflow.md`](../../../.claude/rules/core-workflow.md) · [`.claude/rules/core-tools.md`](../../../.claude/rules/core-tools.md) · [`.claude/rules/README.md`](../../../.claude/rules/README.md)
 
 ## 요구사항
 
 ### Must Have
 
-- [x] `harness-workflow.md`에 **3 트랙 × 4 게이트** 구조 정의 — 기존 ⛔ STOP 6개 절은 **그대로 유지**(우선순위도 불변)
-  - 트랙 A: 기능·API·DB (`specify`) / 트랙 B: 감사·무손실 리팩터 (`refactor-audit`) / 트랙 C: 버그·테스트 실패 (`debug-bug`)
+- [x] `core-workflow.md`(당시 `harness-workflow.md`)에 **3 트랙 × 4 게이트** 구조 정의 — 기존 ⛔ STOP 6개 절은 **그대로 유지**(우선순위도 불변)
+  - 트랙 A: 기능·API·DB (`specify`) / 트랙 B: 감사·무손실 리팩터 (`safe-refactor`) / 트랙 C: 버그·테스트 실패 (`debug`)
   - 게이트 G1 리서치 · G2 승인 · G3 검증 · G4 회고 — 세 트랙이 공유, 트랙별로 내용만 다름
 - [x] **G1 리서치 게이트** 절차 구체화
   - 소스 우선순위: ① 로컬 실물(`build.gradle`·`./gradlew dependencies`·`~/.gradle/caches` 실제 jar) → ② 공식 문서(**버전 고정 필수**) → ③ 릴리즈 노트·마이그레이션 가이드 → ④ provider 공식 문서
@@ -35,15 +35,15 @@
   - 고정 출력 포맷: `## 결론(3줄 이내)` / `## 우리 버전(4.1.0·Java 21) 적용 여부` / `## 근거(URL + 문서상 버전 + 확인일자)` / `## 3.x와 달라진 점`
   - 본문에 위 소스 우선순위를 그대로 포함 — 로컬 버전 확인을 **웹 조회보다 먼저** 하도록 강제
 - [x] **서브에이전트 vs 인라인 판단 기준** 명시 — 2개 이상 문서를 비교해야 하면 `researcher`, 단일 페이지 확인이면 인라인 `WebFetch`(서브에이전트 오버헤드가 더 큼)
-- [x] **`refactor-audit`을 B 트랙으로 편입** — 현재 G3(검증)만 `verify` 스킬을 참조 중인 패턴을 **G1·G4까지 확장**해 별도 진입점이 아니라 사이클 안의 미니 사이클이 되게 한다
-- [x] `specify`(A 트랙)·`debug-bug`(C 트랙)에도 트랙 표기와 게이트 참조 추가
-- [x] **G4 회고 게이트** 정의 — 문서 갱신 점검(`AGENTS.md`/`CLAUDE.md`/`.claude/rules/*.md`, **자동 갱신 금지·승인 후 반영**) + 후속 제안(`harness-follow-up.md`) + 트랙별 로그 기록(B 트랙은 `refactor-log.md`)을 하나의 게이트로 통합
+- [x] **`safe-refactor`을 B 트랙으로 편입** — 현재 G3(검증)만 `preflight` 스킬을 참조 중인 패턴을 **G1·G4까지 확장**해 별도 진입점이 아니라 사이클 안의 미니 사이클이 되게 한다
+- [x] `specify`(A 트랙)·`debug`(C 트랙)에도 트랙 표기와 게이트 참조 추가
+- [x] **G4 회고 게이트** 정의 — 문서 갱신 점검(`AGENTS.md`/`CLAUDE.md`/`.claude/rules/*.md`, **자동 갱신 금지·승인 후 반영**) + 후속 제안(`core-followup.md`) + 트랙별 로그 기록(B 트랙은 `refactor-log.md`)을 하나의 게이트로 통합
 
 **G3 검증 게이트 — 문서 품질 (toss/technical-writing 흡수분)**
 
 - [x] **`.claude/rules/doc-writing.md` 신설** — `paths: ["docs/**/*.md", ".claude/**/*.md"]`로 **path-scoped**(문서를 만질 때만 로드, always-load 금지 — 코드 작업 세션에서는 순수 토큰 낭비)
   - 3단계 체크리스트: ① 문서 유형 정하기(학습/문제 해결/참조/설명) ② 정보 구조(개요 필수·가치 먼저·제목 일관·예측 가능) ③ 문장(한 문장 한 생각·메타 담화 제거·용어 일관 — `glossary.md` 참조)
-  - `plain-language-reporting.md`(채팅·보고)·`java-comments.md`(코드 주석)와 **독자·적용 범위 경계를 명시** — "한 규칙 = 한 관심사" 유지
+  - `core-reporting.md`(채팅·보고)·`java-comments.md`(코드 주석)와 **독자·적용 범위 경계를 명시** — "한 규칙 = 한 관심사" 유지
   - 원칙은 우리 문맥으로 재작성하고 출처만 링크 (CC BY-NC-SA)
 - [x] **`.claude/agents/doc-reviewer.md` 신설** — 문서 diff만 보고 위 3단계로 판정하는 서브에이전트. 원 저장소처럼 봇 3개로 쪼개지 않고 **1개로 통합**(`researcher`와 동일 패턴, `code-review`가 코드에 하는 일을 문서에 함)
 - [x] **G3에 문서 게이트 편입** — 트리거는 **새 문서 생성** 또는 **기존 문서 50줄 이상 변경**. 오타·한 줄 수정에는 돌리지 않는다. 문체는 exit code로 판정 불가하므로 **훅이 아니라 advisory 게이트**로만 둔다
@@ -53,7 +53,7 @@
 - [x] **`doc-writing.md`에 유형 판정 순서 + 유형별 필수 섹션 + `docs/` 전수 유형 매핑표** 추가 — 어느 문서가 어떤 유형인지 미리 지정해 판정이 사람마다 달라지지 않게 함
 - [x] **`doc-reviewer`를 유형 인식 리뷰로 확장** — 판정한 유형의 필수 섹션 누락을 점검하고, `doc-writing.md` 매핑표와 다르게 읽히면 불일치를 지적
 - [x] **`doc-writing.md`에 이 저장소 실제 사례 기반 Do/Don't 예시** 추가 (원문 복사 대신 우리 문서에서 발췌 — 라이선스 안전)
-- [x] `workflow-tools.md`의 "작업 유형 → 도구" 표를 **트랙 × 게이트 표로 교체**
+- [x] `core-tools.md`의 "작업 유형 → 도구" 표를 **트랙 × 게이트 표로 교체**
 - [x] 문서 동기화 — `.claude/rules/README.md`(디렉터리 다이어그램 + Skills 표 + Agents 절 + 워크플로 한 줄), [`docs/harness-engineering.md`](../../harness-engineering.md)(§3 규칙 개수 · §4 트랙×게이트·서브에이전트 · §13 구성 요소 수), `docs/harness/README.md`("레이어와 사이클의 관계" 절 신설), `docs/harness/layer1-human-gate.md`(규칙 표·개수), `docs/harness/layer2-workflow-skills.md`(스킬 표에 사이클 위치 열·서브에이전트 문단·verify 7단계), `docs/harness/architecture-diagrams.md`(다이어그램 2·5를 트랙/게이트/에이전트 구조로 갱신). `layer3`(훅)·`layer4`(CI)는 이번 개편으로 바뀐 내용이 없어 그대로 둠
 
 ### Nice to Have
@@ -91,9 +91,9 @@
 ### 정상
 
 - [ ] 새 세션에서 기능 요청 시 A 트랙으로 분류되고 G1~G4가 순서대로 인식된다
-- [ ] `refactor-audit` 실행 시 G1(리서치)·G4(회고)가 실제로 걸린다 — 현재는 G3만 공유
+- [ ] `safe-refactor` 실행 시 G1(리서치)·G4(회고)가 실제로 걸린다 — 현재는 G3만 공유
 - [ ] `researcher` 서브에이전트가 웹 조회 **전에** `build.gradle` 버전을 확인하고, 고정 출력 포맷으로 결과를 반환한다
-- [ ] 버그 리포트 요청 시 C 트랙(`debug-bug`)으로 분류된다
+- [ ] 버그 리포트 요청 시 C 트랙(`debug`)으로 분류된다
 - [ ] 새 문서를 만들거나 기존 문서를 50줄 이상 고치면 G3에서 `doc-reviewer`가 돌고, 개요 누락·용어 혼용·제목 스타일 불일치를 지적한다
 - [ ] `doc-writing.md`가 `docs/**/*.md`를 열 때만 로드되고, Java 코드만 만지는 세션에서는 로드되지 않는다
 
@@ -148,8 +148,8 @@
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| `harness-workflow.md` 비대화 | [미정] | 권장 ~120줄을 넘기면 게이트별 파일 분리(`harness-gates.md`) 검토 — 형제 규칙 분리 패턴과 동일 |
-| priority · Milestone | [미정] | `harness-milestone.md` ⛔에 따라 **에이전트가 단정 금지** — 사용자 확정 필요 |
+| 코어 규칙 파일 비대화 | 2026-09-04 `#128`에서 STOP(`core-guardrails.md`)과 게이트(`core-workflow.md`)로 1차 분리 | 권장 ~120줄을 넘기면 게이트별 추가 분리 검토 — 형제 규칙 분리 패턴과 동일 |
+| priority · Milestone | [미정] | `core-scope.md` ⛔에 따라 **에이전트가 단정 금지** — 사용자 확정 필요 |
 | 라이브러리 문서 MCP 도입 | [미정] | 새 의존성 결정이라 별도 승인 필요 |
 | `researcher` 모델 선택 | [미정] | 조사·요약 작업이라 sonnet으로 비용 절감 가능하나, 정확도 우선이면 상위 모델 — 사용 후 재평가 |
 | `decisions/` 템플릿 "한 줄 결정" 최상단 배치 | [미정] | ADR 관례를 바꾸는 변경 — Nice to Have로 두고 **사용자 승인 후에만** 진행 |
@@ -160,7 +160,7 @@
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-09-03 | 초안 — 외부 하네스 사례(0~11 선형 사이클) 검토 후 트랙×게이트 구조로 재해석. `harness-workflow.md`에 리서치·문서갱신 점검은 선반영 완료 |
-| 2026-09-03 | 후속 정리 — 스펙 상단 메타를 인용구로 통일(frontmatter 폐지), `how-it-works.md` 유형을 학습→설명 정정, `decisions/` 템플릿에 "결정 한 줄" 추가, 스펙 29개에서 폐지된 `> wave:` 메타 줄 제거, 문서 감사 보고서의 사실 오류 2건 정정 |
+| 2026-09-03 | 초안 — 외부 하네스 사례(0~11 선형 사이클) 검토 후 트랙×게이트 구조로 재해석. `core-workflow.md`에 리서치·문서갱신 점검은 선반영 완료 |
+| 2026-09-03 | 후속 정리 — 스펙 상단 메타를 인용구로 통일(frontmatter 폐지), `how-it-works.md` 유형을 학습→설명 정정, `decisions/` 템플릿에 "결정 한 줄" 추가, 스펙 29개에서 폐지된 구 릴리즈 축 메타 줄 제거, 문서 감사 보고서의 사실 오류 2건 정정 |
 | 2026-09-03 | toss 활용 확대 — `docs/templates/` 3종 신설, `doc-writing.md`에 유형 판정 순서·필수 섹션·`docs/` 전수 매핑표·실사례 Do/Don't 추가, `doc-reviewer` 유형 인식화 |
 | 2026-09-03 | [toss/technical-writing](https://github.com/toss/technical-writing) 검토 결과 흡수 — G3에 문서 품질 게이트(`doc-writing.md` 규칙 + `doc-reviewer` 에이전트 + `audit-template.md` 개요 필수화) 추가. 별도 이슈 분리 대신 #127에 통합(사용자 결정) |

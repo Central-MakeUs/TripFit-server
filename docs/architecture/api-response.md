@@ -165,7 +165,7 @@ switch (body.code) {
 | user/schedule | `ScheduleErrorCode` | — |
 | trip | `TripErrorCode` | `@TripActivity` AOP · `@TripMemberOnly`/`@TripOwnerOnly` Interceptor |
 
-상세 조건은 각 `docs/specs/` 에러 표. 상수 추가·변경 시 **같은 턴**에 enum + throw + 스펙 표 갱신 (`.claude/rules/harness-workflow.md`).
+상세 조건은 각 `docs/specs/` 에러 표. 상수 추가·변경 시 **같은 턴**에 enum + throw + 스펙 표 갱신 (`.claude/rules/core-guardrails.md`).
 
 ## 백엔드 구현 가이드
 

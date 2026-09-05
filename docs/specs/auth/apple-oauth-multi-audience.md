@@ -68,7 +68,7 @@ apple_credential
   + apple_client_id  varchar  NOT NULL   -- 로그인 시 검증된 Bundle ID 또는 Services ID 원문값
 ```
 
-- dev DB, 상용 보존 데이터 없음(harness-workflow §3) — Flyway 등 마이그레이션 작성 안 함, 엔티티 최신화 후 `ddl-auto`/리셋으로 반영
+- dev DB, 상용 보존 데이터 없음(core-guardrails §3) — Flyway 등 마이그레이션 작성 안 함, 엔티티 최신화 후 `ddl-auto`/리셋으로 반영
 
 ## 비즈니스 규칙
 

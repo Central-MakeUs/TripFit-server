@@ -6,7 +6,7 @@
 
 - 패키지: `com.tripfit.tripfit.common` (+ 하위 패키지: api, config, domain, exception, logging, security)
 - 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP
+- 기준: `audit-checklist.md` 1~15항목, `core-guardrails.md` ⛔ STOP
 - 교차검증: `src/main/java/com/tripfit/tripfit/` 전체(auth·user·user/schedule·trip·notification) + `src/test/java/`에서 `common/` 클래스·메서드 실사용 grep, `git log` 히스토리 확인
 
 ## ✅ A. 반드시 수정해야 하는 사항

@@ -5,7 +5,7 @@
 ## 범위
 - 패키지: com.tripfit.tripfit.user.schedule (+ 하위 패키지, 관련 호출부)
 - 감사자: 서브에이전트 (Agent 툴, 읽기 전용) — 1차 반영(2026-08-05) 이후 재검사
-- 기준: audit-checklist.md 1~15항목, harness-workflow.md STOP
+- 기준: audit-checklist.md 1~15항목, core-guardrails.md STOP
 - main 15개 파일 전수 재검토 + 관련 호출부(RecommendationEngine, TripServiceSupport, TripMemberQueryService, TripScheduleSnapshotService, UserSummaryService, UserWithdrawalPersistenceService) 교차 확인, git log(b5213fa)로 1차 반영분 diff 직접 검증
 
 ## ✅ A. 반드시 수정해야 하는 사항

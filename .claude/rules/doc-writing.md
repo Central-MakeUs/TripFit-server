@@ -16,7 +16,7 @@ paths:
 | 대상 | 규칙 | 독자 |
 |------|------|------|
 | `.md` 문서 본문 | **이 파일** | 이 저장소에서 일하는 사람·에이전트 |
-| 채팅 응답·완료 보고·`refactor-log.md` 요약 | `plain-language-reporting.md` | 비전공자 |
+| 채팅 응답·완료 보고·`refactor-log.md` 요약 | `core-reporting.md` | 비전공자 |
 | `.java`의 `//`·Javadoc | `java-comments.md` | 신규 서버 개발자 |
 
 **이슈·PR 본문에도 적용한다.** 파일이 아니라 GitHub에 쓰는 글이라 `paths:`로는 잡히지 않으므로, 적용 규칙은 [`.github/CONTRIBUTING.md`](../../.github/CONTRIBUTING.md) "이슈·PR 본문 작성" 절에 두고 템플릿(`.github/ISSUE_TEMPLATE/`·`pull_request_template.md`)이 순서를 강제한다.
@@ -65,7 +65,6 @@ paths:
 | `docs/harness-engineering.md`·`docs/harness/` | 설명 | 하네스가 왜 이렇게 됐는지 |
 | `docs/specs/` | 작업 산출물(설계) | `spec-template.md` |
 | `docs/audits/{domain}/` | 작업 산출물(코드 감사) | `audit-template.md` |
-| `docs/audits/doc-writing-audit.md` | 작업 산출물(문서 품질 감사) | 도메인 축이 아니라 저장소 전체 대상 — `audits/` 루트에 둠 |
 | `docs/audits/harness-retro.md` | 작업 산출물(하네스 회고) | 규칙·스킬·에이전트·훅이 놓친 것을 쌓는 백로그 — 도메인 축이 아니라 `audits/` 루트에 둠 (`retro` 스킬 산출물) |
 | `deploy/README.md` | 문제 해결 | 배포·HTTPS 발급·롤백 절차 (2026-09-03 env 표를 아래로 분리) |
 | `deploy/environment-reference.md` | 참조 | GitHub Secrets·EC2 인프라·환경 변수 표 |
@@ -143,7 +142,7 @@ paths:
 
 처음 여는 사람은 날짜 섹션만 보고는 이 파일이 무엇인지 알 수 없다. `audits/` 18개 문서가 같은 문제를 갖고 있었고, 개별 수정 대신 `audit-template.md`를 고쳐 이후 생성분부터 해결했다.
 
-### 한 문단에 규칙·계기·예외를 다 넣음 (2026-09-03, `harness-workflow.md`)
+### 한 문단에 규칙·계기·예외를 다 넣음 (2026-09-03, `core-workflow.md`)
 
 1,000자짜리 한 문단에 규칙·도입 계기·확장 이력·예외가 섞여 있어, 매번 참조하는 규칙인데도 전체를 읽어야 했다. **규칙 / 적용 지점 / 예외**를 각각 불릿으로 분해해 필요한 줄만 읽도록 바꿨다.
 
