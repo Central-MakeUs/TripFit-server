@@ -207,6 +207,9 @@ jobs:
           NGINX_HTTPS_PORT: ${{ secrets.NGINX_HTTPS_PORT }}
           CERTBOT_DOMAIN: ${{ secrets.CERTBOT_DOMAIN }}
           LOKI_HOST: ${{ secrets.LOKI_HOST }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
           MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
@@ -233,7 +236,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GHCR_PAT,GHCR_IMAGE,GHCR_USERNAME,SPRING_PROFILES_ACTIVE,APP_PORT,NGINX_HTTP_PORT,NGINX_HTTPS_PORT,CERTBOT_DOMAIN,LOKI_HOST,MYSQL_HOST,MYSQL_PORT,MYSQL_DATABASE,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,JWT_SECRET,JWT_ACCESS_EXPIRATION,JWT_REFRESH_EXPIRATION_DAYS,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_CLIENT_ID_IOS,GOOGLE_CLIENT_ID_ANDROID,GOOGLE_CALENDAR_CLIENT_ID,GOOGLE_CALENDAR_CLIENT_SECRET,SOCIAL_TOKEN_AES_KEY,APPLE_BUNDLE_ID,APPLE_SERVICE_ID,APPLE_TEAM_ID,APPLE_KEY_ID,APPLE_PRIVATE_KEY,KAKAO_ADMIN_KEY,FIREBASE_CREDENTIALS_BASE64
+          envs: GHCR_PAT,GHCR_IMAGE,GHCR_USERNAME,SPRING_PROFILES_ACTIVE,APP_PORT,NGINX_HTTP_PORT,NGINX_HTTPS_PORT,CERTBOT_DOMAIN,LOKI_HOST,REDIS_HOST,REDIS_PORT,REDIS_PASSWORD,MYSQL_HOST,MYSQL_PORT,MYSQL_DATABASE,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD,JWT_SECRET,JWT_ACCESS_EXPIRATION,JWT_REFRESH_EXPIRATION_DAYS,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_CLIENT_ID_IOS,GOOGLE_CLIENT_ID_ANDROID,GOOGLE_CALENDAR_CLIENT_ID,GOOGLE_CALENDAR_CLIENT_SECRET,SOCIAL_TOKEN_AES_KEY,APPLE_BUNDLE_ID,APPLE_SERVICE_ID,APPLE_TEAM_ID,APPLE_KEY_ID,APPLE_PRIVATE_KEY,KAKAO_ADMIN_KEY,FIREBASE_CREDENTIALS_BASE64
           script: |
             set -euo pipefail
             if [[ -z "${GHCR_PAT:-}" ]]; then
@@ -256,6 +259,9 @@ jobs:
             nginx_https_port="${NGINX_HTTPS_PORT:-}"
             certbot_domain="${CERTBOT_DOMAIN:-}"
             loki_host="${LOKI_HOST:-}"
+            redis_host="${REDIS_HOST:-}"
+            redis_port="${REDIS_PORT:-}"
+            redis_password="${REDIS_PASSWORD:-}"
             mysql_host="${MYSQL_HOST:-}"
             mysql_port="${MYSQL_PORT:-}"
             mysql_database="${MYSQL_DATABASE:-}"
@@ -291,6 +297,9 @@ jobs:
             export NGINX_HTTPS_PORT="${nginx_https_port:-${NGINX_HTTPS_PORT:-}}"
             export CERTBOT_DOMAIN="${certbot_domain:-${CERTBOT_DOMAIN:-}}"
             export LOKI_HOST="${loki_host:-${LOKI_HOST:-}}"
+            export REDIS_HOST="${redis_host:-${REDIS_HOST:-}}"
+            export REDIS_PORT="${redis_port:-${REDIS_PORT:-}}"
+            export REDIS_PASSWORD="${redis_password:?REDIS_PASSWORD secret is required}"
             export MYSQL_HOST="${mysql_host:?MYSQL_HOST secret is required}"
             export MYSQL_PORT="${mysql_port:-${MYSQL_PORT:-}}"
             export MYSQL_DATABASE="${mysql_database:?MYSQL_DATABASE secret is required}"
