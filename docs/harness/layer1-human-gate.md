@@ -14,11 +14,13 @@
 |---|---|---|---|
 | [`CLAUDE.md`](../../CLAUDE.md) | rule (진입점) | 세션 시작 시 항상 | `@AGENTS.md` import + Claude Code 전용 보충 |
 | [`AGENTS.md`](../../AGENTS.md) | rule (프로젝트 지도) | 세션 시작 시 항상 | 기술 스택·컨벤션·경로 맵 |
-| [`.claude/rules/harness-workflow.md`](../../.claude/rules/harness-workflow.md) | rule (**코어**) | 세션 시작 시 항상 | ⛔ STOP §1~§6 · 3 트랙 × 4 게이트 사이클 |
-| [`.claude/rules/harness-milestone.md`](../../.claude/rules/harness-milestone.md) | rule | 세션 시작 시 항상 | priority(must/could) 단정 금지 · Release Gate · `[미정]` 처리 |
-| [`.claude/rules/harness-follow-up.md`](../../.claude/rules/harness-follow-up.md) | rule | 세션 시작 시 항상 | 후속 제안 · Defer · ERD 개선 제안 |
-| [`.claude/rules/workflow-tools.md`](../../.claude/rules/workflow-tools.md) | rule | 세션 시작 시 항상 | 도구 우선순위·트랙×게이트→도구 매핑 |
-| [`.claude/rules/plain-language-reporting.md`](../../.claude/rules/plain-language-reporting.md) | rule | 세션 시작 시 항상 | 사용자 보고는 쉬운 말로 (코드 주석은 제외) |
+| [`.claude/rules/core-guardrails.md`](../../.claude/rules/core-guardrails.md) | rule (**코어**) | 세션 시작 시 항상 | ⛔ STOP §1~§6 · 금지 요약 |
+| [`.claude/rules/core-workflow.md`](../../.claude/rules/core-workflow.md) | rule (**코어**) | 세션 시작 시 항상 | 3 트랙 × 4 게이트 사이클 · 구현 중 지킬 것 |
+| [`.claude/rules/core-scope.md`](../../.claude/rules/core-scope.md) | rule | 세션 시작 시 항상 | priority(must/could) 단정 금지 · `[미정]` 처리 |
+| [`.claude/rules/tripfit-release.md`](../../.claude/rules/tripfit-release.md) | rule (**저장소 고유**) | 세션 시작 시 항상 | Release Gate · 일정 용어 · 도메인·배포 확정 사항 |
+| [`.claude/rules/core-followup.md`](../../.claude/rules/core-followup.md) | rule | 세션 시작 시 항상 | 후속 제안 · Defer · ERD 개선 제안 |
+| [`.claude/rules/core-tools.md`](../../.claude/rules/core-tools.md) | rule | 세션 시작 시 항상 | 도구 우선순위·트랙×게이트→도구 매핑 |
+| [`.claude/rules/core-reporting.md`](../../.claude/rules/core-reporting.md) | rule | 세션 시작 시 항상 | 사용자 보고는 쉬운 말로 (코드 주석은 제외) |
 | `spring-boot-java.md` · `openapi-conventions.md` · `java-comments.md` | rule | **`**/*.java` 접근 시에만** | Java 레이어·`@Schema`·주석 스타일 |
 | `client-platform.md` | rule | **controller/service 접근 시에만** | 클라이언트 계약·인증 전제 |
 | `deployment.md` | rule | **yml·docker-compose 접근 시에만** | 배포 가드레일 |
@@ -39,9 +41,9 @@
 ```
 1. 세션 시작
    → CLAUDE.md 주입 → 그 안의 @AGENTS.md import 따라 AGENTS.md 주입
-   → .claude/rules/ 중 frontmatter 없는 5개 주입
-     (harness-workflow · harness-milestone · harness-follow-up
-      · workflow-tools · plain-language-reporting)
+   → .claude/rules/ 중 frontmatter 없는 7개 주입
+     (core-guardrails · core-workflow · core-scope · core-followup
+      · core-tools · core-reporting · tripfit-release)
 
 2. 에이전트가 src/main/java/.../JwtProperties.java 를 Read
    → paths: ["**/*.java"] 매칭
@@ -97,7 +99,7 @@ ls src/main/java/com/tripfit/tripfit/auth/service/
 
 | 순위 | 강조할 것 | 근거 |
 |---|---|---|
-| 1 | **path-scoped 규칙 로딩으로 컨텍스트 예산을 설계했다** | always-load 5개 + path-scoped 8개로 분리(2026-09-03 `doc-writing.md` 추가). "규칙을 많이 쓰면 좋다"가 아니라 "언제 무엇을 실을지"를 토큰 비용 관점에서 설계했다는 점이 차별점. **2026-09-04에 실측으로 재조정**했다 — 아래 절 참고 |
+| 1 | **path-scoped 규칙 로딩으로 컨텍스트 예산을 설계했다** | always-load 7개 + path-scoped 8개로 분리. "규칙을 많이 쓰면 좋다"가 아니라 "언제 무엇을 실을지"를 토큰 비용 관점에서 설계했다는 점이 차별점. **2026-09-04에 실측으로 재조정**했다 — 아래 절 참고 |
 | 2 | **문서 드리프트를 실패 모드로 인정하고 절차를 만들었다** | STOP §1.5·§1.6은 "문서를 믿지 말고 코드/생성물을 확인하라"는 규칙. 문서 SSOT를 만들면서 동시에 그 SSOT가 썩는다는 걸 전제한 설계 |
 | 3 | 충돌 시 임의 판단 금지 (STOP §1) | 흔한 주장이라 단독으로는 약함. 위 2번 사례와 묶어서 말해야 설득력이 생김 |
 
@@ -107,16 +109,48 @@ ls src/main/java/com/tripfit/tripfit/auth/service/
 
 | 항목 | 크기 | 언제 지불하나 |
 |---|---|---|
-| always-load 규칙 5개 | 약 42KB | **매 세션 무조건** |
+| always-load 규칙 7개 | 약 42KB | **매 세션 무조건** |
 | `AGENTS.md` + `CLAUDE.md` | 약 7.7KB | **매 세션 무조건** |
-| Java 규칙 3개(`spring-boot-java`·`openapi-conventions`·`java-comments`) | 약 46KB | `**/*.java` **한 개만 열어도 전부** |
-| `.claude/rules/README.md` | 약 16KB | 구 설정에서는 `.claude/` 안 어디든 건드리면 |
+| Java 규칙 3개(`spring-boot-java`·`openapi-conventions`·`java-comments`) | 약 45KB | `**/*.java` **한 개만 열어도 전부** |
+| `.claude/rules/README.md` | 약 18KB | 구 설정에서는 `.claude/` 안 어디든 건드리면 |
 
-**드러난 것 ①** — Java 파일 하나를 여는 순간 붙는 46KB가 **always-load 전체(42KB)보다 큽니다.** 세 규칙이 모두 `**/*.java`에 걸려 있어 테스트 한 줄을 고쳐도 셋 다 실립니다.
+**드러난 것 ①** — Java 파일 하나를 여는 순간 붙는 45KB가 **always-load 전체(42KB)보다 큽니다.** 세 규칙이 모두 `**/*.java`에 걸려 있어 테스트 한 줄을 고쳐도 셋 다 실립니다.
 
-**드러난 것 ②** — `.claude/rules/README.md`는 자기 파일에 "사람이 보는 디렉터리 맵이라 행동 규칙이 아님"이라고 적어두고도, `.claude/**` 스코프라 규칙 *내용*만 고치는 세션에도 17KB가 실렸습니다. **구성 요소를 추가·삭제할 때**(유지보수 체크리스트가 실제로 필요할 때)만 로드되도록 좁혔습니다.
+**드러난 것 ②** — `.claude/rules/README.md`는 자기 파일에 "사람이 보는 디렉터리 맵이라 행동 규칙이 아님"이라고 적어두고도, `.claude/**` 스코프라 규칙 *내용*만 고치는 세션에도 18KB가 실렸습니다. **구성 요소를 추가·삭제할 때**(유지보수 체크리스트가 실제로 필요할 때)만 로드되도록 좁혔습니다.
 
 **기각한 것** — "Swagger 규칙을 Controller·DTO 경로로 좁히자"는 안은 실제 코드를 확인하고 폐기했습니다. `@Schema`가 `domain`·`exception`·`schedule` 등 전 패키지에 퍼져 있어, 좁히면 필요한 자리에 규칙이 **안 실리는** 사고가 납니다. 측정 없이 직관으로 좁혔으면 통제가 약해졌을 지점입니다.
+
+### 4-2. 규칙 5개 → 7개 재편과 그 대가 (2026-09-04, `#128`)
+
+같은 날 규칙 파일의 **경계**도 다시 그었습니다. 이름이 내부 은어(`harness-*`)였고, 한 파일이 두 가지 일을 하고 있었습니다.
+
+| 이전 | 이후 | 가른 기준 |
+|---|---|---|
+| `harness-workflow.md` (195줄·21KB, always-load 중 최대) | `core-guardrails.md` + `core-workflow.md` | **하지 말 것**(⛔ STOP §1~§6) vs **어떤 순서로 할 것**(트랙·게이트) |
+| `harness-milestone.md` (70줄) | `core-scope.md` + `tripfit-release.md` | **프로젝트 무관 원칙** vs **이 저장소 고유 사실**(Release Gate·일정 용어) |
+
+**핵심은 토큰이 아닙니다.** 파일이 5개에서 7개로 늘었지만 always-load 총량은 42KB로 거의 그대로입니다 — 내용이 이동했을 뿐이기 때문입니다. 얻은 것은 두 가지입니다.
+
+- **찾는 시간** — "이거 해도 되나"는 `core-guardrails`, "다음에 뭘 하지"는 `core-workflow`로 갈립니다
+- **이식 경계** — `core-` 접두사는 다른 프로젝트로 가져갈 것, `tripfit-`는 두고 갈 것을 파일명이 스스로 말합니다
+
+**같은 날 시도한 always-load 다이어트는 거의 실패했습니다.** `tripfit-release.md`에서 폐지 이력 2건을 `docs/product/release-milestones.md`로 옮겼는데, 총량은 25,635자 → 25,490자로 **0.6%밖에 줄지 않았습니다**(사전 추정은 5%). 이력을 걷어낸 만큼 "폐지 사유는 저기 있다"는 안내 문장을 새로 써야 했기 때문입니다. **토큰 절감은 규칙 파일을 쪼개는 근거가 되지 못한다**는 것이 이날의 실측 결론입니다.
+
+### 4-3. 이 레이어의 새 실패 모드 — 분할하면 포인터가 어긋난다
+
+규칙을 쪼개면서 **상호참조 오류 5건**이 생겼습니다. 참조 127곳을 "STOP 문맥이면 `core-guardrails`, 게이트 문맥이면 `core-workflow`"로 자동 분류했는데, 분류기가 **바로 옆 문장의 "⛔ STOP" 문구에 끌려** 게이트 안내를 guardrails로 보냈습니다.
+
+| 잘못된 안내 | 실제 위치 |
+|---|---|
+| `core-tools.md` — "진입 — 트랙 분류"·"사이클" 절이 `core-guardrails.md`에 있다 | `core-workflow.md` |
+| `core-workflow.md` — priority·`[미정]`을 `tripfit-release.md`에서 찾아라 | `core-scope.md` |
+| `specify` 스킬 — "G3 검증·G4 회고는 `core-guardrails.md`가 SSOT" | `core-workflow.md` |
+
+**왜 이게 오타보다 나쁜가:** 안내를 따라간 에이전트가 그 파일을 열면 규칙이 **없습니다.** 없으면 "규칙이 없구나" 하고 스스로 판단해버립니다 — priority 안내가 어긋났다면 `core-scope.md`가 ⛔로 금지한 "에이전트가 must/could를 임의 판단"이 그대로 재현됩니다.
+
+**어떻게 잡았나:** `doc-reviewer` 서브에이전트(L2)가 2건을 지적했고, 그 유형을 단서로 저장소 전체를 기계 검사해 3건을 더 찾았습니다. 소프트 가드레일(L1)의 결함을 별도 컨텍스트의 리뷰(L2)가 잡은 사례이고, **자기가 방금 나눈 문서를 자기가 검토하면 놓친다**는 self-grading 편향의 실례이기도 합니다.
+
+**남긴 교훈:** 규칙 파일을 분할할 때는 이름 치환만으로 끝나지 않습니다. **"A를 가리키는 안내가 실제로 A에 있는가"를 기계적으로 확인**해야 합니다 — 절 제목이 어느 파일에 있는지 대조하는 검사로, 지금은 수동이지만 훅(L3)으로 승격할 수 있는 성격입니다.
 
 **주의 — 면접에서 이 레이어만 강조하면 약합니다.** "AI에게 규칙 파일을 잘 써줬다"는 프롬프트 엔지니어링에 가깝고, 누구나 보여줄 수 있습니다. 이 레이어는 [Layer 3](layer3-deterministic-hooks.md)의 결정론적 강제와 **대비**시킬 때 가치가 살아납니다 — "소프트 가드레일로 되는 것과 안 되는 것을 구분했다"는 판단이 핵심입니다.
 

@@ -1,6 +1,6 @@
 # Layer 4 — API Contract Safety (프론트와의 계약을 독립 검증)
 
-> 분류: **CI 워크플로 + shell script** (`.github/workflows/ci-cd.yml` + `scripts/notify-api-breaking-change.sh`) · 짝이 되는 규칙: `harness-workflow.md` STOP §5 · 대응 다이어그램: "API Contract Safety"
+> 분류: **CI 워크플로 + shell script** (`.github/workflows/ci-cd.yml` + `scripts/notify-api-breaking-change.sh`) · 짝이 되는 규칙: `core-guardrails.md` STOP §5 · 대응 다이어그램: "API Contract Safety"
 
 ## 1. 기본 사항
 
@@ -14,7 +14,7 @@
 
 | 구성요소 | 파일 | 분류 | 역할 |
 |---|---|---|---|
-| 트레일러 규칙 | [`.claude/rules/harness-workflow.md`](../../.claude/rules/harness-workflow.md) STOP §5 | rule | 커밋 시 `Breaking-Change-Reason:` 작성 강제 |
+| 트레일러 규칙 | [`.claude/rules/core-guardrails.md`](../../.claude/rules/core-guardrails.md) STOP §5 | rule | 커밋 시 `Breaking-Change-Reason:` 작성 강제 |
 | 로컬 경고 훅 | [`.claude/hooks/warn-breaking-change.sh`](../../.claude/hooks/warn-breaking-change.sh) | hook | 트레일러 누락 시 advisory 경고 (막지 않음) |
 | CI 파이프라인 | [`.github/workflows/ci-cd.yml`](../../.github/workflows/ci-cd.yml) | CI | 스펙 export → base 비교 → 알림 |
 | 감지·알림 스크립트 | [`scripts/notify-api-breaking-change.sh`](../../scripts/notify-api-breaking-change.sh) | script | 3중 감지 + Discord 웹훅 |

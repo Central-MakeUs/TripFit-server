@@ -17,12 +17,12 @@
 
 | 사이클 단계 | 담당 | 강제 레이어 |
 |---|---|---|
-| 진입 — 트랙 판정 (A 기능 / B 감사·리팩터 / C 버그) | `specify` · `refactor-audit` · `debug-bug` | L1 규칙(프롬프트) |
+| 진입 — 트랙 판정 (A 기능 / B 감사·리팩터 / C 버그) | `specify` · `safe-refactor` · `debug` | L1 규칙(프롬프트) |
 | **G1 리서치** | `researcher` 서브에이전트 | L1 규칙 — 강제 수단 없음, 절차로만 |
 | **G2 승인** | Human Gate | L1·L2 — 사람이 끊음 |
 | 구현 | AI Agent | **L3 훅**(위험 명령·DB 마이그레이션 차단) |
-| **G3 검증** | `verify` 스킬 + `doc-reviewer` + `senior-spring-backend-reviewer` | **L4 CI**(oasdiff·테스트) + advisory |
-| **G4 회고** | 문서 갱신 점검 · `defer-followup` · `retro` | L1 규칙 + L2 절차 |
+| **G3 검증** | `preflight` 스킬 + `doc-reviewer` + `spring-reviewer` | **L4 CI**(oasdiff·테스트) + advisory |
+| **G4 회고** | 문서 갱신 점검 · `defer` · `retro` | L1 규칙 + L2 절차 |
 
 **강제력이 가장 약한 곳은 여전히 G1과 G4입니다** — 둘 다 훅이나 CI로 판정할 수 없는 성격(조사를 했는지, 배운 걸 기록했는지)이라 규칙과 절차에만 의존합니다. 이 한계를 아는 것이 설계의 일부입니다.
 
@@ -64,7 +64,7 @@ Probabilistic Layer   Human Decision Layer  Deterministic Layer   Mechanical Ver
 
 ### 4순위 — Probabilistic Layer (L1): path-scoped 규칙 로딩
 
-**왜 4순위인가:** "규칙 파일을 잘 썼다"는 프롬프트 엔지니어링에 가깝고 누구나 보여줄 수 있습니다. 여기서 그나마 차별화되는 건 **컨텍스트 예산 설계**입니다 — always-load 5개 + path-scoped 8개로 나눠 Java를 안 건드리는 세션에는 Spring 컨벤션을, 문서를 안 건드리는 세션에는 문서 작성 규칙을 아예 싣지 않습니다.
+**왜 4순위인가:** "규칙 파일을 잘 썼다"는 프롬프트 엔지니어링에 가깝고 누구나 보여줄 수 있습니다. 여기서 그나마 차별화되는 건 **컨텍스트 예산 설계**입니다 — always-load 7개 + path-scoped 8개로 나눠 Java를 안 건드리는 세션에는 Spring 컨벤션을, 문서를 안 건드리는 세션에는 문서 작성 규칙을 아예 싣지 않습니다.
 
 **함께 말할 것:** 문서 SSOT를 만들면서 동시에 **그 SSOT가 썩는다는 걸 전제**하고 STOP §1.5·§1.6("문서 말고 코드/생성물을 확인하라")을 넣은 점. 실제로 2026-08-28에 Redis ADR이 stale해 잘못된 답변을 했다가 그 절차로 복구하고 19개 문서를 정정했습니다.
 
