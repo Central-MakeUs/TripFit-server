@@ -435,6 +435,58 @@ class RecommendationEngineTest {
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
   }
 
+  // 서로 다른 두 정기 일정이 각각 낮·저녁을 나눠 막는 경우(예: 낮 근무 + 저녁 알바)는 한 근무가 저녁까지
+  // 이어지는 게 아니므로, 낮 근무를 연차로 전환해도 저녁 알바는 별개 근무라 자동으로 열리지 않는다(#105 예외 확인)
+  @Test
+  void classifyMembers_twoSeparateRegularSchedules_doesNotAutoOpenUnrelatedEveningJob() {
+    LocalDate date = LocalDate.now().plusDays(9);
+    RegularSchedule dayJob =
+        RegularSchedule.create(
+            yoonji,
+            "낮 근무",
+            allDaysOfWeek(),
+            LocalTime.of(9, 0),
+            LocalTime.of(18, 0),
+            1,
+            null,
+            false,
+            null);
+    ReflectionTestUtils.setField(
+        dayJob,
+        "slotStatuses",
+        new SlotStatuses(ScheduleStatus.IMPOSSIBLE, ScheduleStatus.IMPOSSIBLE,
+            ScheduleStatus.POSSIBLE));
+    ReflectionTestUtils.setField(dayJob, "createdAt", LocalDateTime.now().minusDays(1));
+    RegularSchedule eveningJob =
+        RegularSchedule.create(
+            yoonji,
+            "저녁 알바",
+            allDaysOfWeek(),
+            LocalTime.of(19, 0),
+            LocalTime.of(23, 0),
+            1,
+            null,
+            false,
+            null);
+    ReflectionTestUtils.setField(
+        eveningJob,
+        "slotStatuses",
+        new SlotStatuses(ScheduleStatus.POSSIBLE, ScheduleStatus.POSSIBLE,
+            ScheduleStatus.IMPOSSIBLE));
+    ReflectionTestUtils.setField(eveningJob, "createdAt", LocalDateTime.now());
+    when(regularScheduleRepository.findByUserIdIn(any()))
+        .thenReturn(List.of(dayJob, eveningJob));
+    when(personalScheduleRepository.findByUserIdInAndScheduleDateBetween(any(), any(), any()))
+        .thenReturn(List.of());
+
+    List<MemberAttendanceDetail> details =
+        engine.classifyMembers(date, date, List.of(member(yoonji)));
+
+    // 낮 근무(연차 1일)만 전환되고 저녁 알바는 그대로 막혀있어 전체 참석이 아니다
+    assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.PARTIAL_ATTEND);
+    assertThat(details.get(0).vacationDays()).isEqualTo(1.0);
+  }
+
   // ALL_ATTEND는 하드 필터가 아니다 — 목표 인원 미달(항상 불참자 존재)이어도 후보가 제외되지 않고 TOP3가 그대로 나옴
   @Test
   void generate_allAttendMode_doesNotHardFilterLowAttendanceCandidates() {
