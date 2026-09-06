@@ -241,7 +241,8 @@ public class RecommendationEngine {
 
   // 정기 근무로만 막힌 슬롯을, 참여자의 연차 예산(첫 번째로 등록된 RegularSchedule 기준 — #105 "필드 이동" 전
   // 임시 규칙, #52) 안에서 최장 연속 참석 구간이 가장 길어지는 조합으로 자동 전환한다. 개별 일정·구글 busy로
-  // 막힌 슬롯은 대상에서 제외(연차는 근무만 대체 가능)
+  // 막힌 슬롯은 대상에서 제외(연차는 근무만 대체 가능). 오전·오후가 둘 다 뚫린 날은 openFreeEvenings로
+  // 저녁도 함께 열어준다(퇴근이 늦어 저녁까지 근무로 막혀있던 케이스, #105 amend)
   private boolean[] applyVacationSimulation(
       LocalDate start,
       int totalDays,
@@ -270,8 +271,15 @@ public class RecommendationEngine {
       return possible;
     }
 
-    boolean[] best = possible;
-    int bestLength = longestPossibleRun(possible).length;
+    boolean[] best =
+        openFreeEvenings(
+            possible.clone(),
+            start,
+            totalDays,
+            regulars,
+            personalsByDate,
+            googleBusyByDate);
+    int bestLength = longestPossibleRun(best).length;
     int bestCost = 0;
 
     int unitCount = units.size();
@@ -293,6 +301,14 @@ public class RecommendationEngine {
           }
         }
       }
+      candidate =
+          openFreeEvenings(
+              candidate,
+              start,
+              totalDays,
+              regulars,
+              personalsByDate,
+              googleBusyByDate);
       int length = longestPossibleRun(candidate).length;
       // 1. 최장 연속 구간이 더 긴 조합 우선 2. 길이가 같으면 연차를 덜 쓰는 조합 우선(여분 연차 낭비 방지)
       if (length > bestLength || (length == bestLength && cost < bestCost)) {
@@ -302,6 +318,55 @@ public class RecommendationEngine {
       }
     }
     return best;
+  }
+
+  // 그날 오전·오후가 (연차 전환 포함) 둘 다 뚫려서 근무로 인한 막힘이 완전히 해소됐다면, 같은 근무 시간이
+  // 저녁까지 걸쳐 있어서 저녁만 따로 IMPOSSIBLE로 남아있던 슬롯도 함께 연다 — 오전·오후 중 하나만 뚫린
+  // 반차 케이스는 나머지 반나절 근무가 저녁까지 이어질 수 있으므로 건드리지 않는다(#105 amend). 개별
+  // 일정 override·구글 busy로 저녁이 막힌 경우는 연차와 무관하므로 대상에서 제외
+  private static boolean[] openFreeEvenings(
+      boolean[] possible,
+      LocalDate start,
+      int totalDays,
+      List<RegularSchedule> regulars,
+      Map<LocalDate, PersonalSchedule> personalsByDate,
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate) {
+    for (int day = 0; day < totalDays; day++) {
+      LocalDate date = start.plusDays(day);
+      List<RegularSchedule> matched = matchingRegulars(regulars, date.getDayOfWeek());
+      if (matched.isEmpty()) {
+        continue;
+      }
+      if (!hasContinuousShiftIntoEvening(matched)) {
+        continue;
+      }
+      if (blockedByNonWorkReason(personalsByDate.get(date), googleBusyByDate.get(date), 2)) {
+        continue;
+      }
+      int morningSlot = day * 3;
+      int afternoonSlot = day * 3 + 1;
+      if (possible[morningSlot] && possible[afternoonSlot]) {
+        possible[day * 3 + 2] = true;
+      }
+    }
+    return possible;
+  }
+
+  // 그날 매칭되는 정기 일정 중, 한 행(row) 혼자서 오전·오후 중 하나와 저녁을 동시에 막는 "연속 근무"가
+  // 있는지 확인 — 예: 10~19시 근무 1건. 서로 다른 두 행이 각자 오전/오후·저녁을 나눠 막는 경우(예: 낮에는
+  // A 근무, 저녁에는 B 알바)는 대상에서 제외한다. A 연차는 A만 대체할 뿐 B 근무까지 자동으로 없애주지
+  // 않기 때문(#105 후속 확인)
+  private static boolean hasContinuousShiftIntoEvening(List<RegularSchedule> matched) {
+    for (RegularSchedule regular : matched) {
+      SlotStatuses own = regular.getSlotStatuses();
+      boolean spansDaytime =
+          own.getMorningStatus() == ScheduleStatus.IMPOSSIBLE
+              || own.getAfternoonStatus() == ScheduleStatus.IMPOSSIBLE;
+      if (spansDaytime && own.getEveningStatus() == ScheduleStatus.IMPOSSIBLE) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // 연차 전환 후보 슬롯을 하루 단위로 묶어 전환 비용 단위(ConversionUnit)로 만든다 — 반차 가능 유저는
@@ -362,16 +427,27 @@ public class RecommendationEngine {
       GoogleCalendarBusyDay googleBusy,
       int offset) {
     if (personal != null && personal.getSlotStatuses() != null) {
-      ScheduleStatus override =
-          offset == 0
-              ? personal.getSlotStatuses().getMorningStatus()
-              : personal.getSlotStatuses().getAfternoonStatus();
+      ScheduleStatus override = slotStatusByOffset(personal.getSlotStatuses(), offset);
       if (override != null) {
         return true;
       }
     }
-    return googleBusy != null
-        && (offset == 0 ? googleBusy.isMorningBusy() : googleBusy.isAfternoonBusy());
+    if (googleBusy == null) {
+      return false;
+    }
+    return switch (offset) {
+      case 0 -> googleBusy.isMorningBusy();
+      case 1 -> googleBusy.isAfternoonBusy();
+      default -> googleBusy.isEveningBusy();
+    };
+  }
+
+  private static ScheduleStatus slotStatusByOffset(SlotStatuses statuses, int offset) {
+    return switch (offset) {
+      case 0 -> statuses.getMorningStatus();
+      case 1 -> statuses.getAfternoonStatus();
+      default -> statuses.getEveningStatus();
+    };
   }
 
   // 연차 전환 후보 슬롯 묶음 — slotIndices를 전부 전환하는 데 costHalfDays(0.5일 단위)가 든다
