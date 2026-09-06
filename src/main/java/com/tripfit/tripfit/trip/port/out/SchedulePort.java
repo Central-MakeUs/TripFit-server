@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.trip.port.out;
 
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
+import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import java.time.LocalDate;
@@ -26,6 +27,14 @@ public interface SchedulePort {
   // 자체의 필드(daysOfWeek, 시간대 등)가 필요한 소비자만 쓴다 — 지금은 RecommendationEngine뿐.
   // 단순히 "이 기간에 가능/불가능한지"만 필요하면 이 메서드 대신 resolveMergedSchedules를 쓸 것.
   Map<UUID, List<RegularSchedule>> findRegularSchedulesByUserIds(List<UUID> userIds);
+
+  // 사용자별 "개별 일정 원본"을 기간으로 배치 조회한다(userId로 그룹핑). 병합 전 override 자체(어떤 슬롯을
+  // 직접 지정했는지)가 필요한 소비자만 쓴다 — 연차 자동 전환 시뮬레이션이 "정기 근무 때문에 막힌 건지,
+  // 개별 일정으로 이미 막아둔 건지" 구분할 때 사용(RecommendationEngine, #105).
+  Map<UUID, List<PersonalSchedule>> findPersonalSchedulesByUserIds(
+      List<UUID> userIds,
+      LocalDate startDate,
+      LocalDate endDate);
 
   // 정기+개별 일정을 구글 바쁨(busy) 정보와 합쳐, 사용자별 "날짜별 최종 슬롯 상태(오전/오후/저녁)" 달력을 만든다.
   // 정기·개별·구글 신호가 셋 다 없는 날짜는 결과에서 빠진다(sparse — 날짜 range 전체가 항상 채워지진 않음).

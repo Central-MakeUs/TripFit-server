@@ -9,6 +9,7 @@ import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
 import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
+import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import com.tripfit.tripfit.user.schedule.service.ScheduleCalendarResolver;
@@ -20,11 +21,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
-// 후보 윈도우 생성 → 참여자 3분류 → 평가항목 4종 패널티·모드 가중치 스코어링 → 동점 처리 → Best3 산출(#50 BR-TRIP-005·011·012)
+// 후보 윈도우 생성 → 연차/반차 자동 전환 시뮬레이션 → 참여자 3분류 → 평가항목 4종 패널티·모드 가중치 스코어링
+// → 동점 처리 → Best3 산출(#50 BR-TRIP-005·011·012, #105 연차 자동 반영)
 @Component
 public class RecommendationEngine {
 
@@ -86,6 +89,8 @@ public class RecommendationEngine {
               startDate,
               totalDays,
               context.regularsByUser.getOrDefault(userId, List.of()),
+              context.personalsByUser.getOrDefault(userId, List.of()),
+              context.googleBusyByUser.getOrDefault(userId, Map.of()),
               context.resolvedByUser.getOrDefault(userId, Map.of())));
     }
     return details;
@@ -116,6 +121,8 @@ public class RecommendationEngine {
               start,
               totalDays,
               context.regularsByUser.getOrDefault(userId, List.of()),
+              context.personalsByUser.getOrDefault(userId, List.of()),
+              context.googleBusyByUser.getOrDefault(userId, Map.of()),
               context.resolvedByUser.getOrDefault(userId, Map.of()));
 
       switch (detail.attendance()) {
@@ -153,12 +160,15 @@ public class RecommendationEngine {
         uncertainScheduleCount);
   }
 
-  // 참여자 1인 × 후보 구간 1개 — 전체참석/부분참석/불참 판정 + 불확실 일수 + 필요 연차일수
+  // 참여자 1인 × 후보 구간 1개 — 연차/반차 자동 전환 시뮬레이션 적용 후 전체참석/부분참석/불참 판정 + 불확실 일수
+  // + 필요 연차일수 (#105)
   private MemberAttendanceDetail classifyOneMember(
       UUID userId,
       LocalDate start,
       int totalDays,
       List<RegularSchedule> regulars,
+      List<PersonalSchedule> personals,
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
       Map<LocalDate, CalendarDayResponse> resolved) {
     int totalSlots = totalDays * 3;
     boolean[] possible = new boolean[totalSlots];
@@ -181,6 +191,15 @@ public class RecommendationEngine {
         uncertainDays++;
       }
     }
+
+    Map<LocalDate, PersonalSchedule> personalsByDate = indexPersonalsByDate(personals);
+    possible = applyVacationSimulation(
+        start,
+        totalDays,
+        possible,
+        regulars,
+        personalsByDate,
+        googleBusyByDate);
 
     LongestRun run = longestPossibleRun(possible);
     int threshold = (totalSlots + 1) / 2; // ⌈totalSlots * 0.5⌉
@@ -209,6 +228,157 @@ public class RecommendationEngine {
             : vacationDaysForSpan(start, regulars, attendStartSlot, attendEndSlot);
 
     return new MemberAttendanceDetail(userId, attendance, uncertainDays, vacationDays);
+  }
+
+  private static Map<LocalDate, PersonalSchedule> indexPersonalsByDate(
+      List<PersonalSchedule> personals) {
+    Map<LocalDate, PersonalSchedule> byDate = new HashMap<>();
+    for (PersonalSchedule personal : personals) {
+      byDate.put(personal.getScheduleDate(), personal);
+    }
+    return byDate;
+  }
+
+  // 정기 근무로만 막힌 슬롯을, 참여자의 연차 예산(첫 번째로 등록된 RegularSchedule 기준 — #105 "필드 이동" 전
+  // 임시 규칙, #52) 안에서 최장 연속 참석 구간이 가장 길어지는 조합으로 자동 전환한다. 개별 일정·구글 busy로
+  // 막힌 슬롯은 대상에서 제외(연차는 근무만 대체 가능)
+  private boolean[] applyVacationSimulation(
+      LocalDate start,
+      int totalDays,
+      boolean[] possible,
+      List<RegularSchedule> regulars,
+      Map<LocalDate, PersonalSchedule> personalsByDate,
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate) {
+    if (regulars.isEmpty()) {
+      return possible;
+    }
+    RegularSchedule primary = primaryVacationSchedule(regulars).orElseThrow();
+    int budgetHalfDays = primary.getMaxVacationDays() * 2;
+    if (budgetHalfDays <= 0) {
+      return possible;
+    }
+
+    List<ConversionUnit> units = collectConversionUnits(
+        start,
+        totalDays,
+        possible,
+        regulars,
+        personalsByDate,
+        googleBusyByDate,
+        primary.isHalfVacationAvailable());
+    if (units.isEmpty()) {
+      return possible;
+    }
+
+    boolean[] best = possible;
+    int bestLength = longestPossibleRun(possible).length;
+    int bestCost = 0;
+
+    int unitCount = units.size();
+    for (int mask = 1; mask < (1 << unitCount); mask++) {
+      int cost = 0;
+      for (int i = 0; i < unitCount; i++) {
+        if ((mask & (1 << i)) != 0) {
+          cost += units.get(i).costHalfDays();
+        }
+      }
+      if (cost > budgetHalfDays) {
+        continue;
+      }
+      boolean[] candidate = possible.clone();
+      for (int i = 0; i < unitCount; i++) {
+        if ((mask & (1 << i)) != 0) {
+          for (int slotIndex : units.get(i).slotIndices()) {
+            candidate[slotIndex] = true;
+          }
+        }
+      }
+      int length = longestPossibleRun(candidate).length;
+      // 1. 최장 연속 구간이 더 긴 조합 우선 2. 길이가 같으면 연차를 덜 쓰는 조합 우선(여분 연차 낭비 방지)
+      if (length > bestLength || (length == bestLength && cost < bestCost)) {
+        best = candidate;
+        bestLength = length;
+        bestCost = cost;
+      }
+    }
+    return best;
+  }
+
+  // 연차 전환 후보 슬롯을 하루 단위로 묶어 전환 비용 단위(ConversionUnit)로 만든다 — 반차 가능 유저는
+  // 오전/오후 슬롯을 0.5일씩 독립 전환, 반차 불가 유저는 하루 단위로 묶어 1.0일에 전부 전환(#105 반차 규칙)
+  private static List<ConversionUnit> collectConversionUnits(
+      LocalDate start,
+      int totalDays,
+      boolean[] possible,
+      List<RegularSchedule> regulars,
+      Map<LocalDate, PersonalSchedule> personalsByDate,
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
+      boolean halfVacationAvailable) {
+    List<ConversionUnit> units = new ArrayList<>();
+    for (int day = 0; day < totalDays; day++) {
+      LocalDate date = start.plusDays(day);
+      List<RegularSchedule> matched = matchingRegulars(regulars, date.getDayOfWeek());
+      if (matched.isEmpty()) {
+        continue;
+      }
+      SlotStatuses regularOnly = ScheduleCalendarResolver.combineImpossibleWins(matched);
+      PersonalSchedule personal = personalsByDate.get(date);
+      GoogleCalendarBusyDay googleBusy = googleBusyByDate.get(date);
+
+      List<Integer> dayEligibleSlots = new ArrayList<>();
+      for (int offset = 0; offset < 2; offset++) { // 0=오전, 1=오후 — 저녁은 연차 대상 아님
+        int slotIndex = day * 3 + offset;
+        if (possible[slotIndex]) {
+          continue;
+        }
+        ScheduleStatus regularStatus =
+            offset == 0 ? regularOnly.getMorningStatus() : regularOnly.getAfternoonStatus();
+        if (regularStatus != ScheduleStatus.IMPOSSIBLE) {
+          continue;
+        }
+        if (blockedByNonWorkReason(personal, googleBusy, offset)) {
+          continue;
+        }
+        dayEligibleSlots.add(slotIndex);
+      }
+      if (dayEligibleSlots.isEmpty()) {
+        continue;
+      }
+      if (halfVacationAvailable) {
+        for (int slotIndex : dayEligibleSlots) {
+          units.add(new ConversionUnit(List.of(slotIndex), 1));
+        }
+      } else {
+        units.add(new ConversionUnit(dayEligibleSlots, 2));
+      }
+    }
+    return units;
+  }
+
+  // 이 슬롯의 IMPOSSIBLE이 정기 근무가 아니라 개별 일정 override나 구글 캘린더 busy 때문인지 확인 —
+  // 둘 중 하나라도 해당하면 연차로 전환할 수 없다(연차는 근무만 대체 가능)
+  private static boolean blockedByNonWorkReason(
+      PersonalSchedule personal,
+      GoogleCalendarBusyDay googleBusy,
+      int offset) {
+    if (personal != null && personal.getSlotStatuses() != null) {
+      ScheduleStatus override =
+          offset == 0
+              ? personal.getSlotStatuses().getMorningStatus()
+              : personal.getSlotStatuses().getAfternoonStatus();
+      if (override != null) {
+        return true;
+      }
+    }
+    return googleBusy != null
+        && (offset == 0 ? googleBusy.isMorningBusy() : googleBusy.isAfternoonBusy());
+  }
+
+  // 연차 전환 후보 슬롯 묶음 — slotIndices를 전부 전환하는 데 costHalfDays(0.5일 단위)가 든다
+  private record ConversionUnit(
+      List<Integer> slotIndices,
+      int costHalfDays
+  ) {
   }
 
   // 오전/오후/저녁 슬롯 시퀀스에서 가능(POSSIBLE) 슬롯의 최장 연속 구간 — 부분참석은 이 값만으로 판정(분리된 구간 합산 금지)
@@ -241,7 +411,10 @@ public class RecommendationEngine {
   }
 
   // 참석 구간 중 "정기 근무(오전/오후)만으로는 불가능(IMPOSSIBLE)"을 override로 참석 가능하게 만든 날을 반차(0.5)/종일(1.0)
-  // 연차로 환산 — 저녁은 근무 개념이 없어 연차 계산에서 제외(반차 정의: 오전 반차·오후 반차·종일 연차)
+  // 연차로 환산 — 저녁은 근무 개념이 없어 연차 계산에서 제외(반차 정의: 오전 반차·오후 반차·종일 연차). 수동 override와
+  // applyVacationSimulation의 자동 전환 둘 다 possible[]을 POSSIBLE로 바꿔놓으므로 이 메서드는 그 결과만 보고
+  // 동일하게 집계한다(전환 방식을 구분할 필요 없음). halfVacationAvailable=false면 반나절 하나만 막혔어도
+  // 반차를 못 쓰니 종일 연차 1.0으로 계산한다(#105 특수 규칙 8)
   private double vacationDaysForSpan(
       LocalDate start,
       List<RegularSchedule> regulars,
@@ -250,6 +423,10 @@ public class RecommendationEngine {
     if (attendStartSlot < 0) {
       return 0;
     }
+    boolean halfVacationAvailable =
+        primaryVacationSchedule(regulars)
+            .map(RegularSchedule::isHalfVacationAvailable)
+            .orElse(false);
     double total = 0;
     int firstDay = attendStartSlot / 3;
     int lastDay = attendEndSlot / 3;
@@ -273,7 +450,7 @@ public class RecommendationEngine {
       if (workSlotsCovered == 2) {
         total += 1.0;
       } else if (workSlotsCovered == 1) {
-        total += 0.5;
+        total += halfVacationAvailable ? 0.5 : 1.0;
       }
     }
     return total;
@@ -289,6 +466,14 @@ public class RecommendationEngine {
         .toList();
   }
 
+  // 연차 예산·반차 가능 여부의 기준이 되는 "대표" 정기 일정 — 가장 먼저 등록된 행(#52로 User 이동 전 임시 규칙).
+  // 실제 클라이언트가 저장 시점에 모든 행에 동일한 값을 다시 써서 항상 일치시키므로(TripFit-client
+  // useSaveRegularSchedule), 어느 행을 골라도 결과는 같다
+  private static Optional<RegularSchedule> primaryVacationSchedule(
+      List<RegularSchedule> regulars) {
+    return regulars.stream().min(Comparator.comparing(RegularSchedule::getCreatedAt));
+  }
+
   // 멤버별 regular/personal/구글 신호를 탐색 구간 전체에 대해 한 번만 로드 — 후보 윈도우마다 재조회하지 않음(N+1 방지)
   private MemberContext loadContext(
       List<TripMember> activeMembers,
@@ -298,6 +483,9 @@ public class RecommendationEngine {
 
     Map<UUID, List<RegularSchedule>> regularsByUser =
         schedulePort.findRegularSchedulesByUserIds(userIds);
+
+    Map<UUID, List<PersonalSchedule>> personalsByUser =
+        schedulePort.findPersonalSchedulesByUserIds(userIds, rangeStart, rangeEnd);
 
     Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> busyByUser =
         googleCalendarPort.findBusyDaysByUserIds(userIds, rangeStart, rangeEnd);
@@ -313,11 +501,13 @@ public class RecommendationEngine {
               .collect(Collectors.toMap(CalendarDayResponse::date, day -> day)));
     }
 
-    return new MemberContext(regularsByUser, resolvedByUser);
+    return new MemberContext(regularsByUser, personalsByUser, busyByUser, resolvedByUser);
   }
 
   private record MemberContext(
       Map<UUID, List<RegularSchedule>> regularsByUser,
+      Map<UUID, List<PersonalSchedule>> personalsByUser,
+      Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser,
       Map<UUID, Map<LocalDate, CalendarDayResponse>> resolvedByUser
   ) {
   }
