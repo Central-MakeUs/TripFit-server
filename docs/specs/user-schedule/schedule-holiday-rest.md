@@ -3,7 +3,7 @@
 > wave: 2
 > implements: BR-TRIP-002, BR-TRIP-005, BR-USER-008
 > related: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) A4 · [`schedule-unified.md`](schedule-unified.md) · [`trip-recommendation-algorithm.md`](../trip/trip-recommendation-algorithm.md) · [`docs/decisions/011-holiday-data-source.md`](../../decisions/011-holiday-data-source.md) · `#105`(대표 행 규칙 선례) · `#52`(4개 필드 User 이동 — 본 스펙의 대표 행 조회도 함께 제거 대상)
-> 상태: **Approved** (#107) — 2026-08-16 사용자 승인, 구현 대기
+> 상태: **Implemented** (#107) — 2026-08-16 승인·구현 완료. 인증키 발급 후 실제 API 응답 대조만 남음
 > MVP: In scope (달력·추천 정확도)
 
 ## 목표
@@ -31,7 +31,7 @@
 - [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **A4**: (변경 전) "wave 2 Out — 요일만. 공휴일은 #13·후속" → (변경 후) **반영함** — `holidayRest=true` 정기 일정은 공휴일에 적용되지 않음. 프론트 고지 문구 "공휴일≠휴무 자동"도 함께 폐기
 - [`trip-recommendation-algorithm.md`](../trip/trip-recommendation-algorithm.md) 리스크 표 "공휴일 데이터 = #107로 분리, `holidayRest`는 추천 계산에서 읽히지 않는 상태" → **반영 완료**로 amend
 - `RecommendationEngine.matchingRegulars(regulars, dayOfWeek)` → 날짜·공휴일을 함께 받아, 공휴일에 쉬는 사용자면 빈 목록을 반환하는 시그니처로 변경
-- `primaryVacationSchedule`(`#105`의 대표 행 규칙) 적용 대상에 `holidayRest` 추가 — 기존 `maxVacationDays`·`halfVacationAvailable`과 동일 기준
+- `#105`의 대표 행 규칙을 `RecommendationEngine.primaryVacationSchedule`(private) → `RegularSchedule.policySource`(엔티티 static)로 이동해 달력·추천이 같은 SSOT를 쓰게 함. 적용 대상에 `holidayRest` 추가 — 기존 `maxVacationDays`·`halfVacationAvailable`과 동일 기준
 
 ### REMOVED
 
@@ -42,15 +42,15 @@
 
 ### Must Have
 
-- [ ] 공공데이터포털 특일 정보 `getRestDeInfo`(관공서 공휴일)로 공휴일·대체공휴일 조회
-- [ ] 하루 1회 스케줄러가 **올해·내년·내후년 3개년**을 동기화해 Redis에 연도별 캐싱 (앱 기동 시 1회 즉시 동기화 포함)
-- [ ] API 호출 실패 시 기존 캐시 유지(그날 갱신만 스킵), Redis 조회 실패 시 **fail-open**(공휴일 아님으로 간주)
-- [ ] `holidayRest` 판정을 `#105`와 동일한 **대표 행 기준**(`primaryVacationSchedule`)으로 읽기 — 행별 개별 판정 금지
-- [ ] 공휴일에 쉬는 사용자 — 공휴일에는 **정기 일정 전체가 없는 것처럼** 처리 (달력에서 "여행 가능해요")
-- [ ] 공휴일에 안 쉬는 사용자 — 공휴일에도 평소 근무 요일·시간 그대로 적용
-- [ ] 개별 일정 오버라이드·구글 캘린더 busy는 공휴일 여부와 **무관하게** 그대로 유지
-- [ ] 추천 엔진의 연차 계산 — 공휴일에 쉬는 정기 일정은 연차 대상에서 제외(연차 없이 참석 가능)
-- [ ] `HOLIDAY_API_SERVICE_KEY` 환경변수 배선 (`.env.example` · GitHub Secrets · `application-*.yml`)
+- [x] 공공데이터포털 특일 정보 `getRestDeInfo`(관공서 공휴일)로 공휴일·대체공휴일 조회
+- [x] 하루 1회 스케줄러가 **올해·내년·내후년 3개년**을 동기화해 Redis에 연도별 캐싱 (앱 기동 시 1회 즉시 동기화 포함)
+- [x] API 호출 실패 시 기존 캐시 유지(그날 갱신만 스킵), Redis 조회 실패 시 **fail-open**(공휴일 아님으로 간주)
+- [x] `holidayRest` 판정을 `#105`와 동일한 **대표 행 기준**(`RegularSchedule.policySource`)으로 읽기 — 행별 개별 판정 금지
+- [x] 공휴일에 쉬는 사용자 — 공휴일에는 **정기 일정 전체가 없는 것처럼** 처리 (달력에서 "여행 가능해요")
+- [x] 공휴일에 안 쉬는 사용자 — 공휴일에도 평소 근무 요일·시간 그대로 적용
+- [x] 개별 일정 오버라이드·구글 캘린더 busy는 공휴일 여부와 **무관하게** 그대로 유지
+- [x] 추천 엔진의 연차 계산 — 공휴일에 쉬는 정기 일정은 연차 대상에서 제외(연차 없이 참석 가능)
+- [x] `HOLIDAY_API_SERVICE_KEY` 환경변수 배선 (`.env.example` · GitHub Secrets · `application-*.yml`)
 
 ### Nice to Have
 
@@ -114,11 +114,11 @@ GET https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeIn
 
 ```
 common/holiday/
-├── HolidayProvider.java              # 인터페이스 — isHoliday(date) / findHolidays(start, end)
-├── RedisHolidayProvider.java         # Redis 조회 구현. DataAccessException → fail-open
-├── client/PublicHolidayApiClient.java
+├── HolidayProvider.java              # 인터페이스 — findHolidaysBetween(start, end)
+├── RedisHolidayProvider.java         # Redis 조회 구현(fail-open) + replaceYear 캐시 쓰기
+├── client/HolidayApiClient.java      # 공공데이터포털 getRestDeInfo 호출·파싱
 ├── scheduler/HolidaySyncScheduler.java
-└── config/HolidayApiProperties.java
+└── config/HolidayProperties.java
 ```
 
 `common/`에 두는 이유: 대한민국 공휴일은 `user.schedule`·`trip.recommendation` 어느 도메인의 소유 데이터도 아닌 **국가 참조 데이터**이고, 두 도메인이 함께 읽는다. (`user/schedule/holiday/`에 두면 `trip`이 `user.schedule` 내부를 더 깊이 참조하게 됨.)
@@ -129,10 +129,10 @@ common/holiday/
 
 `holidayRest`는 **사람 단위 설정**이다. DB상으로는 `RegularSchedule` 각 행에 저장돼 있지만, 이는 스키마 배치 문제일 뿐 개념적으로는 `maxVacationDays`·`halfVacationAvailable`·`vacationApplyPeriod`와 함께 "사람 1명에게 붙는 값" 4종에 속한다(`#52`). 프론트도 저장 시 사용자의 **모든** 행에 같은 값을 써서 항상 일치시킨다.
 
-따라서 `#105`가 이미 확정·구현한 **대표 행 규칙**을 그대로 따른다 — 연차 예산·반차 가능 여부와 같은 기준(`primaryVacationSchedule` = `createdAt` 오름차순 첫 행)에서 `holidayRest`를 읽는다. 같은 성격의 필드를 서로 다른 기준으로 읽으면 안 된다.
+따라서 `#105`가 이미 확정·구현한 **대표 행 규칙**을 그대로 따른다 — 연차 예산·반차 가능 여부와 같은 기준(`RegularSchedule.policySource` = `createdAt` 오름차순 첫 행)에서 `holidayRest`를 읽는다. 같은 성격의 필드를 서로 다른 기준으로 읽으면 안 된다.
 
 ```text
-restsOnHolidays(regulars) = primaryVacationSchedule(regulars).holidayRest   // #105와 동일 기준
+restsOnHolidays(regulars) = RegularSchedule.policySource(regulars).holidayRest   // #105와 동일 기준
 
 regularsAppliedOn(matched, date, holidays):
   if date not in holidays: return matched
@@ -141,7 +141,7 @@ regularsAppliedOn(matched, date, holidays):
 ```
 
 - **사용자 단위 all-or-nothing이다.** 공휴일에 쉬는 사용자는 그날 **모든** 정기 일정이 빠지고, 안 쉬는 사용자는 **모두** 그대로 적용된다. 회사(`true`) + 알바(`false`)처럼 행마다 값이 갈리는 상황은 정상 앱 흐름에서 발생하지 않으며, 발생하더라도 대표 행 하나로 판정한다.
-- 판정 입력은 **그날 매칭된 행이 아니라 사용자의 전체 정기 일정 목록**이다 — 대표 행이 그날 요일에 매칭되지 않을 수 있기 때문이다(예: 평일 근무가 대표 행인데 공휴일이 토요일 알바와 겹치는 경우). `#105`의 `primaryVacationSchedule`도 동일하게 전체 목록을 받는다.
+- 판정 입력은 **그날 매칭된 행이 아니라 사용자의 전체 정기 일정 목록**이다 — 대표 행이 그날 요일에 매칭되지 않을 수 있기 때문이다(예: 평일 근무가 대표 행인데 공휴일이 토요일 알바와 겹치는 경우). `policySource`도 동일하게 전체 목록을 받는다.
 - `holidayRest`의 default는 `true`이므로, 별도 설정을 하지 않은 대다수 사용자는 자동으로 "공휴일에 쉼"으로 동작한다.
 - 정기 일정이 하나도 없는 사용자는 대표 행이 없으므로 판정 자체가 불필요하다(제외할 정기가 없음).
 
@@ -175,7 +175,7 @@ regularsAppliedOn(matched, date, holidays):
 | `collectVacationOptions` | 공휴일 슬롯에 불필요한 연차 전환 후보가 생김 (실제로는 리졸버가 이미 열어둬 후보가 안 만들어지지만, 방어적으로 동일 필터 적용) |
 | `vacationDaysForSpan` | **공휴일에 쉬는 사람에게 연차를 청구** — 이 메서드는 `possible[]`을 보지 않고 근무의 `slotStatuses`만 보므로, 필터 없이는 공휴일에도 종일 연차 1.0일이 계산된다. `totalVacationDays` 과대 계산 → 추천 점수 왜곡 |
 
-`primaryVacationSchedule` 자체는 **변경하지 않는다** — 날짜와 무관한 전역 계산이며, H1이 이 메서드를 `holidayRest` 판정에도 **재사용**할 뿐이다.
+대표 행을 고르는 로직 자체는 **동작이 바뀌지 않는다** — `RecommendationEngine`의 private 메서드였던 것을 `RegularSchedule.policySource`로 옮겨 달력·추천이 함께 쓰게 했을 뿐이고, H1은 이 메서드를 `holidayRest` 판정에 재사용한다. `#52`가 지울 지점도 이 한 곳으로 모였다.
 
 ### H5 — 조회 범위와 캐시 정합
 
@@ -221,13 +221,13 @@ regularsAppliedOn(matched, date, holidays):
 
 - [ ] `./gradlew test` 통과
 - [ ] `./gradlew build` 성공
-- [ ] 위 검증 시나리오의 정상·엣지 케이스가 단위 테스트로 존재
-- [ ] `schedule-calendar-resolve.md` A4 amend (REMOVED 문구 실제 삭제 확인)
-- [ ] `trip-recommendation-algorithm.md` 리스크 표 amend
-- [ ] `#2` 공휴일 항목 종결 확인 (2026-08-16 처리 완료)
+- [x] 위 검증 시나리오의 정상·엣지 케이스가 단위 테스트로 존재 (`ScheduleCalendarResolverTest` 7건 · `RecommendationEngineTest` 3건)
+- [x] `schedule-calendar-resolve.md` A4 amend (REMOVED 문구 실제 삭제 확인)
+- [x] `trip-recommendation-algorithm.md` 리스크 표 amend
+- [x] `#2` 공휴일 항목 종결 확인 (2026-08-16 처리 완료)
 - [ ] 커밋에 `Breaking-Change-Reason:` 트레일러 포함
 - [x] `docs/specs/README.md` 인덱스에 본 스펙 등록 (2026-08-16, 스펙 작성 시 완료)
-- [ ] OpenAPI 변경 없음 확인 (스키마 무변경 — 값만 변화)
+- [x] OpenAPI 변경 없음 확인 (스키마 무변경 — 값만 변화)
 
 ## 리스크·미결정
 

@@ -433,7 +433,7 @@ function combineRegularsImpossibleWins(regulars):
 | **A1** | calendar **기간 상한** | **#37 C1 Approved·구현:** 구간 ⊆ today~+2y−1 | `CALENDAR_WINDOW_YEARS=2` | **Implemented (#37)** |
 | **A2** | `personal-summary` vs `schedule-calendar` | T1 대체 | **T1 확정** (#12) · **personal-summary 삭제** |
 | **A3** | **타임존·날짜 경계** | `LocalDate` only vs zone 포함 | **캘린더 일자(존 없음)** — 요청/응답 모두 date | 합의 권장 (문서에 박기) |
-| **A4** | **`holidayRest`를 calendar에 반영?** | wave 2 Out / 공휴일 테이블 후 반영 | **wave 2 Out** — 요일만. 공휴일은 #13·후속 | 확정 방향(문서) · 프론트에 “공휴일≠휴무 자동” 고지 |
+| **A4** | **`holidayRest`를 calendar에 반영?** | 반영함 | **반영 완료** — 공휴일에 쉬는 사용자의 공휴일은 정기 일정을 적용하지 않음(개별·구글은 유지). 판정은 사람 단위(대표 행 기준) | **Implemented** ([`schedule-holiday-rest.md`](schedule-holiday-rest.md), #107) |
 | **A5** | **`VacationApplyPeriod`를 calendar에 반영?** | 슬롯만 / “신청 불가 기간” 표시 | **슬롯만** (calendar). 신청 가능 여부는 제출·추천 | 확정 방향 |
 | **A6** | **`uncertain` 달력 표시 vs 추천** | U1 슬롯 유지 / U2 가림 | 달력 **U1**. 추천 TBD는 #13 | 달력 확정 · 추천 `[미정]` |
 | **A7** | 응답에 **`source`** | 생략 / REGULAR\|PERSONAL | **생략**(Must 아님) | Nice |
@@ -491,4 +491,5 @@ function combineRegularsImpossibleWins(regulars):
 | 2026-07-21 | **제품 재확정** — A1→마이페이지 today+2년(#37 C1) · 방=희망 기간 · #38 CONFIRMED∪TERMINATED |
 | 2026-07-29 | **용어 변경** — "effective" 표현을 전부 "정기+개별 합친 값/달력"으로 교체(Swagger·docs·내부 메서드명 `resolveEffectiveSchedule`→`resolveMergedSchedule` 동일 적용, DB·API 계약 변경 없음) · "응답 DTO 비교"·"마이페이지 개별 일정 편집 UX"(시나리오·엣지케이스) 절 추가 · FE 전달용 [`schedule-calendar-merge.md`](../../product/fe-context/user-schedule/schedule-calendar-merge.md) 작성 |
 | 2026-07-29 | **문서 보강** — 여행 칩(`GET /trips?scope=ongoing`)과 본 API `startDate`/`endDate`의 관계 명문화("트립 칩 → 조회 구간 선택" 절, API 계약 변경 없음) · "화면 요소 ↔ API 필드 매핑" 절 추가 |
+| 2026-08-16 | **A4 해소** — `holidayRest`를 근무일 판정에 반영([`schedule-holiday-rest.md`](schedule-holiday-rest.md), #107). 구 "wave 2 Out — 요일만" 방향과 프론트 "공휴일≠휴무 자동" 고지 문구 삭제 |
 | 2026-07-29 | **S1 폐기 → O1로 대체** ([`schedule-slot-override.md`](schedule-slot-override.md), #67, **Approved·구현 완료**) — 개별 일정이 "그 날 전체 대체"에서 "슬롯 단위 오버라이드"로 전환. 본 문서의 S1·R1 서술은 이력 문서로 유지, 확정 사항 표 #1·#2에 폐기 표시 |

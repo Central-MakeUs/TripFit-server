@@ -13,7 +13,7 @@
 
 1. **프론트엔드 직접 확인:** `TripFit-client`의 `useSaveRegularSchedule.ts`가 "기본 정보 관리" 화면에서 `annualLeaveCount`/`leaveNoticeDays`/`includeHalfDayHoliday`(연차 관련 4개 값)를 **화면 전체에 하나뿐인 공유 값**으로 관리하다가, 저장 시점에 사용자의 **모든** `RegularSchedule` 행에 동일한 값을 실어 PATCH/POST하는 것을 확인 — 실제 앱에서는 항상 모든 행이 같은 값으로 유지된다.
 2. 이에 따라 **"첫 번째(가장 먼저 등록된, `createdAt` 오름차순) `RegularSchedule` 행 기준"**(후보안 1)으로 결정 — 실제 앱 동작과 정확히 일치하며, 여러 행이 존재해도 결과가 달라지지 않는다(프론트가 항상 동기화하므로).
-3. **근본 원인(필드 위치가 `User`가 아니라 `RegularSchedule`)은 별도 이슈 `#52`로 분리** — API 계약이 바뀌는 breaking change라 프론트 담당자 부재중에는 진행하지 않기로 함(2026-08-15 사용자 결정). `RecommendationEngine`의 "첫 번째 행 기준" 로직은 `#52` 완료 시 제거 예정(`primaryVacationSchedule` 메서드에 표시).
+3. **근본 원인(필드 위치가 `User`가 아니라 `RegularSchedule`)은 별도 이슈 `#52`로 분리** — API 계약이 바뀌는 breaking change라 프론트 담당자 부재중에는 진행하지 않기로 함(2026-08-15 사용자 결정). "첫 번째 행 기준" 로직은 `#52` 완료 시 제거 예정 — 2026-08-16 `#107` 구현에서 `RegularSchedule.policySource`로 옮겨, 연차·반차·공휴일 휴무가 같은 대표 행을 쓰도록 단일 SSOT가 됐다(그 메서드에 제거 TODO 표시).
 
 ## 목표
 
@@ -139,7 +139,7 @@
 
 ### 3. 예산과 탐색
 
-예산 = 참여자의 `RegularSchedule.maxVacationDays`(여행당 사용 가능 최대 연차 일수). **어느 행의 값을 쓸지는 가장 먼저 등록된(`createdAt` 오름차순) 행을 기준으로 한다** — `TripFit-client`가 저장 시점에 모든 행에 동일한 값을 다시 써서 항상 일치시키므로(위 "블로커 해결 이력" 참고) 어느 행을 골라도 결과는 같다. `RecommendationEngine.primaryVacationSchedule`로 구현, `#52`(필드를 `User`로 이동) 완료 시 제거 예정.
+예산 = 참여자의 `RegularSchedule.maxVacationDays`(여행당 사용 가능 최대 연차 일수). **어느 행의 값을 쓸지는 가장 먼저 등록된(`createdAt` 오름차순) 행을 기준으로 한다** — `TripFit-client`가 저장 시점에 모든 행에 동일한 값을 다시 써서 항상 일치시키므로(위 "블로커 해결 이력" 참고) 어느 행을 골라도 결과는 같다. `RegularSchedule.policySource`로 구현(연차·반차·공휴일 휴무 공용 대표 행 — `#107`에서 `RecommendationEngine`에서 엔티티로 이동), `#52`(필드를 `User`로 이동) 완료 시 제거 예정.
 
 전환 단위(§1-1, 날짜 × 근무마다 종일 연차·반차) 부분집합 중 예산을 넘지 않는 조합을 모두 검토해, 다음 순서로 **정확한 최적해**를 채택한다(그리디 근사 금지 — 단위 수가 `durationDays × 정기 일정 행 수`에 비례해 작다. 극단적으로 긴 구간에서 조합 수가 폭발하는 것만 `MAX_CONVERSION_UNITS`로 막는다):
 
@@ -307,7 +307,7 @@ interface RecommendationEngine {
 | 항목 | 상태 | 비고 |
 | --- | --- | --- |
 | `attendRate`(카드 참석률 %) 계산식 | `[제안]` | 화면 역산 추정 — 기획 확정 필요 |
-| 공휴일 데이터 | **#107로 분리** | KR 공휴일 static table vs API — 동점 처리엔 더 이상 불필요(주말·공휴일 기준 폐기). `holidayRest` 필드는 저장만 되고 추천 계산에서 읽히지 않는 상태이며, 이를 실제로 반영하는 작업은 **#107**(2026-08-16 사용자 확정, 이번 amend 범위 밖) |
+| 공휴일 데이터 | **반영 완료 (#107)** | 공공데이터포털 특일정보 API + Redis 캐싱으로 확정([`decisions/011`](../../decisions/011-holiday-data-source.md)). `holidayRest`가 이제 추천 계산에도 반영된다 — 공휴일에 쉬는 사용자는 그날 근무가 없는 것으로 보고 연차를 청구하지 않음(`matchingRegulars`). 동점 처리에는 여전히 미사용(주말·공휴일 기준 폐기 유지). 상세: [`schedule-holiday-rest.md`](../user-schedule/schedule-holiday-rest.md) |
 | `vacationApplyPeriod` 반영 여부 | `[미정]` | 2026-08-15 amend Out of Scope로 분리 — 후속 스펙 필요 시 별도 논의 |
 | amend용 GitHub 이슈 | 확정 | **#105** — 2026-08-15 사용자 확인 후 신규 생성 |
 | 연차 관련 필드 위치(`RegularSchedule`→`User`) | `[미정]` | **#52**로 분리(스키마 리팩토링, 프론트 담당자 복귀 후 진행) — "블로커 해결 이력" 참고 |
