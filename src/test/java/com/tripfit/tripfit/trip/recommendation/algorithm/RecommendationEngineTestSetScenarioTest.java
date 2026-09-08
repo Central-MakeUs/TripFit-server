@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 // "운영자용 정답" 참여자별 분류를 그대로 재현하는지 확인한다(#105 저녁 자동 해제 회귀 방지).
 @ExtendWith(MockitoExtension.class)
 class RecommendationEngineTestSetScenarioTest {
+
+  private final HolidayProvider holidayProvider = (start, end) -> Set.of();
 
   @Mock
   private RegularScheduleRepository regularScheduleRepository;
@@ -55,9 +59,10 @@ class RecommendationEngineTestSetScenarioTest {
   @BeforeEach
   void setUp() {
     SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(regularScheduleRepository, personalScheduleRepository);
+        new ScheduleAvailabilityAdapter(
+            regularScheduleRepository, personalScheduleRepository, holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
-    engine = new RecommendationEngine(schedulePort, googleCalendarPort);
+    engine = new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
     when(googleCalendarService.findBusyDaysByUserIds(any(), any(), any())).thenReturn(Map.of());
   }
 

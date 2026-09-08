@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.config.TripActivityAspect;
@@ -56,6 +57,7 @@ import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +72,8 @@ import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class TripServiceTest {
+
+  private final HolidayProvider holidayProvider = (start, end) -> Set.of();
 
   private static final UUID OWNER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
 
@@ -152,7 +156,8 @@ class TripServiceTest {
         new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
     SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(regularScheduleRepository, personalScheduleRepository);
+        new ScheduleAvailabilityAdapter(
+            regularScheduleRepository, personalScheduleRepository, holidayProvider);
     GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     TripMemberQueryService tripMemberQueryService =
         new TripMemberQueryService(
@@ -174,7 +179,7 @@ class TripServiceTest {
             googleCalendarPort,
             support);
     RecommendationEngine recommendationEngine =
-        new RecommendationEngine(schedulePort, googleCalendarPort);
+        new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
     TripRecommendationService tripRecommendationServiceRaw =
         new TripRecommendationService(
             support,
