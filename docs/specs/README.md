@@ -56,6 +56,7 @@
 | [`schedule-unified.md`](user-schedule/schedule-unified.md) | 2 | **Approved** (#11) | 정기(`regular_schedule`)·개별(`personal_schedule`) 2테이블 | wave 1 auth·onboarding |
 | [`schedule-calendar-resolve.md`](user-schedule/schedule-calendar-resolve.md) | 2 | **Implemented** (#17) · S1·R2=A · **A1→#37** | regular+personal → 날짜별 정기+개별 합친 달력 조회 | schedule-unified (#11) · #37 |
 | [`schedule-slot-override.md`](user-schedule/schedule-slot-override.md) | 2 | **Approved** (#67) | S1(개별 전체 대체) → O1(슬롯 단위 오버라이드) 전환 | schedule-calendar-resolve.md |
+| [`schedule-holiday-rest.md`](user-schedule/schedule-holiday-rest.md) | 2 | **Approved** (#107) | `holidayRest` 근무일 판정 반영 — 공공데이터포털 특일정보 API + Redis 캐싱, 달력·추천 공통 | schedule-calendar-resolve (A4) · decision 011 |
 
 ## `trip/`
 
@@ -129,6 +130,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#78** | google-calendar-client-id-separation (Implemented — 백엔드 배선·GCP 콘솔 발급·FE 전환 완료, **Wave 3**(2026-08-03 Wave 4→3 이동)) | Closed |
 | **#62** | trip-thumbnail-image (Draft) — 2026-08-02 재작성, 구 "OAuth 콘솔 설정값" 내용은 `#86`으로 이관 | Open |
 | **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
+| **#107** | schedule-holiday-rest (Draft — 데이터 소스는 decision 011로 확정, 스펙 승인 대기) | Open · **Wave 2** |
 
 ## 완료 후
 
