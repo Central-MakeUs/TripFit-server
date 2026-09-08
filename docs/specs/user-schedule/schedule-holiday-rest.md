@@ -214,18 +214,19 @@ regularsAppliedOn(matched, date, holidays):
 
 ### 수동 / 통합
 
-- [ ] 인증키 발급 후 실제 API 1회 호출해 응답 스키마가 위 "외부 API" 절과 일치하는지 대조
+- [ ] 인증키 발급 후 실제 API 1회 호출해 응답 스키마가 위 "외부 API" 절과 일치하는지 대조 — 절차: [`deploy/holiday-api-setup.md`](../../../deploy/holiday-api-setup.md)
 - [ ] 실제 공휴일 날짜(예: 다음 국경일)로 `GET /users/schedule/calendar` 호출해 눈으로 확인
 
 ## 완료 기준
 
-- [ ] `./gradlew test` 통과
-- [ ] `./gradlew build` 성공
-- [x] 위 검증 시나리오의 정상·엣지 케이스가 단위 테스트로 존재 (`ScheduleCalendarResolverTest` 7건 · `RecommendationEngineTest` 3건)
+- [x] `./gradlew test` 통과 (2026-08-16, Docker 가용 환경에서 505건 전체 통과 — 실패·오류 0)
+- [x] `./gradlew build` 성공 (2026-08-16, `spotlessCheck` 포함)
+- [x] 위 검증 시나리오의 정상·엣지 케이스가 단위 테스트로 존재 (`ScheduleCalendarResolverTest` 7건 · `RecommendationEngineTest` 3건 · `RecommendationEngineTestSetScenarioTest` 1건 — 2026년 10월 실제 공휴일 3일로 5인 시나리오 재현)
 - [x] `schedule-calendar-resolve.md` A4 amend (REMOVED 문구 실제 삭제 확인)
 - [x] `trip-recommendation-algorithm.md` 리스크 표 amend
 - [x] `#2` 공휴일 항목 종결 확인 (2026-08-16 처리 완료)
-- [ ] 커밋에 `Breaking-Change-Reason:` 트레일러 포함
+- [x] `Breaking-Change-Reason:` 트레일러 — **해당 없음**으로 판정 (2026-08-16). 요청·응답 필드·enum·`ErrorCode`·경로가 전부 무변경이고, 달라지는 것은 같은 계약 위의 **데이터 값**뿐이라 프론트 처리 로직이 바뀌지 않는다. 공휴일에 정기가 빠져 그 날짜가 sparse 응답에서 omit될 수 있으나, omit 자체는 기존에도 "일정 없는 날"에서 발생하던 정상 형태다
+- [x] 배포 환경변수 배선 (2026-08-16 — CI/CD `envs` 화이트리스트·`export`·`docker-compose` app 환경변수에 `HOLIDAY_API_SERVICE_KEY` 추가. 누락 상태였으면 Secret을 등록해도 컨테이너까지 전달되지 않았음)
 - [x] `docs/specs/README.md` 인덱스에 본 스펙 등록 (2026-08-16, 스펙 작성 시 완료)
 - [x] OpenAPI 변경 없음 확인 (스키마 무변경 — 값만 변화)
 

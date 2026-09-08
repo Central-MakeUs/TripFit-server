@@ -33,8 +33,8 @@
 ## 후속 작업
 
 - [x] `#2` 미정 항목 확정 처리
-- [ ] `#107` — `specify` 스킬로 스펙 작성: API 필드 매핑, Redis 캐싱 TTL·재동기화 주기, 실패 폴백 정책, `ScheduleCalendarResolver` 반영 범위
-- [ ] 공공데이터포털 활용신청 + 인증키 발급 (`#107` 착수 전 선행)
+- [x] `#107` — 스펙 작성·Approved: [`schedule-holiday-rest.md`](../specs/user-schedule/schedule-holiday-rest.md) (2026-08-16, 구현·테스트 완료)
+- [ ] 공공데이터포털 활용신청 + 인증키 발급 — 절차: [`deploy/holiday-api-setup.md`](../../deploy/holiday-api-setup.md). 키 없이도 서버는 "공휴일 없음"으로 정상 기동하므로 배포 차단 요인은 아니다
 
 ## 변경 이력
 

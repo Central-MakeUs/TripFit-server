@@ -7,6 +7,7 @@ Docker Compose 기반 배포 설정. **배포 운영 SSOT** — 절차·환경�
 | [`docs/decisions/002-domain-split-vercel-api.md`](../docs/decisions/002-domain-split-vercel-api.md) | 도메인 분리 확정 |
 | [`docs/architecture.md`](../docs/architecture.md) | 프로필·ddl-auto·레이어 |
 | [`ec2-split-deployment.md`](ec2-split-deployment.md) | VPC·SG·1→2 EC2 심화 |
+| [`holiday-api-setup.md`](holiday-api-setup.md) | 공휴일 API 인증키 발급·등록·검증 |
 | [`.claude/rules/deployment.md`](../.claude/rules/deployment.md) | 에이전트 배포 가드레일 |
 
 역할별로 분리되어 있습니다.
@@ -213,6 +214,7 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 | `APPLE_PRIVATE_KEY` | ✅ (Apple 로그인 시) | 위 `.p8` 키 원문 — client_secret JWT ES256 서명 |
 | `KAKAO_ADMIN_KEY` | ✅ (Kakao 로그인 시) | Kakao Developers 앱 Admin Key — 탈퇴 시 unlink 호출 전용(로그인 검증 자체에는 불필요) |
 | `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 연동 시) | Firebase 서비스 계정 JSON 전체를 base64 인코딩한 값 (`docs/specs/notification/notification.md` D4) — 파일을 컨테이너에 올리지 않고 env로만 전달 |
+| `HOLIDAY_API_SERVICE_KEY` | ✅ (공휴일 반영 시) | 공공데이터포털 특일 정보 API 인증키 — 반드시 **Decoding** 키. 발급·검증 절차는 [`holiday-api-setup.md`](holiday-api-setup.md). 비어 있으면 동기화를 건너뛰고 "공휴일 없음"으로 동작(앱은 정상 기동) |
 
 **`LOKI_HOST`**: EC2 A는 위 Secret으로 관리(값 `172.31.38.217` — TP-monitoring private IP). EC2 C를 재생성해 private IP가 바뀌면 **이 Secret만 갱신**하면 된다. `deploy/app/docker-compose.yml`·`deploy/mysql/docker-compose.yml`의 `${LOKI_HOST:-172.31.38.217}` 기본값은 Secret 미설정 시에도 컨테이너가 죽지 않게 하는 fail-safe 용도로 남겨뒀다 — IP가 실제로 바뀌면 이 기본값도 함께 갱신해 두 값이 계속 일치하도록 한다. **EC2 B(MySQL)는 CI/CD 대상이 아니라 이 Secret이 적용되지 않음** — B의 `deploy/mysql/.env`에 `LOKI_HOST`를 직접 수정해야 한다.
 
