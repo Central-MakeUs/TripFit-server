@@ -80,3 +80,5 @@ tripfit:
     token-aes-key: ${SOCIAL_TOKEN_AES_KEY:}
   fcm:
     credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
+  holiday:
+    service-key: ${HOLIDAY_API_SERVICE_KEY:}

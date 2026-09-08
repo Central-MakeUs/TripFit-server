@@ -3,6 +3,7 @@ package com.tripfit.tripfit.auth.security;
 import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.jwt.JwtProperties;
 import com.tripfit.tripfit.auth.oauth.OAuthProperties;
+import com.tripfit.tripfit.common.holiday.config.HolidayProperties;
 import com.tripfit.tripfit.common.security.SocialTokenCryptoProperties;
 import com.tripfit.tripfit.notification.config.FcmProperties;
 import java.time.Duration;
@@ -20,7 +21,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
     JwtProperties.class,
     OAuthProperties.class,
     SocialTokenCryptoProperties.class,
-    FcmProperties.class
+    FcmProperties.class,
+    HolidayProperties.class
 })
 public class AppConfig implements WebMvcConfigurer {
 

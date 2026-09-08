@@ -3,6 +3,7 @@ package com.tripfit.tripfit.user.schedule.service;
 import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
+import com.tripfit.tripfit.common.holiday.HolidayProvider;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
@@ -62,6 +63,8 @@ public class ScheduleService {
   private final GoogleCalendarService googleCalendarService;
 
   private final TripMemberRepository tripMemberRepository;
+
+  private final HolidayProvider holidayProvider;
 
   // 정기 일정 목록 조회 — 생성 시각 오름차순
   @Transactional(readOnly = true)
@@ -226,7 +229,12 @@ public class ScheduleService {
         personals.stream()
             .collect(Collectors.toMap(PersonalSchedule::getScheduleDate, PersonalSchedule::getId));
     Map<LocalDate, CalendarDayResponse> resolvedByDate =
-        ScheduleCalendarResolver.resolve(regulars, new ArrayList<>(personals), dates, googleBusy)
+        ScheduleCalendarResolver.resolve(
+            regulars,
+            new ArrayList<>(personals),
+            dates,
+            googleBusy,
+            holidayProvider.findHolidaysBetween(minDate, maxDate))
             .stream()
             .collect(Collectors.toMap(CalendarDayResponse::date, Function.identity()));
 
@@ -284,7 +292,8 @@ public class ScheduleService {
             personals,
             startDate,
             endDate,
-            googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate)));
+            googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate),
+            holidayProvider.findHolidaysBetween(startDate, endDate)));
   }
 
   private void validateRegularTimesAndVacation(

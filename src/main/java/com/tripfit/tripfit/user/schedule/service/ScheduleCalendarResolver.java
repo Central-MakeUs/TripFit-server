@@ -20,30 +20,25 @@ import java.util.Set;
 
 // 정기 요일 펼침 ⊕ 구글 busy(자동 계산 기본값)를, 개별 일정의 슬롯 단위 오버라이드로 덮어써 날짜별 최종 슬롯을 만든다(O1)
 // 슬롯 3개+구글 신호가 전부 없는 날짜는 응답에서 omit(sparse)
+// 공휴일에 쉬는 사용자(holidayRest)의 공휴일은 정기 일정을 적용하지 않는다 — 개별 일정·구글 busy는 그대로 유지
 public final class ScheduleCalendarResolver {
 
   private ScheduleCalendarResolver() {}
 
-  public static List<CalendarDayResponse> resolve(
-      List<RegularSchedule> regulars,
-      List<PersonalSchedule> personals,
-      LocalDate startDate,
-      LocalDate endDate) {
-    return resolve(regulars, personals, startDate, endDate, Map.of());
-  }
-
-  // 1. 날짜별 정기 매칭 2. 슬롯마다 정기⊕구글로 기본값 계산 3. 개별 오버라이드가 있으면 그 슬롯만 최종 승자 — 개별·정기·구글 전부 없는 날짜만 omit
+  // 1. 날짜별 정기 매칭(공휴일에 쉬는 사용자면 그날 정기 전체 제외) 2. 슬롯마다 정기⊕구글로 기본값 계산
+  // 3. 개별 오버라이드가 있으면 그 슬롯만 최종 승자 — 개별·정기·구글 전부 없는 날짜만 omit
   public static List<CalendarDayResponse> resolve(
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
       LocalDate startDate,
       LocalDate endDate,
-      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate) {
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
+      Set<LocalDate> holidays) {
     List<LocalDate> dates = new ArrayList<>();
     for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
       dates.add(date);
     }
-    return resolve(regulars, personals, dates, googleBusyByDate);
+    return resolve(regulars, personals, dates, googleBusyByDate, holidays);
   }
 
   // 연속 구간 전체가 아니라 요청받은 날짜 집합만 계산 — upsertPersonal처럼 반영된 날짜만 필요할 때
@@ -52,15 +47,18 @@ public final class ScheduleCalendarResolver {
       List<RegularSchedule> regulars,
       List<PersonalSchedule> personals,
       Collection<LocalDate> dates,
-      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate) {
+      Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
+      Set<LocalDate> holidays) {
     Map<LocalDate, PersonalSchedule> personalsByDate = indexByDate(personals);
     Map<DayOfWeek, List<RegularSchedule>> regularsByDayOfWeek = groupByDayOfWeek(regulars);
+    // 공휴일 휴무는 사람 단위 설정이라 날짜마다 다시 볼 필요가 없어 루프 밖에서 한 번만 판정
+    boolean restsOnHolidays = RegularSchedule.restsOnHolidays(regulars);
 
     Map<LocalDate, CalendarDayResponse> byDate = new HashMap<>();
     for (LocalDate date : dates) {
       PersonalSchedule personal = personalsByDate.get(date);
       List<RegularSchedule> matched =
-          regularsByDayOfWeek.getOrDefault(date.getDayOfWeek(), List.of());
+          regularsAppliedOn(date, regularsByDayOfWeek, restsOnHolidays, holidays);
       GoogleCalendarBusyDay googleBusy =
           googleBusyByDate != null ? googleBusyByDate.get(date) : null;
       if (personal == null && matched.isEmpty() && googleBusy == null) {
@@ -71,6 +69,19 @@ public final class ScheduleCalendarResolver {
     return byDate.values().stream()
         .sorted(Comparator.comparing(CalendarDayResponse::date))
         .toList();
+  }
+
+  // 그날 실제로 적용되는 정기 일정 — 공휴일에 쉬는 사용자의 공휴일은 정기가 아예 없는 날처럼 취급한다.
+  // 개별 일정·구글 busy는 여기서 건드리지 않으므로 공휴일이어도 그대로 최종값을 이긴다
+  private static List<RegularSchedule> regularsAppliedOn(
+      LocalDate date,
+      Map<DayOfWeek, List<RegularSchedule>> regularsByDayOfWeek,
+      boolean restsOnHolidays,
+      Set<LocalDate> holidays) {
+    if (restsOnHolidays && holidays != null && holidays.contains(date)) {
+      return List.of();
+    }
+    return regularsByDayOfWeek.getOrDefault(date.getDayOfWeek(), List.of());
   }
 
   private static Map<LocalDate, PersonalSchedule> indexByDate(List<PersonalSchedule> personals) {
