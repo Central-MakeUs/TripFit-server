@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Set;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private static final String BEARER_PREFIX = "Bearer ";
+
+  // permitAll 인증 엔드포인트 SSOT — SecurityConfig의 POST permitAll 등록도 이 목록을 그대로 씀(drift 방지)
+  public static final Set<String> PUBLIC_AUTH_POST_PATHS =
+      Set.of(
+          "/api/v1/auth/login",
+          "/api/v1/auth/refresh",
+          "/api/v1/auth/logout",
+          "/api/v1/auth/apple/notifications");
 
   private final JwtService jwtService;
 
@@ -33,6 +42,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     this.jwtService = jwtService;
     this.tokenRevocationChecker = tokenRevocationChecker;
     this.authErrorResponseWriter = authErrorResponseWriter;
+  }
+
+  @Override
+  // permitAll 엔드포인트는 인증 파싱 자체를 안 태움 — 태우면 클라이언트가 관성적으로 실어 보내는 만료된
+  // 액세스 토큰 때문에 로그인·재발급(refresh) 요청 자체가 컨트롤러 도달 전에 401로 막히는 문제가 생김
+  protected boolean shouldNotFilter(HttpServletRequest request) {
+    return "POST".equals(request.getMethod())
+        && PUBLIC_AUTH_POST_PATHS.contains(request.getRequestURI());
   }
 
   @Override

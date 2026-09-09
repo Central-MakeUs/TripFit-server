@@ -52,6 +52,8 @@ public class SecurityConfig {
   // login/refresh/logout/apple-notifications/error·actuator·swagger·scalar는 공개. logout은
   // 만료·폐기 토큰도 body로 처리하기 위해 permitAll.
   // apple/notifications는 Apple 서버가 직접 호출 — signed JWT 자체 검증으로 보호
+  // login/refresh/logout/apple-notifications 경로 목록은 JwtAuthenticationFilter.PUBLIC_AUTH_POST_PATHS가
+  // SSOT — 그 필터가 같은 경로를 파싱 자체에서 건너뛰므로 여기서 임의로 목록이 갈리면 안 됨
   // /error: authenticated 상태였던 요청도 예외 처리 중 SecurityContext가 비워진 채 내부 forward되므로, permitAll이 아니면
   // 원래 500이어야 할 응답이 401 AUTH_INVALID_TOKEN으로 오인 마스킹됨
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -63,21 +65,20 @@ public class SecurityConfig {
         .exceptionHandling(
             exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
         .authorizeHttpRequests(
-            auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/apple/notifications").permitAll()
-                .requestMatchers("/error").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers(
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/v3/api-docs/**",
-                    "/scalar",
-                    "/scalar/**")
-                .permitAll()
-                .anyRequest().authenticated())
+            auth -> {
+              JwtAuthenticationFilter.PUBLIC_AUTH_POST_PATHS.forEach(
+                  path -> auth.requestMatchers(HttpMethod.POST, path).permitAll());
+              auth.requestMatchers("/error").permitAll();
+              auth.requestMatchers("/actuator/**").permitAll();
+              auth.requestMatchers(
+                  "/swagger-ui/**",
+                  "/swagger-ui.html",
+                  "/v3/api-docs/**",
+                  "/scalar",
+                  "/scalar/**")
+                  .permitAll();
+              auth.anyRequest().authenticated();
+            })
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
