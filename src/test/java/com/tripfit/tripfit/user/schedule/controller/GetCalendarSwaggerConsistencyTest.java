@@ -9,7 +9,7 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -63,6 +63,8 @@ class GetCalendarSwaggerConsistencyTest {
             "getcal@example.com",
             "닉",
             null);
+    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    user.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     user = userRepository.save(user);
     accessToken = jwtService.createAccessToken(user.getId());
     regularScheduleRepository.save(
@@ -71,11 +73,7 @@ class GetCalendarSwaggerConsistencyTest {
             "출근",
             "MON,TUE,WED,THU,FRI,SAT,SUN",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            VacationApplyPeriod.ANY,
-            false,
-            true));
+            LocalTime.of(18, 0)));
   }
 
   // 200 @ApiResponse 예시가 선언한 필드(startDate/endDate/days[].date/morningStatus/afternoonStatus/

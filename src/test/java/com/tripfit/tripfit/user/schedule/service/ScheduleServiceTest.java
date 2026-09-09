@@ -14,7 +14,7 @@ import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
@@ -23,6 +23,8 @@ import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.PersonalScheduleItem;
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.SlotUpdate;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
+import com.tripfit.tripfit.user.schedule.dto.UpdateVacationPolicyRequest;
+import com.tripfit.tripfit.user.schedule.dto.VacationPolicyResponse;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
@@ -100,17 +102,12 @@ class ScheduleServiceTest {
                 "출근",
                 "MON,TUE,WED,THU,FRI",
                 LocalTime.of(9, 0),
-                LocalTime.of(18, 0),
-                5,
-                VacationApplyPeriod.ONE_WEEK_BEFORE,
-                true,
-                true));
+                LocalTime.of(18, 0)));
 
     assertThat(response.morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
-    assertThat(response.maxVacationDays()).isEqualTo(5);
-    assertThat(response.vacationApplyPeriod()).isEqualTo(VacationApplyPeriod.ONE_WEEK_BEFORE);
+    // maxVacationDays·vacationApplyPeriod는 RegularScheduleResponse에서 제거되고 User/VacationPolicyResponse로 이동
   }
 
   @Test
@@ -131,16 +128,12 @@ class ScheduleServiceTest {
                 "출근",
                 "MON,TUE,WED,THU,FRI",
                 LocalTime.of(9, 0),
-                LocalTime.of(18, 0),
-                null,
-                null,
-                null,
-                null));
+                LocalTime.of(18, 0)));
 
-    assertThat(response.maxVacationDays()).isEqualTo(2);
-    assertThat(response.vacationApplyPeriod()).isNull();
-    assertThat(response.halfVacationAvailable()).isFalse();
-    assertThat(response.holidayRest()).isTrue();
+    // maxVacationDays·vacationApplyPeriod·halfVacationAvailable·holidayRest 기본값 검증은
+    // RegularScheduleResponse에서 제거되고 User(VacationPolicyResponse)로 이동 — createRegular는 더 이상
+    // 이 값들을 다루지 않는다
+    assertThat(response.title()).isEqualTo("출근");
   }
 
   @Test
@@ -152,11 +145,7 @@ class ScheduleServiceTest {
                 "출근",
                 "MON,FOO",
                 LocalTime.of(9, 0),
-                LocalTime.of(18, 0),
-                null,
-                null,
-                null,
-                null)))
+                LocalTime.of(18, 0))))
         .isInstanceOf(TripFitException.class);
   }
 
@@ -178,28 +167,22 @@ class ScheduleServiceTest {
                 "출근",
                 " mon, tue ",
                 LocalTime.of(9, 0),
-                LocalTime.of(18, 0),
-                null,
-                null,
-                null,
-                null));
+                LocalTime.of(18, 0)));
 
     assertThat(response.daysOfWeek()).isEqualTo("MON,TUE");
   }
 
   @Test
   void updateRegular_recalculatesSlotsFromTimes() {
+    // 연차·반차·공휴일 휴무는 이제 RegularSchedule이 아니라 User 소유 값
+    user.applyVacationPolicy(5, VacationApplyPeriod.ONE_WEEK_BEFORE, true, true);
     RegularSchedule existing =
         RegularSchedule.create(
             user,
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            5,
-            VacationApplyPeriod.ONE_WEEK_BEFORE,
-            true,
-            true);
+            LocalTime.of(18, 0));
     existing.setId(REGULAR_ID);
     when(regularScheduleRepository.findByIdAndUserId(REGULAR_ID, USER_ID))
         .thenReturn(Optional.of(existing));
@@ -212,23 +195,72 @@ class ScheduleServiceTest {
                 "야간 근무",
                 "MON,WED,FRI",
                 LocalTime.of(13, 0),
-                LocalTime.of(22, 0),
-                3,
-                VacationApplyPeriod.TWO_WEEKS_BEFORE,
-                false,
-                false));
+                LocalTime.of(22, 0)));
 
     assertThat(existing.getTitle()).isEqualTo("야간 근무");
     assertThat(existing.getDaysOfWeek()).isEqualTo("MON,WED,FRI");
     assertThat(existing.getStartTime()).isEqualTo(LocalTime.of(13, 0));
     assertThat(existing.getEndTime()).isEqualTo(LocalTime.of(22, 0));
-    assertThat(existing.getMaxVacationDays()).isEqualTo(3);
-    assertThat(existing.getVacationApplyPeriod())
-        .isEqualTo(VacationApplyPeriod.TWO_WEEKS_BEFORE);
-    assertThat(existing.isHalfVacationAvailable()).isFalse();
-    assertThat(existing.isHolidayRest()).isFalse();
+    // maxVacationDays·vacationApplyPeriod·halfVacationAvailable·holidayRest는 RegularSchedule에서
+    // 제거되고 User로 이동 — updateRegular는 더 이상 이 값들을 다루지 않는다(전용 PATCH vacation-policy)
     assertThat(response.afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.eveningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
+  }
+
+  @Test
+  void getVacationPolicy_returnsUserOwnedValues() {
+    user.applyVacationPolicy(5, VacationApplyPeriod.ONE_WEEK_BEFORE, true, false);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    VacationPolicyResponse response = scheduleService.getVacationPolicy(USER_ID);
+
+    assertThat(response.maxVacationDays()).isEqualTo(5);
+    assertThat(response.vacationApplyPeriod()).isEqualTo(VacationApplyPeriod.ONE_WEEK_BEFORE);
+    assertThat(response.halfVacationAvailable()).isTrue();
+    assertThat(response.holidayRest()).isFalse();
+  }
+
+  @Test
+  void updateVacationPolicy_replacesAllFieldsOnUser_andDoesNotTouchIsAllFree() {
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    VacationPolicyResponse response =
+        scheduleService.updateVacationPolicy(
+            USER_ID,
+            new UpdateVacationPolicyRequest(3, VacationApplyPeriod.TWO_WEEKS_BEFORE, true, false));
+
+    assertThat(response.maxVacationDays()).isEqualTo(3);
+    assertThat(response.vacationApplyPeriod()).isEqualTo(VacationApplyPeriod.TWO_WEEKS_BEFORE);
+    assertThat(response.halfVacationAvailable()).isTrue();
+    assertThat(response.holidayRest()).isFalse();
+    // 연차 설정 저장은 "일정 등록"이 아니므로 isAllFree(방 입장 조건)를 건드리면 안 된다 — 건드리면 이미
+    // 방에 있는 사용자가 일정만 수정해도 SCHEDULE_ENTRY_REQUIRED로 튕기는 회귀가 생긴다
+    verify(userSummaryService, never()).clearAllFreeOnScheduleAdded(any());
+    verify(userSummaryService, never()).markAllFreeIfNoSchedules(any());
+  }
+
+  @Test
+  void updateVacationPolicy_nullFields_fallBackToDefaults() {
+    user.applyVacationPolicy(5, VacationApplyPeriod.ONE_WEEK_BEFORE, true, false);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+
+    VacationPolicyResponse response =
+        scheduleService.updateVacationPolicy(
+            USER_ID, new UpdateVacationPolicyRequest(null, null, null, null));
+
+    assertThat(response.maxVacationDays()).isEqualTo(User.DEFAULT_MAX_VACATION_DAYS);
+    assertThat(response.vacationApplyPeriod()).isNull();
+    assertThat(response.halfVacationAvailable()).isFalse();
+    assertThat(response.holidayRest()).isTrue();
+  }
+
+  @Test
+  void updateVacationPolicy_maxVacationDaysOutOfRange_throwsInvalidInput() {
+    assertThatThrownBy(
+        () ->
+            scheduleService.updateVacationPolicy(
+                USER_ID, new UpdateVacationPolicyRequest(11, null, null, null)))
+        .isInstanceOf(TripFitException.class);
   }
 
   @Test
@@ -390,17 +422,14 @@ class ScheduleServiceTest {
     // 정기(근무일: 아침·오후 불가능)가 있는 날짜에 슬롯 3개를 전부 POSSIBLE로 명시해도
     // (구 O1.3의 CLEAR 오인 버그와 달리) row가 삭제되지 않고 그대로 저장돼야 한다
     LocalDate thursday = LocalDate.of(2026, 8, 6);
+    user.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
         RegularSchedule.create(
             user,
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            true);
+            LocalTime.of(18, 0));
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
@@ -535,6 +564,7 @@ class ScheduleServiceTest {
     LocalDate baseWindowEnd = today.plusYears(2).minusDays(1);
     LocalDate extendedEnd = baseWindowEnd.plusDays(30);
     when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(extendedEnd);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
@@ -573,17 +603,15 @@ class ScheduleServiceTest {
     }
     LocalDate end = start.plusDays(6);
 
+    user.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
         RegularSchedule.create(
             user,
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            null,
-            false,
-            true);
+            LocalTime.of(18, 0));
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID))
         .thenReturn(List.of(work));
     when(

@@ -13,11 +13,12 @@ import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.jwt.JwtAuthentication;
 import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.PersonalScheduleResponse.PersonalScheduleItemResponse;
 import com.tripfit.tripfit.user.schedule.dto.RegularScheduleResponse;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse;
+import com.tripfit.tripfit.user.schedule.dto.VacationPolicyResponse;
 import com.tripfit.tripfit.user.schedule.service.ScheduleService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -80,11 +81,7 @@ class UserScheduleControllerTest {
                 LocalTime.of(18, 0),
                 ScheduleStatus.IMPOSSIBLE,
                 ScheduleStatus.IMPOSSIBLE,
-                ScheduleStatus.POSSIBLE,
-                5,
-                VacationApplyPeriod.ONE_WEEK_BEFORE,
-                true,
-                true));
+                ScheduleStatus.POSSIBLE));
 
     mockMvc
         .perform(
@@ -96,11 +93,7 @@ class UserScheduleControllerTest {
                           "title": "출근",
                           "daysOfWeek": "MON,TUE,WED,THU,FRI",
                           "startTime": "09:00:00",
-                          "endTime": "18:00:00",
-                          "maxVacationDays": 5,
-                          "vacationApplyPeriod": "ONE_WEEK_BEFORE",
-                          "halfVacationAvailable": true,
-                          "holidayRest": true
+                          "endTime": "18:00:00"
                         }
                         """))
         .andExpect(status().isCreated())
@@ -119,11 +112,7 @@ class UserScheduleControllerTest {
                 LocalTime.of(22, 0),
                 ScheduleStatus.POSSIBLE,
                 ScheduleStatus.IMPOSSIBLE,
-                ScheduleStatus.IMPOSSIBLE,
-                3,
-                VacationApplyPeriod.TWO_WEEKS_BEFORE,
-                false,
-                false));
+                ScheduleStatus.IMPOSSIBLE));
 
     mockMvc
         .perform(
@@ -135,11 +124,7 @@ class UserScheduleControllerTest {
                           "title": "야간 근무",
                           "daysOfWeek": "MON,WED,FRI",
                           "startTime": "13:00:00",
-                          "endTime": "22:00:00",
-                          "maxVacationDays": 3,
-                          "vacationApplyPeriod": "TWO_WEEKS_BEFORE",
-                          "halfVacationAvailable": false,
-                          "holidayRest": false
+                          "endTime": "22:00:00"
                         }
                         """))
         .andExpect(status().isOk())
@@ -185,6 +170,46 @@ class UserScheduleControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.items[0].uncertain").value(true))
         .andExpect(jsonPath("$.data.items[0].morningStatus").value("IMPOSSIBLE"));
+  }
+
+  @Test
+  void getVacationPolicy_ok() throws Exception {
+    when(scheduleService.getVacationPolicy(USER_ID))
+        .thenReturn(
+            new VacationPolicyResponse(2, VacationApplyPeriod.ONE_WEEK_BEFORE, false, true));
+
+    mockMvc
+        .perform(get("/api/v1/users/schedule/vacation-policy"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.maxVacationDays").value(2))
+        .andExpect(jsonPath("$.data.vacationApplyPeriod").value("ONE_WEEK_BEFORE"))
+        .andExpect(jsonPath("$.data.halfVacationAvailable").value(false))
+        .andExpect(jsonPath("$.data.holidayRest").value(true));
+  }
+
+  @Test
+  void patchVacationPolicy_replacesAllFields() throws Exception {
+    when(scheduleService.updateVacationPolicy(eq(USER_ID), any()))
+        .thenReturn(
+            new VacationPolicyResponse(5, VacationApplyPeriod.TWO_WEEKS_BEFORE, true, false));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/users/schedule/vacation-policy")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                        {
+                          "maxVacationDays": 5,
+                          "vacationApplyPeriod": "TWO_WEEKS_BEFORE",
+                          "halfVacationAvailable": true,
+                          "holidayRest": false
+                        }
+                        """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.maxVacationDays").value(5))
+        .andExpect(jsonPath("$.data.halfVacationAvailable").value(true))
+        .andExpect(jsonPath("$.data.holidayRest").value(false));
   }
 
   @Test

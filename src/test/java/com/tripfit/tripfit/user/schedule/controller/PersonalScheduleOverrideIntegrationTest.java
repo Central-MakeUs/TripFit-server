@@ -12,7 +12,7 @@ import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarBusyDayRepository;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
-import com.tripfit.tripfit.user.schedule.domain.VacationApplyPeriod;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -89,6 +89,8 @@ class PersonalScheduleOverrideIntegrationTest {
 
     user = new User("google-sub-o14", SocialProvider.GOOGLE, "o14@example.com", "유저A", null);
     user.applyProfilePatch("길동", "홍", null);
+    // 연차·반차·공휴일 휴무는 이제 User 소유 값 — R1·R2 정기 일정이 공통으로 쓰던 값을 User에 적용
+    user.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     user = userRepository.save(user);
     accessToken = jwtService.createAccessToken(user.getId());
 
@@ -108,11 +110,7 @@ class PersonalScheduleOverrideIntegrationTest {
             "출근",
             "MON,TUE,WED,THU,FRI",
             LocalTime.of(9, 0),
-            LocalTime.of(18, 0),
-            2,
-            VacationApplyPeriod.ANY,
-            false,
-            true));
+            LocalTime.of(18, 0)));
     // R2: 수요일 저녁 수업 19~21시 → 아침·오후 POSSIBLE, 저녁 IMPOSSIBLE (수요일은 R1과 겹쳐 하루 종일 IMPOSSIBLE)
     regularScheduleRepository.save(
         RegularSchedule.create(
@@ -120,11 +118,7 @@ class PersonalScheduleOverrideIntegrationTest {
             "저녁 수업",
             "WED",
             LocalTime.of(19, 0),
-            LocalTime.of(21, 0),
-            2,
-            VacationApplyPeriod.ANY,
-            false,
-            true));
+            LocalTime.of(21, 0)));
   }
 
   private String bearer() {
@@ -307,11 +301,7 @@ class PersonalScheduleOverrideIntegrationTest {
                 "격리 테스트용",
                 "SAT",
                 LocalTime.of(9, 0),
-                LocalTime.of(18, 0),
-                2,
-                VacationApplyPeriod.ANY,
-                false,
-                true));
+                LocalTime.of(18, 0)));
     LocalDate overriddenSat = mon.plusDays(26);
     LocalDate plainSat = mon.plusDays(33);
 
@@ -333,11 +323,7 @@ class PersonalScheduleOverrideIntegrationTest {
         "격리 테스트용",
         "SAT",
         LocalTime.of(9, 0),
-        LocalTime.of(13, 0),
-        2,
-        VacationApplyPeriod.ANY,
-        false,
-        true);
+        LocalTime.of(13, 0));
     regularScheduleRepository.save(isolated);
 
     // 오버라이드된 날짜 — 정기가 바뀌어도 그대로 고정. 각 날짜를 개별 조회한다 — 두 날짜 사이의
