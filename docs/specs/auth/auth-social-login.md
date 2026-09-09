@@ -165,8 +165,8 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 
 | 구성요소 | 역할 |
 |----------|------|
-| `SecurityFilterChain` | `/api/v1/auth/**` permitAll, 나머지 authenticated |
-| `JwtAuthenticationFilter` | Access JWT 파싱·검증 → SecurityContext 설정 |
+| `SecurityFilterChain` | `POST /api/v1/auth/{login,refresh,logout,apple/notifications}` + `/error`·`/actuator/**`·swagger·scalar permitAll, 나머지 authenticated |
+| `JwtAuthenticationFilter` | Access JWT 파싱·검증 → SecurityContext 설정. `shouldNotFilter`로 위 permitAll POST 4종은 파싱 자체를 건너뜀(`JwtAuthenticationFilter.PUBLIC_AUTH_POST_PATHS`가 SecurityConfig와 공유하는 SSOT) — 아니면 클라이언트가 관성적으로 붙여 보내는 만료된 액세스 토큰 때문에 login/refresh/logout 자체가 컨트롤러 도달 전에 401로 막힘(2026-08-16 발견·수정, 아래 변경 이력) |
 | `SocialTokenVerifier` | provider별 토큰 검증 (Strategy 패턴) |
 | `@AuthorizedUser` | HandlerMethodArgumentResolver — 컨트롤러에 `UUID userId` 주입 (AOP 확장 기반) |
 
@@ -596,3 +596,4 @@ com.tripfit.tripfit
 | 2026-06-30 | DB 변경 허용 정책 추가, Approved, decisions `001` 연결 |
 | 2026-07-06 | 하이브리드 앱·스토어 심사 주의사항·단일 login 엔드포인트·프론트 합의 체크리스트 추가 |
 | 2026-07-08 | 온보딩·이름(성/이름)·boolean 3개 — [`007`](../../decisions/007-user-profile-onboarding.md), [`user-onboarding.md`](../user/user-onboarding.md); nickname fallback 폐기 |
+| 2026-08-16 | **버그 수정** — `JwtAuthenticationFilter`가 permitAll 엔드포인트(login/refresh/logout/apple-notifications)에도 `Authorization` 헤더를 먼저 검사해, 클라이언트가 만료된 액세스 토큰을 관성적으로 실어 보내면 컨트롤러 도달 전에 401 `AUTH_EXPIRED`로 차단되던 결함 발견·수정. 특히 `POST /refresh`가 재발급이 필요한 바로 그 시점(액세스 토큰 만료 직후)에 100% 실패해 로그인이 몇 시간 뒤 풀리는 것처럼 보이는 원인이었음(운영 로그 확인 — 48시간 동안 refresh 호출 2건 전부 401). `shouldNotFilter` 오버라이드로 해당 4개 POST 경로는 필터 파싱 자체를 건너뛰도록 수정, API 계약 변경 없음(순수 버그 수정) |
