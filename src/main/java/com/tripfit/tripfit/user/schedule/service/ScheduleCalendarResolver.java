@@ -33,12 +33,13 @@ public final class ScheduleCalendarResolver {
       LocalDate startDate,
       LocalDate endDate,
       Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
-      Set<LocalDate> holidays) {
+      Set<LocalDate> holidays,
+      boolean holidayRest) {
     List<LocalDate> dates = new ArrayList<>();
     for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
       dates.add(date);
     }
-    return resolve(regulars, personals, dates, googleBusyByDate, holidays);
+    return resolve(regulars, personals, dates, googleBusyByDate, holidays, holidayRest);
   }
 
   // 연속 구간 전체가 아니라 요청받은 날짜 집합만 계산 — upsertPersonal처럼 반영된 날짜만 필요할 때
@@ -48,17 +49,16 @@ public final class ScheduleCalendarResolver {
       List<PersonalSchedule> personals,
       Collection<LocalDate> dates,
       Map<LocalDate, GoogleCalendarBusyDay> googleBusyByDate,
-      Set<LocalDate> holidays) {
+      Set<LocalDate> holidays,
+      boolean holidayRest) {
     Map<LocalDate, PersonalSchedule> personalsByDate = indexByDate(personals);
     Map<DayOfWeek, List<RegularSchedule>> regularsByDayOfWeek = groupByDayOfWeek(regulars);
-    // 공휴일 휴무는 사람 단위 설정이라 날짜마다 다시 볼 필요가 없어 루프 밖에서 한 번만 판정
-    boolean restsOnHolidays = RegularSchedule.restsOnHolidays(regulars);
 
     Map<LocalDate, CalendarDayResponse> byDate = new HashMap<>();
     for (LocalDate date : dates) {
       PersonalSchedule personal = personalsByDate.get(date);
       List<RegularSchedule> matched =
-          regularsAppliedOn(date, regularsByDayOfWeek, restsOnHolidays, holidays);
+          regularsAppliedOn(date, regularsByDayOfWeek, holidayRest, holidays);
       GoogleCalendarBusyDay googleBusy =
           googleBusyByDate != null ? googleBusyByDate.get(date) : null;
       if (personal == null && matched.isEmpty() && googleBusy == null) {

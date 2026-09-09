@@ -21,6 +21,8 @@ import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.Perso
 import com.tripfit.tripfit.user.schedule.dto.UpdatePersonalScheduleRequest.SlotUpdate;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
 import com.tripfit.tripfit.user.schedule.dto.UpdateRegularScheduleRequest;
+import com.tripfit.tripfit.user.schedule.dto.UpdateVacationPolicyRequest;
+import com.tripfit.tripfit.user.schedule.dto.VacationPolicyResponse;
 import com.tripfit.tripfit.user.schedule.exception.ScheduleErrorCode;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
@@ -78,13 +80,9 @@ public class ScheduleService {
   // 정기 일정 생성 — start/end로 슬롯 계산 후 저장, 첫 row면 hasPreSchedule true(다음 login/me/profile 재조회)
   @Transactional
   public RegularScheduleResponse createRegular(UUID userId, CreateRegularScheduleRequest request) {
-    // 1. 제목·시각·연차 필드 입력을 검증함
-    validateRegularTimesAndVacation(
-        request.title(),
-        request.daysOfWeek(),
-        request.startTime(),
-        request.endTime(),
-        request.maxVacationDays());
+    // 1. 제목·시각 입력을 검증함
+    validateRegularTimes(
+        request.title(), request.daysOfWeek(), request.startTime(), request.endTime());
 
     // 2. start/end로 슬롯을 계산해 정기 일정을 저장함
     User user = userLookupService.requireUser(userId);
@@ -94,11 +92,7 @@ public class ScheduleService {
             request.title().trim(),
             normalizeDaysOfWeek(request.daysOfWeek()),
             request.startTime(),
-            request.endTime(),
-            request.maxVacationDays(),
-            request.vacationApplyPeriod(),
-            request.halfVacationAvailable(),
-            request.holidayRest());
+            request.endTime());
     regularScheduleRepository.save(schedule);
     userSummaryService.clearAllFreeOnScheduleAdded(user);
     return toRegularResponse(schedule);
@@ -110,23 +104,35 @@ public class ScheduleService {
       UUID userId,
       UUID regularId,
       UpdateRegularScheduleRequest request) {
-    validateRegularTimesAndVacation(
-        request.title(),
-        request.daysOfWeek(),
-        request.startTime(),
-        request.endTime(),
-        request.maxVacationDays());
+    validateRegularTimes(
+        request.title(), request.daysOfWeek(), request.startTime(), request.endTime());
     RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     schedule.applyUpdate(
         request.title().trim(),
         normalizeDaysOfWeek(request.daysOfWeek()),
         request.startTime(),
-        request.endTime(),
+        request.endTime());
+    return toRegularResponse(schedule);
+  }
+
+  // 연차·반차·공휴일 휴무 설정 조회
+  @Transactional(readOnly = true)
+  public VacationPolicyResponse getVacationPolicy(UUID userId) {
+    return toVacationPolicyResponse(userLookupService.requireUser(userId));
+  }
+
+  // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — isAllFree는 건드리지 않는다(일정 등록이 아님)
+  @Transactional
+  public VacationPolicyResponse updateVacationPolicy(
+      UUID userId, UpdateVacationPolicyRequest request) {
+    validateVacationPolicy(request.maxVacationDays());
+    User user = userLookupService.requireUser(userId);
+    user.applyVacationPolicy(
         request.maxVacationDays(),
         request.vacationApplyPeriod(),
         request.halfVacationAvailable(),
         request.holidayRest());
-    return toRegularResponse(schedule);
+    return toVacationPolicyResponse(user);
   }
 
   // 정기 일정 삭제 — regular 0건 + personal 0건이면 hasPreSchedule false (다음 login/me/profile)
@@ -204,7 +210,7 @@ public class ScheduleService {
     // 3. 삭제 경로가 없어 upsert는 항상 일어남 — is_all_free를 false로 전이
     userSummaryService.clearAllFreeOnScheduleAdded(user);
     return buildPersonalResponse(
-        userId,
+        user,
         dates,
         minDate,
         maxDate,
@@ -215,15 +221,15 @@ public class ScheduleService {
   // personals는 upsertPersonal이 이미 로드·반영한 구간 전체를 그대로 넘겨받아 재조회하지 않는다
   // resolve()는 반영된 날짜(dates)만 순회 — minDate~maxDate는 googleBusy 조회 범위로만 쓰인다
   private PersonalScheduleResponse buildPersonalResponse(
-      UUID userId,
+      User user,
       List<LocalDate> dates,
       LocalDate minDate,
       LocalDate maxDate,
       Collection<PersonalSchedule> personals) {
     List<RegularSchedule> regulars =
-        regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
+        regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(user.getId());
     Map<LocalDate, GoogleCalendarBusyDay> googleBusy =
-        googleCalendarService.findBusyDaysByUserId(userId, minDate, maxDate);
+        googleCalendarService.findBusyDaysByUserId(user.getId(), minDate, maxDate);
 
     Map<LocalDate, UUID> idsByDate =
         personals.stream()
@@ -234,7 +240,8 @@ public class ScheduleService {
             new ArrayList<>(personals),
             dates,
             googleBusy,
-            holidayProvider.findHolidaysBetween(minDate, maxDate))
+            holidayProvider.findHolidaysBetween(minDate, maxDate),
+            user.isHolidayRest())
             .stream()
             .collect(Collectors.toMap(CalendarDayResponse::date, Function.identity()));
 
@@ -277,6 +284,7 @@ public class ScheduleService {
     validateCalendarDateRange(userId, startDate, endDate);
 
     // 2. regular·personal을 읽어 날짜별로 정기+개별을 합침
+    User user = userLookupService.requireUser(userId);
     List<RegularSchedule> regulars =
         regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId);
     List<PersonalSchedule> personals =
@@ -293,20 +301,16 @@ public class ScheduleService {
             startDate,
             endDate,
             googleCalendarService.findBusyDaysByUserId(userId, startDate, endDate),
-            holidayProvider.findHolidaysBetween(startDate, endDate)));
+            holidayProvider.findHolidaysBetween(startDate, endDate),
+            user.isHolidayRest()));
   }
 
-  private void validateRegularTimesAndVacation(
+  private void validateRegularTimes(
       String title,
       String daysOfWeek,
       LocalTime startTime,
-      LocalTime endTime,
-      Integer maxVacationDays) {
+      LocalTime endTime) {
     if (title == null || title.isBlank()) {
-      throw new TripFitException(CommonErrorCode.INVALID_INPUT);
-    }
-    if (maxVacationDays != null
-        && (maxVacationDays < 0 || maxVacationDays > RegularSchedule.MAX_VACATION_DAYS_LIMIT)) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
     if (startTime == null || endTime == null || !endTime.isAfter(startTime)) {
@@ -315,6 +319,13 @@ public class ScheduleService {
     try {
       Weekday.normalizeCsv(daysOfWeek);
     } catch (IllegalArgumentException ex) {
+      throw new TripFitException(CommonErrorCode.INVALID_INPUT);
+    }
+  }
+
+  private void validateVacationPolicy(Integer maxVacationDays) {
+    if (maxVacationDays != null
+        && (maxVacationDays < 0 || maxVacationDays > User.MAX_VACATION_DAYS_LIMIT)) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }
@@ -384,10 +395,14 @@ public class ScheduleService {
         schedule.getEndTime(),
         slots != null ? slots.getMorningStatus() : null,
         slots != null ? slots.getAfternoonStatus() : null,
-        slots != null ? slots.getEveningStatus() : null,
-        schedule.getMaxVacationDays(),
-        schedule.getVacationApplyPeriod(),
-        schedule.isHalfVacationAvailable(),
-        schedule.isHolidayRest());
+        slots != null ? slots.getEveningStatus() : null);
+  }
+
+  private VacationPolicyResponse toVacationPolicyResponse(User user) {
+    return new VacationPolicyResponse(
+        user.getMaxVacationDays(),
+        user.getVacationApplyPeriod(),
+        user.isHalfVacationAvailable(),
+        user.isHolidayRest());
   }
 }
