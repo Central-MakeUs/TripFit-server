@@ -116,4 +116,25 @@ class JwtAuthenticationFilterTest {
     verify(filterChain).doFilter(request, response);
     assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
   }
+
+  @Test
+  void shouldNotFilter_publicAuthPostPaths_returnsTrue() throws Exception {
+    for (String path : JwtAuthenticationFilter.PUBLIC_AUTH_POST_PATHS) {
+      MockHttpServletRequest request = new MockHttpServletRequest("POST", path);
+      assertThat(filter.shouldNotFilter(request)).isTrue();
+    }
+  }
+
+  @Test
+  void shouldNotFilter_authenticatedEndpoint_returnsFalse() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/auth/me");
+    assertThat(filter.shouldNotFilter(request)).isFalse();
+  }
+
+  // permitAll은 SecurityConfig에서도 POST로만 등록됨 — 다른 메서드로 같은 경로를 노려도 필터를 계속 태워야 함
+  @Test
+  void shouldNotFilter_nonPostMethodOnPublicPath_returnsFalse() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/auth/refresh");
+    assertThat(filter.shouldNotFilter(request)).isFalse();
+  }
 }
