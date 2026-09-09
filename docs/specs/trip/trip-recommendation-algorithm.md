@@ -13,7 +13,8 @@
 
 1. **프론트엔드 직접 확인:** `TripFit-client`의 `useSaveRegularSchedule.ts`가 "기본 정보 관리" 화면에서 `annualLeaveCount`/`leaveNoticeDays`/`includeHalfDayHoliday`(연차 관련 4개 값)를 **화면 전체에 하나뿐인 공유 값**으로 관리하다가, 저장 시점에 사용자의 **모든** `RegularSchedule` 행에 동일한 값을 실어 PATCH/POST하는 것을 확인 — 실제 앱에서는 항상 모든 행이 같은 값으로 유지된다.
 2. 이에 따라 **"첫 번째(가장 먼저 등록된, `createdAt` 오름차순) `RegularSchedule` 행 기준"**(후보안 1)으로 결정 — 실제 앱 동작과 정확히 일치하며, 여러 행이 존재해도 결과가 달라지지 않는다(프론트가 항상 동기화하므로).
-3. **근본 원인(필드 위치가 `User`가 아니라 `RegularSchedule`)은 별도 이슈 `#52`로 분리** — API 계약이 바뀌는 breaking change라 프론트 담당자 부재중에는 진행하지 않기로 함(2026-08-15 사용자 결정). "첫 번째 행 기준" 로직은 `#52` 완료 시 제거 예정 — 2026-08-16 `#107` 구현에서 `RegularSchedule.policySource`로 옮겨, 연차·반차·공휴일 휴무가 같은 대표 행을 쓰도록 단일 SSOT가 됐다(그 메서드에 제거 TODO 표시).
+3. **근본 원인(필드 위치가 `User`가 아니라 `RegularSchedule`)은 별도 이슈 `#52`로 분리** — API 계약이 바뀌는 breaking change라 프론트 담당자 부재중에는 진행하지 않기로 함(2026-08-15 사용자 결정). "첫 번째 행 기준" 로직은 2026-08-16 `#107` 구현에서 `RegularSchedule.policySource`로 옮겨, 연차·반차·공휴일 휴무가 같은 대표 행을 쓰도록 단일 SSOT가 됐다(그 메서드에 제거 TODO 표시).
+4. **`#52` 완료 (2026-08-16):** 4개 필드를 `User`로 이동, "첫 번째 행 기준" 우회 로직(`policySource`)을 삭제하고 `RecommendationEngine`이 `User`(호출부가 이미 들고 있는 `TripMember.getUser()`)에서 직접 읽도록 교체. 아래 계산 로직 서술 중 `RegularSchedule.maxVacationDays`/`halfVacationAvailable`로 적힌 부분은 이제 `User.maxVacationDays`/`User.halfVacationAvailable`로 읽는다. 상세: [`vacation-policy-user-migration.md`](../user-schedule/vacation-policy-user-migration.md)
 
 ## 목표
 
@@ -77,7 +78,7 @@
 - 공휴일 API 연동 — 주말만 우선 `[제안]`, static table/외부 API 방식은 `[미정]`
 - 알림 발송(BR-NOTI-004) — Wave 3 `#21`
 - `attendRate`(카드 표시용 참석률 %) 계산식의 **최종 확정** — 아래 "카드 표시 지표" 절 참고, 화면 역산 기반 추론값이며 기획 확정 대기
-- **연차 신청 가능 시점(`vacationApplyPeriod`) 반영 (2026-08-15 amend, `[미정]`)** — `RegularSchedule.vacationApplyPeriod`(1주 전/2주 전/한달 전 등)를 기준으로 "오늘부터 후보 날짜까지 리드타임이 부족하면 그 사용자는 연차 전환 자체를 적용하지 않는다"는 로직은 이번 amend에 포함하지 않는다. `new_problem/p1.md`에 이 필드에 대한 언급이 없고, 범위를 넓히면 "오늘 날짜" 기준 시점 의존성이 추천 계산에 새로 생겨 별도 검토가 필요 — 사용자 확인 후 후속 스펙으로 분리
+- **연차 신청 가능 시점(`vacationApplyPeriod`) 반영 (2026-08-15 amend, `[미정]`)** — `User.vacationApplyPeriod`(1주 전/2주 전/한달 전 등, `#52`로 `RegularSchedule`에서 이동)를 기준으로 "오늘부터 후보 날짜까지 리드타임이 부족하면 그 사용자는 연차 전환 자체를 적용하지 않는다"는 로직은 이번 amend에 포함하지 않는다. `new_problem/p1.md`에 이 필드에 대한 언급이 없고, 범위를 넓히면 "오늘 날짜" 기준 시점 의존성이 추천 계산에 새로 생겨 별도 검토가 필요 — 사용자 확인 후 후속 스펙으로 분리
 
 ## 참여자 3분류 — 부분 참석 판정 (확정, [`trip-recommendation-scoring-source.md`](trip-recommendation-scoring-source.md))
 
@@ -121,7 +122,7 @@
 - 근무가 저녁을 안 막는 경우(예: 09~18시), 오전 반차+오후 반차(0.5+0.5=1일)와 종일 연차(1일)는 여는 범위·값이 같다 — 구현은 조합 수를 줄이려 이때 종일 연차 단위를 따로 만들지 않는다(결과 동일).
 - **근무가 여러 행이면 연차도 근무마다 따로 쓴다** (BR-TRIP-006상 사용자당 정기 일정 여러 행 허용 — 회사 출근 + 저녁 알바). 낮 근무를 연차로 빼도 저녁 알바는 **별개 근무**라 그대로 막히고, 둘 다 빼려면 1일+1일=2일이 든다. 한 슬롯을 두 근무가 동시에 막고 있으면 그 슬롯은 **두 근무를 모두 빼야** 열린다.
 - **예산은 하나의 공유 풀**이고 "어느 연차를 어느 근무에 썼는지" 라벨링은 하지 않는다 — 완전탐색이 예산 안에서 참석 구간이 가장 길어지는 조합을 고르고, 같은 길이면 연차를 덜 쓰는 조합을 고른다.
-- **`#52`(연차 필드를 `RegularSchedule`→`User`로 이동)와의 관계:** 이 절이 "연차는 근무 사이클 단위, 예산은 사람 단위"임을 분명히 하므로, `maxVacationDays`/`halfVacationAvailable`가 근무 행에 붙어 있는 현재 스키마는 개념상 어긋난다(근무가 2개면 예산 행도 2개가 되지만 실제로는 사람 하나의 예산). 현재는 "가장 먼저 등록된 행 기준"이라는 임시 규칙으로 읽고 있고(위 "블로커 해결 이력"), 근본 수정은 **#52**.
+- **`#52` 완료 (2026-08-16):** 이 절이 처음부터 "연차는 근무 사이클 단위, 예산은 사람 단위"임을 분명히 했던 대로, `maxVacationDays`/`halfVacationAvailable`는 이제 `User`에 저장된다(근무가 2개여도 예산은 사람 하나에 하나). "가장 먼저 등록된 행 기준" 임시 규칙(위 "블로커 해결 이력")은 삭제됐다.
 
 **최초 구현이 틀렸던 지점(2026-08-15 수정):** 전환 단위를 슬롯(오전/오후) 단위로 만들고 저녁은 "오전·오후가 둘 다 열리면 덤으로 열어주기"(구 `openFreeEvenings`) 또는 "저녁만 따로 1일에 사기"(구 저녁 단독 구매)로 처리했다. 이 모델에서는 13~23시 근무를 전부 없애는 데 오후 반차 0.5 + 저녁 1.0 = **1.5일**, 반차 불가 사용자는 **2.0일**이 드는 등 "근무 하나 = 연차 1일"이라는 기획 정의와 어긋난 값이 나왔다. 근무 단위로 바꾸면서 `openFreeEvenings`·`hasContinuousShiftIntoEvening`·저녁 단독 구매 분기는 **전부 삭제**했다 — 종일 연차가 근무의 저녁까지 함께 여는 것이 규칙 자체에 포함되므로 별도 보정이 필요 없다.
 
@@ -139,7 +140,7 @@
 
 ### 3. 예산과 탐색
 
-예산 = 참여자의 `RegularSchedule.maxVacationDays`(여행당 사용 가능 최대 연차 일수). **어느 행의 값을 쓸지는 가장 먼저 등록된(`createdAt` 오름차순) 행을 기준으로 한다** — `TripFit-client`가 저장 시점에 모든 행에 동일한 값을 다시 써서 항상 일치시키므로(위 "블로커 해결 이력" 참고) 어느 행을 골라도 결과는 같다. `RegularSchedule.policySource`로 구현(연차·반차·공휴일 휴무 공용 대표 행 — `#107`에서 `RecommendationEngine`에서 엔티티로 이동), `#52`(필드를 `User`로 이동) 완료 시 제거 예정.
+예산 = 참여자의 `User.maxVacationDays`(여행당 사용 가능 최대 연차 일수). `#52`(2026-08-16) 완료로 `User`에서 직접 읽는다 — "가장 먼저 등록된 행 기준" 대표 행 우회(`RegularSchedule.policySource`)는 삭제됐다.
 
 전환 단위(§1-1, 날짜 × 근무마다 종일 연차·반차) 부분집합 중 예산을 넘지 않는 조합을 모두 검토해, 다음 순서로 **정확한 최적해**를 채택한다(그리디 근사 금지 — 단위 수가 `durationDays × 정기 일정 행 수`에 비례해 작다. 극단적으로 긴 구간에서 조합 수가 폭발하는 것만 `MAX_CONVERSION_UNITS`로 막는다):
 
@@ -310,7 +311,7 @@ interface RecommendationEngine {
 | 공휴일 데이터 | **반영 완료 (#107)** | 공공데이터포털 특일정보 API + Redis 캐싱으로 확정([`decisions/011`](../../decisions/011-holiday-data-source.md)). `holidayRest`가 이제 추천 계산에도 반영된다 — 공휴일에 쉬는 사용자는 그날 근무가 없는 것으로 보고 연차를 청구하지 않음(`matchingRegulars`). 동점 처리에는 여전히 미사용(주말·공휴일 기준 폐기 유지). 상세: [`schedule-holiday-rest.md`](../user-schedule/schedule-holiday-rest.md) |
 | `vacationApplyPeriod` 반영 여부 | `[미정]` | 2026-08-15 amend Out of Scope로 분리 — 후속 스펙 필요 시 별도 논의 |
 | amend용 GitHub 이슈 | 확정 | **#105** — 2026-08-15 사용자 확인 후 신규 생성 |
-| 연차 관련 필드 위치(`RegularSchedule`→`User`) | `[미정]` | **#52**로 분리(스키마 리팩토링, 프론트 담당자 복귀 후 진행) — "블로커 해결 이력" 참고 |
+| 연차 관련 필드 위치(`RegularSchedule`→`User`) | **완료 (#52, 2026-08-16)** | 백엔드 코드 완료. 상용 DB 실 반영은 프론트 대응 완료 후 별도 진행 — "블로커 해결 이력" 참고 |
 | `new_problem/test_set.md` 5인 시나리오 수동 검증 | 미실시 | 부스 이벤트 전 실제 계정 5개로 확인 필요 |
 
 ## 변경 이력

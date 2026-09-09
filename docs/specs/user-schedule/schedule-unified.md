@@ -70,11 +70,7 @@ user/schedule/
 
 - **생성:** `startTime`~`endTime` 입력 → `SlotStatuses.fromTimeRange`로 슬롯 계산
 - **수정 (PATCH):** create와 동일 필드 전체 갱신. start/end 변경 시 슬롯 재계산
-- **연차 필드 기본값·제약:**
-  - `maxVacationDays` — default **2**, 허용 **0~10**
-  - `vacationApplyPeriod` — enum `ANY` \| `ONE_WEEK_BEFORE` \| `TWO_WEEKS_BEFORE` \| `ONE_MONTH_BEFORE`, default **null**
-  - `halfVacationAvailable` — default **false** (N)
-  - `holidayRest` — default **true** (Y)
+- **연차·반차·공휴일 휴무 필드는 `RegularSchedule`에 없다** — `#52`(2026-08-16)로 `User`(사람 1명당 하나)로 이동, 전용 `GET`/`PATCH /users/schedule/vacation-policy`로 별도 조회·수정. 상세: [`vacation-policy-user-migration.md`](vacation-policy-user-migration.md)
 
 ## API
 
@@ -82,6 +78,7 @@ user/schedule/
 |--------|------|------|
 | GET/POST | `/api/v1/users/schedule/regular` | 목록 / 생성 |
 | PATCH/DELETE | `/api/v1/users/schedule/regular/{id}` | 전체 수정 / 삭제 |
+| GET/PATCH | `/api/v1/users/schedule/vacation-policy` | 연차·반차·공휴일 휴무 설정 조회 / 전체 교체 (`#52`, `User` 소유) |
 | PATCH | `/api/v1/users/schedule/personal` | **슬롯 단위 오버라이드 upsert(`slots`/`uncertain` 각각 선택, 삭제 경로 없음)**, 반영된 날짜들의 최종 확정값 반환 |
 | GET | `/api/v1/users/schedule/calendar` | 정기+개별 합친 달력 · **today~+2년** (#37) · Hidden **1단계 해제** |
 | GET | `/api/v1/trips/{tripId}/members/schedule-calendar` | 멤버 전원 정기+개별 합친 달력 · **OpenAPI 공개** · ~~personal-summary~~ **삭제** |
