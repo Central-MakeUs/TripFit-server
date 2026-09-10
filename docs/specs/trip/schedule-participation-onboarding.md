@@ -116,10 +116,10 @@ canEnterRoom(user) =
 |------|-----------|
 | 정기를 지우고, 개별도 **한 번도 등록한 적 없어** 둘 다 0행 (CLEAR) | `is_all_free = true` **자동** (방 안·마이페이지·전역 일정 어디서든). **개별은 O1.4 이후 삭제 불가**라 한 번이라도 등록했다면 이 경로 자체가 적용 안 됨(아래 128행 노트 참고) |
 | `is_all_free=true`인데 정기/개별 **추가** | `is_all_free = false` **자동** |
-| Skip인데 **이미 ≥1행** | **변경 없음** (`is_all_free`·row 유지). patch 호출 불필요 |
-| Skip인데 **이미 0행** (미입력) | **`is_all_free = true`** — 방장: `POST /trips` 시 · 참여자: `POST /trips/join` 시 (서버가 설정) |
+| 일정 화면을 변경 없이 통과했는데 **이미 ≥1행** | **변경 없음** (`is_all_free`·row 유지). patch 호출 불필요 |
+| 일정 화면을 변경 없이 통과했는데 **이미 0행** (미입력) | **`is_all_free = true`** — 방장: **`POST .../activate`** 시 · 참여자: `POST /trips/join` 시 (서버가 설정). **`POST /trips`(create)에서는 설정하지 않는다** (`TripCommandService.activateMembership`, 아래 D-JOIN-TRIP-FLOW 백엔드 가드 2와 동일) |
 | 일정이 있는데 “전부 free 할래” **선언** | **그런 버튼/API 없음**. row를 지워 0행이 되어야만 CLEAR로 `true` |
-| null/empty body patch | **all-free 신호 아님** — 무시하거나 400. Skip ≠ null body |
+| null/empty body patch | **all-free 신호 아님** — 무시하거나 400. 화면 통과 ≠ null body |
 
 → 클라이언트만으로 row≥1인 채 `is_all_free=true`를 켤 수 없음. 서버는 row≥1이면 `is_all_free=true` 요청을 **거부**.
 
@@ -138,38 +138,58 @@ canEnterRoom(user) =
 
 ### D-JOIN-TRIP-FLOW: 신규 trip · 일정 확인 플로우 (확정 — #39 amend)
 
-**목적 (UX):** 수정되었으면 고치고, 아니면 **Skip**.
+**목적 (UX):** 방에 들어가기 전 **일정을 반드시 한 번 확인**시킨다. 수정할 게 있으면 고치고, 없으면 그대로 통과.
 전역 전부 free·기존 일정이 있어도 **신규 trip마다** 플로우 노출 (프리패스 금지).
+
+**⚠️ 회원가입 온보딩과 다른 점 — 건너뛰기 없음 (2026-08-16 확정, Figma 대조):** 회원가입 2단계는 「건너뛰기」 버튼으로 화면을 넘길 수 있지만(`user-onboarding.md`), **방 입장 플로우에는 건너뛰기 버튼이 없다.** 정기·개별 화면을 모두 거쳐야 방에 들어갈 수 있다. 아래 표에서 "입력 없이 통과"는 **화면을 확인하고 바꿀 게 없어 그대로 진행한 것**이지 건너뛴 것이 아니다 — 구 문서의 "Skip" 표현은 이 뜻으로 읽는다.
 
 **대상:**
 
 | 경로 | 동작 |
 |------|------|
-| **방장** | 「방 생성」→ **방 생성 폼** → `POST /trips`(`SCHEDULE_PENDING`) → **정기→개별** → `POST .../activate`(`ACTIVE`) |
-| **참여자** | 초대 링크 → **정기→개별** → **(수정 시 patch)** → `POST /trips/join` (`ACTIVE`) |
+| **방장** | 「방 생성」→ **방 생성 폼** → `POST /trips`(`SCHEDULE_PENDING`) → **일정 확인 플로우** → `POST .../activate`(`ACTIVE`) |
+| **참여자** | 초대 링크 → (hold) → **일정 확인 플로우** → **(수정 시 patch)** → `POST /trips/join` (`ACTIVE`) |
+
+**일정 확인 플로우 — 정기 일정 보유 여부로 2분기 (2026-08-16 확정):**
 
 ```text
-방장:     [방 생성 폼] → POST /trips (SCHEDULE_PENDING) → [정기] → [개별] → POST .../activate → [여행방]
-참여자:   [정기] → [개별] → (수정 시 patch) → POST /trips/join → [여행방]
+[정기 일정 목록 조회] ← 분기 판단은 이 결과로만 한다 (아래 ⚠️ 참고)
+   │
+   ├─ 0건 → "사전 일정 입력이 필요해요" 모달 → 확인
+   │         → "정기 일정이 있나요?"
+   │             ├─ 예     → [정기 일정 + 연차] → [개별 일정] → 입장
+   │             └─ 없어요 → [개별 일정] → 입장          ← 연차를 묻지 않음
+   │
+   └─ 1건 이상 → "입력하신 일정을 확인해주세요" 모달 → 확인
+             → [정기 일정(기존 값 프리필) + 연차 — 필요 시 수정]
+             → [개별 일정] → 입장
 ```
 
-**Skip 의미 (확정):**
+- **"정기 일정이 있나요?"는 정기 0건인 사용자에게만 노출된다.** 이미 정기가 있는 사용자에게는 이 질문 자체가 없고, 기존 값을 불러와 확인·수정하는 화면으로 간다 → "없어요를 눌렀는데 기존 정기가 남아 있다"는 모순 상황이 생기지 않는다.
+- **연차는 정기 일정과 한 덩어리다.** 정기 일정을 입력·수정하는 화면에서만 노출된다. "없어요" 경로에서는 연차를 묻지 않고, 저장돼 있던 연차 값은 그대로 보존된다(`User`에 저장 — [`vacation-policy-user-migration.md`](../user-schedule/vacation-policy-user-migration.md) #52).
 
-| 현재 전역 상태 | Skip / 마지막 버튼 시 |
-|----------------|----------------------|
+> **⚠️ 분기 판단에 `hasPreSchedule`을 쓰지 말 것 (2026-08-16):** `hasPreSchedule`은 **정기 OR 개별**이 하나라도 있으면 `true`인 파생값이다(D-BR006-C). 이 값으로 위 2분기를 판정하면 **개별 일정만 등록한 사용자**(정기 0건)에게 "입력하신 일정을 확인해주세요"가 뜨고 정기 화면이 비어 있는 상태가 된다. 분기는 반드시 **`GET /api/v1/users/schedule/regular` 응답 길이**로 한다 — 1건 이상 분기에서 어차피 필요한 호출이라 왕복이 늘지 않는다.
+
+**일정을 바꾸지 않고 통과했을 때 (확정):**
+
+| 현재 전역 상태 | 마지막 버튼(activate/join) 시 |
+|----------------|------------------------------|
 | 정기 또는 개별 ≥1 | **이전 상태 유지** (patch 불필요) |
 | regular 0 **AND** personal 0 | **`is_all_free = true`** — 방장 **activate** · 참여자 **join** 시 서버 설정 (create에서는 안 함) |
 
+> **개별 일정 화면은 "손댄 날짜만" 저장해야 한다.** 이 화면의 프리필은 `GET /users/schedule/calendar`(정기+개별+구글 합친 값)인데, 그 값을 화면에 보인 전 기간 그대로 `PATCH /personal`로 되돌려보내면 **정기 유래 계산값이 전부 개별 오버라이드 row로 굳는다**(O1.4 이후 삭제 경로 없음 — 이후 정기를 수정해도 그 날짜들은 옛 값으로 고정, 되돌릴 수 없음). 방 입장 플로우는 **방마다 매번** 이 화면을 거치므로 위험이 누적된다. 상세: [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) "마이페이지 개별 일정 편집 UX" 엣지 케이스.
+
 **백엔드 가드 (프론트 “선언 버튼”과 분리):**
 
-1. **입장 게이트:** “방 안” 리소스는 `ACTIVE` ∧ `canEnterRoom` 불만족 시 **403**. UI Skip만으로 우회 불가.
+1. **입장 게이트:** “방 안” 리소스는 `ACTIVE` ∧ `canEnterRoom` 불만족 시 **403**. UI 통과만으로 우회 불가.
 2. **방장 activate / 참여자 join:** row ≥1 → 유지 · row 0 → 서버가 `is_all_free=true` 후 `ACTIVE`. create는 `SCHEDULE_PENDING`만 (markAllFree 안 함).
 3. **금지:** row ≥1인 채 `is_all_free=true` PATCH — **거부**. “전부 free 선언 버튼” API 없음.
 4. **카피/버튼 문구**는 **프론트 책임**.
 
 | 항목 | 확정 |
 |------|------|
-| 플로우 순서 | **정기 → 개별** |
+| 플로우 순서 | **정기 → 개별** (연차는 정기와 한 덩어리) |
+| 건너뛰기 | **없음** — 두 화면 모두 거쳐야 입장 (회원가입 온보딩과 반대) |
 | **방장** | 생성 폼 → `POST /trips`=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE` (#39) |
 | **prefill** | **프론트 UX** — 백엔드 계약·#22 미정 **아님** |
 | 재입장 | `ACTIVE` → 방 상세 (BR-USER-010). `SCHEDULE_PENDING` → 일정 플로우. 미가입 참여자 → 플로우 |
@@ -422,6 +442,8 @@ canEnterRoom(user) =
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-16 | **D-JOIN-CLEAR stale 정정** — "Skip인데 이미 0행 → 방장 `POST /trips` 시 `is_all_free=true`"는 #39 amend(create는 markAllFree 안 함) 이후 갱신되지 않은 문구였다. 실제 구현은 `TripCommandService.activateMembership`이 설정하므로 **방장은 `activate` 시점**으로 정정 (같은 문서 D-JOIN-TRIP-FLOW 백엔드 가드 2·BR-USER-007과 이미 일치) |
+| 2026-08-16 | **D-JOIN-TRIP-FLOW amend (Figma Wireframe v1 대조)** — ① 방 입장 플로우는 **건너뛰기 버튼 없음**(회원가입 온보딩만 건너뛰기 가능), 구 "Skip" 표현은 "확인 후 변경 없이 통과"로 재정의 ② 정기 일정 **보유 여부 2분기**("사전 일정 입력이 필요해요" vs "입력하신 일정을 확인해주세요") 명문화 — "정기 일정이 있나요?"는 정기 0건인 사용자에게만 노출 ③ **분기 판정에 `hasPreSchedule` 사용 금지**(정기 OR 개별 파생값이라 개별만 있는 사용자를 오분기) → `GET /users/schedule/regular` 길이로 판정 ④ 연차는 정기 일정과 한 덩어리(정기 미입력 시 미노출) ⑤ 개별 일정 화면은 손댄 날짜만 PATCH(전 기간 재전송 시 정기 유래 값이 개별 오버라이드로 굳어 복구 불가) |
 | 2026-07-30 | **O1.4 정합 반영** — `schedule-slot-override.md` O1.4가 개별 일정 삭제 경로를 전면 제거함에 따라 D-JOIN-CLEAR·"일정 수정 API 형태" 절 갱신: 개별 일정으로 `is_all_free`를 켜는 경로는 이제 없음(정기 삭제 + 개별 미등록 조합만 유효), "개인 CLEAR" 삭제 시맨틱 문구 제거. `canEnterRoom`이 OR 조건이라 개별 일정이 있으면 애초에 `is_all_free` 전환이 불필요하다는 점을 121행 아래 `[미정]` 노트로 남김(기존 데이터를 지우지 않고 명시적으로 "전부 free" 선언하는 UX는 추후 검토 대상, [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)) |
 | 2026-08-05 | **Amend** — personal `deletedDates` 필드 제거. `items`에서 슬롯 3개 모두 POSSIBLE·uncertain=false인 항목을 삭제(CLEAR) 신호로 통합 (상세: [`schedule-unified.md`](../user-schedule/schedule-unified.md) 변경 이력) |
 | 2026-07-28 | **Amend** — 방장 멤버십 전환 API `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. activate·join 자신에게는 도달 불가능했던 `SCHEDULE_ENTRY_REQUIRED` 문서·검증 제거(상세: [`trip-room-api.md`](trip-room-api.md) 변경 이력) |
