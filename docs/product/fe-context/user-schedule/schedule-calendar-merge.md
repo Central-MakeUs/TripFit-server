@@ -71,8 +71,11 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 
 | Method | Path | 역할 |
 |---|---|---|
-| `GET/POST` | `/api/v1/users/schedule/regular` | 정기 패턴 목록/생성 |
+| `GET/POST` | `/api/v1/users/schedule/regular` | 정기 패턴 목록/생성 — 요청·응답 모두 `title`·`daysOfWeek`·`startTime`·`endTime`(+응답의 파생 슬롯 3개)뿐. **연차 4개 필드는 여기 없다**(아래 참고) |
 | `PATCH/DELETE` | `/api/v1/users/schedule/regular/{id}` | 정기 패턴 전체 수정/삭제 — **하루만 바꾸는 용도 아님** |
+| `GET/PATCH` | `/api/v1/users/schedule/vacation-policy` | 연차·반차·공휴일 휴무 4개 값(사용자당 1개) — [`vacation-policy.md`](vacation-policy.md) |
+
+> **⚠️ 연차 필드는 정기 일정 API에서 빠졌다.** `maxVacationDays`·`vacationApplyPeriod`·`halfVacationAvailable`·`holidayRest`는 정기 일정 행이 아니라 사용자에게 하나씩 붙는 값으로 옮겨졌고, 전용 API로만 읽고 쓴다. 정기 일정 요청에 계속 실어 보내면 **에러 없이 무시**되므로 저장된 줄 알기 쉽다 — 마이그레이션 대상 파일 목록을 포함한 상세는 [`vacation-policy.md`](vacation-policy.md)를 따르라.
 | `PATCH` | `/api/v1/users/schedule/personal` | 날짜별 개별 일정 upsert(조회 없음, 이 응답이 곧 조회 결과) — **날짜 하나만 고칠 때 이 API** |
 | `GET` | `/api/v1/users/schedule/calendar?startDate=&endDate=` | 본인 정기+개별 합친 달력 (조회 구간: 오늘~오늘+2년-1, 단 참여 중인 ONGOING 여행 희망 기간 종료일이 그보다 뒤면 그 날짜까지 허용) |
 | `GET` | `/api/v1/trips/{tripId}/members/schedule-calendar` | 여행방 멤버 전원의 정기+개별 합친 달력 (조회 구간: 여행 희망 기간) |

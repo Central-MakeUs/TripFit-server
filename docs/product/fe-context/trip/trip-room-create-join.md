@@ -137,3 +137,65 @@ STEP 5. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 | 홈 카드 탭 분기 필요 여부 | **필요** — `myMemberStatus=SCHEDULE_PENDING`면 상세 대신 일정 입력으로 | 불필요 — 멤버는 항상 `ACTIVE`로만 존재 |
 
 PR을 리뷰하거나 스스로 구현을 마쳤을 때, 이 표의 두 행("중간 이탈 시 라우팅", "홈 카드 탭 분기")이 실제 코드에 반영돼 있는지 반드시 확인하라.
+
+## 규칙 6 — 일정 확인 플로우는 「정기 일정 보유 여부」로 분기하라. `hasPreSchedule`을 쓰지 마라
+
+방장·멤버 공통으로, 방에 들어가기 전 일정 확인 플로우를 아래 그대로 구현하라. **이 플로우에는 「건너뛰기」 버튼이 없다** — 회원가입 온보딩(건너뛰기 가능)과 반대이니 화면을 재사용할 때 버튼 노출 분기를 반드시 넣어라.
+
+```
+GET /api/v1/users/schedule/regular   ← 분기는 이 응답 배열 길이로만 판단하라
+  │
+  ├─ 0건 → "사전 일정 입력이 필요해요" 모달 → 확인
+  │        → "정기 일정이 있나요?"
+  │            ├─ 예     → [정기 일정 + 연차] → [개별 일정] → activate/join
+  │            └─ 없어요 → [개별 일정] → activate/join      ← 연차 화면을 띄우지 마라
+  │
+  └─ 1건 이상 → "입력하신 일정을 확인해주세요" 모달 → 확인
+           → [정기 일정 + 연차] (기존 값 프리필, 수정 가능)
+           → [개별 일정] → activate/join
+```
+
+- **`hasPreSchedule`로 이 분기를 하지 마라.** 이 값은 "정기 **또는** 개별 일정이 하나라도 있으면 `true`"라서, 개별 일정만 등록한 사용자(정기 0건)에게 "입력하신 일정을 확인해주세요"를 띄우고 정기 화면이 텅 빈 상태를 만든다. 1건 이상 분기에서 어차피 `GET /users/schedule/regular`가 필요하므로, 그 호출을 앞으로 당겨 응답 길이로 분기하면 왕복이 늘지 않는다.
+- **연차 3문항은 정기 일정 화면과 한 덩어리다.** 정기를 입력·수정하는 경로에서만 노출하고, "없어요" 경로에서는 띄우지 마라. 연차 값은 별도 주소로 읽고 쓴다 — `GET`/`PATCH /api/v1/users/schedule/vacation-policy`. 정기 일정 목록과 **나란히** 조회하라(`GET /users/schedule/regular` 응답에는 연차 필드가 없다).
+- **"없어요"를 눌러도 저장된 정기 일정을 삭제하지 마라.** 애초에 정기 0건인 사용자에게만 나오는 질문이라 지울 대상이 없다. `DELETE /users/schedule/regular/{id}`를 이 분기에 엮지 마라.
+- **개별 일정 화면은 사용자가 실제로 토글한 날짜만** `PATCH /users/schedule/personal`에 담아라. 화면에 뜬 구간을 통째로 되돌려보내면 정기 유래 계산값이 전부 개별 오버라이드로 굳고, **되돌릴 방법이 없다**(개별 일정은 삭제 경로 자체가 없음). 이 플로우는 방에 들어갈 때마다 매번 거치므로 피해가 누적된다. 상세는 `user-schedule/schedule-calendar-merge.md`를 따르라.
+
+### 이미 확인된 위반 2건 (QA, 2026-09-10) — 아래 지점을 고쳐라
+
+두 건 모두 **서버는 정상**이다. 서버는 정기 일정 없이도 입장을 막지 않고, 일정이 0건이면 `activate`/`join` 시점에 자동으로 `isAllFree=true`로 채운다. 아래는 전부 클라이언트 분기 조건 문제다.
+
+**① "정기 일정 없음" 사용자에게 정기 입력이 강제되는 문제**
+
+```js
+// RoomDetailSection.tsx — 화면 선택을 hasSavedSchedule로 하고 있다
+const hasSavedSchedule = hasPreSchedule || isAllFree;
+setBasicInfoInitialScreen(
+  hasSavedSchedule ? 'regularScheduleDetail' : 'hasRegularSchedule',
+);
+// RoomCreateForm.tsx(방장)도 동일 — hasSavedSchedule ? 'confirmSchedule' : 'preSchedule'
+```
+
+`hasPreSchedule`은 정기 **또는** 개별이므로, **정기 0건인데도 참이 되는 사용자**가 정기 입력 화면으로 직행한다. 그 화면은 목록이 비면 빠져나갈 수 없다 — `RegularScheduleDetailStep`이 `hasEnteredListView`(초깃값 = 목록이 비어 있지 않은지)로 CTA를 정해서 목록이 비면 버튼이 "추가하기"뿐이고, 방 입장 경로는 `allowSkip={false}`라 건너뛰기도 없다. **막다른 길이 된다.**
+
+걸리는 사용자: ⓐ "정기 없어요"로 저장하고 방을 **한 번 이상 입장한** 사람(첫 입장 때 서버가 `isAllFree=true`로 표시) ⓑ **개별 일정만** 등록한 사람. 회원가입 직후 첫 입장은 정상 동작하므로 재현하려면 방 입장을 두 번 해야 한다.
+
+→ **수정:** 화면 선택 기준을 `hasPreSchedule || isAllFree`가 아니라 **정기 목록 길이**로 바꿔라. 바로 아랫줄 `initialValue`에서 이미 `hasRegularSchedule: savedItems.length > 0`으로 같은 판단을 하고 있으니 기준만 맞추면 된다.
+
+```js
+(regularSchedulesData?.length ?? 0) > 0 ? 'regularScheduleDetail' : 'hasRegularSchedule'
+```
+
+**② 기존 일정이 있는 참여자가 일정 확인 없이 바로 입장되는 문제 (P1)**
+
+```js
+// RoomDetailSection.tsx — 일정이 있으면 마법사를 건너뛰고 즉시 join
+const needsScheduleEntry = ... || (needsJoin && !hasPreSchedule && !isAllFree) || ...;
+const needsJoinOnly = needsJoin && !needsScheduleEntry;
+useEffect(() => { if (!needsJoinOnly) return; handleJoinTrip()...; }, [needsJoinOnly]);
+```
+
+일정이 이미 있는 초대 참여자는 `needsScheduleEntry`가 거짓이 되어 **일정 확인 화면 없이 곧바로 `POST /trips/join`** 이 나가고 방 상세로 들어간다. 이는 위 규칙(프리패스 금지)과 정면으로 어긋난다.
+
+→ **수정:** 초대 코드로 진입한 경우(`needsJoin`)는 **일정 보유 여부와 무관하게** 항상 일정 확인 플로우를 거친 뒤 `join`을 호출하도록 조건에서 `!hasPreSchedule && !isAllFree`를 떼라.
+
+→ **서버로는 막을 수 없다.** 구 `POST .../schedule/submit`을 폐기하면서 "일정 확인을 마쳤다"는 신호가 서버에 남지 않게 됐다. `POST /trips/join`은 초대 코드만 맞으면 언제든 참여시키므로, 이 강제는 전적으로 프론트 책임이다 — 뒤로가기·재진입·딥링크 등 우회 경로도 프론트에서 함께 막아야 한다.
