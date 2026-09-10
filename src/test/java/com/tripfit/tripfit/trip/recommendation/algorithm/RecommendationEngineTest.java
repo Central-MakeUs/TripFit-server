@@ -472,10 +472,11 @@ class RecommendationEngineTest {
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
   }
 
-  // 정기 일정을 2개 이상 등록해 연차 값이 다르면, 가장 먼저 등록된(createdAt 오름차순) 행을 예산으로 쓴다(#105)
+  // 정기 일정을 몇 개 등록하든 연차 예산은 User 소유 값 하나뿐이다(#52) — 행 개수·생성 순서와 무관
   @Test
-  void classifyMembers_multipleRegularSchedules_usesEarliestCreatedAsBudget() {
+  void classifyMembers_multipleRegularSchedules_usesSingleUserVacationBudget() {
     LocalDate date = LocalDate.now().plusDays(9);
+    // 아래 두 정기 일정을 등록해도 예산은 이 값 하나로 고정된다
     yoonji.applyVacationPolicy(0, null, false, null);
     RegularSchedule firstRegistered =
         RegularSchedule.create(
@@ -493,7 +494,7 @@ class RecommendationEngineTest {
         firstRegistered,
         "createdAt",
         LocalDateTime.now().minusDays(1));
-    // laterRegistered의 연차 정책은 더 이상 적용되지 않는다 — User 단일 값으로 이동하면서 "먼저 등록된 행이 이김"(policySource) 의미가 사라졌기 때문 — firstRegistered의 (0, null, false, null)가 그대로 yoonji의 정책이 된다
+    // 두 번째 정기 일정도 같은 User 소유라 별도 정책을 갖지 않는다 — 예산은 위에서 설정한 값 하나로 계산된다
     RegularSchedule laterRegistered =
         RegularSchedule.create(
             yoonji,
@@ -515,7 +516,7 @@ class RecommendationEngineTest {
     List<MemberAttendanceDetail> details =
         engine.classifyMembers(date, date, List.of(member(yoonji)));
 
-    // firstRegistered의 연차 0일이 예산으로 쓰여 전환 자체가 불가 — laterRegistered의 5일이 쓰였다면 FULL_ATTEND였을 것
+    // yoonji의 연차 예산 0일이 그대로 쓰여 전환 자체가 불가 — 정기 일정을 2개 등록한 것과 무관
     assertThat(details.get(0).attendance()).isEqualTo(AttendanceType.NON_ATTEND);
   }
 
