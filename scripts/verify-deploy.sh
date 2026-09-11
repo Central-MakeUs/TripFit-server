@@ -14,11 +14,12 @@ MYSQL_DATABASE="${MYSQL_DATABASE:-tripfit}"
 APP_PORT="${APP_PORT:-8080}"
 
 EXPECTED_TABLES=(
-  user
-  user_condition
+  users
+  refresh_token
   trip
   trip_member
-  member_schedule
+  regular_schedule
+  personal_schedule
   recommendation
 )
 
@@ -75,7 +76,8 @@ check_foreign_keys() {
 }
 
 check_app_logs() {
-  if docker logs tripfit-app 2>&1 | rg -qi "error executing ddl|schema-validation|application run failed|unsupported database"; then
+  # grep -E — rg는 EC2·CI에 없을 수 있고, 없으면 이 검사가 조용히 통과해버림(exit 127을 if가 false로 삼킴)
+  if docker logs tripfit-app 2>&1 | grep -Eqi "error executing ddl|schema-validation|application run failed|unsupported database|doesn't have a default value"; then
     log "FAIL suspicious errors found in app logs"
     failures=$((failures + 1))
   else
