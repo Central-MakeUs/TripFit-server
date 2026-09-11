@@ -107,7 +107,8 @@ class ScheduleServiceTest {
     assertThat(response.morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.afternoonStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
     assertThat(response.eveningStatus()).isEqualTo(ScheduleStatus.POSSIBLE);
-    // maxVacationDays·vacationApplyPeriod는 RegularScheduleResponse에서 제거되고 User/VacationPolicyResponse로 이동
+    // maxVacationDays·vacationApplyPeriod는 RegularScheduleResponse에서 제거되고
+    // User/VacationPolicyResponse로 이동
   }
 
   @Test
@@ -246,7 +247,8 @@ class ScheduleServiceTest {
 
     VacationPolicyResponse response =
         scheduleService.updateVacationPolicy(
-            USER_ID, new UpdateVacationPolicyRequest(null, null, null, null));
+            USER_ID,
+            new UpdateVacationPolicyRequest(null, null, null, null));
 
     assertThat(response.maxVacationDays()).isEqualTo(User.DEFAULT_MAX_VACATION_DAYS);
     assertThat(response.vacationApplyPeriod()).isNull();
@@ -257,9 +259,9 @@ class ScheduleServiceTest {
   @Test
   void updateVacationPolicy_maxVacationDaysOutOfRange_throwsInvalidInput() {
     assertThatThrownBy(
-        () ->
-            scheduleService.updateVacationPolicy(
-                USER_ID, new UpdateVacationPolicyRequest(11, null, null, null)))
+        () -> scheduleService.updateVacationPolicy(
+            USER_ID,
+            new UpdateVacationPolicyRequest(11, null, null, null)))
         .isInstanceOf(TripFitException.class);
   }
 

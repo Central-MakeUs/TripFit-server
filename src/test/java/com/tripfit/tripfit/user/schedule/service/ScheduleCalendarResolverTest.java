@@ -105,7 +105,14 @@ class ScheduleCalendarResolverTest {
 
     List<CalendarDayResponse> days =
         ScheduleCalendarResolver
-            .resolve(List.of(work), List.of(personal), thursday, thursday, Map.of(), Set.of(), true);
+            .resolve(
+                List.of(work),
+                List.of(personal),
+                thursday,
+                thursday,
+                Map.of(),
+                Set.of(),
+                true);
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -128,7 +135,14 @@ class ScheduleCalendarResolverTest {
 
     List<CalendarDayResponse> days =
         ScheduleCalendarResolver
-            .resolve(List.of(work), List.of(personal), thursday, thursday, Map.of(), Set.of(), true);
+            .resolve(
+                List.of(work),
+                List.of(personal),
+                thursday,
+                thursday,
+                Map.of(),
+                Set.of(),
+                true);
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);
@@ -156,7 +170,14 @@ class ScheduleCalendarResolverTest {
 
     List<CalendarDayResponse> days =
         ScheduleCalendarResolver
-            .resolve(List.of(work), List.of(personal), thursday, thursday, Map.of(), Set.of(), true);
+            .resolve(
+                List.of(work),
+                List.of(personal),
+                thursday,
+                thursday,
+                Map.of(),
+                Set.of(),
+                true);
 
     assertThat(days).hasSize(1);
     assertThat(days.getFirst().morningStatus()).isEqualTo(ScheduleStatus.IMPOSSIBLE);

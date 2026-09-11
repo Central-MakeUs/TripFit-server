@@ -82,7 +82,10 @@ public class ScheduleService {
   public RegularScheduleResponse createRegular(UUID userId, CreateRegularScheduleRequest request) {
     // 1. 제목·시각 입력을 검증함
     validateRegularTimes(
-        request.title(), request.daysOfWeek(), request.startTime(), request.endTime());
+        request.title(),
+        request.daysOfWeek(),
+        request.startTime(),
+        request.endTime());
 
     // 2. start/end로 슬롯을 계산해 정기 일정을 저장함
     User user = userLookupService.requireUser(userId);
@@ -105,7 +108,10 @@ public class ScheduleService {
       UUID regularId,
       UpdateRegularScheduleRequest request) {
     validateRegularTimes(
-        request.title(), request.daysOfWeek(), request.startTime(), request.endTime());
+        request.title(),
+        request.daysOfWeek(),
+        request.startTime(),
+        request.endTime());
     RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     schedule.applyUpdate(
         request.title().trim(),
@@ -124,7 +130,8 @@ public class ScheduleService {
   // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — isAllFree는 건드리지 않는다(일정 등록이 아님)
   @Transactional
   public VacationPolicyResponse updateVacationPolicy(
-      UUID userId, UpdateVacationPolicyRequest request) {
+      UUID userId,
+      UpdateVacationPolicyRequest request) {
     validateVacationPolicy(request.maxVacationDays());
     User user = userLookupService.requireUser(userId);
     user.applyVacationPolicy(

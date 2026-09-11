@@ -540,7 +540,11 @@ public class RecommendationEngine {
     int lastDay = attendEndSlot / 3;
     for (int day = firstDay; day <= lastDay; day++) {
       LocalDate date = start.plusDays(day);
-      for (RegularSchedule shift : matchingRegulars(regulars, date, holidays, user.isHolidayRest())) {
+      for (RegularSchedule shift : matchingRegulars(
+          regulars,
+          date,
+          holidays,
+          user.isHolidayRest())) {
         total +=
             vacationDaysForShift(shift, day, attendStartSlot, attendEndSlot, halfVacationAvailable);
       }
