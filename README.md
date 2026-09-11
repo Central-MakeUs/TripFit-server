@@ -36,14 +36,7 @@
 
 ## 아키텍처
 
-- **도메인 기반 레이어드** — `auth`, `user`, `trip`, `notification`, `common`으로 분리.
-- **의존성 역전** — 도메인 간 호출 시 아웃바운드 인터페이스로 결합도를 완화. (ADR: [`decisions/003`](docs/decisions/003-architecture-guide.md))
-- **규칙 강제** — ArchUnit 테스트로 레이어 의존 방향 상시 검증. ([`ArchitectureTest.java`](src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java))
-- **데이터베이스 설계** — 분산 환경을 고려한 UUID v4 기반 식별자 및 Soft Delete 적용. ([`docs/architecture/erd.md`](docs/architecture/erd.md))
-- **배포 인프라** — GitHub Actions ➡️ GHCR ➡️ EC2 Nginx + Spring Boot. (ADR: [`decisions/002`](docs/decisions/002-domain-split-vercel-api.md))
-- 여기 모니터링 내용 빠져 있음. (프로메테우스 + 그라파나)
-
-> **프론트엔드(Vercel)와 백엔드(EC2)로 분리된 배포 아키텍처입니다.**
+**프론트엔드(Vercel)와 백엔드(EC2)로 분리된 배포 아키텍처입니다.**
 
 <div align="center">
   <img src="docs/images/architecture.png" alt="배포 아키텍처" width="100%">
