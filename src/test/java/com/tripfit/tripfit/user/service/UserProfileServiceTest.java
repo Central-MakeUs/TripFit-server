@@ -57,6 +57,7 @@ class UserProfileServiceTest {
                 false,
                 false,
                 false,
+                false,
                 true));
     UserSummaryResponse response =
         userProfileService.registerOnboardingName(
@@ -84,6 +85,7 @@ class UserProfileServiceTest {
                 user.getNickname(),
                 user.getProfileImageUrl(),
                 user.getProvider(),
+                false,
                 false,
                 false,
                 false,

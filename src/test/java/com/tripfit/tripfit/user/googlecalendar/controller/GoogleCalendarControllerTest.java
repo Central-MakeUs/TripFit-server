@@ -71,6 +71,7 @@ class GoogleCalendarControllerTest {
         connected,
         false,
         false,
+        false,
         true);
   }
 

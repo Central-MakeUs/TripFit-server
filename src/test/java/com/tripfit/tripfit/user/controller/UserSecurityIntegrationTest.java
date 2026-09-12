@@ -70,6 +70,7 @@ class UserSecurityIntegrationTest {
                 false,
                 false,
                 false,
+                false,
                 true));
   }
 
