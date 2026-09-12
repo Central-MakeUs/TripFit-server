@@ -22,9 +22,11 @@ public class UserSummaryService {
 
   private final UserLookupService userLookupService;
 
-  // User → UserSummary DTO. hasPreSchedule은 정기/개인 일정 EXISTS로 매번 계산
+  // User → UserSummary DTO. hasRegularSchedule·hasPreSchedule은 일정 EXISTS로 매번 계산
   @Transactional(readOnly = true)
   public UserSummaryResponse toSummary(User user) {
+    // regular EXISTS를 한 번만 조회해 두 파생 필드에 함께 쓴다 (hasPreSchedule = regular OR personal)
+    boolean hasRegular = hasRegularSchedule(user.getId());
     return new UserSummaryResponse(
         user.getId(),
         user.getEmail(),
@@ -34,9 +36,16 @@ public class UserSummaryService {
         user.getProfileImageUrl(),
         user.getProvider(),
         user.isGoogleCalendarConnected(),
-        hasPreSchedule(user.getId()),
+        hasRegular,
+        hasRegular || personalScheduleRepository.existsByUserId(user.getId()),
         user.isAllFree(),
         user.isNotificationEnabled());
+  }
+
+  // 파생: regular row EXISTS만 — 일정 확인 화면의 정기 일정 유무 분기용 (개별 일정은 제외)
+  @Transactional(readOnly = true)
+  public boolean hasRegularSchedule(UUID userId) {
+    return regularScheduleRepository.existsByUserId(userId);
   }
 
   // 파생: regular OR personal row EXISTS (user 컬럼 아님)
