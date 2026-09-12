@@ -293,8 +293,10 @@ GOOGLE 로그인이 브라우저 전체 페이지 리다이렉트 경로(네이�
       "profileImageUrl": "https://lh3.googleusercontent.com/...",
       "provider": "GOOGLE",
       "isGoogleCalendarConnected": false,
-      "isScheduleRegistered": false,
-      "isOptionalOnboardingCompleted": false
+      "hasRegularSchedule": false,
+      "hasPreSchedule": false,
+      "isAllFree": false,
+      "notificationEnabled": true
     }
   }
 }

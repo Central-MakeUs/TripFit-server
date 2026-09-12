@@ -143,7 +143,8 @@ PR을 리뷰하거나 스스로 구현을 마쳤을 때, 이 표의 두 행("중
 방장·멤버 공통으로, 방에 들어가기 전 일정 확인 플로우를 아래 그대로 구현하라. **이 플로우에는 「건너뛰기」 버튼이 없다** — 회원가입 온보딩(건너뛰기 가능)과 반대이니 화면을 재사용할 때 버튼 노출 분기를 반드시 넣어라.
 
 ```
-GET /api/v1/users/schedule/regular   ← 분기는 이 응답 배열 길이로만 판단하라
+hasRegularSchedule (login·GET /auth/me 응답)   ← 분기는 이 값으로 판단하라
+  또는 GET /api/v1/users/schedule/regular 응답 배열 길이
   │
   ├─ 0건 → "사전 일정 입력이 필요해요" 모달 → 확인
   │        → "정기 일정이 있나요?"
@@ -155,12 +156,13 @@ GET /api/v1/users/schedule/regular   ← 분기는 이 응답 배열 길이로�
            → [개별 일정] → activate/join
 ```
 
-- **`hasPreSchedule`로 이 분기를 하지 마라.** 이 값은 "정기 **또는** 개별 일정이 하나라도 있으면 `true`"라서, 개별 일정만 등록한 사용자(정기 0건)에게 "입력하신 일정을 확인해주세요"를 띄우고 정기 화면이 텅 빈 상태를 만든다. 1건 이상 분기에서 어차피 `GET /users/schedule/regular`가 필요하므로, 그 호출을 앞으로 당겨 응답 길이로 분기하면 왕복이 늘지 않는다.
+- **`hasPreSchedule`로 이 분기를 하지 마라.** 이 값은 "정기 **또는** 개별 일정이 하나라도 있으면 `true`"라서, 개별 일정만 등록한 사용자(정기 0건)에게 "입력하신 일정을 확인해주세요"를 띄우고 정기 화면이 텅 빈 상태를 만든다. 이름이 비슷한 **`hasRegularSchedule`**(정기만 반영)이 이 분기를 위해 있는 값이니 그쪽을 써라 — 둘의 차이는 개별 일정만 등록한 사용자에게서만 드러나므로, 잘못 골라도 일반 계정 테스트에서는 안 걸린다.
+- **1건 이상 분기에서는 어차피 `GET /users/schedule/regular`를 호출해야 한다**(기존 값 프리필). 이미 요약 응답을 들고 있으면 `hasRegularSchedule`로 먼저 갈라 0건 경로에서 이 호출을 생략하고, 요약이 없거나 일정 CRUD 직후처럼 값이 낡았을 수 있으면 목록 길이로 판단하라 — 두 값은 같은 테이블을 본다.
 - **연차 3문항은 정기 일정 화면과 한 덩어리다.** 정기를 입력·수정하는 경로에서만 노출하고, "없어요" 경로에서는 띄우지 마라. 연차 값은 별도 주소로 읽고 쓴다 — `GET`/`PATCH /api/v1/users/schedule/vacation-policy`. 정기 일정 목록과 **나란히** 조회하라(`GET /users/schedule/regular` 응답에는 연차 필드가 없다).
 - **"없어요"를 눌러도 저장된 정기 일정을 삭제하지 마라.** 애초에 정기 0건인 사용자에게만 나오는 질문이라 지울 대상이 없다. `DELETE /users/schedule/regular/{id}`를 이 분기에 엮지 마라.
 - **개별 일정 화면은 사용자가 실제로 토글한 날짜만** `PATCH /users/schedule/personal`에 담아라. 화면에 뜬 구간을 통째로 되돌려보내면 정기 유래 계산값이 전부 개별 오버라이드로 굳고, **되돌릴 방법이 없다**(개별 일정은 삭제 경로 자체가 없음). 이 플로우는 방에 들어갈 때마다 매번 거치므로 피해가 누적된다. 상세는 `user-schedule/schedule-calendar-merge.md`를 따르라.
 
-### 이미 확인된 위반 2건 (QA, 2026-09-10) — 아래 지점을 고쳐라
+### 이미 확인된 위반 2건 (QA, 2026-08-17) — 아래 지점을 고쳐라
 
 두 건 모두 **서버는 정상**이다. 서버는 정기 일정 없이도 입장을 막지 않고, 일정이 0건이면 `activate`/`join` 시점에 자동으로 `isAllFree=true`로 채운다. 아래는 전부 클라이언트 분기 조건 문제다.
 
@@ -179,7 +181,7 @@ setBasicInfoInitialScreen(
 
 걸리는 사용자: ⓐ "정기 없어요"로 저장하고 방을 **한 번 이상 입장한** 사람(첫 입장 때 서버가 `isAllFree=true`로 표시) ⓑ **개별 일정만** 등록한 사람. 회원가입 직후 첫 입장은 정상 동작하므로 재현하려면 방 입장을 두 번 해야 한다.
 
-→ **수정:** 화면 선택 기준을 `hasPreSchedule || isAllFree`가 아니라 **정기 목록 길이**로 바꿔라. 바로 아랫줄 `initialValue`에서 이미 `hasRegularSchedule: savedItems.length > 0`으로 같은 판단을 하고 있으니 기준만 맞추면 된다.
+→ **수정:** 화면 선택 기준을 `hasPreSchedule || isAllFree`가 아니라 **정기 일정 유무**로 바꿔라. 바로 아랫줄 `initialValue`에서 이미 `hasRegularSchedule: savedItems.length > 0`으로 같은 판단을 하고 있으니 기준만 맞추면 된다. 서버 요약 응답에도 같은 이름의 `hasRegularSchedule` 필드가 생겼으니(2026-08-17, 정기 EXISTS만 반영) 목록을 아직 안 불렀으면 그 값을 그대로 써도 된다 — 화면 이름 `'hasRegularSchedule'`과 헷갈리지 않게 주의하라.
 
 ```js
 (regularSchedulesData?.length ?? 0) > 0 ? 'regularScheduleDetail' : 'hasRegularSchedule'

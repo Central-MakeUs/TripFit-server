@@ -183,7 +183,7 @@ TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연
 | `GET` | `/api/v1/users/schedule/vacation-policy` | JWT | 연차 4개 값 조회. 한 번도 저장 안 했으면 기본값(`2`/`null`/`false`/`true`) |
 | `PATCH` | `/api/v1/users/schedule/vacation-policy` | JWT | 4개 값 **전체 교체** |
 
-`GET /auth/me`·`POST /auth/login`·`PATCH /users/profile` 응답(`UserSummaryResponse`)에는 **연차 값이 들어 있지 않다.** 일부러 넣지 않았으니(같은 값이 두 곳에 있으면 연차 저장 후 캐시가 낡는다) 거기서 찾지 마라. 이 API는 저장 후에도 `hasPreSchedule`·`isAllFree`를 바꾸지 않으므로(규칙 6) `/auth/me` 재조회도 필요 없다.
+`GET /auth/me`·`POST /auth/login`·`PATCH /users/profile` 응답(`UserSummaryResponse`)에는 **연차 값이 들어 있지 않다.** 일부러 넣지 않았으니(같은 값이 두 곳에 있으면 연차 저장 후 캐시가 낡는다) 거기서 찾지 마라. 이 API는 저장 후에도 `hasRegularSchedule`·`hasPreSchedule`·`isAllFree`를 바꾸지 않으므로(규칙 6) `/auth/me` 재조회도 필요 없다.
 
 | HTTP | code | 상황 | 처리 |
 |---|---|---|---|
@@ -192,7 +192,7 @@ TripFit 프론트엔드 저장소에서 연차 관련 화면(연차 일수 / 연
 
 ## 규칙 6 — 이 API는 방 입장 조건을 **건드리지 않는다**. 그렇게 가정하고 짜라
 
-연차 설정 저장은 "일정 등록"이 아니다. `PATCH /vacation-policy`를 호출해도 `hasPreSchedule`·`isAllFree`는 변하지 않는다.
+연차 설정 저장은 "일정 등록"이 아니다. `PATCH /vacation-policy`를 호출해도 `hasRegularSchedule`·`hasPreSchedule`·`isAllFree`는 변하지 않는다.
 
 - 저장 후 `GET /auth/me`를 다시 부를 필요 없다 (정기·개별 일정 저장과 다른 점).
 - 이미 방에 참여 중인 사용자가 연차만 수정해도 방에서 튕기지 않는다.

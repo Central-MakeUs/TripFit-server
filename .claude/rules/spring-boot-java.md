@@ -183,7 +183,7 @@ public enum TripMemberStatus {
 	@Schema(description = """
 			의미: 방장이 방을 만들었지만, 아직 이 방 일정 확인을 끝내지 않은 상태.
 
-			언제: POST /trips 직후 ~ POST .../schedule/confirm 전. 일반 멤버는 이 값이 되지 않음.
+			언제: POST /trips 직후 ~ POST .../activate 전. 일반 멤버는 이 값이 되지 않음.
 
 			불가: 방 상세·멤버·달력·Pin·초대 공유.
 			""")
@@ -254,12 +254,12 @@ public record LoginRequest(
 
 ```java
 /**
- * 방장의 일정 확인을 끝내고 여행방 입장을 가능하게 한다. 이미 ACTIVE면 상태 변경 없이 동일 응답(idempotent).
- * 정기·개별 일정이 모두 없으면 isAllFree가 true로 반환된다.
+ * 방장의 일정 확인을 끝내 여행방 입장·초대 공유를 가능하게 한다. 멤버는 이 API를 쓰지 않고 join으로 바로 ACTIVE가 된다.
+ * 이미 ACTIVE면 상태 변경 없이 동일 응답(idempotent)이고, 방 안 API는 이 호출 이후에만 쓸 수 있다.
  */
-@Operation(summary = "여행방 일정 확인 완료")
-@PostMapping("/{tripId}/schedule/confirm")
-ResponseEntity<?> confirmSchedule(...) { ... }
+@Operation(summary = "여행방 멤버십 활성화")
+@PostMapping("/{tripId}/activate")
+ResponseEntity<SuccessResponse<TripDetailResponse>> activateMembership(...) { ... }
 
 // ✅ 설명할 게 없으면 Javadoc 생략 — summary만으로 충분
 @Operation(summary = "정기 일정 목록")
@@ -422,10 +422,10 @@ public void generateRecommendations(...) {
 **After**
 
 ```java
-// 방장 일정 확인을 끝내 SCHEDULE_PENDING→ACTIVE로 바꾼다 — 이미 ACTIVE면 동일 상세 반환(idempotent)
+// 방장 멤버십을 SCHEDULE_PENDING→ACTIVE로 activate — 이미 ACTIVE면 동일 상세 반환(idempotent)
 @Transactional
 @TripActivity(tripIdParam = "tripId")
-public TripDetailResponse confirmSchedule(UUID tripId, UUID userId) { ... }
+public TripDetailResponse activateMembership(UUID tripId, UUID userId) { ... }
 
 // 멤버 목록 조회 — 모집률·동명이인 displayName 포함(이름만으론 안 드러남)
 public TripMembersResponse listMembers(UUID tripId, UUID userId) { ... }
