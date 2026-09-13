@@ -82,7 +82,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 - **진행 중 캐러셀에서만** 정렬 우선순위 적용
 - `end_range < today` Pin **자동 해제** — **[#27](https://github.com/Central-MakeUs/TripFit-server/issues/27) Implemented** [`trip-home-schedulers.md`](trip-home-schedulers.md): 매일 00:05 KST · EXPIRED DB UPDATE + Pin 해제 **통합 job**
 - Pin 토글: `PATCH /trips/{id}/pin` (기존)
-- **권한 게이트 (2026-07-30 amend):** `@TripMembershipOnly` — 멤버십(soft delete 아님)만 있으면 되고 **ACTIVE·canEnterRoom 불필요**. **SCHEDULE_PENDING 방장도 Pin 가능** — 방 입장(상세·멤버·달력)과 달리 Pin은 홈 카드 정렬용 개인 설정이라 방 안 콘텐츠를 노출하지 않기 때문. 구 게이트는 `@TripMemberOnly`(ACTIVE 요구)였음
+- **권한 게이트 (2026-07-30 amend):** `@TripMembershipOnly` — 멤버십(soft delete 아님)만 있으면 되고 **ACTIVE 불필요**. **SCHEDULE_PENDING 방장도 Pin 가능** — 방 입장(상세·멤버·달력)과 달리 Pin은 홈 카드 정렬용 개인 설정이라 방 안 콘텐츠를 노출하지 않기 때문. 구 게이트는 `@TripMemberOnly`(ACTIVE 요구)였음
 
 **프론트 전용 (API 범위 밖):**
 
@@ -97,8 +97,8 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 
 - [ ] `POST /api/v1/trips` — 방장 생성 (BR-TRIP-001: 이름 **≤15자**, 인원 **1~10**, BR-USER-001 이름 필수)
 - [ ] 생성 시 `trip_member` OWNER + **`SCHEDULE_PENDING`**, `invite_code` UNIQUE(6자), `status=ONGOING`, `last_activity_at` 초기화
-- [ ] `POST /api/v1/trips/{tripId}/activate` — SCHEDULE_PENDING→ACTIVE (+ row0 `is_all_free`) · idempotent (#39)
-- [ ] 방 안 API (`@TripMemberOnly`): **ACTIVE** ∧ `canEnterRoom` — 아니면 `SCHEDULE_ACTIVATION_REQUIRED` / `SCHEDULE_ENTRY_REQUIRED`
+- [ ] `POST /api/v1/trips/{tripId}/activate` — SCHEDULE_PENDING→ACTIVE · idempotent (#39) (~~+ row0 `is_all_free`~~ — 2026-08-18 `#113` 삭제)
+- [ ] 방 안 API (`@TripMemberOnly`): **ACTIVE** — 아니면 `SCHEDULE_ACTIVATION_REQUIRED` (~~∧ `canEnterRoom` / `SCHEDULE_ENTRY_REQUIRED`~~ — `#113` 삭제)
 - [ ] `GET /api/v1/trips` — **D5** `scope=ongoing|all` · 필터·정렬 (§홈 목록) · **`TripHomeCardResponse`** (`myRole`·`membersPreview`)
 - [ ] `trip.last_activity_at` 컬럼 + create/join/patch/activate **최소** 갱신 (D5) — 전체 hook → **#26**
 - [ ] `trip_member.pinned_at` 컬럼 · Pin ON/OFF 시 설정/해제 (D5)
@@ -130,7 +130,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 | 항목 | 이슈 |
 |------|------|
 | 추천·확정·취소 | [#13](https://github.com/Central-MakeUs/TripFit-server/issues/13) |
-| **참여·`is_all_free`·온보딩·sparse** | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (wave 1) |
+| **참여·온보딩·sparse** | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (wave 1) |
 | 카카오 초대·확정·재촉 공유 | [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19) · [`kakao-invite-share.md`](kakao-invite-share.md) (wave 3) |
 | 푸시 알림 | [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21) (wave 3) |
 | 여행방 삭제 시 VOC 사유 (unconfirm 사유와 별개) | wave 4 |
@@ -370,7 +370,6 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 | 403 | `TRIP_FORBIDDEN` | owner 아닌 PATCH/DELETE · 멤버 내보내기 |
 | 403 | `TRIP_ACCESS_DENIED` | 비참여자 |
 | 403 | `SCHEDULE_ACTIVATION_REQUIRED` | `SCHEDULE_PENDING` — 방 안 API (#39) |
-| 403 | `SCHEDULE_ENTRY_REQUIRED` | canEnterRoom 불만족 (#22 D-JOIN-ENTRY) |
 | 404 | `TRIP_NOT_FOUND` | 없음 또는 soft deleted |
 | 404 | `INVITE_CODE_NOT_FOUND` | 잘못된 초대 코드 |
 | 404 | `TRIP_MEMBER_NOT_FOUND` | 대상 멤버 없음·이미 soft-deleted (#20) |
@@ -405,7 +404,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 - **기존 멤버** 재접속: idempotent (BR-USER-010) — CONFIRMED/EXPIRED에서도 조회 등 역할별 허용
 - **EXPIRED:** `end_range < today` — **#27 Approved:** DB `status=EXPIRED` batch (00:05 KST) · 조회 전까지 effectiveStatus lazy 유지
-- **방 입장:** `canEnterRoom` — [#22](schedule-participation-onboarding.md) · 403 `SCHEDULE_ENTRY_REQUIRED`
+- **방 입장:** 그 방의 `trip_member.status = ACTIVE` — [#22](schedule-participation-onboarding.md) · 403 `SCHEDULE_ACTIVATION_REQUIRED` (구 전역 `canEnterRoom`·`SCHEDULE_ENTRY_REQUIRED`는 2026-08-18 `#113`으로 삭제)
 
 ## 비즈니스 규칙
 
@@ -415,7 +414,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 | BR-TRIP-008 | duration ≤ range (있을 때만) | create/patch |
 | BR-TRIP-009 | 방장만 PATCH · ONGOING만 · **기간 수정 불가** | service |
 | BR-TRIP-013 | 방장 DELETE soft | TripService |
-| BR-USER-006 · BR-USER-007 | 입장·참여 (`is_all_free` · create/join `ACTIVE`) | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** |
+| BR-USER-006 · BR-USER-007 | 입장·참여 (방별 `ACTIVE` 판정 · create/join) | **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** |
 | BR-USER-010 | 재join idempotent | join service |
 
 ### PATCH trip 시 BR-TRIP-010
@@ -449,7 +448,6 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 - [ ] CONFIRMED trip **기존 멤버** join 재호출 → idempotent 200
 - [ ] `joinedMemberCount >= memberCount` 신규 join → 409
 - [ ] CONFIRMED trip PATCH → 409 `TRIP_NOT_ONGOING`
-- [ ] canEnterRoom 불만족 → 403 `SCHEDULE_ENTRY_REQUIRED` (#22)
 
 ## 완료 기준
 
@@ -472,7 +470,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 | 날짜 | 변경 |
 |------|------|
-| 2026-07-30 | **Amend** — `PATCH .../pin` 권한 게이트를 `@TripMemberOnly`(ACTIVE+canEnterRoom 요구)에서 `@TripMembershipOnly`(멤버십만 요구)로 완화. **SCHEDULE_PENDING 방장도 Pin 가능** — 홈 목록엔 이미 노출되는 카드인데 정작 그 카드를 못 고정하던 불일치 해소, Pin은 방 안 콘텐츠를 노출하지 않는 개인 설정이라 방 입장 게이트와 무관. 403 사유에서 `SCHEDULE_ACTIVATION_REQUIRED`/`SCHEDULE_ENTRY_REQUIRED` 제거(`TRIP_ACCESS_DENIED`만 남음) |
+| 2026-07-30 | **Amend** — `PATCH .../pin` 권한 게이트를 `@TripMemberOnly`(당시 ACTIVE+canEnterRoom 요구)에서 `@TripMembershipOnly`(멤버십만 요구)로 완화. **SCHEDULE_PENDING 방장도 Pin 가능** — 홈 목록엔 이미 노출되는 카드인데 정작 그 카드를 못 고정하던 불일치 해소, Pin은 방 안 콘텐츠를 노출하지 않는 개인 설정이라 방 입장 게이트와 무관. 403 사유에서 `SCHEDULE_ACTIVATION_REQUIRED`/`SCHEDULE_ENTRY_REQUIRED` 제거(`TRIP_ACCESS_DENIED`만 남음) |
 | 2026-07-30 | **Amend** — `MemberPreviewResponse`(`TripHomeCardResponse`/`TripDetailResponse` 공용 `membersPreview`)에 `displayName` 추가. 홈 캐러셀·전체 목록에서 참여자 이름·"OOO 외 N명" 표시가 API로 불가능했던 gap 해소. 단, 아바타 미리보기 공간 제약상 `TripMembersResponse`/`MemberScheduleCalendarResponse`(성+이름 전체)와 달리 **성 없이 이름만** 노출 — 동명이인 접미사·닉네임 폴백은 방 단위로 동일 적용 |
 | 2026-07-30 | **Amend** — `TripDetailResponse`에 `confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 추가("일정이 확정됐어요" 화면). `status=CONFIRMED`에서만 값 있음(그 외 null), 방장·참여자 모두 조회 가능. 계산·set/clear 시점은 [`trip-recommendation.md`](trip-recommendation.md)(#13) confirm/unconfirm 플로우 소관 |
 | 2026-07-28 | **Amend** — `POST .../schedule/confirm` → `POST .../activate`로 rename (`TripStatus.CONFIRMED`/`confirmedStartDate` 등 "일정 확정" 개념과의 이름 혼동 해소). `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. join·activate 자체에 문서화돼 있던 `SCHEDULE_ENTRY_REQUIRED`는 두 API 모두 논리적으로 도달 불가능함을 확인해 제거(canEnterRoom을 항상 충족시키는 `markAllFreeIfNoSchedules`가 선행 호출됨) — `@TripMemberOnly` 게이트("방 안 API")에서의 `SCHEDULE_ENTRY_REQUIRED`는 그대로 유지 |

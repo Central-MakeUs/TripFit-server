@@ -17,7 +17,6 @@
 | **근무 정보** | (레거시 용어) 정기 일정 중 출근·연차 성격의 행 | → **정기 일정** |
 | **정기 일정** | 반복되는 개인 일정 (출근·수업·회의 등). `regular_schedule` N행 | `erd.md` |
 | **개인 일정 (PersonalSchedule)** | 특정 날짜·시간대 가능/불가/미정. `personal_schedule` | BR-TRIP-002~004 |
-| **전부 free** | `user.is_all_free=true`. 일정 row 0 + 선언됨. 가입 default `false`(미입력) | login/me `isAllFree`. 신규 trip 플로우 생략 근거 **아님** |
 | **일정 관리** | 개인의 일정을 등록, 수정, 삭제하는 기능 | 오전/오후/저녁 + 미정(TBD) 상태 |
 | **희망 여행 시기** / **희망 기간** | `trip.startRange`~`endRange`. 여행을 떠나고 싶은 **탐색·조율 범위**. **여행방 달력 조회 기간과 동일** (#37 C2/C3) | 추천 후보 윈도우와 혼동 금지 |
 | **마이페이지 조회 윈도우** | 본인 `GET /users/schedule/calendar` 허용 구간: **`today` ~ `max(today+2년−1일, 참여 중 ONGOING 여행 endRange 최댓값)`** (#37 C1 · #53 R4) | 여행방 희망 기간과 **별 축**. ONGOING 여행 희망 기간 종료일이 +2년보다 뒤면 그 날짜까지 확장 |

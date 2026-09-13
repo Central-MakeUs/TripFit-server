@@ -67,7 +67,6 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
     "isGoogleCalendarConnected": false,
     "hasRegularSchedule": false,
     "hasPreSchedule": false,
-    "isAllFree": false,
     "notificationEnabled": true
   }
 }
@@ -81,8 +80,7 @@ TripFit 프론트엔드 저장소에서 회원가입·온보딩 화면·라우�
 | `nickname` | 이름 입력 폼의 prefill 값으로만 써라 — 실제 이름값으로 취급해 그대로 저장하지 마라 |
 | `isGoogleCalendarConnected` | 연동 성공 시에만 `true`로 취급하라. Skip·미연동 상태와 구분하려 하지 마라(둘 다 `false`) |
 | `hasRegularSchedule` | 정기 일정이 1건 이상이면 `true` — **개별 일정은 세지 않는다.** 일정 확인 플로우의 "정기 일정이 있나요?" 분기는 이 값으로 판정하라(`trip/trip-room-create-join.md` 규칙 6). `hasPreSchedule`과 마찬가지로 조회 시 계산되므로 오래 캐싱하지 마라 |
-| `hasPreSchedule` | 정기·개별 일정이 하나라도 있으면 `true` — 이 값은 저장값이 아니라 조회 시 계산된다는 것을 기억하라(캐싱해서 오래 들고 있지 마라). **화면 표시용으로만 써라** — 정기·개별을 뭉뚱그린 값이라 "정기 일정이 있는가"를 판정할 수 없고(그 판정은 `hasRegularSchedule`), 방 입장 조건도 아니다(전부 가능 선언 `isAllFree`가 빠져 있음) |
-| `isAllFree` | 사용자가 "일정 없음 = 전부 가능"으로 확정한 상태 — 별도 확인 UI 없이 자동으로 설정될 수 있다는 것을 감안해 구현하라 |
+| `hasPreSchedule` | 정기·개별 일정이 하나라도 있으면 `true` — 이 값은 저장값이 아니라 조회 시 계산된다는 것을 기억하라(캐싱해서 오래 들고 있지 마라). **화면 표시용으로만 써라** — 정기·개별을 뭉뚱그린 값이라 "정기 일정이 있는가"를 판정할 수 없고(그 판정은 `hasRegularSchedule`), 방 입장 조건도 아니다(방 입장 가능 여부는 그 방의 `myMemberStatus`가 답한다) |
 | `notificationEnabled` | 알림 수신 여부(기본 `true`). 온보딩 API는 이 값을 바꾸지 않는다 — 변경은 마이페이지 `PATCH /users/profile`(아래 표에는 없음, 온보딩 이후 재수정 전용 API)에서만 가능하다 |
 
 캘린더 연동·해제, 정기/개별 일정 API를 구현할 때는 `google-calendar-merge.md`를 따르라.

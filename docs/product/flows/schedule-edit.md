@@ -18,7 +18,7 @@
 **예외 / 분기:**
 
 - 본인 데이터만 수정 (BR-TRIP-004)
-- **정기 일정을 전부 삭제하고, 개별 일정도 한 번도 등록한 적 없어 둘 다 0행**이면 → `is_all_free=true` (BR-USER-011). **개별 일정은 O1.4 이후 삭제 불가**(`schedule-slot-override.md`) — 한 번이라도 개별 일정을 등록한 유저는 그 row로 이미 `canEnterRoom` 조건(정기 OR 개별 OR `is_all_free`)을 만족하므로 `is_all_free` 전환 자체가 필요 없다(상세: `schedule-participation-onboarding.md` D-JOIN-CLEAR `[미정]` 참고)
+- **정기 일정을 전부 삭제하고, 개별 일정도 한 번도 등록한 적 없어 둘 다 0행**이 되어도 서버는 아무 플래그도 세우지 않는다 (2026-08-18 `#113` — `is_all_free`·BR-USER-011 폐지). 이미 참여 중인 방에서 튕기지 않는다. **개별 일정은 O1.4 이후 삭제 불가**(`schedule-slot-override.md`) — 한 번이라도 개별 일정을 등록한 유저는 그 row로 이미 `canEnterRoom` 조건(정기 OR 개별 OR `is_all_free`)을 만족하므로 `is_all_free` 전환 자체가 필요 없다(상세: `schedule-participation-onboarding.md` D-JOIN-CLEAR `[미정]` 참고)
 - 방장만 trip 메타 수정 (BR-TRIP-009)
 - `EXPIRED` 후 메타·추천·초대 제한
 

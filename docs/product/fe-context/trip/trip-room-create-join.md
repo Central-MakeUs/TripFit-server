@@ -35,8 +35,8 @@ STEP 4. GET /api/v1/trips/{tripId} 로 여행방 상세 페이지 렌더링
 
 STEP 3 구현 시 아래를 지켜라:
 
-- 일정을 0건도 입력하지 않고(Skip) activate를 호출해도 에러로 처리하지 마라 — 서버가 자동으로 `isAllFree=true`로 채운 뒤 통과시킨다. Skip 버튼을 눌러도 activate 호출 자체는 항상 정상 진행되도록 만들어라.
-- 이 API는 `SCHEDULE_ENTRY_REQUIRED`(입장 조건 미충족) 에러를 반환하지 않는다 — 호출 자체가 서버 쪽에서 그 조건을 항상 채운 뒤 진행되므로, 이 엔드포인트에 한해서는 그 에러 UI를 만들 필요가 없다. (401·403 `TRIP_ACCESS_DENIED` 정도만 일반 에러 처리로 잡아라.)
+- 일정을 0건도 입력하지 않고(Skip) activate를 호출해도 에러로 처리하지 마라 — 서버는 일정 건수를 보지 않는다. Skip 버튼을 눌러도 activate 호출 자체는 항상 정상 진행되도록 만들어라.
+- `SCHEDULE_ENTRY_REQUIRED`라는 에러 코드는 **더 이상 존재하지 않는다**(2026-08-18 삭제). 사용자 전역의 "일정을 등록했는가" 게이트가 사라지고, 방 입장 판정은 그 방의 `myMemberStatus` 하나가 답한다. 이 코드를 처리하는 분기가 남아 있으면 지워라. (401·403 `TRIP_ACCESS_DENIED` 정도만 일반 에러 처리로 잡아라.)
 - activate를 이미 `ACTIVE`인 상태에서 다시 호출해도 에러 없이 같은 상세가 온다고 가정하라(idempotent) — 중복 호출 방지 로직을 서버 대신 프론트에서 구현할 필요 없다.
 
 ### 방장 이탈 후 재진입 처리 — 다음 두 가지를 반드시 구현하라
@@ -63,7 +63,7 @@ STEP 3. 정기 일정 입력 → 개별 일정 입력
 STEP 4. POST /api/v1/trips/join { "inviteCode": "A2B3C4" }
   → 이 한 번의 호출로 멤버 row가 role=MEMBER, status=ACTIVE로 바로 생성된다고 가정하라
   → STEP 2의 hold를 아직 갖고 있으면 정원 재확인 없이 확정된다 — hold가 만료됐거나 STEP 2를 건너뛰었어도 이 API 자체는 그대로 동작한다(그 시점 정원을 다시 확인할 뿐)
-  → 일정이 0건이면 서버가 isAllFree=true로 자동 처리하므로, 프론트에서 별도로 값을 채워 보낼 필요 없다
+  → 일정이 0건이어도 그대로 참여된다 — 프론트에서 별도로 값을 채워 보낼 필요 없다
 
 STEP 5. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 페이지를 렌더링하라
 ```
@@ -122,7 +122,6 @@ STEP 5. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 | 400 | `INVALID_INPUT` | 이름 15자 초과, 인원 1~10 범위 밖, `inviteCode` 누락 등 |
 | 403 | `PROFILE_NAME_REQUIRED` | 로그인은 했지만 이름 미완료 상태로 생성/참여 시도 → 이름 입력 화면으로 보내라 |
 | 403 | `SCHEDULE_ACTIVATION_REQUIRED` | 방장이 `SCHEDULE_PENDING` 상태로 상세·방 안 API 호출 → 일정 입력 화면으로 라우팅하라 |
-| 403 | `SCHEDULE_ENTRY_REQUIRED` | 방 입장 조건 미충족 — **`activate`/`join` 자체에서는 나오지 않는다**(서버가 호출 시점에 조건을 항상 채움). 상세·멤버 등 "방 안" API에서만 이론상 가능한 방어용 케이스 |
 | 404 | `INVITE_CODE_NOT_FOUND` | 잘못된 초대 코드 — 재입력 유도 |
 | 409 | `TRIP_MEMBER_FULL` | 정원 초과 — `join/hold`(선점 시점) 또는 `join`(hold 없이·만료 후 직접 호출 시) 둘 다에서 올 수 있다. 참여 불가 안내 |
 | 409 | `TRIP_ALREADY_CONFIRMED` / `TRIP_EXPIRED` | 확정·종료된 방에 신규 참여 시도 (기존 멤버 재접속은 막지 마라) |
@@ -164,7 +163,9 @@ hasRegularSchedule (login·GET /auth/me 응답)   ← 분기는 이 값으로 �
 
 ### 이미 확인된 위반 2건 (QA, 2026-08-17) — 아래 지점을 고쳐라
 
-두 건 모두 **서버는 정상**이다. 서버는 정기 일정 없이도 입장을 막지 않고, 일정이 0건이면 `activate`/`join` 시점에 자동으로 `isAllFree=true`로 채운다. 아래는 전부 클라이언트 분기 조건 문제다.
+두 건 모두 **서버는 정상**이다. 서버는 정기 일정이 없어도 입장을 막지 않는다. 아래는 전부 클라이언트 분기 조건 문제다.
+
+> **참고 (2026-08-18):** 아래 코드에 나오는 `isAllFree`는 서버 응답에서 **삭제됐다.** 이 값이 "첫 입장 때 서버가 몰래 켜는" 성질을 가져 이슈 ①의 "방을 두 번 입장해야 재현된다"는 조건을 만든 장본인이었다. 조합식을 고치는 김에 이 필드 참조 자체를 전부 지워라.
 
 **① "정기 일정 없음" 사용자에게 정기 입력이 강제되는 문제**
 
@@ -179,7 +180,7 @@ setBasicInfoInitialScreen(
 
 `hasPreSchedule`은 정기 **또는** 개별이므로, **정기 0건인데도 참이 되는 사용자**가 정기 입력 화면으로 직행한다. 그 화면은 목록이 비면 빠져나갈 수 없다 — `RegularScheduleDetailStep`이 `hasEnteredListView`(초깃값 = 목록이 비어 있지 않은지)로 CTA를 정해서 목록이 비면 버튼이 "추가하기"뿐이고, 방 입장 경로는 `allowSkip={false}`라 건너뛰기도 없다. **막다른 길이 된다.**
 
-걸리는 사용자: ⓐ "정기 없어요"로 저장하고 방을 **한 번 이상 입장한** 사람(첫 입장 때 서버가 `isAllFree=true`로 표시) ⓑ **개별 일정만** 등록한 사람. 회원가입 직후 첫 입장은 정상 동작하므로 재현하려면 방 입장을 두 번 해야 한다.
+걸리는 사용자: ⓐ "정기 없어요"로 저장하고 방을 **한 번 이상 입장한** 사람(첫 입장 때 서버가 `isAllFree=true`로 표시했었음 — 이 필드는 이제 삭제됨) ⓑ **개별 일정만** 등록한 사람. 회원가입 직후 첫 입장은 정상 동작하므로 재현하려면 방 입장을 두 번 해야 한다.
 
 → **수정:** 화면 선택 기준을 `hasPreSchedule || isAllFree`가 아니라 **정기 일정 유무**로 바꿔라. 바로 아랫줄 `initialValue`에서 이미 `hasRegularSchedule: savedItems.length > 0`으로 같은 판단을 하고 있으니 기준만 맞추면 된다. 서버 요약 응답에도 같은 이름의 `hasRegularSchedule` 필드가 생겼으니(2026-08-17, 정기 EXISTS만 반영) 목록을 아직 안 불렀으면 그 값을 그대로 써도 된다 — 화면 이름 `'hasRegularSchedule'`과 헷갈리지 않게 주의하라.
 

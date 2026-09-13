@@ -23,7 +23,7 @@
 
 ### Must Have
 
-- [x] `DELETE /api/v1/trips/{tripId}/members/me` — JWT 필수. `@TripMemberOnly`/`@TripOwnerOnly` 인터셉터 미사용(방 입장 조건 ACTIVE·canEnterRoom과 무관하게 나갈 수 있어야 하므로 서비스 레벨에서 직접 멤버십 검증)
+- [x] `DELETE /api/v1/trips/{tripId}/members/me` — JWT 필수. `@TripMemberOnly`/`@TripOwnerOnly` 인터셉터 미사용(그 방 일정 확인 완료(`ACTIVE`) 여부와 무관하게 나갈 수 있어야 하므로 서비스 레벨에서 직접 멤버십 검증)
 - [x] 호출자의 해당 방 활성(`deleted_at IS NULL`) `TripMember` row가 없으면 `TRIP_ACCESS_DENIED`
 - [x] 호출자 역할이 `OWNER`면 `TRIP_OWNER_CANNOT_LEAVE` — 방장은 나갈 수 없고 "여행방 삭제"를 사용해야 함(방장 위임 기능 없음)
 - [x] 호출자 역할이 `MEMBER`면 해당 `TripMember.deleted_at` soft delete
