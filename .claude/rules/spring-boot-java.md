@@ -62,7 +62,7 @@ Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap
 | ArgumentResolver | `@AuthorizedUser` | JWT → `UUID userId` |
 
 - L1 touch 대상 public 메서드에 `@TripActivity` — create는 엔티티 초기값. 수동 `touchLastActivity()` 호출 금지.
-- 신규 join만 touch — idempotent 재접속은 `@TripActivity` 없는 경로 (`TripJoinService` 주석).
+- 방 입장 완료(`activate`)가 touch — `join`은 초대 링크를 연 시점이라 touch하지 않는다 (`TripCommandService` 주석).
 - Draft(#13) 추천 API는 stub에 `@TripActivity`만 두고, ErrorCode는 **구현 착수 시** 추가.
 
 ## Entity Conventions
@@ -254,7 +254,7 @@ public record LoginRequest(
 
 ```java
 /**
- * 방장의 일정 확인을 끝내 여행방 입장·초대 공유를 가능하게 한다. 멤버는 이 API를 쓰지 않고 join으로 바로 ACTIVE가 된다.
+ * 일정 확인을 끝내 여행방 입장을 완료한다. 방장·참여자 모두 이 API로 SCHEDULE_PENDING → ACTIVE가 된다.
  * 이미 ACTIVE면 상태 변경 없이 동일 응답(idempotent)이고, 방 안 API는 이 호출 이후에만 쓸 수 있다.
  */
 @Operation(summary = "여행방 멤버십 활성화")

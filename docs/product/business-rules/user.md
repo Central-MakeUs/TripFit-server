@@ -10,14 +10,14 @@
 | **BR-USER-004** | 회원 탈퇴 | 탈퇴 요청 | 확인 후 탈퇴 — 차단 없이 자동 cascade. 참여 중인 모든 방에서 자동 나가기(MEMBER) 또는 소유한 모든 방 자동 삭제(OWNER) 후 탈퇴 처리. 전 상태(`ONGOING`/`CONFIRMED`/`EXPIRED`) 적용 | [`user-account-withdrawal.md`](../../specs/user/user-account-withdrawal.md) · [`trip-member-leave.md`](../../specs/trip/trip-member-leave.md) · 정책 근거 `#47` |
 | **BR-USER-005** | 알림 허용 | 마이페이지 | `users.notification_enabled` on/off (default true), `PATCH /users/profile`(partial update)로 설정 | Off 시 BR-NOTI-001~005·009 **전체** 미발송(예외 없음) |
 | **BR-USER-006** | 방 입장 가능 조건 | D-JOIN-ENTRY | **그 방의 일정 확인 완료**(`trip_member.status = ACTIVE`) — 사용자 전역 조건 없음 | 미완료 시 `SCHEDULE_ACTIVATION_REQUIRED` |
-| **BR-USER-007** | trip 일정 확인·가입 | **#39** | **방장:** `POST /trips`=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE`. **참여자:** 플로우 후 **`POST /trips/join`**=`ACTIVE`. 방 안=`ACTIVE`(전역 `canEnterRoom` 조건은 2026-08-18 `#113`으로 삭제) | 정원 409 · `SCHEDULE_ACTIVATION_REQUIRED` |
+| **BR-USER-007** | trip 일정 확인·가입 | **#39 · #114** | **방장·참여자 동일:** 방 진입(방장 `POST /trips` · 참여자 `POST /trips/join`)=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE`. 방 안=`ACTIVE` | 정원 409 · `SCHEDULE_ACTIVATION_REQUIRED` |
 | **BR-USER-008** | 전역 일정 | 일정 변경 | **ONGOING** 방 달력에만 동일(live). **CONFIRMED/EXPIRED**는 snapshot 고정·읽기 전용 — [`trip-schedule-snapshot.md`](../../specs/trip/trip-schedule-snapshot.md) (#38 **Approved**) | — |
 | **BR-USER-009** | 동일 이름 표시 | 목록 | `홍길동(2)` | — |
 | **BR-USER-010** | 재접속 | 이미 `trip_member` | 방 상세 직행 | 미가입 참여자 → 플로우 |
 
 ### `[미정]`
 
-- BR-USER-002 UI · 정원 hold [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)
+- BR-USER-002 UI
 
 ### 확정 (2026-07-21 · #22)
 
@@ -27,7 +27,7 @@
 ### 확정 (2026-07-21 · #39 amend)
 
 - 방장=`POST /trips` SCHEDULE_PENDING → 일정 플로우 → `activate` ACTIVE
-- 멤버=일정 후 join ACTIVE · 방 안 API는 ACTIVE (전역 `canEnterRoom` 조건은 **2026-08-18 삭제**, `#113`)
+- 멤버=join으로 `SCHEDULE_PENDING` 생성 → 일정 확인 → activate ACTIVE (**2026-09-13 `#114`** — 이전에는 일정 확인 후 join 한 번으로 바로 ACTIVE) · 방 안 API는 ACTIVE (전역 `canEnterRoom` 조건은 **2026-08-18 삭제**, `#113`)
 - ~~Skip+0행 → **activate/join** 시 `is_all_free=true`~~ (**2026-08-18 폐기** — `#113`)
 
 ## 변경 이력

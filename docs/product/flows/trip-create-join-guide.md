@@ -143,7 +143,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 이미 `ACTIVE` 멤버 | idempotent — 방 상세 직행 (BR-USER-010) |
 | 변경 없이 통과 + row 0 | join 시 그대로 INSERT (플래그 설정 없음) |
 
-멤버에게는 중간 `SCHEDULE_PENDING`를 두지 않는다. 정원 hold는 #35 후속.
+~~멤버에게는 중간 `SCHEDULE_PENDING`를 두지 않는다. 정원 hold는 #35 후속.~~ → **2026-09-13 `#114`로 폐기.** 멤버도 `join` 직후 `SCHEDULE_PENDING`이 되고 `activate`로 `ACTIVE`가 된다. 정원 hold(#35)는 DB 비관적 락으로 대체·삭제됐다.
 
 ### 모집 현황 숫자
 

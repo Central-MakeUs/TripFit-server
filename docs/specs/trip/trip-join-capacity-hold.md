@@ -1,7 +1,7 @@
 # 여행방 join 정원 선점·예약 (Capacity hold)
 
 > wave: **4**
-> 상태: **Implemented** (2026-08-10 — 구현·테스트 완료)
+> 상태: **Superseded** (2026-09-13, `#114`) — 구현·배포됐던 기능이지만 [`trip-join-schedule-gate.md`](trip-join-schedule-gate.md) J-4가 Redis hold를 **DB 비관적 락**으로 대체하며 엔드포인트 2개와 Redis Lua·TTL 코드를 전부 삭제했다. 아래 본문은 이력으로만 읽을 것 — 현행 정원 보장은 `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리한다
 > MVP: Out — #22 새 join 모델에서 **동시 플로우 경쟁은 MVP 감수**
 > 관련: [`schedule-participation-onboarding.md`](schedule-participation-onboarding.md) · [`trip-room-api.md`](trip-room-api.md) D8
 > GitHub: **#35**

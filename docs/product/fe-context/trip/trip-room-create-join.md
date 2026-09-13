@@ -4,14 +4,21 @@ TripFit 프론트엔드 저장소에서 방 생성/참여 관련 화면·라우�
 
 모든 API 응답은 `{ "data": {...}, "message": "...", "code": "..." }` envelope로 온다. 아래 예시는 `data` 안쪽만 표기했다.
 
-## 규칙 1 — 방장과 멤버를 같은 라우팅 로직으로 다루지 마라
+## 규칙 1 — 방장과 멤버를 **같은 2단계**로 구현하라 (2026-09-13 변경)
 
-방장과 멤버는 서로 다른 경로로 `ACTIVE`(방 입장 가능 상태)에 도달한다고 가정하고 구현하라.
+방장과 멤버는 **똑같은 경로**로 `ACTIVE`(방 입장 가능 상태)에 도달한다.
 
-- **방장**: `POST /trips` 호출 즉시 멤버 row가 생기지만 상태는 `SCHEDULE_PENDING`다. 별도로 `POST .../activate`를 호출해야 `ACTIVE`가 된다. **2단계**로 구현하라.
-- **멤버**: 일정을 다 입력한 뒤 `POST /trips/join`을 호출하는 순간 바로 `ACTIVE`로 등록된다. 멤버에게는 `SCHEDULE_PENDING`라는 중간 상태가 존재한다고 가정하지 마라. **1단계**로 구현하라.
+```
+방 진입(방장 POST /trips · 멤버 POST /trips/join) → SCHEDULE_PENDING
+  → 일정 확인 플로우 → POST .../activate → ACTIVE
+```
 
-이 차이 때문에 홈 화면 방 카드를 탭하는 핸들러는 반드시 `myMemberStatus`를 먼저 확인하고 분기하도록 짜라 — 방장이든 멤버든 똑같이 상세 페이지로 보내는 코드를 작성하지 마라.
+- **방장**: `POST /trips` 즉시 멤버 row가 `SCHEDULE_PENDING`으로 생기고, `POST .../activate`로 `ACTIVE`가 된다.
+- **멤버**: **초대 링크를 연 직후**(일정 화면에 들어가기 **전**) `POST /trips/join`을 호출한다. 이때 멤버 row가 `SCHEDULE_PENDING`으로 생기고, 일정 확인을 마친 뒤 방장과 **같은** `POST .../activate`로 `ACTIVE`가 된다.
+
+> **이전 구현과 달라진 점:** 예전에는 멤버가 일정을 다 입력한 **뒤** `join`을 한 번 호출해 곧바로 `ACTIVE`가 됐다. 이제 `join`은 플로우 **맨 앞**이고, `join`만으로는 방 안 API를 쓸 수 없다. 기존 순서를 그대로 둔 채 배포하면 참여가 깨진다.
+
+라우팅은 역할이 아니라 **`myMemberStatus` 하나로** 분기하라 — 방장·멤버·재진입이 전부 같은 값으로 판단된다. `SCHEDULE_PENDING`이면 일정 확인 화면, `ACTIVE`면 방 상세다.
 
 ## 규칙 2 — 방장 플로우를 다음 순서·조건으로 구현하라
 
@@ -50,38 +57,36 @@ STEP 3 구현 시 아래를 지켜라:
 STEP 1. 초대 링크(…/room/{inviteCode}) 진입 → 로그인 + 이름 입력
   → 로그인·이름 완료 전에는 다음 단계로 넘어가지 못하게 막아라 (미완료 상태로 join 시도 시 403 PROFILE_NAME_REQUIRED)
 
-STEP 2. POST /api/v1/trips/join/hold { "inviteCode": "A2B3C4" }
-  → 방 미리보기 정보를 받으면서 동시에 10분짜리 "정원 hold"를 선점한다고 가정하라
-  → 정원이 이미 가득 찼으면 이 시점에 409 TRIP_MEMBER_FULL이 온다 — 일정 입력 화면으로 넘어가지 말고 여기서 바로 안내하라
-  → 같은 사용자가 이 API를 재호출해도(예: 앱 재시작) hold TTL만 갱신되고 자리를 중복 소비하지 않는다고 가정하라
+STEP 2. POST /api/v1/trips/join { "inviteCode": "A2B3C4" }
+  → 일정 화면에 들어가기 **전**에 호출하라. 멤버 row가 role=MEMBER, status=SCHEDULE_PENDING으로 생긴다
+  → 정원이 가득 찼으면 여기서 409 TRIP_MEMBER_FULL이 온다 — 일정 입력 화면으로 넘어가지 말고 여기서 안내하라
+  → 응답은 { tripId, status, myMemberStatus } 뿐이다. inviteCode·방 이름·기간은 오지 않는다
+  → 이미 멤버인 사용자가 다시 호출해도 안전하다(멱등) — 새 자리를 쓰지 않고 현재 myMemberStatus만 돌아온다.
+    "이미 참여한 방인지" 사전 체크 로직을 따로 만들지 마라
 
 STEP 3. 정기 일정 입력 → 개별 일정 입력
   → 방장과 동일한 화면·API를 재사용하라
-  → 이 플로우의 **첫 화면**(정기 일정 입력)에서 뒤로가기로 플로우 자체를 이탈하면 DELETE /api/v1/trips/{tripId}/join/hold를 호출해 hold를 즉시 반환하라 — 정기→개별 화면 사이를 오가는 뒤로가기는 호출하지 마라(hold 유지)
-  → 이 호출을 놓쳐도 10분 뒤 서버가 자동으로 hold를 반환하므로 앱 강제종료 등에서는 치명적이지 않지만, 정상 종료 경로에서는 반드시 구현하라(다른 사용자가 더 빨리 자리를 받게 하기 위함)
 
-STEP 4. POST /api/v1/trips/join { "inviteCode": "A2B3C4" }
-  → 이 한 번의 호출로 멤버 row가 role=MEMBER, status=ACTIVE로 바로 생성된다고 가정하라
-  → STEP 2의 hold를 아직 갖고 있으면 정원 재확인 없이 확정된다 — hold가 만료됐거나 STEP 2를 건너뛰었어도 이 API 자체는 그대로 동작한다(그 시점 정원을 다시 확인할 뿐)
-  → 일정이 0건이어도 그대로 참여된다 — 프론트에서 별도로 값을 채워 보낼 필요 없다
+STEP 4. POST /api/v1/trips/{tripId}/activate
+  → 방장이 쓰는 API와 **같다**. 여기서 비로소 SCHEDULE_PENDING → ACTIVE가 된다
+  → 일정이 0건이어도 그대로 통과된다 — 프론트에서 별도로 값을 채워 보낼 필요 없다
 
-STEP 5. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 페이지를 렌더링하라
+STEP 5. 응답(TripDetailResponse)의 inviteCode로 상세 페이지를 렌더링하라
 ```
 
 멤버 이탈 처리 시 다음을 지켜라:
 
-- STEP 3까지만 하고 STEP 4(`POST /trips/join`) 전에 이탈한 경우, DB에 멤버 row가 없다고 가정하라 — "이어하기" 상태를 복구하려는 로직을 만들지 마라. 재진입 시 무조건 STEP 1(초대 링크)부터 다시 시작하도록 라우팅하라. hold는 최대 10분 후 자동으로 풀리므로 별도 정리가 필요 없다.
-- 이미 `ACTIVE`인 멤버가 같은 초대 링크를 다시 열었을 때는 `join`을 그대로 호출해도 된다 — 에러 없이 상세가 오므로(idempotent), "이미 참여한 방인지" 사전 체크 로직을 따로 만들지 마라. `POST .../join/hold`도 이미 `ACTIVE`인 멤버가 호출하면 hold 없이 동일 미리보기 정보만 반환한다.
+- STEP 2까지 하고 STEP 4 전에 이탈하면 **멤버 row는 `SCHEDULE_PENDING`으로 남는다**(자리를 계속 차지한다). 재진입 시 초대 링크든 홈 카드든 `myMemberStatus=SCHEDULE_PENDING`을 보고 일정 확인 화면으로 보내라 — 예전처럼 "row가 없으니 처음부터"로 가정하지 마라.
+- 자리를 자동으로 반환하는 장치는 **없다**(예전 10분 hold는 폐지됐다). 참여를 취소하려면 방 나가기 API를 써야 한다.
+- 이미 `ACTIVE`인 멤버가 같은 초대 링크를 다시 열었을 때도 `join`을 그대로 호출해도 된다 — `myMemberStatus=ACTIVE`가 돌아오므로 그 값으로 상세로 보내라.
 
 ## 규칙 4 — 관련 API는 아래 표만 사용하라
 
 | Method | Path | 인증 | 설명 |
 |---|---|---|---|
 | `POST` | `/api/v1/trips` | JWT | 방 생성. 방장을 `SCHEDULE_PENDING`로 즉시 등록 |
-| `POST` | `/api/v1/trips/{tripId}/activate` | JWT + 해당 방 멤버 | 방장의 일정 확인 완료. `SCHEDULE_PENDING` → `ACTIVE` |
-| `POST` | `/api/v1/trips/join/hold` | JWT | body `{ "inviteCode": string }` — 방 미리보기 + 10분 정원 hold 생성 |
-| `DELETE` | `/api/v1/trips/{tripId}/join/hold` | JWT | 플로우 첫 화면 이탈 시 hold 즉시 반환. 존재하지 않는 hold를 호출해도 204(안전) |
-| `POST` | `/api/v1/trips/join` | JWT | body `{ "inviteCode": string }` — 멤버 참여. 즉시 `ACTIVE`. STEP 2 hold를 갖고 있으면 그대로 소비 |
+| `POST` | `/api/v1/trips/{tripId}/activate` | JWT + 해당 방 멤버 | **방장·멤버 공통** 일정 확인 완료. `SCHEDULE_PENDING` → `ACTIVE` |
+| `POST` | `/api/v1/trips/join` | JWT | body `{ "inviteCode": string }` — 멤버 참여. `SCHEDULE_PENDING`으로 생성(멱등) |
 | `GET` | `/api/v1/trips/{tripId}` | JWT + 멤버 **ACTIVE** | 방 상세. `inviteCode` 포함 |
 | `GET` | `/api/v1/trips` | JWT | 홈 목록 카드. `myMemberStatus`로 `SCHEDULE_PENDING`/`ACTIVE` 분기하라. `inviteCode` 없음 |
 | `GET/POST/PATCH/DELETE` | `/api/v1/users/schedule/regular` | JWT | 정기 일정 CRUD (User 전역, 방과 무관) |
@@ -99,7 +104,19 @@ STEP 5. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 }
 ```
 
-`activate`/`join`/상세 조회 공통 응답 형태(`TripDetailResponse`) 예시:
+`POST /trips/join` 응답도 **같은 축소 형태**다 — `myMemberStatus`는 신규 참여면 `SCHEDULE_PENDING`, 이미 멤버면 그 사람의 현재 상태다:
+
+```json
+{
+  "data": {
+    "tripId": "550e8400-e29b-41d4-a716-446655440000",
+    "status": "ONGOING",
+    "myMemberStatus": "SCHEDULE_PENDING"
+  }
+}
+```
+
+`activate`/상세 조회 공통 응답 형태(`TripDetailResponse`) 예시:
 
 ```json
 {
@@ -121,21 +138,21 @@ STEP 5. 응답(TripDetailResponse)에 포함된 inviteCode로 곧바로 상세 �
 |---|---|---|
 | 400 | `INVALID_INPUT` | 이름 15자 초과, 인원 1~10 범위 밖, `inviteCode` 누락 등 |
 | 403 | `PROFILE_NAME_REQUIRED` | 로그인은 했지만 이름 미완료 상태로 생성/참여 시도 → 이름 입력 화면으로 보내라 |
-| 403 | `SCHEDULE_ACTIVATION_REQUIRED` | 방장이 `SCHEDULE_PENDING` 상태로 상세·방 안 API 호출 → 일정 입력 화면으로 라우팅하라 |
+| 403 | `SCHEDULE_ACTIVATION_REQUIRED` | 방장·멤버가 `SCHEDULE_PENDING` 상태로 상세·방 안 API 호출 → 일정 입력 화면으로 라우팅하라 |
 | 404 | `INVITE_CODE_NOT_FOUND` | 잘못된 초대 코드 — 재입력 유도 |
-| 409 | `TRIP_MEMBER_FULL` | 정원 초과 — `join/hold`(선점 시점) 또는 `join`(hold 없이·만료 후 직접 호출 시) 둘 다에서 올 수 있다. 참여 불가 안내 |
+| 409 | `TRIP_MEMBER_FULL` | 정원 초과 — `POST /trips/join`에서 온다. 일정 확인을 끝내지 않은(`SCHEDULE_PENDING`) 사람도 자리를 차지한다 |
 | 409 | `TRIP_ALREADY_CONFIRMED` / `TRIP_EXPIRED` | 확정·종료된 방에 신규 참여 시도 (기존 멤버 재접속은 막지 마라) |
 
 ## 규칙 5 — 요약 비교표를 코드 리뷰 체크리스트로 사용하라
 
 | | 방장 | 멤버 |
 |---|---|---|
-| 멤버 row 생성 시점 | 방 생성 즉시(`SCHEDULE_PENDING`) | `join` 호출 시점(`ACTIVE`로 바로) |
-| 완료 API | `POST .../activate` | `POST /trips/join` |
-| 중간 이탈 시 라우팅 | `SCHEDULE_PENDING` 카드 → 일정 입력 화면으로 | row 없음 → 초대 링크부터 |
-| 홈 카드 탭 분기 필요 여부 | **필요** — `myMemberStatus=SCHEDULE_PENDING`면 상세 대신 일정 입력으로 | 불필요 — 멤버는 항상 `ACTIVE`로만 존재 |
+| 멤버 row 생성 시점 | 방 생성 즉시(`SCHEDULE_PENDING`) | **초대 링크 진입 직후 `join`**(`SCHEDULE_PENDING`) |
+| 완료 API | `POST .../activate` | **`POST .../activate`** (동일) |
+| 중간 이탈 시 라우팅 | `SCHEDULE_PENDING` 카드 → 일정 입력 화면으로 | **동일** — `SCHEDULE_PENDING`이면 일정 입력 화면으로 |
+| 홈 카드 탭 분기 필요 여부 | **필요** — `myMemberStatus`로 분기 | **필요** — 멤버도 `SCHEDULE_PENDING`이 존재한다 |
 
-PR을 리뷰하거나 스스로 구현을 마쳤을 때, 이 표의 두 행("중간 이탈 시 라우팅", "홈 카드 탭 분기")이 실제 코드에 반영돼 있는지 반드시 확인하라.
+PR을 리뷰하거나 스스로 구현을 마쳤을 때, 이 표에서 방장·멤버 열이 **같아졌다는 점**이 실제 코드에 반영돼 있는지 확인하라 — 역할별로 갈라진 라우팅 분기가 남아 있으면 그것이 회귀다.
 
 ## 규칙 6 — 일정 확인 플로우는 「정기 일정 보유 여부」로 분기하라. `hasPreSchedule`을 쓰지 마라
 
