@@ -2,7 +2,6 @@ package com.tripfit.tripfit.trip.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,12 +16,11 @@ import com.tripfit.tripfit.common.exception.GlobalExceptionHandler;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
-import com.tripfit.tripfit.trip.dto.CreateTripResponse;
+import com.tripfit.tripfit.trip.dto.TripEntryResponse;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
 import com.tripfit.tripfit.trip.dto.TripListQuery;
 import com.tripfit.tripfit.trip.dto.TripListResponse;
-import com.tripfit.tripfit.trip.membership.dto.TripJoinPreviewResponse;
 import com.tripfit.tripfit.trip.service.TripService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -75,7 +73,7 @@ class TripControllerTest {
   void createTrip_created() throws Exception {
     when(tripService.createTrip(eq(USER_ID), any()))
         .thenReturn(
-            new CreateTripResponse(
+            new TripEntryResponse(
                 TRIP_ID, TripStatus.ONGOING, TripMemberStatus.SCHEDULE_PENDING));
 
     mockMvc
@@ -133,7 +131,10 @@ class TripControllerTest {
 
   @Test
   void joinTrip_ok() throws Exception {
-    when(tripService.joinTrip(eq(USER_ID), any())).thenReturn(sampleDetail(false));
+    when(tripService.joinTrip(eq(USER_ID), any()))
+        .thenReturn(
+            new TripEntryResponse(
+                TRIP_ID, TripStatus.ONGOING, TripMemberStatus.SCHEDULE_PENDING));
 
     mockMvc
         .perform(
@@ -141,31 +142,10 @@ class TripControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"inviteCode\":\"ABC234\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.activeMemberCount").value(0))
-        .andExpect(jsonPath("$.data.memberCount").value(6));
-  }
-
-  @Test
-  void previewAndHold_ok() throws Exception {
-    when(tripService.previewAndHold(eq(USER_ID), any())).thenReturn(samplePreview());
-
-    mockMvc
-        .perform(
-            post("/api/v1/trips/join/hold")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"inviteCode\":\"ABC234\"}"))
-        .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.tripId").value(TRIP_ID.toString()))
-        .andExpect(jsonPath("$.data.memberCount").value(6));
-  }
-
-  @Test
-  void releaseJoinHold_noContent() throws Exception {
-    mockMvc
-        .perform(delete("/api/v1/trips/" + TRIP_ID + "/join/hold"))
-        .andExpect(status().isNoContent());
-
-    verify(tripService).releaseJoinHold(TRIP_ID, USER_ID);
+        .andExpect(jsonPath("$.data.myMemberStatus").value("SCHEDULE_PENDING"))
+        // 입장 전 참여자에게 초대 코드가 나가면 "공유는 방장만" 규칙이 깨진다
+        .andExpect(jsonPath("$.data.inviteCode").doesNotExist());
   }
 
   @Test
@@ -207,20 +187,6 @@ class TripControllerTest {
         1.0 / 6.0,
         List.of(),
         0);
-  }
-
-  private static TripJoinPreviewResponse samplePreview() {
-    return new TripJoinPreviewResponse(
-        TRIP_ID,
-        "제주",
-        "제주",
-        LocalDate.of(2026, 8, 1),
-        LocalDate.of(2026, 8, 10),
-        4,
-        3,
-        6,
-        0,
-        TripStatus.ONGOING);
   }
 
   private static TripDetailResponse sampleDetail(boolean pinned) {

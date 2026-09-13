@@ -33,6 +33,9 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
   long countByTripIdAndDeletedAtIsNull(UUID tripId);
 
+  // 일정 확인을 마친(ACTIVE) 멤버 수 — 상태는 activated_at 파생이라 컬럼 조건으로 센다
+  long countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(UUID tripId);
+
   // 진행 중 캐러셀: endRange≥today · Pin 우선 → pinnedAt → lastActivityAt
   @Query("""
       SELECT tm FROM TripMember tm
