@@ -61,8 +61,7 @@ class TripAuthorizationInterceptorTest {
   void setUp() {
     TripServiceSupport support =
         new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
-    interceptor =
-        new TripAuthorizationInterceptor(tripRepository, support, userDirectoryPort);
+    interceptor = new TripAuthorizationInterceptor(tripRepository, support);
     SecurityContextHolder.getContext()
         .setAuthentication(
             new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
@@ -101,7 +100,6 @@ class TripAuthorizationInterceptorTest {
             handlerMethod("memberOnly", UUID.class));
 
     assertThat(allowed).isTrue();
-    verify(userDirectoryPort).requireCanEnterRoom(USER_ID);
   }
 
   @Test
@@ -118,7 +116,6 @@ class TripAuthorizationInterceptorTest {
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(UserErrorCode.SCHEDULE_ACTIVATION_REQUIRED);
-    verify(userDirectoryPort, never()).requireCanEnterRoom(USER_ID);
   }
 
   @Test
@@ -135,7 +132,6 @@ class TripAuthorizationInterceptorTest {
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(TripErrorCode.TRIP_ACCESS_DENIED);
-    verify(userDirectoryPort, never()).requireCanEnterRoom(USER_ID);
   }
 
   @Test
@@ -151,7 +147,6 @@ class TripAuthorizationInterceptorTest {
             handlerMethod("ownerOnly", UUID.class));
 
     assertThat(allowed).isTrue();
-    verify(userDirectoryPort, never()).requireCanEnterRoom(USER_ID);
   }
 
   @Test
@@ -168,7 +163,6 @@ class TripAuthorizationInterceptorTest {
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(TripErrorCode.TRIP_FORBIDDEN);
-    verify(userDirectoryPort, never()).requireCanEnterRoom(USER_ID);
   }
 
   @Test
@@ -185,7 +179,6 @@ class TripAuthorizationInterceptorTest {
             handlerMethod("membershipOnly", UUID.class));
 
     assertThat(allowed).isTrue();
-    verify(userDirectoryPort, never()).requireCanEnterRoom(USER_ID);
   }
 
   @Test
@@ -202,27 +195,6 @@ class TripAuthorizationInterceptorTest {
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(TripErrorCode.TRIP_ACCESS_DENIED);
-    verify(userDirectoryPort, never()).requireCanEnterRoom(USER_ID);
-  }
-
-  @Test
-  void preHandle_entryGateFails_throwsScheduleEntryRequired() throws Exception {
-    when(tripRepository.existsByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(true);
-    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, USER_ID))
-        .thenReturn(Optional.of(membership(TripMemberStatus.ACTIVE)));
-    org.mockito.Mockito.doThrow(
-        new TripFitException(UserErrorCode.SCHEDULE_ENTRY_REQUIRED))
-        .when(userDirectoryPort)
-        .requireCanEnterRoom(USER_ID);
-
-    assertThatThrownBy(
-        () -> interceptor.preHandle(
-            requestWithTripId(TRIP_ID),
-            new MockHttpServletResponse(),
-            handlerMethod("memberOnly", UUID.class)))
-        .isInstanceOf(TripFitException.class)
-        .extracting(exception -> ((TripFitException) exception).getErrorCode())
-        .isEqualTo(UserErrorCode.SCHEDULE_ENTRY_REQUIRED);
   }
 
   @Test

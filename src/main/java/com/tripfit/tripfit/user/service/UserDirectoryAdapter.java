@@ -50,16 +50,4 @@ public class UserDirectoryAdapter implements UserDirectoryPort {
   public void requireProfileNameComplete(User user) {
     userProfileService.requireProfileNameComplete(user);
   }
-
-  @Override
-  public void markAllFreeIfNoSchedules(User user) {
-    userSummaryService.markAllFreeIfNoSchedules(user);
-  }
-
-  // UserSummaryService에 오버로드된 두 requireCanEnterRoom(User/UUID) 중 UUID 버전에 위임 — trip 쪽 호출부는
-  // User 엔티티를 로드해 둔 상태가 아닐 수도 있어(예: JWT의 userId만 있는 인터셉터) UUID 버전을 쓴다.
-  @Override
-  public void requireCanEnterRoom(UUID userId) {
-    userSummaryService.requireCanEnterRoom(userId);
-  }
 }

@@ -4,7 +4,6 @@ import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,10 +17,10 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-// @TripMemberOnly: 멤버 + ACTIVE + canEnterRoom (방 입장·상세·공유 데이터)
-// @TripOwnerOnly: 방장만 (SCHEDULE_PENDING 허용 · ACTIVE/canEnterRoom 면제 — PATCH/DELETE 메타만.
+// @TripMemberOnly: 멤버 + ACTIVE (방 입장·상세·공유 데이터)
+// @TripOwnerOnly: 방장만 (SCHEDULE_PENDING 허용 · ACTIVE 면제 — PATCH/DELETE 메타만.
 // 초대 공유는 방 입장 후 → 상세 inviteCode · SCHEDULE_PENDING create 응답에 inviteCode 없음)
-// @TripMembershipOnly: 멤버(역할 무관) + SCHEDULE_PENDING 허용 · ACTIVE/canEnterRoom 면제 (Pin 등 방 입장과 무관한 개인
+// @TripMembershipOnly: 멤버(역할 무관) + SCHEDULE_PENDING 허용 · ACTIVE 면제 (Pin 등 방 입장과 무관한 개인
 // 설정)
 @Component
 public class TripAuthorizationInterceptor implements HandlerInterceptor {
@@ -30,15 +29,10 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
   private final TripServiceSupport support;
 
-  private final UserDirectoryPort userDirectoryPort;
-
   public TripAuthorizationInterceptor(
-      TripRepository tripRepository,
-      TripServiceSupport support,
-      UserDirectoryPort userDirectoryPort) {
+      TripRepository tripRepository, TripServiceSupport support) {
     this.tripRepository = tripRepository;
     this.support = support;
-    this.userDirectoryPort = userDirectoryPort;
   }
 
   // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly/@TripMembershipOnly 권한 검사 — SCHEDULE_PENDING 방장은
@@ -81,18 +75,15 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     }
 
     if (membershipOnly) {
-      // 역할 무관 멤버십만 확인 — SCHEDULE_PENDING도 허용, ACTIVE·canEnterRoom 검사 생략(Pin 등)
-      support.requireActiveMember(tripId, userId);
+      // 역할 무관 멤버십만 확인 — SCHEDULE_PENDING도 허용, ACTIVE 검사 생략(Pin 등)
+      support.requireMembership(tripId, userId);
       return true;
     }
 
-    TripMember membership = support.requireActiveMember(tripId, userId);
+    TripMember membership = support.requireMembership(tripId, userId);
 
-    // 이 방 일정 확인 미완료(SCHEDULE_PENDING) — 전역 입장 조건과 별개로 차단
+    // 이 방 일정 확인 미완료(SCHEDULE_PENDING)면 차단 — 방 입장 판정은 이 멤버십 상태 하나가 SSOT
     support.requireActive(membership);
-
-    // 전역 입장 조건: 일정≥1 또는 전부 free
-    userDirectoryPort.requireCanEnterRoom(userId);
     return true;
   }
 

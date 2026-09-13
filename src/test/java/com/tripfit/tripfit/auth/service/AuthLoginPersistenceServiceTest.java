@@ -116,7 +116,6 @@ class AuthLoginPersistenceServiceTest {
   void persist_whenExistingAccountIsWithdrawn_revivesAccount() {
     User withdrawn = new User("google-sub", SocialProvider.GOOGLE, null, null, null);
     withdrawn.markDeleted();
-    withdrawn.applyAllFree(true);
     OAuthProfile profile =
         new OAuthProfile(
             SocialProvider.GOOGLE,
@@ -131,7 +130,6 @@ class AuthLoginPersistenceServiceTest {
     AuthLoginPersistenceService.Result result = authLoginPersistenceService.persist(profile);
 
     assertThat(withdrawn.getDeletedAt()).isNull();
-    assertThat(withdrawn.isAllFree()).isFalse();
     assertThat(result.user().getEmail()).isEqualTo("user@example.com");
     verify(userRepository, never()).save(any());
   }

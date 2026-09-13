@@ -104,10 +104,8 @@ class TripCommandService {
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
     Trip trip = support.requireActiveTrip(tripId);
-    TripMember membership = support.requireActiveMember(tripId, userId);
+    TripMember membership = support.requireMembership(tripId, userId);
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
-      // 일정이 0건이면 전부 free로 표시한 뒤 ACTIVE로 전환 — canEnterRoom을 항상 충족시키므로 별도 재검증 불필요
-      userDirectoryPort.markAllFreeIfNoSchedules(membership.getUser());
       membership.activate();
     }
     return support.toDetail(trip, membership);
@@ -149,7 +147,7 @@ class TripCommandService {
     if (valuesChanged) {
       applicationEventPublisher.publishEvent(new TripInfoChangedEvent(tripId));
     }
-    TripMember membership = support.requireActiveMember(tripId, userId);
+    TripMember membership = support.requireMembership(tripId, userId);
     return support.toDetail(trip, membership);
   }
 
@@ -271,7 +269,7 @@ class TripCommandService {
   // 멤버 Pin on/off — 만료 Pin 자동 해제는 일 배치(TripHomeMaintenanceService)
   @Transactional
   public TripDetailResponse updatePin(UUID tripId, UUID userId, UpdateTripPinRequest request) {
-    TripMember membership = support.requireActiveMember(tripId, userId);
+    TripMember membership = support.requireMembership(tripId, userId);
     // 조회 API에서 Pin을 부수적으로 쓰지 않음 — 해제는 배치만
     membership.applyPin(Boolean.TRUE.equals(request.pinned()));
     return support.toDetail(membership.getTrip(), membership);
@@ -298,7 +296,7 @@ class TripCommandService {
   @TripActivity(tripIdParam = "tripId")
   public void leaveTrip(UUID tripId, UUID callerId) {
     support.requireActiveTrip(tripId);
-    TripMember membership = support.requireActiveMember(tripId, callerId);
+    TripMember membership = support.requireMembership(tripId, callerId);
     if (membership.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);
     }

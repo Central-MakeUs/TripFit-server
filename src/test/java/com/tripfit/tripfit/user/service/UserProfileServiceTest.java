@@ -57,7 +57,7 @@ class UserProfileServiceTest {
                 false,
                 false,
                 false,
-                false,
+
                 true));
     UserSummaryResponse response =
         userProfileService.registerOnboardingName(
@@ -88,7 +88,7 @@ class UserProfileServiceTest {
                 false,
                 false,
                 false,
-                false,
+
                 true));
     UserSummaryResponse response =
         userProfileService.updateProfile(

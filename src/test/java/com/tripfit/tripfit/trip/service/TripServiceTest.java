@@ -139,9 +139,7 @@ class TripServiceTest {
   @BeforeEach
   void setUp() {
     owner = user(OWNER_ID, "홍", "길동");
-    owner.applyAllFree(true);
     member = user(MEMBER_ID, "김", "철수");
-    member.applyAllFree(true);
     trip = ongoingTrip();
 
     UserLookupService userLookupService = new UserLookupService(userRepository);
@@ -170,8 +168,7 @@ class TripServiceTest {
             support,
             schedulePort,
             googleCalendarPort);
-    TripJoinService tripJoinService =
-        new TripJoinService(tripMemberRepository, support, userDirectoryPort);
+    TripJoinService tripJoinService = new TripJoinService(tripMemberRepository, support);
     TripActivityAspect tripActivityAspect = new TripActivityAspect(tripRepository);
     AspectJProxyFactory joinProxyFactory = new AspectJProxyFactory(tripJoinService);
     joinProxyFactory.addAspect(tripActivityAspect);
@@ -289,8 +286,7 @@ class TripServiceTest {
   }
 
   @Test
-  void createTrip_doesNotMarkAllFree() {
-    owner.applyAllFree(false);
+  void createTrip_doesNotTouchSchedules() {
     when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
     when(tripRepository.existsByInviteCode(any())).thenReturn(false);
     when(tripRepository.save(any(Trip.class)))
@@ -312,27 +308,22 @@ class TripServiceTest {
             6,
             "제주"));
 
-    assertThat(owner.isAllFree()).isFalse();
     verify(regularScheduleRepository, never()).existsByUserId(OWNER_ID);
   }
 
   @Test
-  void activateMembership_pendingToActive_andMarksAllFree() {
-    owner.applyAllFree(false);
+  void activateMembership_pendingToActive() {
     TripMember joined =
         new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(joined));
-    when(regularScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
-    when(personalScheduleRepository.existsByUserId(OWNER_ID)).thenReturn(false);
 
     var detail = tripService.activateMembership(TRIP_ID, OWNER_ID);
 
     assertThat(joined.getStatus()).isEqualTo(TripMemberStatus.ACTIVE);
     assertThat(joined.getActivatedAt()).isNotNull();
-    assertThat(owner.isAllFree()).isTrue();
     assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
   }
 
@@ -466,8 +457,7 @@ class TripServiceTest {
   }
 
   @Test
-  void joinTrip_setsAllFreeWhenNoSchedules() {
-    member.applyAllFree(false);
+  void joinTrip_succeedsWithNoSchedules() {
     when(userRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     when(tripRepository.findByInviteCodeAndDeletedAtIsNull("ABC234"))
         .thenReturn(Optional.of(trip));
@@ -475,12 +465,11 @@ class TripServiceTest {
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.empty());
     when(tripMemberRepository.countByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(1L);
-    when(regularScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
-    when(personalScheduleRepository.existsByUserId(MEMBER_ID)).thenReturn(false);
 
-    tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
+    var detail = tripService.joinTrip(MEMBER_ID, new JoinTripRequest("ABC234"));
 
-    assertThat(member.isAllFree()).isTrue();
+    assertThat(detail.myMemberStatus()).isEqualTo(TripMemberStatus.ACTIVE);
+    verify(regularScheduleRepository, never()).existsByUserId(MEMBER_ID);
   }
 
   @Test

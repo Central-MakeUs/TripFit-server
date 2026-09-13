@@ -165,7 +165,7 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료 · SCHEDULE_ENTRY_REQUIRED — 입장 조건 미충족",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · SCHEDULE_ACTIVATION_REQUIRED — 이 방 일정 확인 미완료",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """

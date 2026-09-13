@@ -193,8 +193,9 @@ public class TripServiceSupport {
         .toList();
   }
 
-  // 활성 멤버십 로드 — 비멤버·탈퇴는 TRIP_ACCESS_DENIED (방장 전용 FORBIDDEN과 구분). TripAuthorizationInterceptor 공용
-  public TripMember requireActiveMember(UUID tripId, UUID userId) {
+  // 멤버십 존재만 확인 — 상태(SCHEDULE_PENDING/ACTIVE)는 보지 않는다(그건 requireActive).
+  // 비멤버·탈퇴는 TRIP_ACCESS_DENIED (방장 전용 FORBIDDEN과 구분). TripAuthorizationInterceptor 공용
+  public TripMember requireMembership(UUID tripId, UUID userId) {
     return tripMemberRepository
         .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, userId)
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_ACCESS_DENIED));

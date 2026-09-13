@@ -8,7 +8,6 @@ import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.dto.TripDetailResponse;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.user.domain.User;
 import java.time.LocalDateTime;
@@ -24,15 +23,10 @@ public class TripJoinService {
 
   private final TripServiceSupport support;
 
-  private final UserDirectoryPort userDirectoryPort;
-
-  // 신규 멤버를 ACTIVE로 등록하고 상세를 반환한다 — 일정 0건이면 전부 free 처리
+  // 신규 멤버를 ACTIVE로 등록하고 상세를 반환한다
   @Transactional
   @TripActivity(tripIdFromReturn = true)
   public TripDetailResponse joinAsNewMember(Trip trip, User user) {
-    // 일정이 없으면 전부 free로 표시 (입장 조건 충족용)
-    userDirectoryPort.markAllFreeIfNoSchedules(user);
-
     TripMember member =
         new TripMember(
             trip,

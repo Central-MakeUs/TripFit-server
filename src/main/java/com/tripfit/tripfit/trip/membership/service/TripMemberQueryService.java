@@ -46,7 +46,7 @@ public class TripMemberQueryService {
   // 멤버 목록 조회 — 모집률·동명이인 displayName 포함
   @Transactional(readOnly = true)
   public TripMembersResponse listMembers(UUID tripId, UUID userId) {
-    support.requireActiveMember(tripId, userId);
+    support.requireMembership(tripId, userId);
     Trip trip = support.requireActiveTrip(tripId);
 
     List<TripMember> members = support.listActiveMembersSortedByJoinedAt(tripId);
@@ -78,7 +78,7 @@ public class TripMemberQueryService {
   // 희망 기간 멤버 전원 일정 달력 — 조율 중은 실시간, 확정·종료는 스냅샷(읽기 전용)
   @Transactional(readOnly = true)
   public MemberScheduleCalendarResponse getMemberScheduleCalendar(UUID tripId, UUID userId) {
-    support.requireActiveMember(tripId, userId);
+    support.requireMembership(tripId, userId);
     Trip trip = support.requireActiveTrip(tripId);
     TripStatus status = support.effectiveStatus(trip);
 

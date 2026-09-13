@@ -74,7 +74,7 @@ class TripQueryService {
   // 여행방 상세 조회 — 활성 멤버십이 있어야 함
   @Transactional(readOnly = true)
   public TripDetailResponse getTrip(UUID tripId, UUID userId) {
-    TripMember membership = support.requireActiveMember(tripId, userId);
+    TripMember membership = support.requireMembership(tripId, userId);
     return support.toDetail(membership.getTrip(), membership);
   }
 
