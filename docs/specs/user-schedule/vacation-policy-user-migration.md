@@ -112,8 +112,8 @@ PATCH 요청 / GET·PATCH 응답(`data`) 공통 형태:
 
 - [ ] **회원가입 — "정기 일정 없어요"**: 연차 스텝을 묻지 않으므로 `vacation-policy`를 호출하지 않는다. `User`는 기본값을 유지하고, 정기 일정 row가 0건이라 추천·달력 결과에 영향 없음(`applyVacationSimulation`의 `regulars.isEmpty()` early return 유지 확인)
 - [ ] **회원가입 — 건너뛰기**: 아무 API도 호출되지 않고 입장 조건·기본값 모두 기존과 동일
-- [ ] **방 입장 — 정기 0건 + "없어요" + 개별 일정 미입력**: 연차 스텝도 **묻지 않는다**(연차는 정기와 한 덩어리) → `vacation-policy` 미호출·기본값 유지. 일정 row는 0건이므로 `hasPreSchedule=false` → activate/join의 `markAllFreeIfNoSchedules`로 `isAllFree=true` → 입장 가능
-- [ ] **방 입장 — 정기 1건 이상**: "입력하신 일정을 확인해주세요" 경로에서 `GET /users/schedule/regular`와 `GET /users/schedule/vacation-policy`를 나란히 호출해 기존 값을 프리필, 수정 시 각각 저장. 연차만 바꿔도 `isAllFree`·`hasPreSchedule`은 변하지 않음
+- [ ] **방 입장 — 정기 0건 + "없어요" + 개별 일정 미입력**: 연차 스텝도 **묻지 않는다**(연차는 정기와 한 덩어리) → `vacation-policy` 미호출·기본값 유지. 일정 row는 0건이라 `hasPreSchedule=false`지만, 방 입장 판정은 그 방의 `trip_member.status = ACTIVE` 하나이므로 입장에는 영향 없음 (2026-08-18 `#113` — 구 `markAllFreeIfNoSchedules`/`is_all_free` 경로 삭제)
+- [ ] **방 입장 — 정기 1건 이상**: "입력하신 일정을 확인해주세요" 경로에서 `GET /users/schedule/regular`와 `GET /users/schedule/vacation-policy`를 나란히 호출해 기존 값을 프리필, 수정 시 각각 저장. 연차만 바꿔도 `hasPreSchedule`은 변하지 않음(구 `isAllFree`는 `#113`으로 삭제)
 - [x] ~~**이미 참여 중인 방에서 일정만 수정**: `vacation-policy` 저장 후에도 `isAllFree`가 유지되어 `SCHEDULE_ENTRY_REQUIRED`로 튕기지 않음~~ → 2026-08-18 `#113`으로 전역 게이트가 삭제돼 이 시나리오 자체가 성립하지 않는다(연차 저장이 방 접근에 영향을 줄 경로 없음)
 - [ ] **정기 일정 전체 삭제**: 연차 설정은 `users`에 남는다(기존엔 행과 함께 사라짐). 재등록 시 이전 설정이 그대로 조회됨
 - [ ] 정기 일정 여러 개 등록된 유저 — 연차 시뮬레이션·공휴일 판정이 기존과 동일한 결과 (회귀 없음, `RecommendationEngineTestSetScenarioTest` 등 기존 테스트 통과)

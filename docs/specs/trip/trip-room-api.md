@@ -30,7 +30,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 - **구현 상태:** D5 홈 2뷰(`scope`·필터·`last_activity_at`·`pinned_at`)·`TripHomeCardResponse`/`TripDetailResponse` 분리·`membersPreview` 배치 조회 반영. **#27** EXPIRED·Pin 배치 Implemented · **#26** `last_activity_at` AOP Implemented
 - **참여:** 소셜 로그인 필수 (BR-USER-002), 비회원 없음. **초대는 카카오·OS 링크 공유**(딥링크/Universal Link에 `inviteCode` 포함) — 코드 수동 입력은 보조
 - **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](../user-schedule/schedule-unified.md)
-- **참여 완료:** 방장 — create 시 `SCHEDULE_PENDING` → `POST .../activate` 후 `ACTIVE`. 멤버 — `POST /join` 시 `ACTIVE`. 방 안 API는 `ACTIVE` ∧ `canEnterRoom` ([#39](https://github.com/Central-MakeUs/TripFit-server/issues/39))
+- **참여 완료:** 방장 — create 시 `SCHEDULE_PENDING` → `POST .../activate` 후 `ACTIVE`. 멤버 — `POST /join` 시 `ACTIVE`. 방 안 API는 `ACTIVE` (구 전역 `canEnterRoom` 조건은 2026-08-18 `#113`으로 삭제) ([#39](https://github.com/Central-MakeUs/TripFit-server/issues/39))
 - **홈 UI SSOT:** 정책서 홈 — 진행 중인 여행(캐러셀) + 전체 여행 보기(리스트·필터). Pin은 **진행 중 캐러셀에만** 정렬 적용
 
 ### 관련 문서

@@ -139,9 +139,8 @@ public class TripController {
   }
 
   /**
-   * 여행방 상세 정보를 조회한다. 멤버이면서 ACTIVE(일정 activate/join 완료)이고 방 입장 조건(일정≥1 또는 전부 free)을 충족해야 하며,
-   * SCHEDULE_PENDING(방장 activate 전) 상태면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다. 응답에는 inviteCode가
-   * 포함된다(방장 초대 공유용) — create 응답에는 없던 값이다.
+   * 여행방 상세 정보를 조회한다. 이 방의 멤버이면서 ACTIVE(일정 activate/join 완료)여야 하며, SCHEDULE_PENDING(방장 activate 전)
+   * 상태면 SCHEDULE_ACTIVATION_REQUIRED로 거부된다. 응답에는 inviteCode가 포함된다(방장 초대 공유용) — create 응답에는 없던 값이다.
    */
   @TripMemberOnly
   @Operation(summary = "여행방 상세")
@@ -488,7 +487,7 @@ public class TripController {
     return ResponseEntity.ok(SuccessResponse.of(tripService.activateMembership(tripId, userId)));
   }
 
-  /** 홈 목록에서 이 방을 고정(Pin)하거나 해제한다. 멤버면 되고(SCHEDULE_PENDING 방장 포함), 방 입장(ACTIVE + 입장 조건)까지는 필요 없다. */
+  /** 홈 목록에서 이 방을 고정(Pin)하거나 해제한다. 멤버면 되고(SCHEDULE_PENDING 방장 포함), 방 입장(ACTIVE)까지는 필요 없다. */
   @TripMembershipOnly
   @Operation(summary = "Pin 토글")
   @ApiResponses({

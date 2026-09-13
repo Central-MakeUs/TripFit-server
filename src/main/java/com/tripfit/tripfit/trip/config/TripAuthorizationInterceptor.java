@@ -70,7 +70,7 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
       if (!tripRepository.existsByIdAndOwner_IdAndDeletedAtIsNull(tripId, userId)) {
         throw new TripFitException(TripErrorCode.TRIP_FORBIDDEN);
       }
-      // SCHEDULE_PENDING 방장도 PATCH/DELETE(메타)는 허용 — ACTIVE·입장 조건 검사 생략
+      // SCHEDULE_PENDING 방장도 PATCH/DELETE(메타)는 허용 — ACTIVE 검사 생략
       return true;
     }
 

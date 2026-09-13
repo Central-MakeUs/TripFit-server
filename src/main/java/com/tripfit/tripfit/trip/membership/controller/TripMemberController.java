@@ -38,7 +38,7 @@ public class TripMemberController {
   }
 
   /**
-   * 여행방 참여자 목록을 조회한다. 방 입장 가능(ACTIVE + 입장 조건) 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에
+   * 여행방 참여자 목록을 조회한다. 이 방에서 ACTIVE인 멤버만 호출할 수 있고, SCHEDULE_PENDING이면 403이다. 동명이인은 표시명에
    * {@code (2)}처럼 번호가 붙는다.
    */
   @TripMemberOnly

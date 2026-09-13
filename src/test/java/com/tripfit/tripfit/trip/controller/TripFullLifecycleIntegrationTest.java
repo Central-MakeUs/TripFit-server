@@ -113,7 +113,7 @@ class TripFullLifecycleIntegrationTest {
             .andReturn();
     String tripId = extract("tripId", createResult.getResponse().getContentAsString());
 
-    // 2. 방장 activate — SCHEDULE_PENDING → ACTIVE, 일정 0건이라 전부 free
+    // 2. 방장 activate — SCHEDULE_PENDING → ACTIVE (일정 건수는 보지 않음)
     MvcResult activateResult =
         mockMvc
             .perform(

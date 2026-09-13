@@ -85,7 +85,7 @@ class TripCommandService {
             TripStatus.ONGOING);
     trip.applyDestination(TripServiceSupport.normalizeDestination(request.destination()));
     tripRepository.save(trip);
-    // create 직후는 SCHEDULE_PENDING — 일정 activate 후에 ACTIVE. 전부 free 처리는 activate/join에서.
+    // create 직후는 SCHEDULE_PENDING — 일정 activate 후에 ACTIVE.
     TripMember ownerMember =
         new TripMember(
             trip,
