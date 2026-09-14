@@ -1,7 +1,9 @@
 # 사용자 일정 상태 응답 정리 — **Superseded** (구현하지 않음)
 
 > 상태: **Superseded (2026-08-18)** — Draft(2026-08-17)로 작성됐으나 승인 없이 폐기.
-> 대체 스펙: [`trip/trip-join-schedule-gate.md`](../trip/trip-join-schedule-gate.md)
+> 대체 스펙: [`trip/trip-join-schedule-gate.md`](../trip/trip-join-schedule-gate.md) · 분기 판정 SSOT: [`pre-schedule-entry-flow.md`](pre-schedule-entry-flow.md)
+>
+> **2026-08-19 추가 정정:** 아래 표의 「`hasRegularSchedule`은 유지한다」는 그 시점의 결정이며 **현행이 아니다.** 분기 기준이 「정기 일정 유무」에서 「최초/갱신 입력」으로 바뀌면서 `hasRegularSchedule`·`hasPreSchedule` **둘 다 삭제**되고 `hasCompletedPreSchedule`(=`users.vacation_apply_period IS NOT NULL`) 하나로 대체됐다.
 > MVP: In scope였던 문제(방 입장 플로우 분기)는 대체 스펙이 모두 흡수했다.
 
 ## 이 문서를 남겨두는 이유
@@ -22,14 +24,14 @@
 | `User.regularScheduleDeclaredNone` 컬럼 + `RegularScheduleState` enum(`NOT_ANSWERED`/`DECLARED_NONE`/`REGISTERED`) + `UserSummaryResponse.regularScheduleState` | **"정기 일정이 있나요?" 질문은 정기 0건이면 방마다 매번 다시 뜬다.** 저장된 이전 답으로 얻는 것은 라디오 버튼 프리필뿐이고 사용자는 어차피 다시 답해야 한다. 그 프리필 하나에 DB 컬럼 1 + 신규 API 1 + enum 1 + `ErrorCode` 1이 붙는다. 게다가 "이미 답했으니 넘어가도 된다"는 방향이라 "매 방 입장 시 일정 재확인 강제(건너뛰기 불가)" 규칙과 반대편으로 흐르기 쉽다 |
 | `PATCH /api/v1/users/schedule/regular/declaration` + `UpdateRegularDeclarationRequest` + `REGULAR_SCHEDULE_EXISTS`(409) | 위 컬럼을 쓰기 위한 API — 컬럼과 함께 폐기 |
 | `UserSummaryResponse.canEnterRoom` 노출 | **방향이 반대였다.** 프론트가 게이트 식을 재구현한 문제의 해법은 "게이트 값을 하나 더 노출"이 아니라 **"게이트를 하나로 줄이기"**다. 대체 스펙 J-7에서 전역 게이트 자체를 삭제하고, 방 입장 라우팅의 유일한 기준을 `myMemberStatus`로 통일한다 |
-| `UserSummaryResponse.hasRegularSchedule` 삭제(→ `regularScheduleState`로 대체) | `hasRegularSchedule`은 **유지**한다. 정기 일정 유무 분기에 필요한 유일한 값이고, `regularScheduleState`가 폐기되면서 대체재가 없어졌다 |
+| `UserSummaryResponse.hasRegularSchedule` 삭제(→ `regularScheduleState`로 대체) | (2026-08-18 판단) `hasRegularSchedule`은 **유지**한다 — 정기 일정 유무 분기에 필요한 유일한 값이고, `regularScheduleState`가 폐기되면서 대체재가 없어졌다. **→ 2026-08-19 뒤집힘: 분기 자체가 「최초/갱신」으로 바뀌어 이 필드도 삭제됐다** |
 
 ## 대체 스펙이 이어받은 것
 
 | 이 문서가 제기한 문제 | 대체 스펙에서의 해결 |
 |---|---|
 | 프론트가 `hasPreSchedule \|\| isAllFree`를 재구현 | **J-7 — 전역 게이트(`is_all_free`·`canEnterRoom`·`SCHEDULE_ENTRY_REQUIRED`) 완전 삭제.** 재구현할 식 자체가 사라진다 |
-| 정기 유무 분기 값이 없음 | `hasRegularSchedule` 유지 (2026-08-17 작업 트리에 이미 구현) |
+| 정기 유무 분기 값이 없음 | ~~`hasRegularSchedule` 유지~~ → **2026-08-19 폐기.** 분기 자체가 「최초 입력 / 갱신 입력」으로 바뀌고 판정은 `hasCompletedPreSchedule` 하나가 담당한다 |
 | 일정 확인 없이 방 입장 가능(이슈 2, P1) | **J-1 — 참여자 `join`을 `SCHEDULE_PENDING`으로 앞당겨 서버가 강제** |
 | `isAllFree`가 자동으로 켜져 두 번째 입장부터 동작이 달라짐 | J-7로 컬럼째 삭제 — 재현 조건 자체가 소멸 |
 

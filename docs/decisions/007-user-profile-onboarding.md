@@ -1,15 +1,17 @@
 # 007 — 사용자 프로필·온보딩 상태 (boolean + 이름)
 
-- **상태:** 확정
+- **상태:** 확정 (**2026-08-19 amend — 회원가입 온보딩에서 사전 일정 단계 제거**)
 - **날짜:** 2026-07-08
 - **관련:**
   - [`docs/specs/user/user-onboarding.md`](../specs/user/user-onboarding.md) — wave 1 API·UI SSOT
   - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — 소셜 login·JWT
   - [`docs/decisions/006-profile-image-url-storage.md`](006-profile-image-url-storage.md)
 
+> **2026-08-19 amend:** 회원가입 온보딩은 **이름(필수) → Google 캘린더(선택)** 까지다. **사전 일정(정기·개별·연차) 단계는 회원가입에서 제거**되어 여행방 입장·여행방 내 수정·마이페이지에서만 입력받는다. 아래 본문의 사전 일정 단계·`isScheduleRegistered` 서술은 이력이다(해당 컬럼·API는 2026-07-20에 이미 삭제됨). 현행 SSOT: [`docs/specs/user-schedule/pre-schedule-entry-flow.md`](../specs/user-schedule/pre-schedule-entry-flow.md)
+
 ## 맥락
 
-회원가입(소셜 login) 직후 JWT를 발급하고, 이후 **이름(필수)** · **Google 캘린더(선택)** · **사전 일정/근무·연차(선택)** 온보딩을 단계별로 진행한다.
+회원가입(소셜 login) 직후 JWT를 발급하고, 이후 **이름(필수)** · **Google 캘린더(선택)** · ~~사전 일정/정기 일정·연차(선택)~~ 온보딩을 단계별로 진행한다.
 
 - `onboarding_step` enum/integer **사용 안 함**
 - 네이버 캘린더 **제외** (Google만)

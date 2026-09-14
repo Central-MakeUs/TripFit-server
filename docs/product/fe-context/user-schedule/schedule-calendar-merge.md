@@ -125,7 +125,7 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 |---|---|
 | 인증 | Bearer JWT 필수 |
 | 성공 응답 | `201 Created` |
-| 부수효과 | 첫 정기 일정 생성 시 `hasRegularSchedule`·`hasPreSchedule`이 `true`가 됨 — `GET /auth/me` 등 재조회 필요 |
+| 부수효과 | 없음 — 정기 일정 생성은 요약 응답의 어떤 값도 바꾸지 않는다(`hasCompletedPreSchedule`은 연차·휴일 정보 저장 시에만 `true`가 된다, 2026-08-19) |
 
 **요청 스키마**
 
@@ -193,7 +193,7 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 | 인증 | Bearer JWT 필수 |
 | Request Body | 없음 |
 | 성공 응답 | `204 No Content` (body 없음) |
-| 부수효과 | 정기가 0건이 되면 `hasRegularSchedule`이, 정기·개별이 모두 0건이 되면 `hasPreSchedule`까지 `false`가 됨 — `GET /auth/me` 재조회 필요 |
+| 부수효과 | 없음 — 일정을 전부 지워도 `hasCompletedPreSchedule`은 `true`로 유지된다(최초 입력으로 돌아가는 경로는 탈퇴뿐, 2026-08-19) |
 
 **에러**
 
@@ -204,13 +204,34 @@ Google Calendar 연동 병합·해제는 별도 문서 [`google-calendar-merge.m
 
 ---
 
+### `DELETE /api/v1/users/schedule/regular` — 정기 일정 **전체** 삭제 (2026-08-19 신설)
+
+| | |
+|---|---|
+| 인증 | Bearer JWT 필수 |
+| Request Body | 없음 |
+| 성공 응답 | `204 No Content` — **정기 일정이 0건이어도 204**(멱등). 존재 여부를 먼저 확인하지 마라 |
+| 삭제 범위 | 본인 정기 일정 전부. **개별 일정·연차·휴일 정보는 그대로 남는다** |
+| 부수효과 | 없음 — `hasCompletedPreSchedule`은 바뀌지 않는다 |
+
+**언제 부르나:** 사전 일정 입력 플로우의 `정기 일정이 있나요? → 없어요`를 고른 **즉시**. 최초/갱신 판정은 사전 신청일만 보므로, 예전에 넣어둔 정기 일정이 남아 있으면 사용자가 "없다"고 답한 것과 추천 계산이 어긋난다(`trip/trip-room-create-join.md` 규칙 6).
+
+**에러**
+
+| HTTP | code | 발생 조건 |
+|---|---|---|
+| 401 | `AUTH_INVALID_TOKEN` / `AUTH_EXPIRED` | 토큰 없음·무효·만료 |
+
+---
+
 ### 관련 API 요약표
 
 | Method | Path | 역할 |
 |---|---|---|
+| `DELETE` | `/api/v1/users/schedule/regular` | 정기 패턴 **전체** 삭제 — "정기 일정 없어요" 선택 시 |
 | `GET/POST` | `/api/v1/users/schedule/regular` | 정기 패턴 목록/생성 — 위 전체 명세 참고 |
 | `PATCH/DELETE` | `/api/v1/users/schedule/regular/{id}` | 정기 패턴 전체 수정/삭제 — **하루만 바꾸는 용도 아님** |
-| `GET/PATCH` | `/api/v1/users/schedule/vacation-policy` | 연차·반차·공휴일 휴무 4개 값(사용자당 1개) — [`vacation-policy.md`](vacation-policy.md) |
+| `GET/PATCH` | `/api/v1/users/schedule/vacation-policy` | 연차·휴일 정보 4개 값(사용자당 1개) — [`vacation-policy.md`](vacation-policy.md) |
 | `PATCH` | `/api/v1/users/schedule/personal` | 날짜별 개별 일정 upsert(조회 없음, 이 응답이 곧 조회 결과) — **날짜 하나만 고칠 때 이 API** |
 | `GET` | `/api/v1/users/schedule/calendar?startDate=&endDate=` | 본인 정기+개별 합친 달력 (조회 구간: 오늘~오늘+2년-1, 단 참여 중인 ONGOING 여행 희망 기간 종료일이 그보다 뒤면 그 날짜까지 허용) |
 | `GET` | `/api/v1/trips/{tripId}/members/schedule-calendar` | 여행방 멤버 전원의 정기+개별 합친 달력 (조회 구간: 여행 희망 기간) |
