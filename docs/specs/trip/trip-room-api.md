@@ -2,7 +2,7 @@
 
 > wave: 2
 > implements: BR-TRIP-001, BR-TRIP-008, BR-TRIP-009, BR-TRIP-013, BR-USER-001, BR-USER-002, BR-USER-009, BR-USER-010
-> deferred: **정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)** [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), 여행방 삭제 시 VOC 사유(wave 4, unconfirm 사유와 별개), **카카오 초대·확정·재촉 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **EXPIRED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)
+> deferred: ~~정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)~~ (**Superseded** 2026-08-18 `#114` — DB 비관적 락으로 대체, [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)는 이력 문서), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), 여행방 삭제 시 VOC 사유(wave 4, unconfirm 사유와 별개), **카카오 초대·확정·재촉 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **EXPIRED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)
 > related Implemented: 참여자 내보내기 → [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) [`trip-member-remove.md`](trip-member-remove.md)
 > 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·참여 = #22 확정** (2026-07-21) · **D5 홈 2뷰 amend** (2026-07-19) · **D5 구현 후속 defer #26·#27** (2026-07-19)
 > 선행: [`auth-social-login.md`](../auth/auth-social-login.md), [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)
@@ -30,7 +30,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 - **구현 상태:** D5 홈 2뷰(`scope`·필터·`last_activity_at`·`pinned_at`)·`TripHomeCardResponse`/`TripDetailResponse` 분리·`membersPreview` 배치 조회 반영. **#27** EXPIRED·Pin 배치 Implemented · **#26** `last_activity_at` AOP Implemented
 - **참여:** 소셜 로그인 필수 (BR-USER-002), 비회원 없음. **초대는 카카오·OS 링크 공유**(딥링크/Universal Link에 `inviteCode` 포함) — 코드 수동 입력은 보조
 - **일정 데이터:** User 전역 `regular_schedule` + `personal_schedule` (BR-USER-008) — [`schedule-unified.md`](../user-schedule/schedule-unified.md)
-- **참여 완료:** 방장·멤버 **동일** — 방 진입(방장 `POST /trips` · 멤버 `POST /trips/join`) 시 `SCHEDULE_PENDING` → 일정 확인 → `POST .../activate` 후 `ACTIVE` (2026-09-13 `#114` — 이전에는 멤버만 join 한 번으로 바로 `ACTIVE`였다). 방 안 API는 `ACTIVE` (구 전역 `canEnterRoom` 조건은 2026-08-18 `#113`으로 삭제) ([#39](https://github.com/Central-MakeUs/TripFit-server/issues/39))
+- **참여 완료:** 방장·멤버 **동일** — 방 진입(방장 `POST /trips` · 멤버 `POST /trips/join`) 시 `SCHEDULE_PENDING` → 일정 확인 → `POST .../activate` 후 `ACTIVE` (2026-08-18 `#114` — 이전에는 멤버만 join 한 번으로 바로 `ACTIVE`였다). 방 안 API는 `ACTIVE` (구 전역 `canEnterRoom` 조건은 2026-08-18 `#113`으로 삭제) ([#39](https://github.com/Central-MakeUs/TripFit-server/issues/39))
 - **홈 UI SSOT:** 정책서 홈 — 진행 중인 여행(캐러셀) + 전체 여행 보기(리스트·필터). Pin은 **진행 중 캐러셀에만** 정렬 적용
 
 ### 관련 문서
@@ -100,7 +100,7 @@ Swagger Info / Trip 태그에도 동일 요약이 있다.
 - [ ] `POST /api/v1/trips/{tripId}/activate` — SCHEDULE_PENDING→ACTIVE · idempotent (#39) (~~+ row0 `is_all_free`~~ — 2026-08-18 `#113` 삭제)
 - [ ] 방 안 API (`@TripMemberOnly`): **ACTIVE** — 아니면 `SCHEDULE_ACTIVATION_REQUIRED` (~~∧ `canEnterRoom` / `SCHEDULE_ENTRY_REQUIRED`~~ — `#113` 삭제)
 - [ ] `GET /api/v1/trips` — **D5** `scope=ongoing|all` · 필터·정렬 (§홈 목록) · **`TripHomeCardResponse`** (`myRole`·`membersPreview`)
-- [ ] `trip.last_activity_at` 컬럼 + create/join/patch/activate **최소** 갱신 (D5) — 전체 hook → **#26**
+- [ ] `trip.last_activity_at` 컬럼 + create/patch/activate **최소** 갱신 (D5) — `join`은 touch하지 않는다(2026-08-18 `#114` J-9). 전체 hook → **#26**
 - [ ] `trip_member.pinned_at` 컬럼 · Pin ON/OFF 시 설정/해제 (D5)
 - [ ] `GET /api/v1/trips/{tripId}` — 상세 **`TripDetailResponse`** (ACTIVE 참여자만 · `membersPreview` 없음)
 - [ ] `PATCH /api/v1/trips/{tripId}` — 방장만 (SCHEDULE_PENDING 허용) · **`status=ONGOING`만** (D4) · **기간 필드 없음**(D9) · `last_activity_at` 갱신 (최소)

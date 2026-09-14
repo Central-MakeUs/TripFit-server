@@ -1,6 +1,6 @@
 # activate API 질문 답변
 
-> ⚠️ 2026-09-13 업데이트(`#114`): **참여자도 이 API를 호출한다.** 이전에는 `POST /trips/join` 한 번으로 곧바로 `ACTIVE`가 됐지만, 이제 `join`은 일정 확인 **전**에 호출해 `SCHEDULE_PENDING` 멤버를 만들고, 방장과 **똑같이** `activate`로 `ACTIVE`가 된다. 아래 "방장" 서술은 참여자에게도 그대로 적용된다(파일명도 `trip-owner-activate-api.md` → `trip-activate-api.md`로 바꿨다).
+> ⚠️ 2026-08-18 업데이트(`#114`): **참여자도 이 API를 호출한다.** 이전에는 `POST /trips/join` 한 번으로 곧바로 `ACTIVE`가 됐지만, 이제 `join`은 일정 확인 **전**에 호출해 `SCHEDULE_PENDING` 멤버를 만들고, 방장과 **똑같이** `activate`로 `ACTIVE`가 된다. 아래 "방장" 서술은 참여자에게도 그대로 적용된다(파일명도 `trip-owner-activate-api.md` → `trip-activate-api.md`로 바꿨다).
 
 > ⚠️ 2026-07-28 업데이트: `POST .../schedule/confirm`이 `POST .../activate`로 rename됨(`TripStatus.CONFIRMED`와 이름이 겹쳐 혼동을 유발해서 변경). 에러 코드도 `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`로 바뀜. 아래는 새 이름 기준으로 갱신한 내용.
 >
@@ -27,7 +27,7 @@
 
 **네, 맞습니다.**
 
-- `SCHEDULE_PENDING` 상태는 **방에 막 진입해 아직 일정 확인을 끝내지 않은** 상태입니다 — 방장은 `POST /trips` 직후, 참여자는 `POST /trips/join` 직후가 여기에 해당합니다 (D-JOIN-MEMBER, 2026-09-13 `#114`).
+- `SCHEDULE_PENDING` 상태는 **방에 막 진입해 아직 일정 확인을 끝내지 않은** 상태입니다 — 방장은 `POST /trips` 직후, 참여자는 `POST /trips/join` 직후가 여기에 해당합니다 (D-JOIN-MEMBER, 2026-08-18 `#114`).
 - 방장이 activate를 호출해 `ACTIVE`가 된 이후에는, 그 방에 대해 activate를 다시 호출할 일이 없습니다. `trip_member.status`는 한 번 `ACTIVE`가 되면 이 플로우에서 되돌아가지 않습니다.
 - 이후 마이페이지 등에서 정기/개별 일정을 수정하는 경우는 **D-PERSONAL-6 "개인 일정 수정 — 나비효과 없음"** 규칙이 적용됩니다: `ACTIVE` 상태는 그대로 유지되고, 알림도 없고, 방 UI 갱신 유도도 없습니다. 즉 일정 수정 API(`PATCH /users/schedule/personal`, 정기 CRUD)만 호출하면 되고 `activate`를 다시 호출할 필요는 없습니다.
 

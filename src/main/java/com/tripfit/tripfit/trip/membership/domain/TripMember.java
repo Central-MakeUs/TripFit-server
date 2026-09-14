@@ -64,7 +64,7 @@ public class TripMember extends SoftDeleteEntity {
   private LocalDateTime joinedAt;
 
   @Schema(
-      description = "일정 확인·가입 완료 시각. null이면 SCHEDULE_PENDING(미확인), 값이 있으면 ACTIVE(확인 완료) — confirm/join 시 set."
+      description = "일정 확인 완료 시각. null이면 SCHEDULE_PENDING(미확인), 값이 있으면 ACTIVE(확인 완료) — activate 시 set."
           + " 일정 응답 진행 상태(SCHEDULE_PENDING|ACTIVE)의 SSOT이며 별도 status 컬럼은 없음",
       nullable = true,
       example = "2026-07-07T12:05:00")
@@ -86,7 +86,8 @@ public class TripMember extends SoftDeleteEntity {
     this.user = user;
     this.role = role;
     this.joinedAt = joinedAt;
-    // join 경로: INSERT 즉시 ACTIVE → activated_at = joined_at
+    // 이미 ACTIVE로 만들어 두는 경로(테스트 픽스처 등)는 activated_at을 joined_at과 같게 둔다.
+    // 운영 경로(create·join)는 항상 SCHEDULE_PENDING으로 들어와 activate에서 값이 채워진다
     if (status == TripMemberStatus.ACTIVE) {
       this.activatedAt = joinedAt;
     }

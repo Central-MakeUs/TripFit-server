@@ -21,7 +21,7 @@ import org.springframework.web.servlet.HandlerMapping;
 // @TripOwnerOnly: 방장만 (SCHEDULE_PENDING 허용 · ACTIVE 면제 — PATCH/DELETE 메타만.
 // 초대 공유는 방 입장 후 → 상세 inviteCode · SCHEDULE_PENDING create 응답에 inviteCode 없음)
 // @TripMembershipOnly: 멤버(역할 무관) + SCHEDULE_PENDING 허용 · ACTIVE 면제 (Pin 등 방 입장과 무관한 개인
-// 설정)
+// 설정) — 방장·참여자 모두 activate 전에는 SCHEDULE_PENDING이다
 @Component
 public class TripAuthorizationInterceptor implements HandlerInterceptor {
 
@@ -35,8 +35,8 @@ public class TripAuthorizationInterceptor implements HandlerInterceptor {
     this.support = support;
   }
 
-  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly/@TripMembershipOnly 권한 검사 — SCHEDULE_PENDING 방장은
-  // 메타·Pin API만 면제
+  // JWT·tripId로 @TripMemberOnly/@TripOwnerOnly/@TripMembershipOnly 권한 검사 — SCHEDULE_PENDING 멤버는
+  // 메타(방장)·Pin API만 면제
   @Override
   public boolean preHandle(
       HttpServletRequest request,

@@ -101,8 +101,8 @@ public class TripController {
 
   /**
    * 내가 속한 여행방 카드 목록을 조회한다. scope=ongoing은 endRange≥오늘 기준 Pin 정렬, scope=all은 Pin 없이 최근 활동순이다.
-   * SCHEDULE_PENDING(방장 activate 전) 카드가 섞여 나올 수 있는데, 이 카드는 탭했을 때 상세가 아니라 일정 activate 플로우로 라우팅해야 한다.
-   * 목록 카드에는 inviteCode가 없다(공유는 입장 후 상세에서).
+   * SCHEDULE_PENDING(방장·참여자 모두 activate 전) 카드가 섞여 나올 수 있는데, 이 카드는 탭했을 때 상세가 아니라 일정 activate 플로우로
+   * 라우팅해야 한다. 목록 카드에는 inviteCode가 없다(공유는 입장 후 상세에서).
    */
   @Operation(summary = "내 여행방 목록")
   @ApiResponses({

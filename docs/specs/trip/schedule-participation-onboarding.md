@@ -3,7 +3,7 @@
 > wave: **2** (2026-08-03 Wave 1→2 이동 — trip 참여 흐름, 도메인축 재분류)
 > implements: BR-USER-001(이름 게이트), BR-USER-006(부분), BR-USER-007(부분)
 > deferred: BR-NOTI-001/002(wave 3)
-> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend**(방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`) + **`#113` amend(2026-08-18 — 전역 입장 게이트 `is_all_free`·`canEnterRoom` 폐지)** + **`#114` amend(2026-09-13 — 참여자도 join 시 `SCHEDULE_PENDING`, hold 폐지)**. submit 삭제. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
+> 상태: **Implemented** — 2026-07-21 #22 핵심 + **#39 amend**(방장 `SCHEDULE_PENDING`→`activate`→`ACTIVE`) + **`#113` amend(2026-08-18 — 전역 입장 게이트 `is_all_free`·`canEnterRoom` 폐지)** + **`#114` amend(2026-08-18 — 참여자도 join 시 `SCHEDULE_PENDING`, hold 폐지)**. submit 삭제. 완료 기준 체크리스트 전항 완료(2026-07-23 확인)
 > GitHub: **#22** · amend **[#39](https://github.com/Central-MakeUs/TripFit-server/issues/39)**
 > 선행: [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md), [`trip-room-api.md`](trip-room-api.md)
 > 결정 amend: [`007-user-profile-onboarding.md`](../../decisions/007-user-profile-onboarding.md) (D-REENTRY-2)
@@ -163,7 +163,7 @@
 | 경로 | 동작 |
 |------|------|
 | **방장** | 「방 생성」→ **방 생성 폼** → `POST /trips`(`SCHEDULE_PENDING`) → **일정 확인 플로우** → `POST .../activate`(`ACTIVE`) |
-| **참여자** | 초대 링크 → (hold) → **일정 확인 플로우** → **(수정 시 patch)** → `POST /trips/join` (`ACTIVE`) |
+| **참여자** | 초대 링크 → `POST /trips/join`(`SCHEDULE_PENDING`) → **일정 확인 플로우** → **(수정 시 patch)** → `POST .../activate` (`ACTIVE`) — 2026-08-18 `#114`, 구 hold 폐지 |
 
 **일정 확인 플로우 — 정기 일정 보유 여부로 2분기 (2026-08-16 확정):**
 
@@ -209,7 +209,7 @@
 | **prefill** | **프론트 UX** — 백엔드 계약·#22 미정 **아님** |
 | 재입장 | `ACTIVE` → 방 상세 (BR-USER-010). `SCHEDULE_PENDING` → 일정 플로우. 미가입 참여자 → 플로우 |
 
-### D-JOIN-MEMBER · API (확정 — 2026-07-21 · #39 amend · **2026-09-13 `#114` amend**)
+### D-JOIN-MEMBER · API (확정 — 2026-07-21 · #39 amend · **2026-08-18 `#114` amend**)
 
 | 역할 | 흐름 | `trip_member` |
 |------|------|---------------|
@@ -221,10 +221,10 @@
 - 일정 확인 완료(방장·참여자 공통): `POST /api/v1/trips/{tripId}/activate`
 - **구 `POST .../schedule/submit` — 삭제·재사용 금지.**
 
-**`SCHEDULE_PENDING`:** 방 진입 직후 상태 — **방장 create·참여자 join 모두** 이 값으로 시작한다(2026-09-13 `#114`. 이전에는 방장 전용이었고 멤버 신규 INSERT는 `ACTIVE`만이었다).
+**`SCHEDULE_PENDING`:** 방 진입 직후 상태 — **방장 create·참여자 join 모두** 이 값으로 시작한다(2026-08-18 `#114`. 이전에는 방장 전용이었고 멤버 신규 INSERT는 `ACTIVE`만이었다).
 **초대 공유:** 방장 ∧ **`ACTIVE`(방 입장 후)** 만 — SCHEDULE_PENDING은 입장 불가 → 공유 불가. create·join 응답에 `inviteCode` 없음 ([`kakao-invite-share.md`](kakao-invite-share.md) S-1·S-2).
 
-**정원 보장:** `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리해 동시 요청에도 정원을 넘기지 않는다. 자리는 `SCHEDULE_PENDING`부터 차지하며, 일정 확인을 끝내지 않은 사람의 자리는 자동 회수하지 않는다(방 나가기로만 해제). 초과 시 409 `TRIP_MEMBER_FULL`. ~~hold → #35~~ (2026-09-13 `#114`로 폐지).
+**정원 보장:** `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리해 동시 요청에도 정원을 넘기지 않는다. 자리는 `SCHEDULE_PENDING`부터 차지하며, 일정 확인을 끝내지 않은 사람의 자리는 자동 회수하지 않는다(방 나가기로만 해제). 초과 시 409 `TRIP_MEMBER_FULL`. ~~hold → #35~~ (2026-08-18 `#114`로 폐지).
 
 ### D-MEMBER-FILL: 모집 현황 (확정 — 2026-07-28 amend)
 

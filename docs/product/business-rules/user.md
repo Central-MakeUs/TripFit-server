@@ -27,7 +27,7 @@
 ### 확정 (2026-07-21 · #39 amend)
 
 - 방장=`POST /trips` SCHEDULE_PENDING → 일정 플로우 → `activate` ACTIVE
-- 멤버=join으로 `SCHEDULE_PENDING` 생성 → 일정 확인 → activate ACTIVE (**2026-09-13 `#114`** — 이전에는 일정 확인 후 join 한 번으로 바로 ACTIVE) · 방 안 API는 ACTIVE (전역 `canEnterRoom` 조건은 **2026-08-18 삭제**, `#113`)
+- 멤버=join으로 `SCHEDULE_PENDING` 생성 → 일정 확인 → activate ACTIVE (**2026-08-18 `#114`** — 이전에는 일정 확인 후 join 한 번으로 바로 ACTIVE) · 방 안 API는 ACTIVE (전역 `canEnterRoom` 조건은 **2026-08-18 삭제**, `#113`)
 - ~~Skip+0행 → **activate/join** 시 `is_all_free=true`~~ (**2026-08-18 폐기** — `#113`)
 
 ## 변경 이력

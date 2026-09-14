@@ -76,7 +76,7 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 ### 4. 사용자·온보딩
 
 - 소셜 로그인 필수 — **BR-USER-001/002**
-- `hasPreSchedule` — regular OR personal ≥1 **파생** (입장 단독 게이트 아님 — D-JOIN-ENTRY)
+- `hasPreSchedule` — regular OR personal ≥1 **파생** (방 입장 게이트와 무관 — 구 D-JOIN-ENTRY는 2026-08-18 `#113`으로 폐지)
 - `hasRegularSchedule` — regular ≥1만 **파생** (일정 확인 플로우 2분기 판정용 — D-BR006-C)
 - 프로필 이미지: wave 1 provider CDN — [`006`](../../decisions/006-profile-image-url-storage.md)
 
