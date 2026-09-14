@@ -330,7 +330,7 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "PROFILE_NAME_REQUIRED — 성·이름 미입력 · SCHEDULE_ACTIVATION_REQUIRED — 방장이 join으로 우회 시도",
+          description = "PROFILE_NAME_REQUIRED — 성·이름 미입력",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
