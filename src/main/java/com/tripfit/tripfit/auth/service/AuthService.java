@@ -85,7 +85,7 @@ public class AuthService {
           redirectUri);
     }
 
-    // 5. 액세스 토큰 발급 — user.hasPreSchedule은 toSummary()가 일정 EXISTS로 파생 (user 컬럼 아님)
+    // 5. 액세스 토큰 발급 — hasCompletedPreSchedule은 toSummary()가 사전 신청일 저장 여부로 파생 (별도 컬럼 아님)
     String accessToken = jwtService.createAccessToken(user.getId());
     return new LoginResponse(
         accessToken,
@@ -120,7 +120,7 @@ public class AuthService {
     }
   }
 
-  // JWT userId로 현재 사용자 요약 조회 — hasPreSchedule은 일정 EXISTS 파생(일정 CRUD 후 me 재조회)
+  // JWT userId로 현재 사용자 요약 조회 — hasCompletedPreSchedule은 사전 신청일 저장 여부에서 파생(연차 저장 후 me 재조회)
   @Transactional(readOnly = true)
   public UserSummaryResponse getCurrentUser(UUID userId) {
     return userSummaryService.toSummary(userLookupService.requireUser(userId));

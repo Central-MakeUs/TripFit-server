@@ -19,9 +19,6 @@ public interface PersonalScheduleRepository extends JpaRepository<PersonalSchedu
       LocalDate startDate,
       LocalDate endDate);
 
-  // hasPreSchedule 파생용 — personal_schedule row ≥1
-  boolean existsByUserId(UUID userId);
-
   // 회원 탈퇴 cascade — userId 기준 전체 hard delete
   void deleteByUserId(UUID userId);
 }

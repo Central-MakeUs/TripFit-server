@@ -94,7 +94,9 @@ public class User extends SoftDeleteEntity {
   @Column(name = "max_vacation_days", nullable = false)
   private int maxVacationDays = DEFAULT_MAX_VACATION_DAYS;
 
-  @Schema(description = "연차 신청 가능 시점. null = 미설정", nullable = true)
+  @Schema(
+      description = "연차 신청 가능 시점(사전 신청일). null = 사전 일정 입력 미완료 — 최초/갱신 입력 판정 마커",
+      nullable = true)
   @Enumerated(EnumType.STRING)
   @Column(name = "vacation_apply_period")
   private VacationApplyPeriod vacationApplyPeriod;
@@ -181,20 +183,36 @@ public class User extends SoftDeleteEntity {
     this.isGoogleCalendarConnected = false;
   }
 
-  // 연차·반차·공휴일 휴무 설정 전체 교체(부분 patch 아님) — null 필드는 RegularSchedule 시절과 동일한 기본값으로 대체
-  public void applyVacationPolicy(
-      Integer maxVacationDays,
-      VacationApplyPeriod vacationApplyPeriod,
-      Boolean halfVacationAvailable,
-      Boolean holidayRest) {
-    this.maxVacationDays =
-        maxVacationDays != null ? maxVacationDays : DEFAULT_MAX_VACATION_DAYS;
-    this.vacationApplyPeriod = vacationApplyPeriod;
-    this.halfVacationAvailable = halfVacationAvailable != null && halfVacationAvailable;
-    this.holidayRest = holidayRest == null || holidayRest;
+  // 사전 일정 정보를 한 번이라도 입력 완료했는지 — 최초/갱신 입력 판정. 정기·개별 일정 row 수는 보지 않는다.
+  // 연차·휴일 정보 4개 중 사전 신청일만 nullable이라(나머지는 기본값이 늘 차 있어 "저장한 적 있음"을 구분 못 함)
+  // 이 값 하나가 입력 완료 마커 역할을 한다
+  public boolean hasCompletedPreSchedule() {
+    return vacationApplyPeriod != null;
   }
 
-  // 탈퇴 확정 — soft delete + PII 스크럽. socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지
+  // 연차·휴일 정보 전체 교체(부분 patch 아님) — 4개 값 모두 필수라 호출부에서 null이 들어오지 않는다
+  public void applyVacationPolicy(
+      int maxVacationDays,
+      VacationApplyPeriod vacationApplyPeriod,
+      boolean halfVacationAvailable,
+      boolean holidayRest) {
+    this.maxVacationDays = maxVacationDays;
+    this.vacationApplyPeriod = vacationApplyPeriod;
+    this.halfVacationAvailable = halfVacationAvailable;
+    this.holidayRest = holidayRest;
+  }
+
+  // 연차·휴일 정보를 가입 직후 상태로 되돌린다 — 사전 신청일이 null이 되어 다시 "최초 입력"으로 판정된다
+  public void resetVacationPolicy() {
+    this.maxVacationDays = DEFAULT_MAX_VACATION_DAYS;
+    this.vacationApplyPeriod = null;
+    this.halfVacationAvailable = false;
+    this.holidayRest = true;
+  }
+
+  // 탈퇴 확정 — soft delete + PII 스크럽. socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지.
+  // 연차·휴일 정보도 되돌린다 — 사전 신청일이 남으면 재가입 사용자가 곧바로 "갱신 입력"으로 판정돼
+  // 입력 플로우를 건너뛴다("신규 가입과 동일한 경험" 원칙 위반)
   public void scrubPiiForWithdrawal() {
     markDeleted();
     this.email = null;
@@ -203,5 +221,6 @@ public class User extends SoftDeleteEntity {
     this.nickname = null;
     this.profileImageUrl = null;
     disconnectGoogleCalendar();
+    resetVacationPolicy();
   }
 }

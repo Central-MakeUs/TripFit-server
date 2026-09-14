@@ -368,7 +368,7 @@ public class RecommendationEngine {
       PersonalSchedule personal = personalsByDate.get(date);
       GoogleCalendarBusyDay googleBusy = googleBusyByDate.get(date);
 
-      // 1. 그날 연차로 열 수 있는 슬롯 — 아직 불가능하고, 막힌 이유가 개인 일정·구글 일정이 아닌 것만
+      // 1. 그날 연차로 열 수 있는 슬롯 — 아직 불가능하고, 막힌 이유가 개별 일정·구글 일정이 아닌 것만
       boolean[] convertible = new boolean[3];
       for (int offset = 0; offset < 3; offset++) {
         convertible[offset] =

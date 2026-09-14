@@ -365,6 +365,9 @@ public class TripController {
    * SCHEDULE_PENDING → ACTIVE로 바뀐다. 방 안 API와 방장의 초대 공유는 이 호출 이후에만 쓸 수 있다.
    *
    * 이미 ACTIVE면 상태 변경 없이 동일 응답이고 알림도 다시 가지 않는다(idempotent).
+   *
+   * 사전 일정 입력(연차·휴일 정보의 사전 신청일)을 한 번도 완료하지 않았다면 403 PRE_SCHEDULE_REQUIRED로 거부된다. 정기·개별 일정이 0건인 것은 거부
+   * 사유가 아니다 — 입력을 끝냈지만 막힌 일정이 없는 사용자는 그대로 통과한다.
    */
   @Operation(summary = "여행방 멤버십 활성화")
   @ApiResponses({
@@ -387,11 +390,11 @@ public class TripController {
                   """))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED — 비참여자",
+          description = "TRIP_ACCESS_DENIED — 비참여자 · PRE_SCHEDULE_REQUIRED — 사전 일정 입력 미완료",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class),
               examples = @ExampleObject(value = """
-                  {"code": "TRIP_ACCESS_DENIED", "message": "여행방 참여 권한이 없습니다."}
+                  {"code": "PRE_SCHEDULE_REQUIRED", "message": "사전 일정 입력을 완료해야 여행방에 입장할 수 있습니다."}
                   """)))
   })
   @PostMapping("/{tripId}/activate")

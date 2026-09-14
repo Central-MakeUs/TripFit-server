@@ -26,6 +26,7 @@ import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.exception.UserErrorCode;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -102,10 +103,21 @@ class TripCommandService {
     Trip trip = support.requireActiveTrip(tripId);
     TripMember membership = support.requireMembership(tripId, userId);
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
+      requirePreScheduleCompleted(membership);
       membership.activate();
       publishEntryEvents(trip, membership);
     }
     return support.toDetail(trip, membership);
+  }
+
+  // 사전 일정 입력을 한 번도 끝내지 않은 사용자는 ACTIVE가 될 수 없다. 프론트가 마지막 버튼을 막고 있지만,
+  // 추천이 "일정 0건인 ACTIVE 멤버 = 모든 날 가능"으로 계산하는 이상 그 전제를 서버가 직접 지켜야 한다 —
+  // 플로우를 건너뛰고 activate만 호출하면 아무 답도 안 한 사람이 전부 가능한 사람으로 집계된다.
+  // 이미 ACTIVE인 멱등 재호출은 상태 전환이 없어 이 검사를 타지 않는다
+  private void requirePreScheduleCompleted(TripMember membership) {
+    if (!membership.getUser().hasCompletedPreSchedule()) {
+      throw new TripFitException(UserErrorCode.PRE_SCHEDULE_REQUIRED);
+    }
   }
 
   // 방 입장이 실제로 완료된 순간에만 알린다 — join은 초대 링크를 연 시점일 뿐이라 알림 근거가 되지 못한다.
