@@ -34,7 +34,7 @@ com.tripfit.tripfit
 │   └── exception/                  # AuthErrorCode
 ├── user/
 │   ├── controller|dto|service|domain|repository|exception   # 프로필·온보딩
-│   └── schedule/                   # feature: 정기·개인 일정
+│   └── schedule/                   # feature: 정기·개별 일정
 │       ├── controller|dto|service|domain|repository
 │       └── exception/              # ScheduleErrorCode
 ├── trip/

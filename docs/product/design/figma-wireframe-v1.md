@@ -16,7 +16,7 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 
 ## 제품 한 줄
 
-여러 사람의 근무 패턴과 연차 조건을 반영하여 모두가 납득할 수 있는 최적의 여행 일정을 추천하는 의사결정 지원 서비스.
+여러 사람의 근무 패턴과 연차·휴일 정보를 반영하여 모두가 납득할 수 있는 최적의 여행 일정을 추천하는 의사결정 지원 서비스.
 
 ---
 
@@ -58,7 +58,7 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 | 항목 | 내용 |
 |------|------|
 | **정기 일정** | 반복 패턴 (출근·수업 등). user당 N행 |
-| **개인 일정** | 날짜×슬롯 가능/불가 + `uncertain` |
+| **개별 일정** | 날짜×슬롯 가능/불가 + `uncertain` |
 | **정기+개별 합친 달력** | #17 resolve — regular ⊕ personal (S1·R2=A) |
 | **time_slot** | MORNING(00–13), AFTERNOON(13–18), EVENING(18–24) |
 | **status** | POSSIBLE, IMPOSSIBLE (슬롯). **uncertain** = 날짜 단위 미정 |
@@ -67,7 +67,7 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 
 방 입장·신규 trip 게이트 규칙(BR-USER-006/007 — `is_all_free`·BR-USER-011은 2026-08-18 `#113`으로 폐지) 상세는 [`business-rules/user.md`](../business-rules/user.md)가 SSOT — 여기서 중복 정의하지 않는다.
 
-참여 완료 = **`trip_member.status=ACTIVE`** (확인 플로우 Skip/완료). 구 submit **폐기**. 일정 수정 후에도 `ACTIVE` 유지.
+참여 완료 = **`trip_member.status=ACTIVE`** — 방 진입(방장 `POST /trips` · 참여자 `POST /trips/join`)은 `SCHEDULE_PENDING`이고, 사전 일정 입력 플로우를 마친 뒤 `POST .../activate`로 `ACTIVE`가 된다(`#114`). 플로우에 **건너뛰기 버튼은 없다** — 구 "Skip" 표현은 "확인 후 변경 없이 통과"로 읽는다. 구 submit **폐기**. 일정 수정 후에도 `ACTIVE` 유지.
 
 ### 3. 추천·확정
 
@@ -76,8 +76,9 @@ UI 픽셀 스펙이 아니라 **백엔드가 알아야 할 도메인·상태·�
 ### 4. 사용자·온보딩
 
 - 소셜 로그인 필수 — **BR-USER-001/002**
-- `hasPreSchedule` — regular OR personal ≥1 **파생** (입장 단독 게이트 아님 — D-JOIN-ENTRY)
-- `hasRegularSchedule` — regular ≥1만 **파생** (일정 확인 플로우 2분기 판정용 — D-BR006-C)
+- `hasCompletedPreSchedule` — `users.vacation_apply_period`(연차·휴일 정보의 **사전 신청일**) 저장 여부 **파생** (사전 일정 입력 **최초/갱신** 2분기 판정용 — D-BR006-C, 2026-08-19). 일정 row 수는 보지 않는다
+- 회원가입 온보딩은 **이름 → Google 캘린더**까지 — 사전 일정 입력은 여행방 입장·여행방 내 수정·마이페이지에서만 (2026-08-19)
+- 구 `hasPreSchedule`(regular OR personal ≥1) · `hasRegularSchedule`(regular ≥1)은 2026-08-19 삭제
 - 프로필 이미지: wave 1 provider CDN — [`006`](../../decisions/006-profile-image-url-storage.md)
 
 ### 5. 알림

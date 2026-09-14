@@ -105,7 +105,7 @@ users.vacation_apply_period IS NOT NULL  → 갱신 입력
 - [x] **P-7** `docs/product/glossary.md`에 5개 용어 등록
 - [x] **P-8** 스펙·BR·프론트 가이드 동기화 (아래 "문서 동기화" 표)
 - [x] **P-9** **용어 전면 통일** — Swagger 설명(`@Schema`/`@Operation`/Javadoc) · 코드 주석 · `docs/` 전체를 용어집 기준으로 치환 (아래 "용어 통일 범위")
-- [x] **P-10** 커밋에 `Breaking-Change-Reason` 트레일러 (계약 변경 4건)
+- [x] **P-10** 커밋에 `Breaking-Change-Reason` 트레일러 (계약 변경 4건) — 구현 커밋 `96f4d64`
 - [x] **P-11** `REMOVED` 항목 실제 삭제 확인 (grep 0건)
 
 ### Nice to Have
@@ -256,7 +256,7 @@ users.vacation_apply_period IS NOT NULL  → 갱신 입력
 - [x] 위 검증 시나리오 전항 확인
 - [x] OpenAPI/Swagger 반영 (`/v3/api-docs` 실제 확인)
 - [x] `REMOVED` 항목 실제 삭제 확인 (grep 0건)
-- [ ] 커밋에 `Breaking-Change-Reason` 트레일러 포함
+- [x] 커밋에 `Breaking-Change-Reason` 트레일러 포함 (구현 커밋 `96f4d64`)
 
 ## 리스크·미결정
 

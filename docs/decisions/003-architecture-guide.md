@@ -62,7 +62,7 @@ trip/
 └── …
 ```
 
-예: `user/schedule/` — 정기·개인 일정. 프로필·온보딩은 `user/` 루트 레이어. ErrorCode는 feature별 `ScheduleErrorCode`.
+예: `user/schedule/` — 정기·개별 일정. 프로필·온보딩은 `user/` 루트 레이어. ErrorCode는 feature별 `ScheduleErrorCode`.
 
 ### 패키지 배치 (실용 규칙)
 

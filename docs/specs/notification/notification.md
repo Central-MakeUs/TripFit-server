@@ -34,7 +34,7 @@
 | **D8** | 알림 설정 API 위치 | **기존 `PATCH /users/profile`(마이페이지)에 `notificationEnabled` 필드 추가.** `/users/me/...` 새 경로 대신 기존 컨벤션 재사용 — 단, 한 필드만 보내는 호출을 지원해야 하므로 **`user-my-page.md`의 firstName/lastName도 optional로 전환**(partial update). 상세: [`user-my-page.md`](../user/user-my-page.md) 변경 이력 |
 | **D9** | 알림센터 목록 범위 | **최근 7일 윈도우** — 와이어프레임이 "오늘/어제/최근 7일" 3그룹으로 구성돼 있어, API도 `sent_at >= now-7d`만 반환(페이지네이션 불필요). DB 이력 자체는 그대로 보존 |
 | **D10** | NOTI-001/002(수신자=방장)에도 게이트 적용 여부 | **적용.** 예외 없이 전체 이벤트가 `notification_enabled`를 따름 |
-| **D11** | NOTI-002 "마지막 참여자" 판정 기준 | **ACTIVE 멤버 수가 여행방 정원(BR-TRIP-001, 1~10)에 도달한 순간** — `POST .../activate`에서 판정한다. 자리만 차지한 `SCHEDULE_PENDING` 멤버는 제외 (2026-09-13 `#114` — 이전에는 join 즉시 ACTIVE라 '정원 도달=전원 제출'로 봤다) |
+| **D11** | NOTI-002 "마지막 참여자" 판정 기준 | **ACTIVE 멤버 수가 여행방 정원(BR-TRIP-001, 1~10)에 도달한 순간** — `POST .../activate`에서 판정한다. 자리만 차지한 `SCHEDULE_PENDING` 멤버는 제외 (2026-08-19 `#114` — 이전에는 join 즉시 ACTIVE라 '정원 도달=전원 제출'로 봤다) |
 | **D12** | no-op patchTrip도 NOTI-003 발송할지 | **미발송.** 실제 값이 하나 이상 바뀐 경우에만 발송 |
 
 ## 요구사항
