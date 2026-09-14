@@ -121,7 +121,7 @@ class TripScheduleSnapshotServiceTest {
             LocalDateTime.now());
     when(snapshotRepository.existsByTrip_Id(TRIP_ID)).thenReturn(false);
     when(tripMemberRepository.findByTripIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(List.of(member));
-    // 연차·반차·공휴일 휴무는 이제 User 소유 값
+    // 연차·휴일 정보는 이제 User 소유 값
     user.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
         RegularSchedule.create(

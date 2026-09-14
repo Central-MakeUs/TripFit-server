@@ -175,7 +175,7 @@ class ScheduleServiceTest {
 
   @Test
   void updateRegular_recalculatesSlotsFromTimes() {
-    // 연차·반차·공휴일 휴무는 이제 RegularSchedule이 아니라 User 소유 값
+    // 연차·휴일 정보는 이제 RegularSchedule이 아니라 User 소유 값
     user.applyVacationPolicy(5, VacationApplyPeriod.ONE_WEEK_BEFORE, true, true);
     RegularSchedule existing =
         RegularSchedule.create(
@@ -236,20 +236,17 @@ class ScheduleServiceTest {
     assertThat(response.holidayRest()).isFalse();
   }
 
+  // 저장 성공이 곧 "사전 일정 입력 완료" — 일정 row가 하나도 없어도 갱신 입력으로 넘어간다
   @Test
-  void updateVacationPolicy_nullFields_fallBackToDefaults() {
-    user.applyVacationPolicy(5, VacationApplyPeriod.ONE_WEEK_BEFORE, true, false);
+  void updateVacationPolicy_marksPreScheduleCompleted() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    assertThat(user.hasCompletedPreSchedule()).isFalse();
 
-    VacationPolicyResponse response =
-        scheduleService.updateVacationPolicy(
-            USER_ID,
-            new UpdateVacationPolicyRequest(null, null, null, null));
+    scheduleService.updateVacationPolicy(
+        USER_ID,
+        new UpdateVacationPolicyRequest(2, VacationApplyPeriod.ANY, false, true));
 
-    assertThat(response.maxVacationDays()).isEqualTo(User.DEFAULT_MAX_VACATION_DAYS);
-    assertThat(response.vacationApplyPeriod()).isNull();
-    assertThat(response.halfVacationAvailable()).isFalse();
-    assertThat(response.holidayRest()).isTrue();
+    assertThat(user.hasCompletedPreSchedule()).isTrue();
   }
 
   @Test
@@ -257,8 +254,16 @@ class ScheduleServiceTest {
     assertThatThrownBy(
         () -> scheduleService.updateVacationPolicy(
             USER_ID,
-            new UpdateVacationPolicyRequest(11, null, null, null)))
+            new UpdateVacationPolicyRequest(11, VacationApplyPeriod.ANY, false, true)))
         .isInstanceOf(TripFitException.class);
+  }
+
+  // "정기 일정이 있나요? → 없어요" 경로 — 남아 있던 정기 일정을 전부 지운다
+  @Test
+  void deleteAllRegular_removesEveryRegularRowOfUser() {
+    scheduleService.deleteAllRegular(USER_ID);
+
+    verify(regularScheduleRepository).deleteByUserId(USER_ID);
   }
 
   @Test

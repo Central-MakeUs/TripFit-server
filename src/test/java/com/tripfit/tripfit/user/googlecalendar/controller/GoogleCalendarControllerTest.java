@@ -70,7 +70,6 @@ class GoogleCalendarControllerTest {
         SocialProvider.GOOGLE,
         connected,
         false,
-        false,
 
         true);
   }

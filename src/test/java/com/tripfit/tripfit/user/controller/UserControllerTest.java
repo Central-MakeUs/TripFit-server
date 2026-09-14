@@ -83,7 +83,6 @@ class UserControllerTest {
                 SocialProvider.GOOGLE,
                 false,
                 false,
-                false,
 
                 true));
 
@@ -129,7 +128,6 @@ class UserControllerTest {
                 null,
                 SocialProvider.GOOGLE,
                 false,
-                true,
                 true,
 
                 true));

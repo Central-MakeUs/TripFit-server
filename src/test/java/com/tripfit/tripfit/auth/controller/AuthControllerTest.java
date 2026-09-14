@@ -272,7 +272,6 @@ class AuthControllerTest {
         SocialProvider.GOOGLE,
         false,
         false,
-        false,
 
         true);
   }

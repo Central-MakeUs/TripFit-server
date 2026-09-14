@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.user.domain.SocialProvider;
+import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import java.time.LocalDate;
@@ -73,6 +74,7 @@ class TripFullLifecycleIntegrationTest {
             "lifecycle-owner-" + UUID.randomUUID(), SocialProvider.GOOGLE, "lo@example.com",
             "방장", null);
     owner.applyProfilePatch("길동", "홍", null);
+    owner.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     owner = userRepository.save(owner);
     String ownerToken = jwtService.createAccessToken(owner.getId());
 
@@ -81,6 +83,7 @@ class TripFullLifecycleIntegrationTest {
             "lifecycle-member-" + UUID.randomUUID(), SocialProvider.GOOGLE, "lm@example.com",
             "참여자", null);
     member.applyProfilePatch("철수", "김", null);
+    member.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     member = userRepository.save(member);
     String memberToken = jwtService.createAccessToken(member.getId());
 
@@ -89,6 +92,7 @@ class TripFullLifecycleIntegrationTest {
             "lifecycle-third-" + UUID.randomUUID(), SocialProvider.GOOGLE, "lt@example.com",
             "제3자", null);
     thirdUser.applyProfilePatch("영희", "박", null);
+    thirdUser.applyVacationPolicy(2, VacationApplyPeriod.ANY, false, true);
     thirdUser = userRepository.save(thirdUser);
     String thirdToken = jwtService.createAccessToken(thirdUser.getId());
 
@@ -113,7 +117,7 @@ class TripFullLifecycleIntegrationTest {
             .andReturn();
     String tripId = extract("tripId", createResult.getResponse().getContentAsString());
 
-    // 2. 방장 activate — SCHEDULE_PENDING → ACTIVE (일정 건수는 보지 않음)
+    // 2. 방장 activate — SCHEDULE_PENDING → ACTIVE (일정 건수는 보지 않음. 사전 일정 입력 완료는 필요)
     MvcResult activateResult =
         mockMvc
             .perform(

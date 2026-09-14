@@ -56,7 +56,6 @@ class UserProfileServiceTest {
                 user.getProvider(),
                 false,
                 false,
-                false,
 
                 true));
     UserSummaryResponse response =
@@ -85,7 +84,6 @@ class UserProfileServiceTest {
                 user.getNickname(),
                 user.getProfileImageUrl(),
                 user.getProvider(),
-                false,
                 false,
                 false,
 
