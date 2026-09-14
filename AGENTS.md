@@ -28,7 +28,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 - 커밋 요청 시 주제별 **최대 3개**로 분할 (상세: `.github/CONTRIBUTING.md`, `.claude/rules/harness-workflow.md`)
 - **문서·스펙·결정 정합 최우선** — 문서 간·문서-구현 간 충돌 시 질문 없이 구현·기본값 변경 금지 (`.claude/rules/harness-workflow.md` ⛔ 섹션)
 - **ErrorCode·AOP** — 실패 분기·`last_activity_at` touch·권한 게이트 변경 시 **같은 턴**에 enum·어노테이션·스펙 갱신 (하네스 ⛔ ErrorCode 절)
-- **`[미정]` chore:** 기획 미확정 항목은 **[#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)** 에 모음 (하네스 `harness-wave` · CONTRIBUTING)
+- **`[미정]` 항목:** 중앙 트래커(구 `#2`) 폐지(2026-08-19) — 기획 미확정 항목은 해당 문서에 표기만 남김 (하네스 `harness-wave` · CONTRIBUTING)
 - **Wave Must/Nice/Out:** Backlog(`#29`~`#32`) 없이 단정 금지 — `harness-wave.md`
 - **DB:** 상용 보존 데이터 없음 → Flyway/SQL 마이그레이션 **작성 금지**. 엔티티 최신본 + `ddl-auto`, 필요 시 DB 리셋 (`.claude/rules/harness-workflow.md`)
 - **레거시:** 현행 Approved와 다른 코드·호환 레이어·**교체된 구 메서드/상수**는 **같은 PR에서 즉시 삭제** (dev·구 클라/DB 호환 금지 — `harness-workflow` STOP §4)
