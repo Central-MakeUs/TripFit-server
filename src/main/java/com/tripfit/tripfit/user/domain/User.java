@@ -195,6 +195,8 @@ public class User extends SoftDeleteEntity {
   }
 
   // 탈퇴 확정 — soft delete + PII 스크럽. socialId·provider·id는 FK 무결성·재로그인 차단 판별을 위해 유지
+  // 연차 정책도 기본값으로 되돌린다 — #52로 regular_schedule에서 올라오기 전에는 일정 행과 함께 지워졌고,
+  // 재로그인은 "신규 가입과 동일한 경험"이어야 하므로 이전 설정이 살아남으면 안 된다
   public void scrubPiiForWithdrawal() {
     markDeleted();
     this.email = null;
@@ -203,5 +205,6 @@ public class User extends SoftDeleteEntity {
     this.nickname = null;
     this.profileImageUrl = null;
     disconnectGoogleCalendar();
+    applyVacationPolicy(null, null, null, null);
   }
 }
