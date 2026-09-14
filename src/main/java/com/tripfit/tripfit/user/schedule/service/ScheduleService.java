@@ -165,7 +165,7 @@ public class ScheduleService {
     }
     requireNoDuplicateDates(items);
 
-    // 1. 값 검증부터 전부 끝내 — 잘못된 항목이 있으면 아래 구간 SELECT 전에 즉시 실패
+    // 1. 항목 값 검증부터 전부 끝내 — 잘못된 항목이 있으면 아래 구간 SELECT 전에 즉시 실패
     for (PersonalScheduleItem item : items) {
       validatePersonalItem(item);
     }
@@ -174,6 +174,10 @@ public class ScheduleService {
         items.stream().map(PersonalScheduleItem::scheduleDate).sorted().toList();
     LocalDate minDate = dates.getFirst();
     LocalDate maxDate = dates.getLast();
+    // 2. 달력 조회와 같은 구간만 저장을 허용 — 상한 밖 날짜를 저장할 수 있으면 저장은 됐는데 GET /calendar로는
+    // 400이 나는(= 앱에서 다시 볼 수 없는) 일정이 생긴다. 상한 계산은 조회와 같은 함수를 쓰므로
+    // 참여 중인 ONGOING 여행방 종료일까지 확장되는 규칙도 그대로 적용된다
+    validateCalendarDateRange(userId, minDate, maxDate);
     // 구간 내 기존 row를 한 번에 로드해 인덱싱 — 항목 수만큼 개별 SELECT를 반복하지 않는다
     Map<LocalDate, PersonalSchedule> existingByDate =
         personalScheduleRepository

@@ -30,8 +30,10 @@ import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -263,7 +265,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_slotsOnly_createsRowWithUncertainFalse() {
-    LocalDate date = LocalDate.of(2026, 8, 3);
+    LocalDate date = LocalDate.now().plusDays(3);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
@@ -305,7 +307,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_uncertainOnly_existingRow_preservesSlots() {
-    LocalDate date = LocalDate.of(2026, 8, 3);
+    LocalDate date = LocalDate.now().plusDays(3);
     PersonalSchedule existing =
         PersonalSchedule.create(
             user,
@@ -341,7 +343,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_uncertainToggleOnThenOff_slotsNeverChange() {
-    LocalDate date = LocalDate.of(2026, 8, 3);
+    LocalDate date = LocalDate.now().plusDays(3);
     PersonalSchedule existing =
         PersonalSchedule.create(
             user,
@@ -378,7 +380,7 @@ class ScheduleServiceTest {
 
   @Test
   void upsertPersonal_slotsAndUncertainTogether_bothApplied() {
-    LocalDate date = LocalDate.of(2026, 8, 3);
+    LocalDate date = LocalDate.now().plusDays(3);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
     when(
         personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
@@ -418,7 +420,7 @@ class ScheduleServiceTest {
   void upsertPersonal_explicitAllPossibleOnWorkday_notDeleted_o13BugRegression() {
     // 정기(근무일: 아침·오후 불가능)가 있는 날짜에 슬롯 3개를 전부 POSSIBLE로 명시해도
     // (구 O1.3의 CLEAR 오인 버그와 달리) row가 삭제되지 않고 그대로 저장돼야 한다
-    LocalDate thursday = LocalDate.of(2026, 8, 6);
+    LocalDate thursday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.THURSDAY));
     user.applyVacationPolicy(2, null, false, true);
     RegularSchedule work =
         RegularSchedule.create(
@@ -469,7 +471,7 @@ class ScheduleServiceTest {
   @Test
   void upsertPersonal_slotsAndUncertainBothMissing_throws400() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    LocalDate date = LocalDate.of(2026, 8, 3);
+    LocalDate date = LocalDate.now().plusDays(3);
 
     assertThatThrownBy(
         () -> scheduleService.upsertPersonal(
@@ -483,7 +485,7 @@ class ScheduleServiceTest {
   @Test
   void upsertPersonal_slotsFieldMissing_throws400() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    LocalDate date = LocalDate.of(2026, 8, 3);
+    LocalDate date = LocalDate.now().plusDays(3);
 
     assertThatThrownBy(
         () -> scheduleService.upsertPersonal(
@@ -502,7 +504,7 @@ class ScheduleServiceTest {
   @Test
   void upsertPersonal_duplicateScheduleDate_throws400() {
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    LocalDate date = LocalDate.of(2026, 8, 3);
+    LocalDate date = LocalDate.now().plusDays(3);
 
     assertThatThrownBy(
         () -> scheduleService.upsertPersonal(
@@ -553,6 +555,95 @@ class ScheduleServiceTest {
         .isInstanceOf(TripFitException.class)
         .extracting(ex -> ((TripFitException) ex).getErrorCode())
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  // 저장은 되는데 GET /calendar로는 못 보는 일정이 생기지 않도록, 저장에도 조회와 같은 상한을 적용한다
+  @Test
+  void upsertPersonal_whenDateAfterWindowEnd_throws400() {
+    LocalDate beyondWindow = LocalDate.now().plusYears(2).plusDays(30);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(null);
+
+    assertThatThrownBy(
+        () -> scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(
+                    new PersonalScheduleItem(
+                        beyondWindow,
+                        new SlotUpdate(
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE),
+                        null)))))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+
+    verify(personalScheduleRepository, never()).save(any(PersonalSchedule.class));
+  }
+
+  // 지난 날짜도 같은 이유로 막는다 — 조회 구간이 오늘부터라 저장해도 다시 열어볼 수 없다
+  @Test
+  void upsertPersonal_whenDateBeforeToday_throws400() {
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(null);
+
+    assertThatThrownBy(
+        () -> scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(
+                    new PersonalScheduleItem(
+                        LocalDate.now().minusDays(1),
+                        new SlotUpdate(
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE),
+                        null)))))
+        .isInstanceOf(TripFitException.class)
+        .extracting(ex -> ((TripFitException) ex).getErrorCode())
+        .isEqualTo(CommonErrorCode.INVALID_INPUT);
+  }
+
+  // 상한은 조회와 같은 함수로 계산하므로, 참여 중인 ONGOING 여행방 종료일까지 늘어나는 규칙이 저장에도 그대로 적용된다
+  @Test
+  void upsertPersonal_whenOngoingTripExtendsWindow_allowsDateBeyondTwoYears() {
+    LocalDate extendedEnd = LocalDate.now().plusYears(2).plusDays(30);
+    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
+    when(tripMemberRepository.findMaxOngoingEndRangeByUserId(USER_ID)).thenReturn(extendedEnd);
+    when(
+        personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(
+            USER_ID,
+            extendedEnd,
+            extendedEnd))
+        .thenReturn(List.of());
+    when(personalScheduleRepository.save(any(PersonalSchedule.class)))
+        .thenAnswer(
+            invocation -> {
+              PersonalSchedule saved = invocation.getArgument(0);
+              saved.setId(UUID.randomUUID());
+              return saved;
+            });
+    when(regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(USER_ID)).thenReturn(List.of());
+    when(googleCalendarService.findBusyDaysByUserId(USER_ID, extendedEnd, extendedEnd))
+        .thenReturn(Map.of());
+
+    var response =
+        scheduleService.upsertPersonal(
+            USER_ID,
+            new UpdatePersonalScheduleRequest(
+                List.of(
+                    new PersonalScheduleItem(
+                        extendedEnd,
+                        new SlotUpdate(
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE,
+                            ScheduleStatus.POSSIBLE),
+                        null))));
+
+    assertThat(response.items()).hasSize(1);
+    verify(personalScheduleRepository).save(any(PersonalSchedule.class));
   }
 
   @Test
