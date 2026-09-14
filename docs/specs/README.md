@@ -121,7 +121,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#27** | trip-home-schedulers | Implemented |
 | **#54** | trip-member-status-derive | Implemented |
 | **#22** | schedule-participation-onboarding | Closed · **Wave 2**(2026-08-03 Wave 1→2 이동) |
-| **#35** | trip-join-capacity-hold (**Superseded** — `#114`로 hold 폐지) | Open — 구현 후 Closed 처리 대상 |
+| **#35** | trip-join-capacity-hold (**Superseded** — `#114`로 hold 폐지) | Closed (2026-08-14) |
 | **#37** | trip-schedule-calendar-window | Closed |
 | **#38** | trip-schedule-snapshot | Closed |
 | **#110** | trip-calendar-window-pre-join — `#114`로 본래 증상 해소 + 저장 윈도우 검증 추가 | Open · **Implemented** · wave 4 |
