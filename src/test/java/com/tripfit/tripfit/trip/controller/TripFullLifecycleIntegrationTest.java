@@ -239,7 +239,7 @@ class TripFullLifecycleIntegrationTest {
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("TRIP_NOT_ONGOING"));
 
-    // 12. CONFIRMED여도 멤버 자진 나가기는 게이트 없이 허용
+    // 12. CONFIRMED여도 ACTIVE 멤버의 자진 나가기는 허용 — 방 상태 게이트는 없다(멤버 상태 게이트는 #122로 존재)
     mockMvc
         .perform(
             delete("/api/v1/trips/" + tripId + "/members/me")

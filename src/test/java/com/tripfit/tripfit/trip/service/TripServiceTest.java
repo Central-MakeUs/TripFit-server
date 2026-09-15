@@ -1037,6 +1037,31 @@ class TripServiceTest {
     assertThat(membership2.getDeletedAt()).isNotNull();
   }
 
+  // 탈퇴 cascade는 Controller 인터셉터(@TripMemberOnly)를 타지 않는다 — 일정 확인 전(SCHEDULE_PENDING)
+  // 멤버십도 정리돼야 탈퇴한 사용자가 잡아둔 자리가 방에 계속 남지 않는다 (#122)
+  @Test
+  void leaveAllActiveTripsAsMember_leavesSchedulePendingMembershipToo() {
+    TripMember pending =
+        new TripMember(
+            trip,
+            member,
+            TripMemberRole.MEMBER,
+            TripMemberStatus.SCHEDULE_PENDING,
+            LocalDateTime.now());
+
+    when(
+        tripMemberRepository
+            .findByUser_IdAndRoleAndDeletedAtIsNull(MEMBER_ID, TripMemberRole.MEMBER))
+        .thenReturn(List.of(pending));
+    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
+        .thenReturn(Optional.of(pending));
+
+    tripService.leaveAllActiveTripsAsMember(MEMBER_ID);
+
+    assertThat(pending.getDeletedAt()).isNotNull();
+  }
+
   @Test
   void leaveAllActiveTripsAsMember_whenNoMemberships_doesNothing() {
     when(
