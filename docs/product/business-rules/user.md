@@ -9,7 +9,7 @@
 | **BR-USER-003** | 소셜 계정 연동 | 설정 | 카카오·구글 등 | wave 4 |
 | **BR-USER-004** | 회원 탈퇴 | 탈퇴 요청 | 확인 후 탈퇴 — 차단 없이 자동 cascade. 참여 중인 모든 방에서 자동 나가기(MEMBER) 또는 소유한 모든 방 자동 삭제(OWNER) 후 탈퇴 처리. 전 상태(`ONGOING`/`CONFIRMED`/`EXPIRED`) 적용 | [`user-account-withdrawal.md`](../../specs/user/user-account-withdrawal.md) · [`trip-member-leave.md`](../../specs/trip/trip-member-leave.md) · 정책 근거 `#47` |
 | **BR-USER-005** | 알림 허용 | 마이페이지 | `users.notification_enabled` on/off (default true), `PATCH /users/profile`(partial update)로 설정 | Off 시 BR-NOTI-001~005·009 **전체** 미발송(예외 없음) |
-| **BR-USER-006** | 방 입장 가능 조건 | D-JOIN-ENTRY | **그 방의 일정 확인 완료**(`trip_member.status = ACTIVE`) — 사용자 전역 조건 없음 | 미완료 시 `SCHEDULE_ACTIVATION_REQUIRED` |
+| **BR-USER-006** | 방 입장 가능 조건 | D-JOIN-ENTRY · **2026-08-19** | **그 방의 일정 확인 완료**(`trip_member.status = ACTIVE`) — 사용자 전역 조건 없음. 방 안 기능은 전부 이 조건을 요구하며 **방 나가기도 포함**된다(`#122`) | 미완료 시 `SCHEDULE_ACTIVATION_REQUIRED` |
 | **BR-USER-007** | trip 일정 확인·가입 | **#39 · #114 · 2026-08-19** | **방장·참여자 동일:** 방 진입(방장 `POST /trips` · 참여자 `POST /trips/join`)=`SCHEDULE_PENDING` → 일정 플로우 → `POST .../activate`=`ACTIVE`. 방 안=`ACTIVE`. **`activate`는 사전 일정 입력 완료(`사전 신청일` 저장)를 요구** — 정기·개별 일정 0건은 거부 사유가 아니다 | 정원 409 · `SCHEDULE_ACTIVATION_REQUIRED` · `PRE_SCHEDULE_REQUIRED` |
 | **BR-USER-008** | 전역 일정 | 일정 변경 | **ONGOING** 방 달력에만 동일(live). **CONFIRMED/EXPIRED**는 snapshot 고정·읽기 전용 — [`trip-schedule-snapshot.md`](../../specs/trip/trip-schedule-snapshot.md) (#38 **Approved**) | — |
 | **BR-USER-009** | 동일 이름 표시 | 목록 | `홍길동(2)` | — |
@@ -34,6 +34,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-19 | **BR-USER-006 적용 범위 명시 (`#122`)** — 「방 안」 기능에 **방 나가기**(`DELETE /trips/{tripId}/members/me`)가 포함된다. 미입장(`SCHEDULE_PENDING`) 멤버는 스스로 나갈 수 없고(403 `SCHEDULE_ACTIVATION_REQUIRED`) 그 자리는 방장 내보내기로만 회수된다. 2026-07-24 `#47`의 「나가기는 멤버 상태 무관」 결정을 사용자 결정으로 번복(방 상태 무관은 유지) — 회원 탈퇴 cascade는 서비스 직접 호출이라 상태 무관 정리 유지 |
 | 2026-08-19 | **BR-USER-007 개정 — `activate`에 사전 일정 입력 완료 게이트 추가.** `users.vacation_apply_period`(사전 신청일)가 없으면 403 `PRE_SCHEDULE_REQUIRED`로 거부한다. 근거: 추천이 "일정 0건인 ACTIVE 멤버 = 모든 날 가능"으로 계산하므로, 입력 플로우를 건너뛴 사용자가 ACTIVE가 되면 아무 답도 하지 않은 사람이 전부 가능한 사람으로 집계된다. 프론트의 「다음 버튼 비활성화」는 화면 규칙이라 서버가 같은 조건을 직접 검사한다. 같은 값이 최초/갱신 입력 판정 마커이기도 하다 — SSOT: [`../../specs/user-schedule/pre-schedule-entry-flow.md`](../../specs/user-schedule/pre-schedule-entry-flow.md) |
 | 2026-08-18 | **BR-USER-006·007 개정 · BR-USER-011 삭제** (`#113`) — 방 입장 판정을 사용자 전역 조건(`정기≥1 OR 개별≥1 OR is_all_free`)에서 **방별 `trip_member.status = ACTIVE` 하나**로 단일화. `users.is_all_free` 컬럼·`canEnterRoom`·`SCHEDULE_ENTRY_REQUIRED` 삭제. **동작 변화 없음** — 전역 게이트는 `ACTIVE` 멤버에게 항상 참이라 이미 아무것도 막지 못했고(`activate`/`join`이 `markAllFreeIfNoSchedules`로 조건을 무조건 충족시킴), 일정 0건 사용자를 "전부 가능"으로 보는 계산은 그대로다. 프론트가 `hasPreSchedule \|\| isAllFree`를 재구현하다 QA 이슈 1·2를 낸 표면을 없애는 것이 목적 |
 | 2026-07-28 | BR-USER-001/007 표기 갱신 — `POST .../schedule/confirm` → `POST .../activate`, `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED` (rename 상세: `trip-room-api.md` 변경 이력) |

@@ -226,7 +226,7 @@
 **`SCHEDULE_PENDING`:** 방 진입 직후 상태 — **방장 create·참여자 join 모두** 이 값으로 시작한다(2026-08-19 `#114`. 이전에는 방장 전용이었고 멤버 신규 INSERT는 `ACTIVE`만이었다).
 **초대 공유:** 방장 ∧ **`ACTIVE`(방 입장 후)** 만 — SCHEDULE_PENDING은 입장 불가 → 공유 불가. create·join 응답에 `inviteCode` 없음 ([`kakao-invite-share.md`](kakao-invite-share.md) S-1·S-2).
 
-**정원 보장:** `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리해 동시 요청에도 정원을 넘기지 않는다. 자리는 `SCHEDULE_PENDING`부터 차지하며, 일정 확인을 끝내지 않은 사람의 자리는 자동 회수하지 않는다(방 나가기로만 해제). 초과 시 409 `TRIP_MEMBER_FULL`. ~~hold → #35~~ (2026-08-19 `#114`로 폐지).
+**정원 보장:** `POST /trips/join`이 `trip` 행을 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리해 동시 요청에도 정원을 넘기지 않는다. 자리는 `SCHEDULE_PENDING`부터 차지하며, 일정 확인을 끝내지 않은 사람의 자리는 자동 회수하지 않고 **방장 내보내기로만 해제**된다(2026-08-19 `#122` — 나가기도 입장(`ACTIVE`) 후에만 가능). 초과 시 409 `TRIP_MEMBER_FULL`. ~~hold → #35~~ (2026-08-19 `#114`로 폐지).
 
 ### D-MEMBER-FILL: 모집 현황 (확정 — 2026-07-28 amend)
 

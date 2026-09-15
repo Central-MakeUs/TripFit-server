@@ -13,6 +13,7 @@
 > 1. **참여자도 방장과 같은 2단계다.** `POST /trips/join`이 일정 플로우 **맨 앞**으로 옮겨져 `SCHEDULE_PENDING` 멤버를 만들고, 플로우를 마친 뒤 `POST .../activate`로 `ACTIVE`가 된다. 구 "일정 먼저 → join = 즉시 ACTIVE"·"멤버에게 중간 상태 없음"은 **폐지**됐고, Redis 정원 hold(`#35`)도 DB 비관적 락으로 대체·삭제됐다.
 > 2. **일정 플로우는 「정기 일정 유무」가 아니라 「최초 입력 / 갱신 입력」으로 갈린다.** 판정은 `hasCompletedPreSchedule`(= `users.vacation_apply_period`, 연차·휴일 정보의 **사전 신청일** 저장 여부) 하나이며, 두 갈래 모두 **연차·휴일 정보 화면을 지난다.**
 > 3. **`activate`는 사전 일정 입력을 한 번도 끝내지 않은 사용자를 403 `PRE_SCHEDULE_REQUIRED`로 거부한다.** 정기·개별 일정이 0건인 것은 거부 사유가 아니다.
+> 4. **방 나가기도 입장(`ACTIVE`) 후에만 가능하다**(`#122`). 미입장(`SCHEDULE_PENDING`) 상태에서는 403 `SCHEDULE_ACTIVATION_REQUIRED`이고, 그 자리는 **방장 내보내기**로만 회수된다.
 >
 > SSOT: [`../../specs/user-schedule/pre-schedule-entry-flow.md`](../../specs/user-schedule/pre-schedule-entry-flow.md) · [`../../specs/trip/trip-join-schedule-gate.md`](../../specs/trip/trip-join-schedule-gate.md)
 
@@ -151,7 +152,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 | 상황 | 결과 |
 |------|------|
-| 일정 미완료·이탈 | 멤버 row는 **`SCHEDULE_PENDING`으로 남는다**(정원 1자리 유지, 자동 회수 없음 — 방 나가기로만 해제). 재진입 시 일정 플로우부터 |
+| 일정 미완료·이탈 | 멤버 row는 **`SCHEDULE_PENDING`으로 남는다**(정원 1자리 유지, 자동 회수 없음). 본인은 **나갈 수 없고**(나가기도 입장 후에만 — `#122`) **방장 내보내기**로만 자리가 회수된다. 재진입 시 일정 플로우부터 |
 | 처음 join 성공 | INSERT `SCHEDULE_PENDING` · `last_activity_at` **touch 안 함**(touch는 `activate` 한 곳 — J-9) |
 | 이미 멤버인 상태로 join 재호출 | 멱등 — 새 row·이벤트 없이 현재 `myMemberStatus` 반환 |
 | 이미 `ACTIVE` 멤버 | 방 상세 직행 (BR-USER-010) |
@@ -220,7 +221,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 일정 activate | 해당 trip `SCHEDULE_PENDING` 멤버 (**방장·참여자 공통**) — 사전 일정 입력 완료 필요 |
 | 메타 수정·삭제 | 방장 (SCHEDULE_PENDING 단계 허용 범위는 Open Q) |
 | Pin·상세·그룹 달력 | **`ACTIVE`** |
-| 참여자 내보내기 | Nice (#20) |
+| 참여자 내보내기 | 방장 (**구현 완료** — `DELETE /trips/{tripId}/members/{userId}`, 조율 중인 방 한정, 대상 상태 무관. 미입장자 자리를 비우는 유일한 경로) |
 
 ### E. 초대 코드
 
@@ -288,7 +289,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 1. 링크 → 로그인·이름
 2. `POST /join` → MEMBER **`SCHEDULE_PENDING`** (정원 1자리 차지)
 3. 사전 일정 입력 플로우(최초/갱신) → `POST .../activate` → **`ACTIVE`**
-4. 플로우 중 이탈 → **`SCHEDULE_PENDING`으로 남음**(자리 유지) · 재진입 시 일정 플로우부터. 자리를 비우려면 **방 나가기**
+4. 플로우 중 이탈 → **`SCHEDULE_PENDING`으로 남음**(자리 유지) · 재진입 시 일정 플로우부터. **미입장 상태에서는 스스로 나갈 수 없다**(403 `SCHEDULE_ACTIVATION_REQUIRED`) — 자리를 비우려면 일정 입력을 마쳐 입장한 뒤 나가거나, **방장이 내보내야** 한다 (`#122`)
 5. 이후 같은 링크 → 이미 `ACTIVE` 멤버면 상세 직행, `SCHEDULE_PENDING`이면 다시 플로우
 
 ### 시나리오 5 — 정원 마감 레이스 (멤버)
@@ -332,7 +333,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 항목 | 비고 |
 |------|------|
 | SCHEDULE_PENDING 단계 초대·PATCH | 미정 |
-| 내보내기 · 푸시 · 카카오·링크 공유 | #20 **Nice** · #21·#19 Wave3 (~~hold #35~~ — `#114`로 폐지) |
+| 푸시 · 카카오·링크 공유 | #21·#19 Wave3 (~~내보내기 #20 Nice~~ — 구현 완료 · ~~hold #35~~ — `#114`로 폐지) |
 
 ---
 
@@ -347,6 +348,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-08-19 | **Amend (`#122`)** — 방 나가기에 멤버 상태 게이트 추가: 미입장(`SCHEDULE_PENDING`)은 403 `SCHEDULE_ACTIVATION_REQUIRED`, 자리 회수는 방장 내보내기로 단일화. 내보내기가 "#20 Nice(미구현)"으로 적혀 있던 표기도 구현 완료로 정정 |
 | 2026-08-19 | **Amend** — ① 사전 일정 입력 플로우를 「최초 입력 / 갱신 입력」 2분기로 개정(판정 = 사전 신청일 저장 여부), 두 갈래 모두 연차·휴일 정보 경유 ② `activate`에 사전 일정 입력 완료 게이트(403 `PRE_SCHEDULE_REQUIRED`) ③ `#114`의 참여자 2단계 전환(`join`=`SCHEDULE_PENDING` → `activate`=`ACTIVE`)·hold 폐지를 본문 전체에 반영 — 구 "일정 먼저 → join = 즉시 ACTIVE" 서술 제거. SSOT: [`../../specs/user-schedule/pre-schedule-entry-flow.md`](../../specs/user-schedule/pre-schedule-entry-flow.md) |
 | 2026-07-28 | **Amend** — `POST .../schedule/confirm` → `POST .../activate`로 rename(`TripStatus.CONFIRMED` 등 "일정 확정" 개념과 이름 혼동 해소), `SCHEDULE_CONFIRM_REQUIRED` → `SCHEDULE_ACTIVATION_REQUIRED`. 상세: [`trip-room-api.md`](../../specs/trip/trip-room-api.md) 변경 이력 |
 | 2026-07-23 | 문서 정리 — `trip-create.md`/`trip-join.md`를 "빠른 요약" 절로 흡수(파일 삭제), RFC 어투("제안"·"SSOT로 승격 예정") 제거해 Approved/Implemented 사실로 명시, 자기참조 깨진 링크 제거, `trip-create-join-flow-redesign.md`(대안 비교) 삭제에 따라 참조 제거 |
