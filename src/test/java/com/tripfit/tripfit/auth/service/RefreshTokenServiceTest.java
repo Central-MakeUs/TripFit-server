@@ -2,143 +2,137 @@ package com.tripfit.tripfit.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.auth.jwt.JwtProperties;
-import com.tripfit.tripfit.auth.repository.RefreshTokenRepository;
 import com.tripfit.tripfit.common.exception.TripFitException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
 
-@ExtendWith(MockitoExtension.class)
+// 실제 Redis 컨테이너로 RTR(rotation)·reuse detection·유저 단위 일괄 회수를 검증
 class RefreshTokenServiceTest {
 
   private static final UUID USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
 
-  @Mock
-  private RefreshTokenRepository refreshTokenRepository;
+  private static GenericContainer<?> redisContainer;
 
-  private RefreshTokenService refreshTokenService;
+  private static LettuceConnectionFactory connectionFactory;
 
-  @BeforeEach
-  void setUp() {
+  private static RefreshTokenService service;
+
+  @BeforeAll
+  static void startContainer() {
+    redisContainer =
+        new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+    redisContainer.start();
+
+    RedisStandaloneConfiguration config =
+        new RedisStandaloneConfiguration(
+            redisContainer.getHost(), redisContainer.getMappedPort(6379));
+    connectionFactory = new LettuceConnectionFactory(config);
+    connectionFactory.afterPropertiesSet();
+
+    StringRedisTemplate redisTemplate = new StringRedisTemplate(connectionFactory);
+    redisTemplate.afterPropertiesSet();
+
     JwtProperties jwtProperties = new JwtProperties();
     jwtProperties.setRefreshExpirationDays(30);
-    refreshTokenService = new RefreshTokenService(refreshTokenRepository, jwtProperties);
+
+    service = new RefreshTokenService(redisTemplate, jwtProperties);
   }
 
-  private static RefreshToken tokenOf(String token, String familyId, LocalDateTime expiresAt) {
-    return new RefreshToken(USER_ID, token, familyId, expiresAt);
+  @AfterAll
+  static void stopContainer() {
+    connectionFactory.destroy();
+    redisContainer.stop();
   }
 
   @Test
   void create_issuesTokenWithNewFamily() {
-    when(refreshTokenRepository.save(any(RefreshToken.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    IssuedRefreshToken first = service.create(USER_ID);
+    IssuedRefreshToken second = service.create(USER_ID);
 
-    RefreshToken created = refreshTokenService.create(USER_ID);
-
-    assertThat(created.getUserId()).isEqualTo(USER_ID);
-    assertThat(created.getFamilyId()).isNotBlank();
-    assertThat(created.isRevoked()).isFalse();
+    assertThat(first.token()).isNotEqualTo(second.token());
+    assertThat(first.familyId()).isNotEqualTo(second.familyId());
+    assertThat(first.userId()).isEqualTo(USER_ID);
   }
 
   @Test
   void rotate_validToken_revokesOldAndIssuesNewInSameFamily() {
-    String familyId = UUID.randomUUID().toString();
-    RefreshToken current = tokenOf("old-token", familyId, LocalDateTime.now().plusDays(10));
-    when(refreshTokenRepository.findByToken("old-token")).thenReturn(Optional.of(current));
-    when(refreshTokenRepository.save(any(RefreshToken.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    IssuedRefreshToken issued = service.create(USER_ID);
 
-    RefreshToken rotated = refreshTokenService.rotate("old-token");
+    IssuedRefreshToken rotated = service.rotate(issued.token());
 
-    assertThat(current.isRevoked()).isTrue();
-    assertThat(rotated.getFamilyId()).isEqualTo(familyId);
-    assertThat(rotated.getToken()).isNotEqualTo("old-token");
-    assertThat(rotated.isRevoked()).isFalse();
+    assertThat(rotated.token()).isNotEqualTo(issued.token());
+    assertThat(rotated.familyId()).isEqualTo(issued.familyId());
+    assertThat(rotated.userId()).isEqualTo(USER_ID);
   }
 
   @Test
   void rotate_unknownToken_throwsInvalidRefresh() {
-    when(refreshTokenRepository.findByToken("missing")).thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> refreshTokenService.rotate("missing"))
+    assertThatThrownBy(() -> service.rotate(UUID.randomUUID().toString()))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
   }
 
-  @Test
-  void rotate_expiredToken_deletesAndThrowsInvalidRefresh() {
-    RefreshToken expired =
-        tokenOf("expired-token", UUID.randomUUID().toString(), LocalDateTime.now().minusDays(1));
-    when(refreshTokenRepository.findByToken("expired-token")).thenReturn(Optional.of(expired));
-
-    assertThatThrownBy(() -> refreshTokenService.rotate("expired-token"))
-        .isInstanceOf(TripFitException.class)
-        .extracting(exception -> ((TripFitException) exception).getErrorCode())
-        .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
-
-    verify(refreshTokenRepository).delete(expired);
-  }
-
-  // 재사용 탐지 — 이미 rotate로 폐기된(revokedAt != null) 토큰이 재제출되면 family 전체를 폐기하고 REUSE로 던짐
+  // 구 토큰 재사용 시 family 전체(그사이 새로 발급된 토큰까지)가 회수돼야 함
   @Test
   void rotate_alreadyRevokedToken_revokesWholeFamilyAndThrowsReuse() {
-    String familyId = UUID.randomUUID().toString();
-    RefreshToken reusedToken = tokenOf("rotated-away", familyId, LocalDateTime.now().plusDays(10));
-    reusedToken.revoke();
-    when(refreshTokenRepository.findByToken("rotated-away")).thenReturn(Optional.of(reusedToken));
+    IssuedRefreshToken issued = service.create(USER_ID);
+    IssuedRefreshToken rotatedOnce = service.rotate(issued.token());
 
-    RefreshToken siblingInFamily =
-        tokenOf("sibling-token", familyId, LocalDateTime.now().plusDays(10));
-    when(refreshTokenRepository.findAllByFamilyIdAndRevokedAtIsNull(familyId))
-        .thenReturn(List.of(siblingInFamily));
-
-    assertThatThrownBy(() -> refreshTokenService.rotate("rotated-away"))
+    assertThatThrownBy(() -> service.rotate(issued.token()))
         .isInstanceOf(TripFitException.class)
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_REFRESH_REUSE);
 
-    assertThat(siblingInFamily.isRevoked()).isTrue();
-    verify(refreshTokenRepository, org.mockito.Mockito.never()).save(any());
+    // reuse 탐지로 family가 통째로 죽어, 그사이 정상 발급됐던 토큰도 더 이상 못 씀
+    assertThatThrownBy(() -> service.rotate(rotatedOnce.token()))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
   }
 
   @Test
-  void delete_delegatesToRepository() {
-    refreshTokenService.delete("token-value");
-    verify(refreshTokenRepository).deleteByToken("token-value");
+  void delete_removesActiveToken() {
+    IssuedRefreshToken issued = service.create(USER_ID);
+
+    service.delete(issued.token());
+
+    assertThatThrownBy(() -> service.rotate(issued.token()))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
   }
 
   @Test
-  void revokeAllForUser_delegatesToRepository() {
-    refreshTokenService.revokeAllForUser(USER_ID);
-    verify(refreshTokenRepository).deleteAllByUserId(USER_ID);
+  void delete_unknownToken_doesNotThrow() {
+    service.delete(UUID.randomUUID().toString());
   }
 
   @Test
-  void create_savesTokenWithConfiguredExpiration() {
-    ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
-    when(refreshTokenRepository.save(captor.capture()))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+  void revokeAllForUser_revokesEveryFamily() {
+    UUID userId = UUID.randomUUID();
+    IssuedRefreshToken first = service.create(userId);
+    IssuedRefreshToken second = service.create(userId);
 
-    refreshTokenService.create(USER_ID);
+    service.revokeAllForUser(userId);
 
-    LocalDateTime expiresAt = captor.getValue().getExpiresAt();
-    assertThat(expiresAt).isAfter(LocalDateTime.now().plusDays(29));
-    assertThat(expiresAt).isBefore(LocalDateTime.now().plusDays(31));
+    assertThatThrownBy(() -> service.rotate(first.token()))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
+    assertThatThrownBy(() -> service.rotate(second.token()))
+        .isInstanceOf(TripFitException.class)
+        .extracting(exception -> ((TripFitException) exception).getErrorCode())
+        .isEqualTo(AuthErrorCode.AUTH_INVALID_REFRESH);
   }
 }

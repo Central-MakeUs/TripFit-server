@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.security;
 
+import com.tripfit.tripfit.auth.config.AuthCookieProperties;
 import com.tripfit.tripfit.auth.jwt.AuthorizedUserArgumentResolver;
 import com.tripfit.tripfit.auth.jwt.JwtProperties;
 import com.tripfit.tripfit.auth.oauth.OAuthProperties;
@@ -19,6 +20,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @EnableConfigurationProperties({
     JwtProperties.class,
+    AuthCookieProperties.class,
     OAuthProperties.class,
     SocialTokenCryptoProperties.class,
     FcmProperties.class,

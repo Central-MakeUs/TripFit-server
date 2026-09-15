@@ -7,27 +7,21 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.tripfit.tripfit.auth.jwt.AccessTokenClaims;
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
-import com.tripfit.tripfit.auth.oauth.RedisTokenRevocationChecker;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifier;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifierRegistry;
-import com.tripfit.tripfit.auth.domain.RefreshToken;
-import com.tripfit.tripfit.auth.dto.LoginResponse;
-import com.tripfit.tripfit.auth.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,9 +63,6 @@ class AuthServiceTest {
 
   @Mock
   private GoogleLoginCredentialService googleLoginCredentialService;
-
-  @Mock
-  private RedisTokenRevocationChecker tokenRevocationChecker;
 
   @InjectMocks
   private AuthService authService;
@@ -122,10 +113,7 @@ class AuthServiceTest {
 
   private static AuthLoginPersistenceService.Result persistenceResult(User user) {
     return new AuthLoginPersistenceService.Result(
-        user,
-        new RefreshToken(
-            user.getId(), "refresh-token", UUID.randomUUID().toString(),
-            LocalDateTime.now().plusDays(30)));
+        user, new IssuedRefreshToken("refresh-token", user.getId(), UUID.randomUUID().toString()));
   }
 
   @Test
@@ -135,19 +123,20 @@ class AuthServiceTest {
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
     when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
     when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(900L);
 
-    LoginResponse response =
+    AuthService.LoginResult result =
         authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
-    assertThat(response.accessToken()).isEqualTo("access-jwt");
-    assertThat(response.refreshToken()).isEqualTo("refresh-token");
-    assertThat(response.user().email()).isEqualTo("user@example.com");
-    assertThat(response.user().firstName()).isNull();
-    assertThat(response.user().lastName()).isNull();
-    assertThat(response.user().nickname()).isEqualTo("홍길동");
-    assertThat(response.user().profileImageUrl()).isEqualTo("https://example.com/profile.png");
-    assertThat(response.user().hasCompletedPreSchedule()).isFalse();
+    assertThat(result.response().accessToken()).isEqualTo("access-jwt");
+    assertThat(result.refreshToken()).isEqualTo("refresh-token");
+    assertThat(result.response().user().email()).isEqualTo("user@example.com");
+    assertThat(result.response().user().firstName()).isNull();
+    assertThat(result.response().user().lastName()).isNull();
+    assertThat(result.response().user().nickname()).isEqualTo("홍길동");
+    assertThat(result.response().user().profileImageUrl())
+        .isEqualTo("https://example.com/profile.png");
+    assertThat(result.response().user().hasCompletedPreSchedule()).isFalse();
   }
 
   @Test
@@ -183,7 +172,7 @@ class AuthServiceTest {
     when(socialTokenVerifier.verify("id-token")).thenReturn(appleProfile);
     when(authLoginPersistenceService.persist(appleProfile)).thenReturn(persistenceResult(user));
     when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(900L);
 
     authService.login(SocialProvider.APPLE, "id-token", "auth-code", null);
 
@@ -201,11 +190,11 @@ class AuthServiceTest {
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
     when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
     when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(900L);
 
     authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
-    verify(appleCredentialService, org.mockito.Mockito.never())
+    verify(appleCredentialService, never())
         .saveIfAuthorizationCodePresent(any(), any(), any());
   }
 
@@ -237,7 +226,7 @@ class AuthServiceTest {
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
     when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
     when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(900L);
 
     authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
@@ -253,7 +242,7 @@ class AuthServiceTest {
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
     when(authLoginPersistenceService.persist(oAuthProfile)).thenReturn(persistenceResult(user));
     when(jwtService.createAccessToken(USER_ID)).thenReturn("access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(900L);
 
     authService.login(
         SocialProvider.GOOGLE,
@@ -270,19 +259,20 @@ class AuthServiceTest {
 
   @Test
   void refresh_rotatesAndReturnsNewAccessAndRefreshToken() {
-    RefreshToken rotated =
-        new RefreshToken(
-            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"), "new-refresh-token",
-            UUID.randomUUID().toString(), LocalDateTime.now().plusDays(30));
+    IssuedRefreshToken rotated =
+        new IssuedRefreshToken(
+            "new-refresh-token",
+            UUID.fromString("550e8400-e29b-41d4-a716-446655440001"),
+            UUID.randomUUID().toString());
     when(refreshTokenService.rotate("refresh-token")).thenReturn(rotated);
     when(jwtService.createAccessToken(UUID.fromString("550e8400-e29b-41d4-a716-446655440001")))
         .thenReturn("new-access-jwt");
-    when(jwtService.getAccessExpirationSeconds()).thenReturn(7200L);
+    when(jwtService.getAccessExpirationSeconds()).thenReturn(900L);
 
-    RefreshResponse response = authService.refresh("refresh-token");
+    AuthService.RefreshResult result = authService.refresh("refresh-token");
 
-    assertThat(response.accessToken()).isEqualTo("new-access-jwt");
-    assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
+    assertThat(result.response().accessToken()).isEqualTo("new-access-jwt");
+    assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
   }
 
   @Test
@@ -298,34 +288,17 @@ class AuthServiceTest {
   }
 
   @Test
-  void logout_withoutAccessToken_onlyDeletesRefreshToken() {
-    authService.logout("refresh-token", null);
+  void logout_deletesRefreshToken() {
+    authService.logout("refresh-token");
 
     verify(refreshTokenService).delete("refresh-token");
-    verifyNoInteractions(tokenRevocationChecker);
   }
 
+  // 쿠키가 이미 없는 경우(만료·미전송) — 지울 게 없으므로 조용히 넘어가고 로그아웃 자체는 계속 성공해야 함
   @Test
-  void logout_withAccessToken_alsoBlacklistsJti() {
-    Instant expiresAt = Instant.now().plusSeconds(1800);
-    when(jwtService.parseAccessToken("current-access-jwt"))
-        .thenReturn(new AccessTokenClaims(USER_ID, "jti-123", expiresAt));
+  void logout_withoutRefreshTokenCookie_skipsDeleteWithoutFailing() {
+    authService.logout(null);
 
-    authService.logout("refresh-token", "current-access-jwt");
-
-    verify(refreshTokenService).delete("refresh-token");
-    verify(tokenRevocationChecker).revoke("jti-123", expiresAt);
-  }
-
-  // 이미 만료·위조된 access token — 블랙리스트 등록 없이 로그아웃 자체는 계속 성공해야 함
-  @Test
-  void logout_withExpiredAccessToken_skipsBlacklistWithoutFailing() {
-    when(jwtService.parseAccessToken("expired-access-jwt"))
-        .thenThrow(new TripFitException(AuthErrorCode.AUTH_EXPIRED));
-
-    authService.logout("refresh-token", "expired-access-jwt");
-
-    verify(refreshTokenService).delete("refresh-token");
-    verifyNoInteractions(tokenRevocationChecker);
+    verifyNoInteractions(refreshTokenService);
   }
 }

@@ -3,7 +3,7 @@
 > wave: 4  
 > 선행: wave 1 [`auth-social-login.md`](auth-social-login.md)  
 > 결정: [`docs/decisions/004-auth-token-rotation.md`](../../decisions/004-auth-token-rotation.md) — **RTR 확정**, **Redis Blacklist 확정**(2026-08-08). 인프라: [`010-redis-infra.md`](../../decisions/010-redis-infra.md)(EC2 D)  
-> 상태: Approved (2026-08-10)
+> 상태: Approved (2026-08-10) — **2026-09-15 이 문서의 핵심 전제 2가지(refresh는 MySQL SSOT, access는 Redis Blacklist)가 [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md)로 뒤집혔다.** RTR(rotation·reuse detection) 자체의 시맨틱은 그대로 유지되고 저장소만 MySQL→Redis로 바뀌었으니, 이 문서는 RTR 개념 설명용 이력으로 남기고 실제 저장·전달 계약은 새 문서를 SSOT로 본다.
 
 ## 목표
 
