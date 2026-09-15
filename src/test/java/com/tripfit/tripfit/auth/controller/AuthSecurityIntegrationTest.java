@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.auth.controller;
 
+import jakarta.servlet.http.Cookie;
 import java.util.UUID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,7 +21,6 @@ import com.tripfit.tripfit.common.config.TestcontainersConfig;
 import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -114,17 +114,15 @@ class AuthSecurityIntegrationTest {
   @Test
   void refresh_withExpiredBearerHeader_stillReachesController() throws Exception {
     when(authService.refresh("refresh-token"))
-        .thenReturn(new RefreshResponse("new-access-jwt", "new-refresh-token", 7200L));
+        .thenReturn(
+            new AuthService.RefreshResult(
+                new RefreshResponse("new-access-jwt", 900L), "new-refresh-token"));
 
     mockMvc
         .perform(
             post("/api/v1/auth/refresh")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + expiredAccessToken())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                        {"refreshToken":"refresh-token"}
-                        """))
+                .cookie(new Cookie("refreshToken", "refresh-token")))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.accessToken").value("new-access-jwt"));
   }

@@ -17,7 +17,6 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarErrorCode;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
-import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +44,7 @@ class GoogleCalendarControllerTest {
   void setUp() {
     SecurityContextHolder.getContext()
         .setAuthentication(
-            new JwtAuthentication(USER_ID, "test-jti", Instant.now().plusSeconds(3600)));
+            new JwtAuthentication(USER_ID));
     GoogleCalendarController controller = new GoogleCalendarController(googleCalendarService);
     mockMvc =
         MockMvcBuilders.standaloneSetup(controller)
