@@ -8,6 +8,17 @@
   - [`docs/decisions/010-redis-infra.md`](010-redis-infra.md) — Redis 인프라 배치(EC2 D)
   - [`docs/specs/auth/auth-social-login.md`](../specs/auth/auth-social-login.md) — wave 1 구현
   - [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) — wave 4 구현 스펙
+  - [`docs/specs/auth/auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md) — **2026-09-15 후속 개편**, 아래 amend 참고
+
+## ⚠️ 2026-09-15 amend — refresh Redis 이관 + Blacklist 폐기
+
+아래 "확정" §1의 "refresh token SSOT는 MySQL"과 "Redis access JWT 전략 — Blacklist"는 **뒤집혔다.** 상세 근거·트레이드오프는 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md) 참고, 요지만:
+
+- refresh token SSOT: MySQL `refresh_token` 테이블 → **Redis** (같은 rotate·reuse detection 시맨틱을 Redis 키 설계로 재현)
+- access JWT 상태 관리: Blacklist(Redis 조회) → **완전 무상태**(블랙리스트 자체를 폐기) — 대신 access TTL을 2시간 → 15분으로 축소해 즉시 무효화 불가 트레이드오프를 보완
+- refresh token 전달: JSON 바디 → **HttpOnly 쿠키**
+
+이 문서의 "확정"·"고려한 대안"·"Redis access JWT 전략" 절 본문은 **2026-09-15 이전 시점의 기록으로 그대로 남겨둔다** — 왜 그때 그렇게 결정했는지의 이력이며, 위 amend가 현재 유효한 계약이다.
 
 ## 맥락
 
