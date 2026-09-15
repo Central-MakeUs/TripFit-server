@@ -1,6 +1,5 @@
 package com.tripfit.tripfit.user.service;
 
-import com.tripfit.tripfit.auth.oauth.RedisTokenRevocationChecker;
 import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
@@ -11,7 +10,6 @@ import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
 import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import java.time.Instant;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +40,9 @@ public class UserWithdrawalService {
 
   private final UserWithdrawalPersistenceService persistenceService;
 
-  private final RedisTokenRevocationChecker tokenRevocationChecker;
-
   // 차단 없이 항상 진행 — provider revoke(외부 HTTP, best-effort)를 트랜잭션 밖에서 먼저 끝낸 뒤, cascade·hard
-  // delete·soft delete는 persistenceService의 짧은 트랜잭션으로 처리한다(A-2). 지금 사용 중인 access token
-  // 블랙리스트 등록은 재호출에도 안전(idempotent)해 나머지 로직보다 먼저, 조건 없이 수행한다
-  public void withdraw(UUID userId, String accessTokenJti, Instant accessTokenExpiresAt) {
-    tokenRevocationChecker.revoke(accessTokenJti, accessTokenExpiresAt);
-
+  // delete·soft delete는 persistenceService의 짧은 트랜잭션으로 처리한다(A-2)
+  public void withdraw(UUID userId) {
     User user = userLookupService.requireUser(userId);
     if (user.getDeletedAt() != null) {
       // 이미 탈퇴한 계정(액세스 토큰 만료 전 재호출) — 중복 처리 없이 idempotent 종료
