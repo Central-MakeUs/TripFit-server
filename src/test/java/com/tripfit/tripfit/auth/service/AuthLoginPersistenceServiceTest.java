@@ -6,12 +6,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.repository.UserRepository;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,10 +36,7 @@ class AuthLoginPersistenceServiceTest {
   @BeforeEach
   void setUp() {
     when(refreshTokenService.create(any()))
-        .thenReturn(
-            new RefreshToken(
-                USER_ID, "refresh-token", UUID.randomUUID().toString(),
-                LocalDateTime.now().plusDays(30)));
+        .thenReturn(new IssuedRefreshToken("refresh-token", USER_ID, UUID.randomUUID().toString()));
   }
 
   @Test
@@ -62,7 +57,7 @@ class AuthLoginPersistenceServiceTest {
 
     assertThat(result.user().getEmail()).isEqualTo("user@example.com");
     assertThat(result.user().getNickname()).isEqualTo("홍길동");
-    assertThat(result.refreshToken().getToken()).isEqualTo("refresh-token");
+    assertThat(result.refreshToken().token()).isEqualTo("refresh-token");
   }
 
   // Apple relay 등 nickname·profileImageUrl이 없는 신규 프로필은 임의 fallback 없이 null 그대로 저장돼야 함
