@@ -16,7 +16,6 @@
 ## 2. Mermaid ERD (정기·개별 분리 — SSOT)
 ```mermaid
 erDiagram
-users ||--o{ refresh_token : issues
 users ||--o{ regular_schedule : owns
 users ||--o{ personal_schedule : owns
 users ||--|| google_calendar_credential : has
@@ -49,16 +48,6 @@ trip ||--o{ notification_history : relates_to
         datetime created_at "생성일"
         datetime updated_at "수정일"
         datetime deleted_at "삭제일 Soft Delete"
-    }
-
-    refresh_token {
-        uuid id PK "토큰 UUID"
-        uuid user_id FK "사용자"
-        string token "Refresh Token UNIQUE"
-        string family_id "RTR Family UUID"
-        datetime revoked_at "폐기 시각"
-        datetime expires_at "만료 시각"
-        datetime created_at "생성일"
     }
 
     regular_schedule {
@@ -265,21 +254,9 @@ trip ||--o{ notification_history : relates_to
 
 **API 파생·컬럼:** `hasPreSchedule` = EXISTS(regular) OR EXISTS(personal) (파생). **`users.is_all_free`** boolean default `false` — login/me `isAllFree`. 입장 = 정기 OR 개별 OR `is_all_free` ([`schedule-participation-onboarding.md`](../specs/trip/schedule-participation-onboarding.md)). ~~`is_schedule_registered`~~ **제거**.
 
-### `refresh_token`
+### `refresh_token` — MySQL 테이블 아님 (Redis 이관, 2026-09-15)
 
-wave 1+, RTR(rotate·reuse detection) 구현 완료. [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)
-
-| 컬럼 | 타입 | Nullable | PK/FK | 설명 |
-|------|------|----------|-------|------|
-| id | char(36) | N | PK | UUID v4 |
-| user_id | char(36) | N | FK → users.id | |
-| token | varchar(255) | N | | UNIQUE |
-| family_id | char(36) | N | | 로그인 체인 UUID. rotate돼도 유지, 재사용 탐지 시 이 값 기준으로 체인 전체 폐기 |
-| revoked_at | timestamptz | Y | | rotate 또는 재사용 탐지로 폐기된 시각 |
-| expires_at | timestamptz | N | | |
-| created_at | timestamptz | N | | |
-
-**인덱스:** `(family_id)`, `(user_id, revoked_at)` — 재사용 탐지 시 family 조회·조회 성능
+RTR(rotate·reuse detection) refresh token은 더 이상 MySQL 테이블이 아니라 **Redis 키**로 저장한다 — 이 ERD(RDB 스키마) 대상에서 제외. 키 설계·rotate 흐름은 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)가 SSOT, 이전 MySQL 기반 설계는 [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md)·[`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)에 이력으로 남아 있다.
 
 **Redis (`#4`):** access token(JWT) `jti` 블랙리스트 `auth:bl:{jti}` — logout·탈퇴 시 등록, TTL=토큰 잔여 수명. 별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)
 
@@ -561,7 +538,6 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | users | personal_schedule | 1:N | 개인 일정 (날짜당 1행) |
 | users | trip_member | 1:N | 여행방별 참여 |
 | users | trip | 1:N | owner_id (방장) |
-| users | refresh_token | 1:N | |
 | trip | trip_member | 1:N | |
 | trip | trip_member_schedule_snapshot | 1:N | #38 CONFIRMED/EXPIRED 정기+개별 합친 값 freeze |
 | users | trip_member_schedule_snapshot | 1:N | |
@@ -575,7 +551,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 
 | MVP 기능 | 테이블 |
 |----------|--------|
-| 소셜 로그인·프로필 | `users`, `refresh_token` |
+| 소셜 로그인·프로필 | `users` (refresh token은 Redis) |
 | 정기·개별 일정 | `regular_schedule`, `personal_schedule` |
 | 여행방·초대·여행지 | `trip`, `trip_member` |
 | 추천 4모드·TOP3·확정 | `recommendation`, `recommendation_feedback`, `trip.last_recommendation_mode`, `trip.confirmed_*` |
@@ -609,7 +585,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 
 ## 기획 메모 (NotebookLM + 확정)
 
-1. **MVP 핵심:** `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation` + `refresh_token`
+1. **MVP 핵심:** `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation` (refresh token은 Redis, MySQL 테이블 아님)
 2. **2026-07-08:** TERMINATED, Pin(`is_pinned`), cancel_reason wave 4, 전역 연동
 3. **2026-07-13:** A안 폐기 → 정기/개별 2테이블, 정기 N행·title·범용 시간 필드
 4. **2026-07-20:** 홈 D5 — `trip.last_activity_at`, `trip_member.pinned_at` ([`trip-room-api.md`](../specs/trip/trip-room-api.md))
