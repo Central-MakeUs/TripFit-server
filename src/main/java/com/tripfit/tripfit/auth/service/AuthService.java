@@ -1,13 +1,10 @@
 package com.tripfit.tripfit.auth.service;
 
-import com.tripfit.tripfit.auth.jwt.AccessTokenClaims;
 import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.jwt.JwtService;
 import com.tripfit.tripfit.auth.oauth.OAuthProfile;
-import com.tripfit.tripfit.auth.oauth.RedisTokenRevocationChecker;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifier;
 import com.tripfit.tripfit.auth.oauth.SocialTokenVerifierRegistry;
-import com.tripfit.tripfit.auth.domain.RefreshToken;
 import com.tripfit.tripfit.auth.dto.LoginResponse;
 import com.tripfit.tripfit.auth.dto.RefreshResponse;
 import com.tripfit.tripfit.auth.exception.AuthErrorCode;
@@ -41,12 +38,11 @@ public class AuthService {
 
   private final GoogleLoginCredentialService googleLoginCredentialService;
 
-  private final RedisTokenRevocationChecker tokenRevocationChecker;
-
   // 소셜 토큰을 검증하고 사용자 세션용 토큰 묶음을 발급함 — 소셜 provider HTTP 호출(토큰 검증·authorizationCode
   // 교환)은 DB 쓰기 트랜잭션 밖에서 먼저 끝내, provider 장애·지연이 DB 커넥션 풀을 붙잡지 않게 함
-  // (AuthLoginPersistenceService 참고)
-  public LoginResponse login(
+  // (AuthLoginPersistenceService 참고). refreshToken은 응답 바디가 아니라 HttpOnly 쿠키로 내려가므로
+  // LoginResult에 별도로 담아 Controller에 넘긴다
+  public LoginResult login(
       SocialProvider provider,
       String token,
       String authorizationCode,
@@ -87,36 +83,29 @@ public class AuthService {
 
     // 5. 액세스 토큰 발급 — hasCompletedPreSchedule은 toSummary()가 사전 신청일 저장 여부로 파생 (별도 컬럼 아님)
     String accessToken = jwtService.createAccessToken(user.getId());
-    return new LoginResponse(
-        accessToken,
-        result.refreshToken().getToken(),
-        jwtService.getAccessExpirationSeconds(),
-        userSummaryService.toSummary(user));
+    LoginResponse response =
+        new LoginResponse(
+            accessToken,
+            jwtService.getAccessExpirationSeconds(),
+            userSummaryService.toSummary(user));
+    return new LoginResult(response, result.refreshToken().token());
   }
 
   // RTR — 리프레시 토큰을 rotate(기존 토큰 폐기 + 같은 로그인 체인으로 새 토큰 발급)하고 새 액세스 토큰도 발급함.
   // 재사용(이미 폐기된 토큰 재제출)이면 RefreshTokenService가 AUTH_REFRESH_REUSE를 던짐
-  @Transactional
-  public RefreshResponse refresh(String refreshTokenValue) {
-    RefreshToken rotated = refreshTokenService.rotate(refreshTokenValue);
-    String accessToken = jwtService.createAccessToken(rotated.getUserId());
-    return new RefreshResponse(
-        accessToken, rotated.getToken(), jwtService.getAccessExpirationSeconds());
+  public RefreshResult refresh(String refreshTokenValue) {
+    IssuedRefreshToken rotated = refreshTokenService.rotate(refreshTokenValue);
+    String accessToken = jwtService.createAccessToken(rotated.userId());
+    RefreshResponse response =
+        new RefreshResponse(accessToken, jwtService.getAccessExpirationSeconds());
+    return new RefreshResult(response, rotated.token());
   }
 
-  // 로그아웃 — 리프레시 토큰을 삭제하고, 클라이언트가 현재 access token을 같이 보냈으면 즉시 블랙리스트에 올림.
-  // access token이 없거나 이미 만료·위조된 값이면 조용히 넘어감(로그아웃 자체는 항상 성공해야 함)
-  @Transactional
-  public void logout(String refreshTokenValue, String accessTokenValue) {
-    refreshTokenService.delete(refreshTokenValue);
-    if (accessTokenValue == null || accessTokenValue.isBlank()) {
-      return;
-    }
-    try {
-      AccessTokenClaims claims = jwtService.parseAccessToken(accessTokenValue);
-      tokenRevocationChecker.revoke(claims.jti(), claims.expiresAt());
-    } catch (TripFitException exception) {
-      // 이미 만료·위조된 access token — 블랙리스트에 올릴 필요 없음
+  // 로그아웃 — 리프레시 토큰을 삭제한다. 쿠키가 이미 없으면(만료·미전송) 아무것도 지울 게 없으므로 조용히
+  // 넘어간다(로그아웃 자체는 항상 성공해야 함)
+  public void logout(String refreshTokenValue) {
+    if (refreshTokenValue != null) {
+      refreshTokenService.delete(refreshTokenValue);
     }
   }
 
@@ -124,5 +113,17 @@ public class AuthService {
   @Transactional(readOnly = true)
   public UserSummaryResponse getCurrentUser(UUID userId) {
     return userSummaryService.toSummary(userLookupService.requireUser(userId));
+  }
+
+  public record LoginResult(
+      LoginResponse response,
+      String refreshToken
+  ) {
+  }
+
+  public record RefreshResult(
+      RefreshResponse response,
+      String refreshToken
+  ) {
   }
 }

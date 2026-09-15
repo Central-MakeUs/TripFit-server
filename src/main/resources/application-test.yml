@@ -7,8 +7,12 @@ spring:
 tripfit:
   jwt:
     secret: test-jwt-secret-key-at-least-32-characters
-    access-expiration-seconds: 7200
+    access-expiration-seconds: 900
     refresh-expiration-days: 30
+  auth:
+    cookie:
+      domain: localhost
+      secure: false
   oauth:
     google-client-id: test-google-client-id
     google-client-secret: test-google-client-secret
