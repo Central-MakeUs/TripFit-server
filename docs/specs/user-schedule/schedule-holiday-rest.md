@@ -61,12 +61,11 @@
 - 동점 처리 기준에 공휴일 재도입 — `trip-recommendation-scoring-source.md`가 2026-07-30에 의도적으로 폐기한 규칙(구 "연차→기간→주말·공휴일")이다. **재도입 금지**
 - `halfVacationAvailable`(반차) 반영 — `#2` 별도 `[미정]`
 - `vacationApplyPeriod`(연차 신청 가능 시점) 반영 — `#2` 별도 `[미정]`
-- 사용자가 공휴일 목록을 직접 조회하는 REST API — 프론트 요구가 확인되지 않음
 - 한국 외 국가 공휴일
 
 ## API / 인터페이스
 
-**신규 REST API 없음.** 기존 API의 응답 **값**만 달라진다.
+**본 스펙 자체는 신규 REST API 없음.** 기존 API의 응답 **값**만 달라진다. (공휴일 날짜 자체를 조회하는 API는 별도로 분리 — [`schedule-holiday-list-api.md`](schedule-holiday-list-api.md) `GET /api/v1/holidays`, 2026-08-18 amend)
 
 | Method | Path | 영향 |
 |--------|------|------|
@@ -245,3 +244,4 @@ regularsAppliedOn(matched, date, holidays, holidayRest):
 | 2026-08-16 | **H1 수정** — 초안의 "정기 일정 행 단위 판정"은 오류. `#52`가 `holidayRest`를 사람 단위 값 4종으로 규정하고 `#105`가 대표 행(`primaryVacationSchedule`) 규칙을 이미 구현했으므로, 같은 기준을 따르는 **사용자 단위 all-or-nothing** 판정으로 교체. 검증 시나리오·MODIFIED·리스크 표 동반 수정 |
 | 2026-08-16 | H2 구글 캘린더 busy 유지 **사용자 승인** — 잔여 확인 항목 없음 |
 | 2026-08-16 | **Approved** — 전체 스펙 사용자 승인 |
+| 2026-08-18 | **amend** — Out of Scope의 "공휴일 목록 조회 API 없음" 삭제, API 절 amend. 캘린더 화면에 공휴일 표시가 안 되는 프론트 요구가 확인돼 [`schedule-holiday-list-api.md`](schedule-holiday-list-api.md)로 분리 승인 (`#107`) |
