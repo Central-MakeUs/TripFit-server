@@ -5,11 +5,9 @@ import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.schedule.domain.TripMemberScheduleSnapshot;
-import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
-import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.trip.schedule.repository.TripMemberScheduleSnapshotRepository;
-import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,9 +24,7 @@ public class TripScheduleSnapshotService {
 
   private final TripMemberScheduleSnapshotRepository snapshotRepository;
 
-  private final SchedulePort schedulePort;
-
-  private final GoogleCalendarPort googleCalendarPort;
+  private final ScheduleAvailabilityService scheduleAvailabilityService;
 
   private final TripServiceSupport support;
 
@@ -45,14 +41,8 @@ public class TripScheduleSnapshotService {
 
     List<TripMember> members = support.listActiveMembersSortedByJoinedAt(tripId);
     List<UUID> userIds = members.stream().map(member -> member.getUser().getId()).toList();
-    Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser =
-        googleCalendarPort.findBusyDaysByUserIds(userIds, startDate, endDate);
     Map<UUID, List<CalendarDayResponse>> resolvedByUser =
-        schedulePort.resolveMergedSchedules(
-            userIds,
-            startDate,
-            endDate,
-            googleBusyByUser);
+        scheduleAvailabilityService.resolveAvailability(userIds, startDate, endDate).mergedByUser();
 
     List<TripMemberScheduleSnapshot> rows = new ArrayList<>();
     for (TripMember member : members) {

@@ -7,13 +7,13 @@ import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.trip.schedule.domain.SlotStatuses;
 import com.tripfit.tripfit.trip.domain.Trip;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
-import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
-import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService.ScheduleAvailability;
 import com.tripfit.tripfit.user.schedule.service.ScheduleCalendarResolver;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -41,18 +41,14 @@ public class RecommendationEngine {
   // 실사용 범위는 넉넉히 들어오지만, 극단적으로 긴 구간에서 조합 수가 폭발하는 것은 막는다
   private static final int MAX_CONVERSION_UNITS = 20;
 
-  private final SchedulePort schedulePort;
-
-  private final GoogleCalendarPort googleCalendarPort;
+  private final ScheduleAvailabilityService scheduleAvailabilityService;
 
   private final HolidayProvider holidayProvider;
 
   public RecommendationEngine(
-      SchedulePort schedulePort,
-      GoogleCalendarPort googleCalendarPort,
+      ScheduleAvailabilityService scheduleAvailabilityService,
       HolidayProvider holidayProvider) {
-    this.schedulePort = schedulePort;
-    this.googleCalendarPort = googleCalendarPort;
+    this.scheduleAvailabilityService = scheduleAvailabilityService;
     this.holidayProvider = holidayProvider;
   }
 
@@ -610,16 +606,15 @@ public class RecommendationEngine {
             .collect(Collectors.toMap(member -> member.getUser().getId(), TripMember::getUser));
 
     Map<UUID, List<RegularSchedule>> regularsByUser =
-        schedulePort.findRegularSchedulesByUserIds(userIds);
+        scheduleAvailabilityService.findRegularSchedulesByUserIds(userIds);
 
     Map<UUID, List<PersonalSchedule>> personalsByUser =
-        schedulePort.findPersonalSchedulesByUserIds(userIds, rangeStart, rangeEnd);
+        scheduleAvailabilityService.findPersonalSchedulesByUserIds(userIds, rangeStart, rangeEnd);
 
-    Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> busyByUser =
-        googleCalendarPort.findBusyDaysByUserIds(userIds, rangeStart, rangeEnd);
-
-    Map<UUID, List<CalendarDayResponse>> mergedByUser =
-        schedulePort.resolveMergedSchedules(userIds, rangeStart, rangeEnd, busyByUser);
+    ScheduleAvailability availability =
+        scheduleAvailabilityService.resolveAvailability(userIds, rangeStart, rangeEnd);
+    Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> busyByUser = availability.googleBusyByUser();
+    Map<UUID, List<CalendarDayResponse>> mergedByUser = availability.mergedByUser();
 
     Map<UUID, Map<LocalDate, CalendarDayResponse>> resolvedByUser = new HashMap<>();
     for (UUID userId : userIds) {

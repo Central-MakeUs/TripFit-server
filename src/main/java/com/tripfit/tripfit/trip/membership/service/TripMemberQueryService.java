@@ -14,12 +14,10 @@ import com.tripfit.tripfit.trip.schedule.dto.MemberScheduleCalendarResponse.Cale
 import com.tripfit.tripfit.trip.schedule.dto.MemberScheduleCalendarResponse.MemberCalendar;
 import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse;
 import com.tripfit.tripfit.trip.membership.dto.TripMembersResponse.TripMemberItemResponse;
-import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
-import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.trip.schedule.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarBusyDay;
 import com.tripfit.tripfit.user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -39,9 +37,7 @@ public class TripMemberQueryService {
 
   private final TripServiceSupport support;
 
-  private final SchedulePort schedulePort;
-
-  private final GoogleCalendarPort googleCalendarPort;
+  private final ScheduleAvailabilityService scheduleAvailabilityService;
 
   // 멤버 목록 조회 — 모집률·동명이인 displayName 포함
   @Transactional(readOnly = true)
@@ -104,14 +100,9 @@ public class TripMemberQueryService {
       LocalDate startDate,
       LocalDate endDate) {
     List<UUID> memberUserIds = members.stream().map(m -> m.getUser().getId()).toList();
-    Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser =
-        googleCalendarPort.findBusyDaysByUserIds(memberUserIds, startDate, endDate);
     Map<UUID, List<CalendarDayResponse>> resolvedByUser =
-        schedulePort.resolveMergedSchedules(
-            memberUserIds,
-            startDate,
-            endDate,
-            googleBusyByUser);
+        scheduleAvailabilityService.resolveAvailability(memberUserIds, startDate, endDate)
+            .mergedByUser();
 
     List<MemberCalendar> memberCalendars = new ArrayList<>();
     for (TripMember member : members) {

@@ -22,7 +22,6 @@ import com.tripfit.tripfit.trip.event.AllMembersSubmittedEvent;
 import com.tripfit.tripfit.trip.event.TripInfoChangedEvent;
 import com.tripfit.tripfit.trip.event.TripJoinCompletedEvent;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.User;
@@ -50,8 +49,6 @@ class TripCommandService {
 
   private final TripMemberQueryService tripMemberQueryService;
 
-  private final UserDirectoryPort userDirectoryPort;
-
   private final ApplicationEventPublisher applicationEventPublisher;
 
   // 여행방 생성 — 방장은 SCHEDULE_PENDING(일정 확인 전). activate 전에는 ACTIVE가 아님
@@ -59,7 +56,7 @@ class TripCommandService {
   public TripEntryResponse createTrip(UUID userId, CreateTripRequest request) {
     User owner = support.findUser(userId);
     // 성·이름 미완료면 생성 불가
-    userDirectoryPort.requireProfileNameComplete(owner);
+    support.requireProfileNameComplete(owner);
     support.validateTripMeta(
         request.name(),
         request.startRange(),
@@ -196,7 +193,7 @@ class TripCommandService {
     Trip trip = findLockedTripByInviteCode(request);
     User user = support.findUser(userId);
     // 성·이름 미완료면 참여 불가
-    userDirectoryPort.requireProfileNameComplete(user);
+    support.requireProfileNameComplete(user);
     var existing =
         tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(trip.getId(), userId);
     if (existing.isPresent()) {

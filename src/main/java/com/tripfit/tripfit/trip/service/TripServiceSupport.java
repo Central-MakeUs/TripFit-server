@@ -13,13 +13,13 @@ import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.dto.TripEntryResponse;
 import com.tripfit.tripfit.trip.dto.TripHomeCardResponse;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.membership.repository.projection.TripMemberCountProjection;
 import com.tripfit.tripfit.trip.membership.repository.projection.TripMemberPreviewProjection;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
+import com.tripfit.tripfit.user.service.UserDirectoryService;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -50,15 +50,15 @@ public class TripServiceSupport {
 
   private final TripMemberRepository tripMemberRepository;
 
-  private final UserDirectoryPort userDirectoryPort;
+  private final UserDirectoryService userDirectoryService;
 
   public TripServiceSupport(
       TripRepository tripRepository,
       TripMemberRepository tripMemberRepository,
-      UserDirectoryPort userDirectoryPort) {
+      UserDirectoryService userDirectoryService) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
-    this.userDirectoryPort = userDirectoryPort;
+    this.userDirectoryService = userDirectoryService;
   }
 
   // 홈 카드 DTO — 미리보기는 최대 4명, overflow = 참여 수 − 4
@@ -155,7 +155,7 @@ public class TripServiceSupport {
 
     List<UUID> previewUserIds = rows.stream().map(TripMemberPreviewProjection::getUserId).toList();
     Map<UUID, User> usersById =
-        userDirectoryPort.findAllById(previewUserIds).stream()
+        userDirectoryService.findAllById(previewUserIds).stream()
             .collect(Collectors.toMap(User::getId, user -> user));
 
     Map<UUID, List<TripMemberPreviewProjection>> rowsByTrip = new LinkedHashMap<>();
@@ -315,8 +315,15 @@ public class TripServiceSupport {
     return destination.trim();
   }
 
-  // User 조회 SSOT는 UserLookupService — UserDirectoryPort 경유로 위임(직접 재구현하지 않음)
+  // User 조회 SSOT는 UserLookupService — UserDirectoryService 경유로 위임(직접 재구현하지 않음)
   public User findUser(UUID userId) {
-    return userDirectoryPort.requireUser(userId);
+    return userDirectoryService.requireUser(userId);
+  }
+
+  // 성·이름 완료 여부 검증 SSOT는 UserProfileService — UserDirectoryService 경유로 위임. trip 쪽에서 user
+  // 도메인 접근 지점을 이 클래스 하나로 모으기 위해, TripCommandService가 UserDirectoryService를 직접 주입받지
+  // 않고 이 메서드를 거치게 한다
+  public void requireProfileNameComplete(User user) {
+    userDirectoryService.requireProfileNameComplete(user);
   }
 }
