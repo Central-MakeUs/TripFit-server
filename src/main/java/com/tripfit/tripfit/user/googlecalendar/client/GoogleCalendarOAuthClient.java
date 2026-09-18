@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,6 +59,14 @@ public class GoogleCalendarOAuthClient {
   // details[].reason(세분화, 예: ACCESS_TOKEN_SCOPE_INSUFFICIENT)이 뒤에 나오므로 마지막 매칭을 채택
   private static final Pattern ERROR_REASON_PATTERN =
       Pattern.compile("\"reason\"\\s*:\\s*\"([^\"]+)\"");
+
+  // 재시도해도 절대 스스로 안 풀리는 403 reason — scope 재동의(재연동) 전에는 복구 불가하므로 401과 동일하게
+  // 영구 실패로 취급한다. "insufficientPermissions"(errors[].reason, Calendar API 자체 vocabulary)와
+  // "ACCESS_TOKEN_SCOPE_INSUFFICIENT"(details[].reason, 구글 공통 ErrorInfo vocabulary)는 같은 실패를
+  // 두 세대의 에러 포맷이 각자 다르게 표기한 것 — 참고: developers.google.com/calendar/api/guides/errors,
+  // cloud.google.com/apis/design/errors. 다른 403(rateLimitExceeded 등)은 여전히 일시적 오류로 재시도된다.
+  private static final Set<String> PERMANENT_PERMISSION_FAILURE_REASONS =
+      Set.of("insufficientPermissions", "ACCESS_TOKEN_SCOPE_INSUFFICIENT");
 
   private final RestClient restClient;
 
@@ -128,10 +137,11 @@ public class GoogleCalendarOAuthClient {
     return merged;
   }
 
-  // freeBusy 단일 청크 호출 — 401(access token 무효)만 인증 실패로 간주해 GoogleCalendarAuthException을
-  // 던진다. 그 외 4xx/5xx·네트워크·파싱 오류는 일반 RuntimeException으로 던져 syncUserInternal의 일반 catch로
-  // 흘러가게 한다 — 여기서도 GoogleCalendarAuthException을 쓰면 connect() 직후 1회 sync가 일시적 오류(429·5xx 등)
-  // 만 만나도 방금 저장한 credential이 같은 트랜잭션에서 즉시 삭제돼버린다
+  // freeBusy 단일 청크 호출 — 401(access token 무효) 또는 PERMANENT_PERMISSION_FAILURE_REASONS에 등록된
+  // 403 reason(scope 부족)만 인증 실패로 간주해 GoogleCalendarAuthException을 던진다. 그 외 4xx/5xx·네트워크·
+  // 파싱 오류는 일반 RuntimeException으로 던져 syncUserInternal의 일반 catch로 흘러가게 한다 — 여기서 모든
+  // 403·5xx까지 GoogleCalendarAuthException으로 넓히면 connect() 직후 1회 sync가 일시적 오류(rate limit·5xx
+  // 등)만 만나도 방금 저장한 credential이 같은 트랜잭션에서 즉시 삭제돼버린다(2026-08-01 회귀 버그)
   private List<GoogleFreeBusyInterval> queryFreeBusyChunk(
       UUID userId,
       String accessToken,
@@ -169,6 +179,11 @@ public class GoogleCalendarOAuthClient {
                         StreamUtils.copyToString(
                             clientResponse.getBody(),
                             StandardCharsets.UTF_8);
+                    String reason = extractReason(errorBody);
+                    if (PERMANENT_PERMISSION_FAILURE_REASONS.contains(reason)) {
+                      throw new GoogleCalendarAuthException(
+                          "freeBusy forbidden — permanent scope failure (reason=" + reason + ")");
+                    }
                     throw new FreeBusyHttpException(clientResponse.getStatusCode().value(),
                         errorBody);
                   })

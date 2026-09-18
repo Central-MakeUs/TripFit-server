@@ -225,8 +225,9 @@ public class GoogleCalendarService {
               timeMax);
       persistenceService.applySyncSuccess(userId, resolution, windowStart, windowEnd, intervals);
     } catch (GoogleCalendarAuthException exception) {
-      // 401·invalid_grant 등 진짜 권한 실패만 이 분기로 온다(client가 분류) — connect() 직후 1회 sync도 이
-      // 메서드를 타므로, 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 곧바로 삭제된다
+      // 401·invalid_grant, 또는 PERMANENT_PERMISSION_FAILURE_REASONS에 등록된 scope 부족(403)처럼 재시도로는
+      // 절대 안 풀리는 실패만 이 분기로 온다(client가 분류) — connect() 직후 1회 sync도 이 메서드를 타므로,
+      // 일시적 실패까지 여기서 잡으면 방금 저장한 credential이 곧바로 삭제된다
       SocialIntegrationLog.warn(
           log,
           syncContext(userId, trigger),
