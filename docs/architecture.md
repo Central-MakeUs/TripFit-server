@@ -43,7 +43,6 @@ com.tripfit.tripfit
 │   │                                #   TripDisplayNameHelper, TripHomeMaintenanceService (공용 — feature 무관)
 │   ├── repository/                 # TripRepository
 │   ├── event/                      # TripInfoChangedEvent 등 — trip이 발행하는 이벤트(발행 주체가 소유)
-│   ├── port/out/                   # SchedulePort, GoogleCalendarPort, UserDirectoryPort — user 도메인 조회를 인터페이스로 감쌈
 │   ├── membership/                 # feature: 참여·멤버 관리
 │   │   └── controller|dto|service|domain|repository(+projection)
 │   ├── recommendation/             # feature: 추천 + 피드백
@@ -57,7 +56,7 @@ com.tripfit.tripfit
     └── scheduler/                  # ScheduleReminderBatch 등
 ```
 
-새 기능 추가 시 `com.tripfit.tripfit.{domain}/` 레이어 규칙을 따른다. 도메인 안 기능이 커지면 `{domain}/{feature}/`에 동일 레이어를 둘 수 있다 (`user/schedule`, `user/googlecalendar`, `trip/membership`, `trip/recommendation`, `trip/schedule`). 여러 기능이 공유하는 코드(예: `TripServiceSupport`)나 크로스 도메인 조회 포트(`trip/port/out/`)는 도메인 루트에 둔다 — 상세: [`docs/specs/trip/package-structure-refactor.md`](specs/trip/package-structure-refactor.md)(Implemented), [`decisions/003-architecture-guide.md`](decisions/003-architecture-guide.md).
+새 기능 추가 시 `com.tripfit.tripfit.{domain}/` 레이어 규칙을 따른다. 도메인 안 기능이 커지면 `{domain}/{feature}/`에 동일 레이어를 둘 수 있다 (`user/schedule`, `user/googlecalendar`, `trip/membership`, `trip/recommendation`, `trip/schedule`). 여러 기능이 공유하는 코드(예: `TripServiceSupport`)는 도메인 루트에 둔다. 크로스 도메인 조회는 포트/어댑터 인터페이스 없이 제공 도메인의 concrete 서비스를 직접 주입한다(`decisions/003-architecture-guide.md` 결정 11, 2026-08-26 폐기 — 상세: [`docs/audits/trip/refactor-log.md`](audits/trip/refactor-log.md)).
 
 ## Layer Rules (도메인 내부)
 

@@ -1,7 +1,7 @@
 # 003 — 도메인 기반 레이어드 아키텍처 가이드
 
 - **상태:** 확정
-- **날짜:** 2026-07-06 (2026-07-07 구조 통일, **2026-07-13** `user/schedule` feature 패키지, **2026-07-20** auth 기술축·trip projection·TripService 분리, **2026-08-06** 포트(`port/out`)·이벤트 소유권 규칙 amend — [`docs/specs/trip/package-structure-refactor.md`](../specs/trip/package-structure-refactor.md), `#100`)
+- **날짜:** 2026-07-06 (2026-07-07 구조 통일, **2026-07-13** `user/schedule` feature 패키지, **2026-07-20** auth 기술축·trip projection·TripService 분리, **2026-08-06** 포트(`port/out`)·이벤트 소유권 규칙 amend — [`docs/specs/trip/package-structure-refactor.md`](../specs/trip/package-structure-refactor.md), `#100`, **2026-08-26** 결정 11(`port/out`) 폐기 — 구현체가 항상 1개뿐이라 실질적 이득이 없어 concrete 클래스 직접 주입으로 되돌림, [`docs/audits/trip/refactor-log.md`](../audits/trip/refactor-log.md))
 - **관련:** `docs/architecture.md`, `.claude/rules/spring-boot-java.md`
 
 ## 맥락
@@ -20,7 +20,7 @@ TripFit 백엔드는 MVP 단계의 Spring Boot 단일 Gradle 모듈이다. **풀
 8. **auth 기술축 (예외)** — API 레이어(`controller`, `dto`, `service`, …)는 유지하고, 인프라는 `auth/jwt/`, `auth/oauth/`, `auth/security/`로 분리.
 9. **trip read projection** — Spring Data projection interface는 `trip/repository/projection/` (JpaRepository와 colocation).
 10. **trip service 분리** — Layered 유지. `TripService` facade + `TripCommandService` / `TripQueryService` / `TripMemberQueryService` + package-private `TripServiceSupport`.
-11. **포트(`port/out`, 2026-08-06 추가)** — 한 도메인의 서비스가 다른 도메인의 서비스·repository를 조회 목적으로 직접 참조해야 하면, 참조하는 쪽 도메인 루트에 `{domain}/port/out/{Name}Port.java` 인터페이스를 정의하고 제공하는 쪽 도메인이 어댑터(`{provider-domain}/.../service/{Name}Adapter.java`)로 구현한다. 여러 feature 서브패키지가 공유하면 도메인 루트에 둔다(공유 커널과 동일 이유). **애그리거트 캡슐화나 ID-only 참조를 강제하는 것이 아니다** — 단순 의존 역전(제공자 도메인이 소비자 도메인의 인터페이스를 구현)이며, 도메인 내부 레이어(controller/service/domain/repository)는 그대로 유지한다. 예: `trip/port/out/{SchedulePort,GoogleCalendarPort,UserDirectoryPort}` — 상세: [`docs/specs/trip/package-structure-refactor.md`](../specs/trip/package-structure-refactor.md).
+11. ~~**포트(`port/out`, 2026-08-06 추가, 2026-08-26 폐기)**~~ — **폐기됨.** 원래 규칙: 한 도메인의 서비스가 다른 도메인의 서비스·repository를 조회 목적으로 직접 참조해야 하면, 참조하는 쪽 도메인 루트에 `{domain}/port/out/{Name}Port.java` 인터페이스를 정의하고 제공하는 쪽 도메인이 어댑터로 구현한다는 것이었다(예: `trip/port/out/{SchedulePort,GoogleCalendarPort,UserDirectoryPort}`). 실제로는 `trip` 도메인 하나에만 적용됐고 인터페이스마다 구현체가 항상 1개뿐이었으며(구현체를 갈아끼우는 용도 없음), `user` 도메인이 다른 경로로 이미 `trip` 타입에 의존하고 있어 이 포트가 순환 의존을 막는 효과도 없었다 — 결과적으로 얻는 이득 없이 파일 3개(인터페이스+어댑터)만 추가하는 간접 레이어였다. **2026-08-26 사용자 결정으로 폐기** — trip은 concrete 서비스 클래스(`ScheduleAvailabilityService`, `UserDirectoryService`)를 인터페이스 없이 직접 주입받는 plain Controller→Service→Repository 흐름으로 되돌렸다. 상세: [`docs/audits/trip/refactor-log.md`](../audits/trip/refactor-log.md), 원 도입 배경은 [`docs/specs/trip/package-structure-refactor.md`](../specs/trip/package-structure-refactor.md)(이력 문서로 유지).
 12. **이벤트 소유권 (2026-08-06 추가)** — 도메인 이벤트(Spring `ApplicationEvent`/POJO 이벤트) 클래스 정의는 **그 이벤트를 발행하는 도메인**이 `{domain}/event/`에 소유한다. 소비하는 도메인(예: `notification`)은 발행 도메인의 이벤트 타입을 import한다 — 반대 방향(발행 도메인이 소비 도메인의 이벤트 클래스를 import) 금지.
 
 ## 도메인 구조
@@ -36,7 +36,6 @@ com.tripfit.tripfit.{domain}/
 ├── exception/        # 도메인 ErrorCode (auth 등, 선택)
 ├── config/           # 도메인 전용 설정 (trip 등, 선택)
 ├── event/            # 이 도메인이 발행하는 도메인 이벤트 (선택 — 발행 주체가 소유, 결정 12)
-├── port/out/         # 이 도메인이 다른 도메인에게 요구하는 인터페이스 (선택 — 결정 11)
 └── {feature}/        # 선택: 기능 단위 하위 패키지 (동일 레이어 세트)
     ├── controller|dto|service|domain|repository|exception
 ```
@@ -78,7 +77,7 @@ trip/
 | JWT·Security | `auth/jwt/`, `auth/security/` | `JwtService`, `SecurityConfig` |
 | ErrorCode | `{domain}/exception/` 또는 `{domain}/{feature}/exception/` | `UserErrorCode`, `ScheduleErrorCode` |
 | 공통 베이스 | `common/domain/` | `BaseTimeEntity`, `SoftDeleteEntity` |
-| 크로스 도메인 조회 포트 | `{domain}/port/out/` (소비 도메인 소유), 구현은 제공 도메인 `service/`에 어댑터로 | `trip/port/out/SchedulePort` ← `user/schedule/service/ScheduleAvailabilityAdapter` |
+| 크로스 도메인 조회 | 소비 도메인이 제공 도메인의 concrete 서비스를 직접 주입(포트/어댑터 없음 — 결정 11 폐기, 2026-08-26) | `trip`이 `user/schedule/service/ScheduleAvailabilityService`를 직접 주입 |
 | 도메인 이벤트 | `{domain}/event/` (발행 도메인 소유) | `trip/event/TripConfirmedEvent` |
 
 ## 레이어 책임 (최소 규칙)
@@ -96,7 +95,8 @@ BR-* 규칙은 service 또는 domain 중 읽기 쉬운 곳에 둔다.
 
 ## 하지 않는 것 (MVP)
 
-- 풀 DDD(애그리거트, BC, ID-only 참조 강제 등) — 결정 11의 `port/out`은 단순 의존 역전이지 애그리거트 캡슐화가 아니므로 이 배제와 무관
+- 풀 DDD(애그리거트, BC, ID-only 참조 강제 등)
+- 크로스 도메인 조회를 위한 포트/어댑터 인터페이스 레이어(구 결정 11, 2026-08-26 폐기) — 구현체가 항상 1개뿐이라 얻는 이득 없이 간접 레이어만 늘렸음. concrete 서비스 직접 주입으로 충분
 - 이벤트 소싱, CQRS, 별도 Gradle 모듈 분리
 - `controller/dto/` 중첩 (레이어만 깊게 파기)
 - 레이어 없이 `service/social/`처럼 **기능명만** 끼워 넣기 — feature를 둘 때는 **레이어 풀세트**(`user/schedule/{controller,dto,…}`)로 둔다

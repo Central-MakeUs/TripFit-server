@@ -1,114 +1,133 @@
-# Trip Architecture Audit — 2026-08-05
+# Trip Architecture Audit — 2026-08-26
 
 ## 범위
 
-- 패키지: `com.tripfit.tripfit.trip` (`config`, `controller`, `domain`, `dto`, `exception`, `repository`, `repository.projection`, `scheduler`, `service`) — 추천(recommendation) 로직은 별도 하위 패키지 없이 `service/`에 flat하게 포함
-- 감사자: 서브에이전트 (`Agent` 툴, 읽기 전용)
-- 기준: `audit-checklist.md` 1~15항목, `harness-workflow.md` ⛔ STOP, `spring-boot-java.md`, `testing.md`
-- 총 71개 파일(main 53개, test 16개, 참고용 common 4개) 전수 검토
+- 패키지: `com.tripfit.tripfit.trip` (+ 하위 패키지: recommendation, membership, schedule, scheduler, port)
+- 감사자: 서브에이전트 (Agent 툴, 읽기 전용)
+- 기준: audit-checklist.md 1~15항목, harness-workflow.md ⛔ STOP
+- 가중치: 9번(패키지 구조)·14번(테스트 가능성)에 우선순위 — `trip/port/out` 3개 인터페이스(`SchedulePort`·`GoogleCalendarPort`·`UserDirectoryPort`) 제거 결정 때문
 
 ## ✅ A. 반드시 수정해야 하는 사항
 
-### A-1. 정기·개별 일정(및 Google Calendar busy) 조회가 멤버별로 개별 쿼리를 날리는 N+1 — 배치 조회 메서드가 이미 있는데도 사용하지 않음
+### A-1. "구글 busy 조회 → 일정 병합" 2단계 호출 순서가 3곳에 그대로 복제돼 있고, 순서 보장이 주석에만 있다
 
-- **Priority**: High
-- **Category**: Performance / JPA
-- **문제**: `TripServiceSupport.resolveMergedSchedule(...)`(`trip/service/TripServiceSupport.java:201-221`)는 `regularScheduleRepository.findByUserIdOrderByCreatedAtAsc(userId)`와 `personalScheduleRepository.findByUserIdAndScheduleDateBetweenOrderByScheduleDateAsc(userId, ...)`를 **단일 userId**로 호출한다. 이 메서드가 멤버 리스트를 순회하는 `for` 루프 안에서 멤버 수만큼 반복 호출된다:
-  - `TripMemberQueryService.buildLive(...)` (`trip/service/TripMemberQueryService.java:113-146`) — `GET /trips/{tripId}/members/schedule-calendar` 호출마다.
-  - `TripScheduleSnapshotService.freezeTrip(...)` (`trip/service/TripScheduleSnapshotService.java:48-84`) — 확정(`confirmSchedule`)·일 배치(`TripHomeMaintenanceService.runForDate`)마다. 여기서는 추가로 `googleCalendarService.findBusyDaysByUserId(userId, ...)`(단건, 라인 69)까지 멤버별로 호출된다.
-- **왜 문제인가**: 같은 패키지의 `RecommendationEngine.loadContext(...)`(`trip/service/RecommendationEngine.java:299-333`)는 정확히 같은 데이터를 필요로 하면서도 `regularScheduleRepository.findByUserIdIn(userIds)`, `personalScheduleRepository.findByUserIdInAndScheduleDateBetween(userIds, ...)`, `googleCalendarService.findBusyDaysByUserIds(userIds, ...)` 배치 메서드로 **한 번에** 조회한 뒤 메모리에서 `groupingBy`로 나눈다 — 즉 배치 조회 인프라(레포지토리 메서드까지)는 이미 존재하고 검증돼 있는데, `resolveMergedSchedule` 경로만 이를 재사용하지 않고 멤버 수(N, 최대 10)만큼 쿼리를 반복한다. `getScheduleCalendar`는 방 멤버라면 누구나 호출할 수 있는 조회 API라 트래픽이 잦고, `freezeTrip`은 `TripHomeMaintenanceService`의 일 배치에서 만료된 방 전체 × 멤버 수만큼 반복돼 배치 규모가 커질수록 영향이 누적된다.
-- **개선 방법**: `TripServiceSupport`에 배치 버전 `Map<UUID, List<CalendarDayResponse>> resolveMergedSchedules(..., List<UUID> userIds, LocalDate start, LocalDate end, Map<UUID, Map<LocalDate, GoogleCalendarBusyDay>> googleBusyByUser)`를 추가하고(`RecommendationEngine.loadContext`와 동일한 배치 조회 + `ScheduleCalendarResolver.resolve` 매핑 방식 재사용), `TripMemberQueryService.buildLive`와 `TripScheduleSnapshotService.freezeTrip`에서 루프 진입 전에 한 번만 호출하도록 변경한다. `freezeTrip`은 `googleCalendarService.findBusyDaysByUserIds(userIds, ...)`도 루프 밖으로 이동(이미 `buildLive`가 이렇게 하고 있으므로 동일 패턴 적용). 기존 단건 `resolveMergedSchedule`/`findBusyDaysByUserId`는 다른 도메인(`user/schedule` 등)에서 쓰일 수 있어 유지하되, 이 두 호출부만 배치로 교체.
-- **API 영향**: No Impact — 응답 필드·형식·정렬 동일, 내부 쿼리 횟수만 감소.
-- **예상 변경 파일**: `trip/service/TripServiceSupport.java`, `trip/service/TripMemberQueryService.java`, `trip/service/TripScheduleSnapshotService.java`
-- **예상 변경 라인 수**: 60~90줄
-- **위험도**: Low — `RecommendationEngine`에 이미 존재하는 배치 로직을 그대로 이식하는 수준. 결과 데이터는 동일(userId별로 나눠 쓰는 것만 다름).
-- **테스트 영향도**: `TripMemberScheduleCalendarIntegrationTest`, `TripScheduleSnapshotServiceTest`, `TripScheduleSnapshotServiceIntegrationTest`, `TripHomeMaintenanceServiceTest`가 이미 결과값을 검증하므로 회귀 감지 가능. 추가로 쿼리 횟수 자체를 검증하는 테스트(Mockito `verify(times(1))`)를 넣으면 재발 방지에 도움.
-- **예상 효과**: 멤버 수(최대 10)에 비례하던 왕복 쿼리(멤버당 정기 1 + 개인 1, freezeTrip은 +구글 1)가 상수 회수로 감소 — 조회 API 응답 지연 감소, 일 배치 실행 시간 감소(만료 방 수 × 멤버 수에 비례하던 쿼리가 만료 방 수에 비례로 축소).
-
-### A-2. `SaveRecommendationFeedbackRequest`의 `@Schema` 설명에 실제와 다른 HTTP 메서드가 적혀 있음
-
-- **Priority**: Low
-- **Category**: Readability / Cleanup (문서 정확성)
-- **문제**: `trip/dto/SaveRecommendationFeedbackRequest.java:9`의 클래스 `@Schema(description = "... PUT /trips/{tripId}/recommendations/{rank}/feedback ...")`는 **PUT**이라고 적혀 있지만, 실제 매핑은 `RecommendationController.java:256`의 `@PatchMapping("/recommendations/{rank}/feedback")`이다.
-- **왜 문제인가**: 이 설명 문자열은 springdoc이 그대로 Swagger UI에 노출한다. `spring-boot-java.md` 컨벤션상 Swagger 설명은 "독자: 프론트·신규 서버 개발자"를 위한 정확한 호출 가이드여야 하는데, 여기서는 문서와 실제 엔드포인트 메서드가 어긋나 프론트가 잘못된 HTTP 메서드로 연동을 시도할 수 있다.
-- **개선 방법**: `@Schema` 설명의 `PUT`을 `PATCH`로 수정.
-- **API 영향**: No Impact — 실제 매핑·동작은 변경 없음, 문서 문자열만 수정.
-- **예상 변경 파일**: `trip/dto/SaveRecommendationFeedbackRequest.java`
-- **예상 변경 라인 수**: 1줄
-- **위험도**: Low
-- **테스트 영향도**: 없음(문서 문자열 변경, 별도 검증 테스트 불필요). 원하면 `RecommendationControllerSwaggerConsistencyTest`류에 문자열 검증 추가 가능.
-- **예상 효과**: Swagger 문서와 실제 API 계약 일치 — 프론트 연동 실수 예방.
+- **Priority**: Medium
+- **Category**: Correctness / Cleanup (checklist #1 중복 코드)
+- **문제**: `SchedulePort.resolveMergedSchedules(...)`는 "호출부가 `GoogleCalendarPort.findBusyDaysByUserIds(...)`를 먼저 호출해서 그 결과를 인자로 넘겨야 한다"는 전제를 갖고 있다(`SchedulePort.java` 42번째 줄 주석). 이 2단계 호출(①구글 busy 조회 → ②그 결과를 인자로 merge 호출)이 아래 3곳에 토씨 하나 다르지 않게 복제돼 있다.
+  - `TripMemberQueryService.buildLive(...)` (`trip/membership/service/TripMemberQueryService.java:107-114`)
+  - `TripScheduleSnapshotService.freezeTrip(...)` (`trip/schedule/service/TripScheduleSnapshotService.java:48-55`)
+  - `RecommendationEngine.loadContext(...)` (`trip/recommendation/algorithm/RecommendationEngine.java:618-622`)
+- **왜 문제인가**: 이 순서 제약은 컴파일러가 강제하지 않고 Javadoc 주석에만 적혀 있다. 새 호출부가 추가될 때(또는 기존 3곳 중 하나를 수정하다가) 순서를 바꾸거나 googleBusyByUser를 빈 Map으로 잘못 넘기면, 구글 캘린더 연동 사용자의 바쁨 정보가 조용히 무시된 채로 "가능"으로 잘못 계산된다 — 예외 없이 통과하는 silent 데이터 오류라 테스트가 그 케이스를 놓치면 운영에서만 드러난다.
+- **개선 방법**: 두 호출을 하나로 묶는 메서드(`resolveMergedSchedulesWithGoogleBusy(userIds, start, end)` 등)를 만들어 호출부가 순서를 신경 쓸 필요가 없게 한다. B-1(포트 제거)과 정확히 같은 3개 파일·같은 위치를 건드리는 변경이라 **B-1과 같은 PR에서 함께 처리하는 것을 권장** — 별도로 하면 같은 파일을 두 번 건드리게 된다.
+- **API 영향**: No Impact
+- **예상 변경 파일**: `TripMemberQueryService.java`, `TripScheduleSnapshotService.java`, `RecommendationEngine.java` + (신규 메서드를 어디에 둘지는 B-1의 최종 클래스 구성에 따름 — `ScheduleAvailabilityAdapter` 또는 `GoogleCalendarPortAdapter` 둘 중 하나)
+- **예상 변경 라인 수**: 약 30~40줄 (3개 호출부 각 2줄 삭제 + 신규 메서드 1개 추가)
+- **위험도**: Low — 반환값·계산 로직은 100% 동일, 호출 순서만 메서드 내부로 캡슐화
+- **테스트 영향도**: 기존 7개 테스트 중 `RecommendationEngineTest`·`RecommendationEngineTestSetScenarioTest`·`TripScheduleSnapshotServiceTest`·`TripServiceTest`는 `googleCalendarService.findBusyDaysByUserIds(...)` stub이 여전히 호출되는지만 검증하면 되므로 assert 변경 없음
+- **예상 효과**: 순서 제약이 타입 안전하게 강제되고, 신규 호출부를 추가할 때 실수로 순서를 어길 수 없어짐
 
 ## ✅ B. 유지보수성 향상을 위한 리팩토링
 
-### B-1. `trip 로드 → 방장 검증(→ ONGOING 검증)` 3~2줄 시퀀스가 9곳에서 그대로 반복됨 — Support 헬퍼로 통합
+### B-1. `trip/port/out` 3개 인터페이스 제거 → concrete 클래스 직접 주입 (Controller → Service → Repository)
 
-- **Priority**: Medium
-- **Category**: Cleanup (중복 코드 제거) / Architecture (Support 재사용 컨벤션)
-- **문제**: 동일한 가드 시퀀스가 반복된다.
-  - **`trip+owner+ongoing` (3줄, 4곳)**: `TripCommandService.patchTrip`(146-148), `TripCommandService.removeMember`(260-262), `TripRecommendationService.generateRecommendations`(85-87), `TripRecommendationService.confirmSchedule`(206-208) — 전부 `Trip trip = support.requireActiveTrip(tripId); support.requireOwner(trip, id); support.requireOngoingForMutation(trip);` 동일 3줄.
-  - **`trip+owner` (2줄, 5곳)**: `TripCommandService.deleteTrip`(192-193), `TripRecommendationService.listRecommendations`(118-119), `getRecommendationDetail`(127-128), `saveFeedback`(179-180), `unconfirm`(243-244) — 전부 `Trip trip = support.requireActiveTrip(tripId); support.requireOwner(trip, id);` 동일 2줄.
-- **왜 문제인가**: `spring-boot-java.md`의 "Support 헬퍼 재사용" 규칙이 정확히 이 상황(같은 조회·검증을 다른 Service 메서드에서 인라인 재구현하지 말고 Support로 통일)을 명시하고 있는데도, 검증 시퀀스 자체는 이미 Support 메서드 3개(`requireActiveTrip`/`requireOwner`/`requireOngoingForMutation`) 호출 조합으로 9번 반복되고 있다. 향후 "방장 검증 실패 시 로깅 추가" 등 정책이 하나 생기면 9곳을 전부 고쳐야 한다.
-- **개선 방법**: `TripServiceSupport`에 `Trip requireOwnedTrip(UUID tripId, UUID userId)`(2줄 시퀀스 대체)와 `Trip requireOwnedOngoingTrip(UUID tripId, UUID userId)`(내부에서 `requireOwnedTrip` 호출 후 `requireOngoingForMutation` 추가) 두 메서드를 추가하고, 9개 호출부를 이걸로 교체. 예외 타입·순서(NOT_FOUND → FORBIDDEN → NOT_ONGOING)는 그대로 보존.
-- **API 영향**: No Impact — 예외 종류·발생 순서·메시지 동일, 내부 호출 경로만 통합.
-- **예상 변경 파일**: `trip/service/TripServiceSupport.java`, `trip/service/TripCommandService.java`, `trip/service/TripRecommendationService.java`
-- **예상 변경 라인 수**: 40~60줄(9개 호출부 축소 + Support에 2개 메서드 추가)
-- **위험도**: Low — 순수 위임 추출, 조건·예외 동일.
-- **테스트 영향도**: 기존 `TripServiceTest`, `TripRecommendationServiceTest`의 "notOwner_throwsForbidden"/"notOngoing_throwsNotOngoing"류 테스트가 그대로 회귀 검증 역할을 함. 신규 Support 메서드에 대한 단위 테스트 1~2개 추가 권장.
-- **예상 효과**: 가드 로직 SSOT화, 향후 정책 변경 시 1곳만 수정하면 됨.
+- **Priority**: High
+- **Category**: Architecture (checklist #9 패키지 구조, #14 테스트 가능성)
+- **문제**: `SchedulePort`·`GoogleCalendarPort`·`UserDirectoryPort` 3개 인터페이스는 각각 구현체가 정확히 1개(`ScheduleAvailabilityAdapter`·`GoogleCalendarPortAdapter`·`UserDirectoryAdapter`, 전부 `user` 패키지)뿐이다. 헥사고날 포트/어댑터 패턴이 의미가 있으려면 (a) 구현체가 여러 개이거나 (b) 순환 의존을 실제로 끊어야 하는데, 이 저장소는 이미 `user` 패키지가 다른 경로로 `trip` 패키지 타입을 import하고 있어(예: 아래 확인) 포트가 패키지 레벨 순환을 막고 있지도 않다. 사용자가 검토 후 "포트 3개를 걷어내고 plain Controller→Service→Repository로 가되, `SchedulePort` 도입 전 여러 trip 서비스가 각자 user repository를 직접 조회해 로직을 중복시켰던 문제(`TripServiceSupport.resolveMergedSchedules`, `RecommendationEngine.loadContext` 등)는 재발하면 안 된다"는 제약을 걸었다.
+- **왜 문제인가 (근거 확인)**:
+  - **구현체가 1개뿐:** `SchedulePort`→`ScheduleAvailabilityAdapter`, `GoogleCalendarPort`→`GoogleCalendarPortAdapter`, `UserDirectoryPort`→`UserDirectoryAdapter`. 각 인터페이스 javadoc 자체가 "trip 패키지는 이 클래스의 존재 자체를 모른다"고 설명하는데, 테스트에서는 이미 이 전제가 깨져 있다(아래 테스트 절 참고) — trip 테스트 코드가 `user.schedule.service.ScheduleAvailabilityAdapter`·`user.googlecalendar.service.GoogleCalendarPortAdapter`를 이미 직접 import해서 씀.
+  - **순환 의존을 막지 못함:** 포트가 있어도 `user` 도메인은 다른 경로로 이미 `trip` 타입에 의존한다 — 예: `TripAuthorizationInterceptor`가 `trip.service.TripServiceSupport`를 쓰고, `trip.membership.domain.TripMember`가 `user.domain.User`를 `@ManyToOne`으로 참조하는 등, "포트가 있어야만 컴파일된다" 수준의 순환 차단 효과가 실제로는 없다.
+  - **유일하게 실재하는 이득:** 테스트 7개가 이 인터페이스를 mock 경계로 쓰고 있다는 것 — 이건 진짜 이득이라 제거 후에도 반드시 보존해야 한다(아래 테스트 절).
+- **개선 방법 — 정확한 변경 대상**:
 
-### B-2. `TripQueryService.toDetail(...)`이 `support.toDetail(...)`로의 1줄 패스스루일 뿐 — 불필요한 간접 의존성 제거
+  **1) 삭제할 파일 (3개, 같은 PR에서 즉시 — STOP §4 레거시 절)**
+  - `src/main/java/com/tripfit/tripfit/trip/port/out/SchedulePort.java`
+  - `src/main/java/com/tripfit/tripfit/trip/port/out/GoogleCalendarPort.java`
+  - `src/main/java/com/tripfit/tripfit/trip/port/out/UserDirectoryPort.java`
+  - `trip/port/out/` 디렉터리 자체도 비워지므로 함께 삭제(빈 패키지 방치 금지)
 
-- **Priority**: Low
-- **Category**: Cleanup (보일러플레이트 제거) / Architecture
-- **문제**: `TripQueryService.toDetail(Trip, TripMember)`(`trip/service/TripQueryService.java:85-87`)는 `return support.toDetail(trip, membership);` 한 줄뿐인 패스스루 메서드다. 이 메서드는 `TripCommandService`에서 4번(`activateMembership`, `patchTrip`, `joinTrip`의 idempotent 분기, `updatePin`), `TripJoinService`에서 1번 호출된다. 그런데 `TripCommandService`는 이미 생성자에 `TripServiceSupport support`를 직접 주입받고 있어 `support.toDetail(...)`을 바로 호출할 수 있다.
-- **왜 문제인가**: `TripCommandService`가 `TripQueryService`를 의존성으로 갖는 유일한 이유가 이 패스스루 메서드 하나뿐이다(`grep` 결과 다른 용도로 쓰이지 않음). `TripJoinService`도 `TripQueryService`를 오직 이 메서드 하나 때문에 주입받는다. 실질적 이득 없는 간접 계층이 생성자 의존성 그래프만 늘리고 있다.
-- **개선 방법**: `TripCommandService`의 4개 호출부를 `tripQueryService.toDetail(...)` → `support.toDetail(...)`로 교체하고 생성자에서 `TripQueryService` 의존성 제거. `TripJoinService`는 생성자 의존성을 `TripQueryService` 대신 `TripServiceSupport`로 바꾸고 `support.toDetail(...)` 호출. 이후 `TripQueryService.toDetail(...)` 패스스루 메서드 자체를 삭제.
-- **API 영향**: No Impact — 최종적으로 호출되는 로직(`TripServiceSupport.toDetail`)은 동일.
-- **예상 변경 파일**: `trip/service/TripCommandService.java`, `trip/service/TripJoinService.java`, `trip/service/TripQueryService.java`
-- **예상 변경 라인 수**: 15~25줄
-- **위험도**: Low — 순수 위임 경로 단축, 로직 변경 없음.
-- **테스트 영향도**: `TripServiceTest`가 `TripJoinService`/`TripCommandService`를 직접 `new`로 구성하므로(수동 와이어링), 생성자 시그니처가 바뀌면 테스트의 생성자 호출부도 함께 수정 필요(C 항목 참고).
-- **예상 효과**: `TripCommandService`·`TripJoinService`의 생성자 의존성 1개씩 감소, 불필요한 간접 계층 제거로 가독성 향상.
+  **2) 어댑터 3개는 그대로 유지 — `implements XxxPort`만 제거**
+  이 3개 클래스는 여전히 "trip이 필요로 하는 조회를 user 도메인 repository/service 여러 개에서 모아주는 단일 호출 지점"이라는 실질적 역할을 하고 있고, 특히 `ScheduleAvailabilityAdapter.resolveMergedSchedules`는 `RegularScheduleRepository`+`PersonalScheduleRepository`+`UserRepository`+`HolidayProvider` 4개를 조합하는 진짜 로직(단순 위임이 아님)이다. 포트 이전에 있던 "trip 서비스마다 이 repository들을 각자 주입받아 중복 쿼리"하던 문제(과거 `TripServiceSupport.resolveMergedSchedules`, `RecommendationEngine.loadContext`가 각자 구현)는 **이 3개 클래스를 인터페이스 없이 concrete 클래스로 유지하고, trip 쪽이 그 클래스 하나만 주입받으면 그대로 재발하지 않는다** — "인터페이스를 지운다"와 "여러 곳에서 개별 조회로 되돌아간다"는 별개 문제다.
+    - `src/main/java/com/tripfit/tripfit/user/schedule/service/ScheduleAvailabilityAdapter.java`: `implements SchedulePort` 제거, `import com.tripfit.tripfit.trip.port.out.SchedulePort;` 제거. 클래스 주석("trip.port.out.SchedulePort 구현체")도 "user.schedule이 소유한 사용자 일정 조회 서비스 — trip 쪽 여러 서비스가 각자 repository를 중복 조회하지 않도록 이 클래스 하나로 모은다"로 갱신.
+    - `src/main/java/com/tripfit/tripfit/user/googlecalendar/service/GoogleCalendarPortAdapter.java`: `implements GoogleCalendarPort` 제거, import 제거. 이 클래스는 `GoogleCalendarService.findBusyDaysByUserIds`로 순수 위임만 하는 1메서드 클래스다 — 인터페이스가 사라지면 이 클래스를 유지할지, 아니면 trip이 `GoogleCalendarService`를 직접 주입받게 할지 **결정이 필요하다**(아래 "결정 필요" 참고).
+    - `src/main/java/com/tripfit/tripfit/user/service/UserDirectoryAdapter.java`: `implements UserDirectoryPort` 제거, import 제거. 이 클래스는 `UserLookupService`+`UserRepository`+`UserProfileService`+`UserSummaryService` 4개를 trip이 쓰는 3개 메서드로 좁혀주는 역할을 유지한다 — trip이 이 4개 서비스를 각각 직접 주입받게 하면 trip이 몰라도 되는 `registerOnboardingName`·`updateProfile`·`connect`·`disconnect` 같은 user 전용 메서드까지 노출 표면이 넓어지므로, **어댑터 형태 유지를 권장**.
 
-### B-3. `TripCommandService.patchTrip`이 `RecommendationRepository`를 직접 호출 — 추천 도메인 책임을 우회(이미 코드 주석으로 인지된 부채)
+  **3) trip 쪽 호출부 5개 파일 — 필드·생성자 타입을 인터페이스 → concrete 클래스로 교체**
 
-- **Priority**: Low
-- **Category**: Architecture (패키지 구조) / Legacy
-- **문제**: `TripCommandService.patchTrip`(`trip/service/TripCommandService.java:177-180`)은 희망 일수가 바뀌면 `recommendationRepository.deleteByTripId(tripId)`를 **직접** 호출한다. 정작 추천 후보의 생성·삭제·조회를 담당하는 `TripRecommendationService`는 이 호출에 관여하지 않는다. 코드에 이미 `// 추천 입력이 바뀌면 후보를 hard DELETE — 추천 서비스와 통합은 추후`라는 주석으로 이 사실이 인지돼 있다.
-- **왜 문제인가**: "추천 후보를 언제 hard delete하는가"라는 책임이 `TripRecommendationService`(생성 시 재계산, unconfirm 시)와 `TripCommandService`(메타 변경 시) 두 곳에 나뉘어 있어, 향후 추천 삭제 정책이 바뀌면(예: soft delete로 전환, 삭제 시 이벤트 발행 추가) 두 클래스를 함께 찾아 고쳐야 한다.
-- **개선 방법**: `TripRecommendationService`에 패키지 전용 메서드(예: `void deleteRecommendationsForTrip(UUID tripId)`)를 추가하고 `TripCommandService.patchTrip`이 `recommendationRepository`가 아니라 이 메서드를 호출하도록 변경. `TripCommandService`의 `RecommendationRepository` 직접 의존성은 제거.
-- **API 영향**: No Impact.
-- **예상 변경 파일**: `trip/service/TripCommandService.java`, `trip/service/TripRecommendationService.java`
-- **예상 변경 라인 수**: 10~15줄
-- **위험도**: Low
-- **테스트 영향도**: `TripServiceTest.patchTrip_deletesRecommendationsWhenDurationChanges`가 그대로 회귀 검증.
-- **예상 효과**: 추천 후보 생명주기 책임이 `TripRecommendationService` 한 곳으로 모임 — 이미 저자가 남긴 TODO성 부채 해소.
+  | 파일 | 현재 타입 | 교체 타입 |
+  |---|---|---|
+  | `trip/recommendation/algorithm/RecommendationEngine.java` (44, 46, 51-52행) | `SchedulePort`, `GoogleCalendarPort` | `ScheduleAvailabilityAdapter`, `GoogleCalendarPortAdapter`(유지 시) |
+  | `trip/schedule/service/TripScheduleSnapshotService.java` (29, 31행) | `SchedulePort`, `GoogleCalendarPort` | 동일 |
+  | `trip/membership/service/TripMemberQueryService.java` (42, 44행) | `SchedulePort`, `GoogleCalendarPort` | 동일 |
+  | `trip/service/TripServiceSupport.java` (53, 58행) | `UserDirectoryPort` | `UserDirectoryAdapter` |
+  | `trip/service/TripCommandService.java` (25, 53행) | `UserDirectoryPort` | `UserDirectoryAdapter` |
+
+  각 파일에서 `import com.tripfit.tripfit.trip.port.out.{Port};` 삭제, `import com.tripfit.tripfit.user.{...}.service.{Adapter};` 추가, 필드·생성자 파라미터 타입 교체 — 나머지 로직·메서드 호출은 100% 동일(메서드 시그니처가 바뀌지 않으므로).
+
+  **4) 부수 정리(선택, 같은 PR 권장) — `TripCommandService`의 이중 접근 경로**
+  `TripCommandService`는 `support.findUser(userId)`(내부적으로 `userDirectoryPort.requireUser` 위임)와 자기 필드 `userDirectoryPort.requireProfileNameComplete(...)`를 **둘 다** 쓴다(`createTrip`·`joinTrip`). 어댑터 타입 교체 김에 `TripServiceSupport`에 `requireProfileNameComplete(User)` 위임 메서드를 추가해 `TripCommandService`가 user 어댑터를 직접 주입받지 않고 `support`를 통해서만 접근하게 하면, trip 쪽에서 "user 도메인 접근 지점 = `TripServiceSupport` 하나"라는 규칙이 더 명확해진다. 필수는 아니라 사용자 승인 시에만 포함.
+
+- **테스트 7개 — 각각 어떻게 바뀌는지**
+
+  | 파일 | 현재 패턴 | 변경 후 |
+  |---|---|---|
+  | `RecommendationEngineTest.java` | `SchedulePort schedulePort = new ScheduleAvailabilityAdapter(...)` — **이미 concrete 어댑터를 실제로 생성**해서 씀(포트 자체를 mock하지 않음) | 로컬 변수 선언 타입만 `ScheduleAvailabilityAdapter`/`GoogleCalendarPortAdapter`로 교체. 동작 변화 없음 |
+  | `RecommendationEngineTestSetScenarioTest.java` | 위와 동일 패턴 | 동일 |
+  | `TripScheduleSnapshotServiceTest.java` | `@Mock private UserDirectoryPort userDirectoryPort;`(진짜 인터페이스 mock) + Schedule/GoogleCalendar는 concrete 어댑터 생성 | `@Mock private UserDirectoryAdapter userDirectoryAdapter;`로 교체(Mockito가 concrete 클래스도 mock 가능 — 이 파일 안에서 이미 `TripScheduleSnapshotService` 자체도 다른 테스트에서 concrete mock되는 선례 있음). Schedule/GoogleCalendar 부분은 타입만 교체 |
+  | `TripServiceSupportTest.java` | `UserDirectoryPort userDirectoryPort = mock(UserDirectoryPort.class);` (2개 테스트 메서드) | `mock(UserDirectoryAdapter.class)`로 교체 |
+  | `TripAuthorizationInterceptorTest.java` | `@Mock private UserDirectoryPort userDirectoryPort;` | `@Mock private UserDirectoryAdapter userDirectoryAdapter;` |
+  | `TripRecommendationServiceTest.java` | `@Mock private UserDirectoryPort userDirectoryPort;`(`RecommendationEngine` 자체는 이미 `@Mock`) | `@Mock private UserDirectoryAdapter userDirectoryAdapter;` |
+  | `TripServiceTest.java` | `UserDirectoryPort userDirectoryPort = new UserDirectoryAdapter(...)` — **이미 mock이 아니라 real 어댑터 생성** + Schedule/GoogleCalendar도 real 어댑터 생성 | 로컬 변수 선언 타입만 concrete로 교체. 동작 변화 없음 |
+
+  **핵심 확인 사항:** `SchedulePort`·`GoogleCalendarPort`는 7개 테스트 어디에서도 인터페이스 자체를 `@Mock`/`mock()`한 적이 없다 — 전부 concrete 어댑터를 실제로 생성해서 그 내부의 repository/service를 mock했다. 즉 이 두 포트는 "narrow test double"로서의 실사용 실적이 0건이다. `UserDirectoryPort`만 4개 테스트(5개 호출 지점)에서 진짜로 인터페이스를 mock했는데, `UserDirectoryAdapter`가 `final`이 아니고 `final` 메서드도 없으므로 Mockito가 concrete 클래스를 그대로 mock할 수 있다(이 저장소 테스트에서 `RecommendationEngine`·`TripScheduleSnapshotService`도 이미 동일하게 concrete mock되고 있어 선례 확인됨). **7개 테스트 전부 assert·given/when/then 로직 변경 없이 타입 선언만 바뀐다.**
+
+- **API 영향**: No Impact — Controller·DTO·ErrorCode 어떤 것도 바뀌지 않음, 순수 내부 리팩토링
+- **예상 변경 파일**: 삭제 3개(포트 인터페이스) + 수정 3개(어댑터, `implements` 제거) + 수정 5개(trip 호출부) + 수정 7개(테스트) = 총 18개 파일 변경, 삭제 3개
+- **예상 변경 라인 수**: 약 120~160줄 (대부분 import·타입 선언 교체, 로직 변경 없음)
+- **위험도**: Low — 메서드 시그니처·반환값·트랜잭션 경계 전부 동일, 컴파일러가 타입 교체 누락을 즉시 잡아줌
+- **테스트 영향도**: 7개 파일 수정하지만 전부 "무엇을 mock하는지"만 바뀌고 "무엇을 검증하는지"는 그대로 — 회귀 위험 낮음
+- **예상 효과**: 패키지 3개(`SchedulePort`+`ScheduleAvailabilityAdapter` 등) → 1개로 줄어 "이 인터페이스는 왜 있고 구현체를 어디서 찾아야 하나"를 매번 되짚을 필요가 없어짐. `trip/port/out` 패키지 자체가 사라져 트리 구조가 요청한 대로 plain Controller→Service→Repository에 가까워짐
+
+**결정이 필요한 지점 (사용자 확인 요망):**
+1. `GoogleCalendarPortAdapter`(순수 1메서드 위임 클래스)를 그대로 유지할지, 아니면 없애고 trip이 `GoogleCalendarService`를 직접 주입받게 할지 — 후자는 클래스 하나가 더 줄지만 trip이 `connect`/`disconnect`/`syncUser` 같은 OAuth 메서드까지 볼 수 있는 넓은 표면이 노출된다. **유지를 기본 권장.**
+2. 어댑터 3개의 이름(`XxxAdapter`)을 포트 제거 후에도 그대로 둘지, 아니면 "Port"·"Adapter"라는 헥사고날 용어가 더 이상 맞지 않으니 개명할지 — 개명하면 스펙·문서·다른 참조까지 같은 턴에 맞춰야 해서 범위가 커진다(`spring-boot-java.md` 네이밍 우선 원칙). **이번 PR에서는 이름 유지, 개명은 별도 후속으로 미루는 것을 권장** (C-1 참고).
+3. A-1(중복 2단계 호출 통합)을 이 PR에 함께 포함할지 — 파일이 겹치므로 함께 하는 것을 권장하지만, 범위를 최소화하고 싶으면 분리 가능.
 
 ## 💡 C. 참고 사항 (권장하지만 이번엔 수정하지 않음)
 
-- **초대 코드 alphabet을 "Crockford Base32"라고 부르는 주석/독스트링이 부정확함** — `InviteCodeGenerator.ALPHABET`(`23456789ABCDEFGHJKMNPQRSTUVWXYZ`, 31자)은 진짜 Crockford Base32(0·1은 유지하고 I·L·O·U를 제외해 32자)와 다르게 0/O/I/1을 제외한 커스텀 31자 alphabet이다. `JoinTripRequest.@Schema`·`InviteCodeGenerator` 주석·`InviteCodeGeneratorTest` 테스트명(`generate_producesSixCharCrockfordCode`)에 모두 이 명칭이 쓰인다. 동작에는 전혀 문제 없고 순수 명칭 정확성 문제라, 이번 라운드(동작 불변 리팩터)에서 이름을 바꾸면 `docs/specs/`·Swagger 설명까지 동시 갱신해야 하는 범위 확장이 발생해 넘어간다.
-- **`TripCommandService.deleteTrip`의 멤버 cascade soft-delete가 개별 엔티티 루프**(`for (TripMember member : ...) member.setDeletedAt(now);`, `trip/service/TripCommandService.java:196-199`)라 멤버 수만큼 UPDATE가 나간다. 같은 리포지토리의 `clearExpiredPins`는 이미 `@Modifying` 벌크 쿼리 패턴을 쓰고 있어 방식이 일관되지 않지만, `memberCount`가 최대 10으로 캡돼 있어(`CreateTripRequest.memberCount` `@Max(10)`) 실질적 성능 영향이 미미해 이번엔 넘어간다.
-- **`TripRecommendationService.requireValidFeedback`(피드백 OTHER 사유 검증)와 `requireValidUnconfirmReason`(확정취소 OTHER 사유 검증)의 구조가 거의 동일**하다("OTHER면 reasonDetail 필수" 패턴). 그러나 각각 다른 enum 타입(`RecommendationFeedbackReason` vs `UnconfirmReason`)과 다른 요청 DTO를 다루고 있어, 제네릭 추출은 함수형 인터페이스나 리플렉션이 필요해 2회 중복치고는 과한 추상화(YAGNI 위반 소지)라 넘어간다.
-- **`TripServiceSupport`가 DTO 매핑(`toHomeCard`/`toDetail`) + 검증(`validateTripMeta`) + 권한 가드(`requireOwner`/`requireActive`/`requireMembership`) + N+1 방지 배치 로더(`loadMemberCountsByTripIds` 등) + 잡다한 유틸(초대코드, destination 정규화)까지 담당해 335줄짜리 다책임 클래스가 됐다. 역할별로 `TripMapper`/`TripValidator`/`TripGuard`로 쪼갤 수도 있지만, 프로젝트 전역 컨벤션(`spring-boot-java.md` "Support 헬퍼 재사용" — `{Domain}ServiceSupport`가 SSOT)이 도메인당 단일 Support 클래스를 명시적으로 요구하고 있어, 이 컨벤션과 어긋나는 분리를 이번 감사에서 제안하지 않는다.
-- **`TripHomeMaintenanceService.runForDate`가 만료된 방 전체를 하나의 트랜잭션 안에서 처리**한다(청크 없음). MVP 규모(도메인당 방 수가 아직 적음)에서는 문제가 되지 않지만, 방 수가 크게 늘면 긴 트랜잭션이 락을 오래 쥐게 될 수 있다. §15에 "Later" 항목으로 기록.
-- **`TripAuthorizationInterceptor`의 `@TripOwnerOnly` 경로가 `existsByIdAndDeletedAtIsNull`과 `existsByIdAndOwner_IdAndDeletedAtIsNull` 두 번의 EXISTS 쿼리를 날린다.** 하나로 합치려면 `Trip` 엔티티 전체를 로드해야 하는데, 가벼운 boolean EXISTS 쿼리 2번이 엔티티 풀 로드 1번보다 오히려 저렴할 수 있어 "합치기"가 실제 개선이라 보기 어렵다 — 그대로 둔다.
-- **`TripDetailResponse`와 `TripHomeCardResponse`가 필드 15개 가량을 그대로 중복**하고 있다(이름·목적지·기간·정원·상태·`lastActivityAt`·pin·역할·상태·활성인원·충원율·미리보기 등). 목록(카드) vs 상세라는 서로 다른 API 계약이라 통합하면 Swagger 스키마가 불필요하게 얽히고 API 계약(필드 존재 유무)이 바뀌므로 그대로 둔다 — D 항목과 동일한 이유로 "계약 다른 DTO는 공통화하지 않는다".
-- **`TripServiceTest`가 `TripCommandService`/`TripQueryService`/`TripJoinService`/`TripMemberQueryService`/`TripRecommendationService`/`TripScheduleSnapshotService`/`RecommendationEngine`을 전부 `new`로 수동 조립하고, `AspectJProxyFactory`로 `TripActivityAspect`까지 직접 프록시로 감싸서 구성**한다(`trip/service/TripServiceTest.java:108-183`). 생성자 시그니처가 하나만 바뀌어도 이 테스트의 조립 코드를 함께 고쳐야 해서 테스트 자체의 유지보수 비용이 높다(위 B-1/B-2로 생성자가 바뀌면 여기도 수정 필요). 다만 이 테스트가 `@TripActivity` AOP 동작까지 실제로 검증하는 유일한 단위 테스트 경로라 순수 Mockito 목킹으로 단순화하면 그 커버리지를 잃는다 — 이번 라운드(프로덕션 코드 리팩터)에서는 테스트 구조 자체를 바꾸지 않고, B-1/B-2 적용 시 이 파일의 조립 코드만 최소 수정한다.
+### C-1. 어댑터 3개 개명 (`ScheduleAvailabilityAdapter`·`GoogleCalendarPortAdapter`·`UserDirectoryAdapter`)
+포트가 사라지면 "Adapter"라는 이름이 가리키던 헥사고날 문맥이 없어진다. 특히 `GoogleCalendarPortAdapter`는 이름에 "Port"가 그대로 박혀 있어 포트 제거 후엔 이름만 보고 오해하기 쉽다. 다만 개명은 `spring-boot-java.md` 네이밍 규칙상 "같은 턴에 전부 최신화"(테스트·문서 포함) 대상이라 B-1과 범위가 겹치지 않게 **별도 PR로 분리**하는 것을 권장. 지금 하지 않는 이유: B-1 자체의 위험도를 낮게 유지하기 위해 "타입만 바꾸는 변경"과 "이름을 바꾸는 변경"을 섞지 않는 편이 리뷰하기 쉽다.
+
+### C-2. `CalendarDayResponse` → `CalendarDay` 수동 필드 매핑 보일러플레이트
+`TripMemberQueryService.buildLive`가 `user.schedule.dto.ScheduleCalendarResponse.CalendarDayResponse`를 `trip.schedule.dto.MemberScheduleCalendarResponse.CalendarDay`로 필드 5개를 하나씩 옮겨 담는다(107-128행). 두 레코드가 사실상 같은 필드 구성이라 정적 팩터리 메서드(`CalendarDay.from(CalendarDayResponse)`) 하나로 줄일 수 있다. 지금 하지 않는 이유: 요청 범위(포트 제거) 밖이고, 코드량이 크지 않아 우선순위가 낮음 — 다음에 이 파일을 건드릴 일이 생기면 같이 정리 권장.
+
+### C-3. `RecommendationEngine`(725줄) 중 연차 시뮬레이션 부분(약 200줄) 분리
+`collectVacationOptions`·`addShiftUnits`·`openSlots`·`applyVacationSimulation`이 파일의 상당 부분을 차지한다. 클래스가 커 보이지만(#9 God Object 체크), 후보 스코어링이라는 하나의 알고리즘 흐름 안에서 단계별로 나뉜 것이라 응집도는 높다. 지금 하지 않는 이유: 비트마스크 완전탐색 로직은 `#105` 정책(연차/반차 자동 전환)과 1:1로 얽혀 있어 분리하다 미묘한 동작 차이를 만들 위험이 무손실 리팩토링 원칙에 안 맞음 — 아래 D-1 참고.
+
+### C-4. `TripCommandService`의 `UserDirectoryPort`/`UserDirectoryAdapter` 이중 접근 경로 완전 제거
+B-1의 "부수 정리(선택)" 항목(위 참고)을 별도로 분리해 진행할 수도 있다. 지금 포함하지 않는 이유: B-1 승인 범위를 명확히 하기 위해 필수 변경과 선택 변경을 나눠 제시함 — 사용자가 B-1 승인 시 함께 할지 정할 수 있음.
 
 ## 🚫 D. 수정하지 않는 것이 더 좋은 사항
 
-- **서비스 레이어의 `support.requireOwner(trip, userId)` 재검증**(예: `RecommendationController`의 모든 엔드포인트는 `@TripOwnerOnly` 인터셉터를 이미 통과했는데도 `TripRecommendationService`가 다시 방장 여부를 확인함)은 중복처럼 보이지만 의도적 defense-in-depth다. 인터셉터는 HTTP 계층 게이트(가벼운 EXISTS 쿼리)이고, 서비스는 이미 로드한 `Trip` 엔티티의 `getOwner().getId()`를 비교하는 것뿐이라 추가 쿼리 비용이 없다(지연 로딩 프록시의 ID 접근은 초기화를 트리거하지 않음). 이 재검증을 지우면 서비스 메서드가 인터셉터 없이 호출될 경우(예: 향후 배치·이벤트 리스너·테스트에서 직접 호출) 권한 검증이 완전히 사라지므로 지우지 않는다.
-- **`Trip` 엔티티가 `@Setter`로 공개 세터를 노출하고, 서비스가 `trip.setStatus(...)`/`trip.setConfirmedStartDate(...)` 등을 직접 호출하는 anemic 모델**은 리치 도메인(`trip.confirm(...)`, `trip.unconfirm(...)`) 스타일로 바꿀 수도 있어 보이지만, `spring-boot-java.md`가 "풀 DDD 미적용 — JPA 연관관계·객체 그래프 탐색 허용"을 명시적으로 선언하고 있고 코드베이스 전역(다른 도메인 포함)이 이 스타일로 일관돼 있다. 이 도메인만 리치 엔티티로 바꾸면 오히려 코드베이스 전체 컨벤션과 어긋나므로 손대지 않는다.
-- **`TripJoinService`가 메서드 하나(`joinAsNewMember`)만 가진 별도 `@Service`로 분리돼 있는 것**은 불필요한 클래스 분할처럼 보이지만, Spring AOP(`@TripActivity`)는 같은 빈 내부의 self-invocation(`this.method()`)에는 프록시가 적용되지 않는 근본적 한계가 있다. `TripCommandService.joinTrip`이 신규 멤버 등록 로직을 별도 빈(`TripJoinService`)의 메서드로 호출해야만 `@TripActivity(tripIdFromReturn = true)` 어드바이스가 정상 적용된다(`config/TripActivity.java`, `config/TripActivityAspect.java`). `TripCommandService`로 합치면 신규 join 시 `last_activity_at` 갱신이 조용히 동작하지 않게 된다 — 병합하지 않는다.
-- **`RecommendationFeedback.recommendationId`가 FK 제약 없는 soft reference로 저장**돼 있는 것은 정합성이 느슨해 보이지만, `RecommendationFeedback.java:52-54`의 `@Schema` 설명대로 재추천 시 `Recommendation` 행은 hard delete되는 반면 피드백은 분석 목적으로 계속 남아야 하는 명시적 설계 의도다. FK를 걸면 재추천 때마다 피드백까지 cascade delete되거나 삭제 자체가 막혀 버려 요구사항과 충돌하므로 그대로 둔다.
+### D-1. `RecommendationEngine`을 여러 클래스로 쪼개지 않는다
+725줄이라는 크기만 보고 분리하면, 이미 테스트로 촘촘히 검증된 단일 알고리즘(후보 윈도우 생성 → 연차 시뮬레이션 → 3분류 → 4종 패널티 스코어링)이 여러 파일에 흩어져 오히려 "이 계산이 어디서 끝나고 어디서 시작하는지" 추적이 더 어려워진다. 각 private 메서드가 이미 역할 주석으로 잘 구획돼 있어 크기 자체가 가독성을 해치지 않는다 — 파일 하나 vs 클래스 여러 개 사이의 이동 비용(테스트 재배치, private 메서드 접근성 조정)이 얻는 이득보다 크다.
 
-## 15. 백엔드 아키텍처 개선 제안 (선택 — 실제로 이 도메인에 적용 가치가 있는 경우만)
+### D-2. 포트 3개를 없앤 자리에 "통합 게이트웨이" 하나로 다시 묶지 않는다
+`SchedulePort`+`GoogleCalendarPort`+`UserDirectoryPort`를 없애면서 "trip이 user 도메인에 접근하는 통로"를 다시 하나의 큰 Facade/Gateway 클래스로 합치고 싶은 유혹이 있을 수 있는데, 이러면 정확히 지금 없애려는 것(구현체 1개짜리 불필요한 추상화 레이어)을 이름만 바꿔 재도입하는 셈이다. 사용자가 요청한 "plain Controller→Service→Repository"는 trip 서비스가 필요한 concrete 클래스(`ScheduleAvailabilityAdapter` 등) 각각을 직접 주입받는 것이지, 새 중간 계층을 만드는 게 아니다.
 
-- **Resilience — 초대 코드 생성의 TOCTOU 레이스**: `TripServiceSupport.generateUniqueInviteCode()`(`trip/service/TripServiceSupport.java:314-322`)는 `existsByInviteCode(code)`로 사전 확인 후 값을 반환하지만, 실제 `INSERT`(트랜잭션 커밋) 시점까지는 별도 락이 없다. 동시에 같은 6자 코드가 생성되는 극히 드문 경우(31^6 ≈ 8.87억 조합, 트립 생성 트래픽 규모 대비 확률 매우 낮음) DB `UNIQUE(invite_code)` 제약 위반이 `GlobalExceptionHandler.handleUnexpectedException`으로 흘러 500(INTERNAL_ERROR)이 되고 재시도되지 않는다. **Now/Later**: **Later** — 현재 트래픽·코드 공간을 고려하면 발생 확률이 무시할 만한 수준이라 지금 당장 재시도 로직을 추가할 필요는 없지만, 방 생성 트래픽이 크게 늘어나는 시점에는 `save()` 주변에 `DataIntegrityViolationException` 캐치 후 재시도를 추가할 가치가 있다.
-- **Database/Batch — `TripHomeMaintenanceService.runForDate`의 단일 트랜잭션 처리**: 만료된 방 전체(`findExpiredOngoing`)를 하나의 트랜잭션에서 순회하며 `freezeTrip` + 상태 전환을 수행한다(스냅샷 INSERT까지 포함). **Now/Later**: **Later** — MVP 규모(도메인 활성 방 수가 적음)에서는 트랜잭션 길이가 문제되지 않지만, 방 수가 대규모로 늘어나면 방 단위로 트랜잭션을 쪼개는 청크 처리를 고려할 만하다.
-- **Monitoring — `RecommendationEngine.generate`의 실행 시간 계측 부재**: 희망 기간이 길어지면(예: 30일) 날짜 윈도우 수 × 멤버 수만큼 `classifyOneMember`가 반복 호출돼 계산량이 늘어난다. 현재 데이터 규모(정원 최대 10명, 희망 기간도 통상 짧음)에서는 문제가 되지 않지만 계측이 전혀 없어 회귀 시 발견이 늦을 수 있다. **Now/Later**: **Later** — 실제 지연이 관측되기 전에는 계측 추가보다 A-1(N+1 제거)이 우선.
-- **Concurrency/Redis/Async — 이 도메인에 적용할 가치 있는 항목 없음**: 추천 계산(`RecommendationEngine`)과 홈 배치(`TripHomeScheduler`)는 CPU 바운드이고 이미 이벤트(`ApplicationEventPublisher`)로 알림 도메인과 디커플링돼 있다. 정원 상한(10명)·희망 기간 상한을 고려하면 큐잉·비동기화·캐싱을 도입할 만한 규모의 병목이 관측되지 않는다. **Now/Later/Never**: **Never**(현재 규모 기준) — 트래픽·데이터 규모가 실제로 문제를 일으키기 전에는 트렌디하다는 이유만으로 도입하지 않는다.
+### D-3. `GoogleCalendarPortAdapter`·`ScheduleAvailabilityAdapter`에 캐싱을 추가하지 않는다
+정기/개별 일정·구글 busy 조회는 매 요청마다 DB·외부 API를 다시 조회한다. 캐싱하면 빨라질 여지는 있지만, 지금 이 조회들이 실제로 느리다는 근거(APM·로그)가 없고, 캐시 무효화 정책(일정이 바뀌면 언제 갱신?)까지 설계해야 해서 복잡도만 늘고 실효는 불확실 — "최신 기술이라서"에 해당하는 과잉 설계.
+
+### D-4. 연차 시뮬레이션의 완전탐색(비트마스크)을 더 "정교한" 알고리즘으로 교체하지 않는다
+`MAX_CONVERSION_UNITS = 20`으로 상한을 걸어둔 완전탐색 방식은 코드만 보고도 정확히 어떤 조합을 시도하는지 감사할 수 있다는 장점이 있다. 그리디·동적계획법 등으로 바꾸면 이론상 더 빠를 수 있지만, `#105` 정책의 "동점이면 연차를 덜 쓰는 조합 우선" 같은 세부 규칙까지 100% 동일하게 재현해야 하는 무손실 리팩토링 제약 아래에서는 위험 대비 이득이 낮다.
+
+## 15. 백엔드 아키텍처 개선 제안
+
+| 카테고리 | 제안 | Now/Later/Never | 이유 |
+|---|---|---|---|
+| Monitoring | `RecommendationEngine.applyVacationSimulation`의 실행 시간 계측(로그 또는 메트릭) 추가 | Later | 연차 전환 완전탐색은 `MAX_CONVERSION_UNITS=20` 상한이 있어도 최악의 경우 멤버 1명·후보 구간 1개당 최대 2^20(약 100만) 조합을 순회할 수 있다. 지금은 상한값이 방어선 역할을 하고 있고 실제로 느리다는 신고·로그 근거가 없어 지금 당장 계측 코드를 추가하는 건 이르지만, 참여 인원(최대 10명)·정기 일정 행 수가 늘어나는 실사용 데이터가 쌓이면 이 지점부터 먼저 의심해야 하므로 "느려졌다"는 신고가 들어오면 가장 먼저 열어볼 계측을 지금 설계해두는 정도만 권장 |
+| Async Processing | `TripHomeScheduler` 일 배치(`runForDate`)를 방 단위 비동기 병렬 처리로 전환 | Never | 지금은 만료 대상 방 목록을 순차 for문으로 처리한다. 방 개수가 아직 배치가 느려질 정도로 많지 않고, 순차 처리라 실패 시 원인 추적이 쉽다 — 비동기화하면 부분 실패·순서 보장 문제가 새로 생기는데 얻는 이득(배치 시간 단축)이 지금은 필요 없음 |
+| Database | 추천 계산(`RecommendationEngine.generate`)용 읽기 전용 replica 분리 | Never | MVP 트래픽 규모에서 근거 없는 조기 최적화 — 지금 병목은 DB 읽기 처리량이 아니라(이미 N+1 없이 배치 쿼리로 조회) 위 Monitoring 항목의 CPU 바운드 계산 쪽에 있을 가능성이 높음 |
+| Resilience | `GoogleCalendarService` 외부 API 호출(연동 사용자 busy 조회)에 서킷 브레이커·타임아웃 정책 명시 | Later | 트립 추천·달력 조회가 구글 캘린더 응답 지연에 얼마나 민감한지 이번 감사 범위(trip 패키지) 밖이라 `user.googlecalendar` 도메인 자체 감사에서 다루는 게 맞음 — 이번 trip 감사에서는 "고려는 필요하지만 지금 결정할 사안 아님"으로만 기록 |
 
 ## 승인 대기
 

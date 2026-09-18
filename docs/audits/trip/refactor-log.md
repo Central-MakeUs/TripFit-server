@@ -1,72 +1,50 @@
-# trip Refactor Log
+# Trip Refactor Log
 
-## 2026-08-05 — 2차 라운드 B-1·B-2 반영
+## 2026-08-26 — 포트/어댑터(`trip/port/out`) 폐기 → concrete 클래스 직접 주입
 
-2차 감사([`audit-round2.md`](audit-round2.md)) 기준 A 없음, B(유지보수성) 2건 전부 반영. 사용자 승인: "B-1·B-2 전부".
+### 배경
 
-### 쉽게 설명하면 (`plain-language-reporting.md`)
+`docs/audits/trip/audit.md` B-1 감사 결과 + 사용자 논의를 거쳐, `trip/port/out`의 인터페이스 3개(`SchedulePort`·`GoogleCalendarPort`·`UserDirectoryPort`)를 걷어내고 Controller → Service → Repository로 단순화하기로 결정. 근거:
 
-- **B-1**: `SlotStatuses`(정기·개별 일정의 오전/오후/저녁 상태를 담는 값 타입)에 아무도 안 쓰는 접근 방법이 하나 더 있었어요 — 오전/오후/저녁 상태를 각각 이름으로 꺼내 오는 방법(`getMorningStatus()` 등)과, 슬롯을 파라미터로 넘겨서 꺼내 오는 방법(`get(TimeSlot)`) 두 가지가 있었는데, 실제 코드는 전부 앞의 방법만 쓰고 있었습니다. 안 쓰는 길을 남겨두면 나중에 코드를 보는 사람이 "이건 언제 쓰는 거지?" 헷갈릴 수 있어서 지웠어요.
-- **B-2**: `TripScheduleSnapshotService`(일정 확정 시 멤버들의 일정을 스냅샷으로 굳혀 저장하는 서비스)가 실제로는 같은 폴더 안 다른 코드에서만 불려 쓰이는데, 다른 폴더에서도 자유롭게 갖다 쓸 수 있게 열려 있었어요(`public`). 실제로 그렇게 쓰는 곳은 없었기 때문에, 앞으로 실수로 엉뚱한 곳에서 이 서비스를 직접 가져다 쓰는 걸 막기 위해 접근 범위를 같은 폴더 안으로 좁혔습니다.
+- 인터페이스마다 구현체가 항상 1개뿐이었다(구현체를 갈아끼우는 헥사고날 본래 목적 없음).
+- `user` 도메인이 다른 경로로 이미 `trip` 타입에 의존하고 있어, 이 포트가 패키지 레벨 순환 의존을 실제로 막지도 못했다.
+- 테스트 7개 중 `SchedulePort`·`GoogleCalendarPort`는 어디서도 인터페이스로 mock된 적이 없었다(전부 concrete 어댑터를 실제로 생성해서 씀) — `UserDirectoryPort`만 4개 테스트에서 진짜 mock됐는데, Mockito가 concrete 클래스도 그대로 mock할 수 있어 이 이점도 유지 가능했다.
 
-### 반영 항목
+### 반영한 항목 (A-1, B-1 — 감사 문서 기준)
 
-| # | 요약 | 변경 파일 |
-|---|------|-----------|
-| B-1 | `SlotStatuses`의 미사용 제네릭 접근자 `get(TimeSlot)`/`set(TimeSlot, ScheduleStatus)` 삭제. 개별 getter/setter(`getMorningStatus()` 등)는 유지 | `SlotStatuses.java` |
-| B-2 | `TripScheduleSnapshotService` 클래스·생성자 가시성을 `public` → package-private으로 축소(같은 패키지 내 서비스 계층 가시성 컨벤션과 통일) | `TripScheduleSnapshotService.java` |
+1. **B-1 — 포트 3개 삭제, concrete 클래스로 전환**
+   - 삭제: `trip/port/out/{SchedulePort,GoogleCalendarPort,UserDirectoryPort}.java` + 빈 `trip/port/out/`·`trip/port/` 디렉터리
+   - 삭제: `GoogleCalendarPortAdapter`(순수 1메서드 위임 클래스) — trip이 필요로 하는 구글 busy 조회는 새 `ScheduleAvailabilityService.resolveAvailability(...)`가 내부적으로 `GoogleCalendarService`를 직접 호출하도록 흡수. trip 쪽에서 `GoogleCalendarService`를 직접 주입받을 필요 자체가 없어짐
+   - 개명(사용자 결정 — "지금 개명"): `ScheduleAvailabilityAdapter` → `ScheduleAvailabilityService`, `UserDirectoryAdapter` → `UserDirectoryService`. `implements XxxPort` 제거, 클래스 역할 주석을 "포트 구현체" 서술에서 "trip이 필요로 하는 조회를 이 도메인 서비스 여러 개에서 모아주는 단일 호출 지점"으로 갱신
+   - trip 쪽 호출부 5개 파일의 필드 타입을 인터페이스 → concrete 클래스로 교체(로직 변경 없음, 순수 타입 치환): `RecommendationEngine`, `TripScheduleSnapshotService`, `TripMemberQueryService`, `TripServiceSupport`, `TripCommandService`
 
-### 검증 결과
+2. **A-1 — "구글 busy 조회 → 일정 병합" 중복 2단계 호출 통합** (B-1과 같은 턴에 함께 처리 — 파일이 겹쳐서)
+   - `ScheduleAvailabilityService`에 `resolveAvailability(userIds, start, end)` 신설 — 내부에서 busy 조회 → merge 순서를 캡슐화하고, 원본 busy 맵과 병합 결과를 함께 담은 `ScheduleAvailability` record를 반환
+   - `TripMemberQueryService.buildLive`, `TripScheduleSnapshotService.freezeTrip`은 `.mergedByUser()`만 사용
+   - `RecommendationEngine.loadContext`는 원본 busy 맵(연차 시뮬레이션에 필요)과 병합 결과를 모두 이 메서드 하나로 받음 — 기존에 `GoogleCalendarPort`를 별도로 주입받아 raw busy를 조회하던 코드가 사라지고, `ScheduleAvailabilityService` 의존 하나로 줄어듦
+   - 순서 보장이 이제 컴파일러가 강제하는 메서드 경계 안에 있어, 새 호출부가 추가돼도 순서를 어길 수 없음
 
-- `./gradlew compileJava compileTestJava` — 통과
-- `./gradlew test` (전체) — 통과, 실패 0건
-- **`oasdiff` API 계약 검증:**
-  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
-  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
-  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **`{}`** (diff 0건)
-
-**결론: trip 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
-
-### 남겨둔 C/D 항목
-
-`audit-round2.md`의 C 2개(`RecommendationEngine.loadContext`/`resolveMergedSchedules` 조회 패턴 유사성, `CreateTripRequest`/`PatchTripRequest` 필드 중복), D 2개(엔티티 `equals`/`hashCode` 미구현, `TripMemberScheduleSnapshot.frozenAt` 별도 컬럼 유지) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round2.md` 해당 절 참고.
-
-## 2026-08-05 — A-1, A-2, B-1~B-3 반영
-
-`audit.md`의 A(반드시 수정) 2건, B(유지보수성) 3건을 전부 반영. C/D는 이번 라운드에서 보류.
-
-### 반영 항목
-
-- **A-1 (High, Performance)**: `TripServiceSupport.resolveMergedSchedule(...)`(단건 userId)를 멤버 리스트 순회 루프 안에서 멤버 수만큼 반복 호출하던 것을 제거. `resolveMergedSchedules(...)`(복수 userId 배치 버전)를 신설해 `RegularScheduleRepository.findByUserIdIn(...)`/`PersonalScheduleRepository.findByUserIdInAndScheduleDateBetween(...)`로 한 번에 조회한 뒤 `userId`별로 `groupingBy`해 나눈다(`RecommendationEngine.loadContext`와 동일 패턴 재사용). `TripMemberQueryService.buildLive(...)`와 `TripScheduleSnapshotService.freezeTrip(...)` 양쪽 호출부를 루프 진입 전 단 한 번 호출로 교체. `freezeTrip`은 `googleCalendarService.findBusyDaysByUserId(userId, ...)`(단건)도 `findBusyDaysByUserIds(userIds, ...)`(배치, `buildLive`가 이미 쓰던 패턴)로 함께 교체해 루프 밖으로 이동. 기존 단건 `resolveMergedSchedule`은 다른 도메인(`user/schedule`)에서 쓰이므로 유지, 이 두 호출부만 배치로 전환.
-- **A-2 (Low, Readability)**: `SaveRecommendationFeedbackRequest`의 `@Schema` 설명 문자열이 실제 매핑(`@PatchMapping`)과 다르게 "PUT"이라고 적혀 있던 것을 "PATCH"로 수정 — Swagger 문서와 실제 API 계약 불일치 해소.
-- **B-1 (Medium, Cleanup/Architecture)**: `trip 로드 → 방장 검증(→ ONGOING 검증)` 반복 시퀀스(2~3줄, 9곳)를 `TripServiceSupport`의 `requireOwnedTrip(tripId, userId)`/`requireOwnedOngoingTrip(tripId, userId)` 두 헬퍼로 통합. `TripCommandService`(`patchTrip`, `deleteTrip`, `removeMember`)와 `TripRecommendationService`(`generateRecommendations`, `listRecommendations`, `getRecommendationDetail`, `saveFeedback`, `confirmSchedule`, `unconfirm`)의 9개 호출부를 교체. 예외 타입·발생 순서(NOT_FOUND → FORBIDDEN → NOT_ONGOING)는 동일하게 보존.
-- **B-2 (Low, Cleanup)**: `TripQueryService.toDetail(Trip, TripMember)`가 `support.toDetail(...)`로의 1줄 패스스루일 뿐이라 삭제. `TripCommandService`(4곳)와 `TripJoinService`(1곳)의 호출부를 `support.toDetail(...)`로 직접 교체하고, 두 클래스 모두 오직 이 메서드 하나 때문에 갖고 있던 `TripQueryService` 생성자 의존성을 제거(`TripJoinService`는 대신 `TripServiceSupport`를 주입받도록 변경).
-- **B-3 (Low, Architecture/Legacy)**: `TripCommandService.patchTrip`이 `RecommendationRepository`를 직접 호출해 `deleteByTripId(tripId)`를 실행하던 것("추천 서비스와 통합은 추후"라는 기존 TODO 주석으로 인지돼 있던 부채)을 `TripRecommendationService.deleteRecommendationsForTrip(tripId)`(패키지 전용 신설 메서드)로 위임하도록 변경. `TripCommandService`의 `RecommendationRepository` 직접 의존성 제거 — 추천 후보 hard delete 책임이 `TripRecommendationService` 한 곳으로 모임.
+3. **부수 정리(선택, 사용자 승인 — 포함) — `TripCommandService`의 이중 접근 경로 제거**
+   - `TripServiceSupport`에 `requireProfileNameComplete(User)` 위임 메서드 추가
+   - `TripCommandService`가 `UserDirectoryService`를 직접 주입받지 않고, `support.requireProfileNameComplete(...)`를 거치도록 변경(`createTrip`·`joinTrip` 2곳) — trip 쪽 "user 도메인 접근 지점은 `TripServiceSupport` 하나"라는 규칙이 더 명확해짐
 
 ### 변경 파일
 
-```
- src/main/java/.../trip/dto/SaveRecommendationFeedbackRequest.java  |  2 +-
- src/main/java/.../trip/service/TripCommandService.java             | 35 +++++---------
- src/main/java/.../trip/service/TripJoinService.java                |  8 ++--
- src/main/java/.../trip/service/TripMemberQueryService.java         | 18 +++----
- src/main/java/.../trip/service/TripQueryService.java                |  5 --
- src/main/java/.../trip/service/TripRecommendationService.java      | 25 +++++-----
- src/main/java/.../trip/service/TripScheduleSnapshotService.java    | 22 +++++----
- src/main/java/.../trip/service/TripServiceSupport.java             | 56 +++++++++++++++-------
- src/test/java/.../trip/controller/TripMemberScheduleCalendarIntegrationTest.java | 2 +-
- src/test/java/.../trip/service/TripScheduleSnapshotServiceTest.java |  10 ++--
- src/test/java/.../trip/service/TripServiceTest.java                 | 32 ++++++-------
- 11 files changed, 121 insertions(+), 94 deletions(-)
-```
+- 삭제 6개: `SchedulePort.java`, `GoogleCalendarPort.java`, `UserDirectoryPort.java`, `GoogleCalendarPortAdapter.java`, `ScheduleAvailabilityAdapter.java`(→ 아래 신규로 대체), `UserDirectoryAdapter.java`(→ 아래 신규로 대체)
+- 신규 2개: `user/schedule/service/ScheduleAvailabilityService.java`, `user/service/UserDirectoryService.java`
+- 수정(main) 5개: `RecommendationEngine.java`, `TripScheduleSnapshotService.java`, `TripMemberQueryService.java`, `TripServiceSupport.java`, `TripCommandService.java`
+- 수정(test) 8개: `RecommendationEngineTest.java`, `RecommendationEngineTestSetScenarioTest.java`, `TripScheduleSnapshotServiceTest.java`, `TripServiceSupportTest.java`, `TripAuthorizationInterceptorTest.java`, `TripRecommendationServiceTest.java`, `TripServiceTest.java`, `TripMemberScheduleCalendarIntegrationTest.java`(주석만 — 이전에도 이미 stale했던 `TripServiceSupport.resolveMergedSchedules` 참조를 `ScheduleAvailabilityService.resolveAvailability`로 갱신)
+- 문서 3개: `docs/decisions/003-architecture-guide.md`(결정 11 폐기 amend), `docs/architecture.md`(Package Layout에서 `port/out/` 제거), `docs/specs/trip/package-structure-refactor.md`(변경 이력에 폐기 항목 추가, 원 설계는 이력으로 유지)
 
 ### 검증
 
-- `./gradlew test --tests "com.tripfit.tripfit.common.config.OpenApiSpecExportTest"` → `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` — **"No breaking changes to report"**
-- `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` — 유일한 diff는 A-2가 의도한 `SaveRecommendationFeedbackRequest` 설명 문자열(`PUT` → `PATCH`) 변경뿐, 그 외 필드·엔드포인트·ErrorCode 변경 없음을 확인
-- `./gradlew test` (전체, ArchitectureTest 포함) — 통과
+- `./gradlew compileJava compileTestJava` — 통과
+- `./gradlew test` — 전체 통과(ArchitectureTest 포함)
+- `./gradlew test --tests OpenApiSpecExportTest` + `oasdiff breaking`/`diff` `docs/api/openapi.json` vs `build/openapi/openapi.json` — **diff 0건**(API 계약·엔드포인트·DTO·ErrorCode 전부 동일, 순수 내부 구조 리팩터)
+- `./gradlew build` — 전체 통과
 
-### 남겨둔 항목 (C/D — 이번 라운드 보류)
+### 남겨둔 항목 (C — 이번 라운드에 포함하지 않음)
 
-- **C**: 초대 코드 alphabet 명칭 부정확(`InviteCodeGenerator`), `TripCommandService.deleteTrip`의 멤버 cascade 개별 UPDATE 루프(정원 상한 10으로 영향 미미), `requireValidFeedback`/`requireValidUnconfirmReason` 구조 중복(다른 enum·DTO라 제네릭 추출 시 YAGNI 위반 소지), `TripServiceSupport` 335줄 다책임(프로젝트 전역 "Support 헬퍼 재사용" 컨벤션과 상충), `TripHomeMaintenanceService.runForDate` 단일 트랜잭션 처리(현재 규모에선 문제 아님), `TripAuthorizationInterceptor`의 EXISTS 쿼리 2회, `TripDetailResponse`/`TripHomeCardResponse` 필드 중복(계약이 다른 DTO), `TripServiceTest`의 수동 조립 구조(AOP 커버리지 유지 목적) — `audit.md` C 참고
-- **D**: 서비스 레이어 `requireOwner` 재검증(defense-in-depth, 추가 쿼리 없음), `Trip` 엔티티 anemic 모델(코드베이스 전역 컨벤션과 일관), `TripJoinService` 별도 빈 분리(AOP self-invocation 한계 회피 목적), `RecommendationFeedback.recommendationId` FK 미설정(재추천 시 피드백 보존 의도) — `audit.md` D 참고
+- 어댑터 개명(이번에 이미 반영했으므로 해당 없음 — 원래 "다음 후속" 후보였던 개명을 사용자가 이번 턴에 포함하기로 결정해 위 B-1에서 함께 처리)
+- `CalendarDayResponse` → `CalendarDay` 수동 필드 매핑 보일러플레이트 정적 팩터리 추출 (C-2, 감사 문서 참고) — 이번 요청 범위 밖
+- `RecommendationEngine` 연차 시뮬레이션 부분 클래스 분리 (D-1, 감사 문서 참고 — 분리하지 않는 게 낫다고 판단)
