@@ -10,21 +10,18 @@ import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
-import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
-import com.tripfit.tripfit.trip.port.out.SchedulePort;
 import com.tripfit.tripfit.trip.recommendation.domain.AttendanceType;
 import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
 import com.tripfit.tripfit.trip.schedule.domain.ScheduleStatus;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.PersonalSchedule;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityAdapter;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -71,12 +68,11 @@ class RecommendationEngineTestSetScenarioTest {
 
   @BeforeEach
   void setUp() {
-    SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(
+    ScheduleAvailabilityService scheduleAvailabilityService =
+        new ScheduleAvailabilityService(
             regularScheduleRepository, personalScheduleRepository, userRepository,
-            holidayProvider);
-    GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
-    engine = new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
+            holidayProvider, googleCalendarService);
+    engine = new RecommendationEngine(scheduleAvailabilityService, holidayProvider);
     when(googleCalendarService.findBusyDaysByUserIds(any(), any(), any())).thenReturn(Map.of());
   }
 

@@ -33,7 +33,6 @@ import com.tripfit.tripfit.trip.dto.TripDetailResponse;
 import com.tripfit.tripfit.trip.recommendation.dto.UnconfirmTripRequest;
 import com.tripfit.tripfit.trip.event.TripConfirmCanceledEvent;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.recommendation.algorithm.MemberAttendanceDetail;
 import com.tripfit.tripfit.trip.recommendation.algorithm.RecommendationCandidate;
 import com.tripfit.tripfit.trip.recommendation.algorithm.RecommendationEngine;
@@ -44,6 +43,7 @@ import com.tripfit.tripfit.trip.schedule.repository.TripMemberScheduleSnapshotRe
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.service.UserDirectoryService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -71,7 +71,7 @@ class TripRecommendationServiceTest {
   private TripMemberRepository tripMemberRepository;
 
   @Mock
-  private UserDirectoryPort userDirectoryPort;
+  private UserDirectoryService userDirectoryService;
 
   @Mock
   private TripScheduleSnapshotService tripScheduleSnapshotService;
@@ -110,7 +110,7 @@ class TripRecommendationServiceTest {
             LocalDateTime.now());
 
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
+        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryService);
     service =
         new TripRecommendationService(
             support,

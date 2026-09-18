@@ -13,13 +13,13 @@ import com.tripfit.tripfit.trip.membership.domain.TripMember;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
+import com.tripfit.tripfit.user.service.UserDirectoryService;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -52,14 +52,14 @@ class TripAuthorizationInterceptorTest {
   private TripMemberRepository tripMemberRepository;
 
   @Mock
-  private UserDirectoryPort userDirectoryPort;
+  private UserDirectoryService userDirectoryService;
 
   private TripAuthorizationInterceptor interceptor;
 
   @BeforeEach
   void setUp() {
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
+        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryService);
     interceptor = new TripAuthorizationInterceptor(tripRepository, support);
     SecurityContextHolder.getContext()
         .setAuthentication(

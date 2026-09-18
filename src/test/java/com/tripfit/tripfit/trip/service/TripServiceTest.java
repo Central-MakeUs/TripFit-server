@@ -32,9 +32,6 @@ import com.tripfit.tripfit.trip.event.TripJoinCompletedEvent;
 import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.membership.service.TripJoinService;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
-import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
-import com.tripfit.tripfit.trip.port.out.SchedulePort;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.recommendation.algorithm.RecommendationEngine;
 import com.tripfit.tripfit.trip.recommendation.repository.RecommendationFeedbackRepository;
 import com.tripfit.tripfit.trip.recommendation.repository.RecommendationRepository;
@@ -48,13 +45,12 @@ import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
 import com.tripfit.tripfit.user.domain.VacationApplyPeriod;
 import com.tripfit.tripfit.user.exception.UserErrorCode;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityAdapter;
-import com.tripfit.tripfit.user.service.UserDirectoryAdapter;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService;
+import com.tripfit.tripfit.user.service.UserDirectoryService;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserProfileService;
 import com.tripfit.tripfit.user.service.UserSummaryService;
@@ -145,26 +141,24 @@ class TripServiceTest {
 
     UserLookupService userLookupService = new UserLookupService(userRepository);
     UserSummaryService userSummaryService = new UserSummaryService();
-    UserDirectoryPort userDirectoryPort =
-        new UserDirectoryAdapter(
+    UserDirectoryService userDirectoryService =
+        new UserDirectoryService(
             userLookupService, userRepository, userProfileService, userSummaryService);
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
+        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryService);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);
-    SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(
+    ScheduleAvailabilityService scheduleAvailabilityService =
+        new ScheduleAvailabilityService(
             regularScheduleRepository, personalScheduleRepository, userRepository,
-            holidayProvider);
-    // resolveMergedSchedules 내부의 공휴일 휴무(holidayRest) 배치 조회 — 이 테스트 파일은 캘린더 세부값이
+            holidayProvider, googleCalendarService);
+    // resolveAvailability 내부의 공휴일 휴무(holidayRest) 배치 조회 — 이 테스트 파일은 캘린더 세부값이
     // 아니라 트립 흐름만 검증하므로 모든 테스트에 필요하진 않아 lenient로 둔다(UnnecessaryStubbingException 방지)
     lenient().when(userRepository.findAllById(any())).thenReturn(List.of(owner, member));
-    GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
     TripMemberQueryService tripMemberQueryService =
         new TripMemberQueryService(
             snapshotRepository,
             support,
-            schedulePort,
-            googleCalendarPort);
+            scheduleAvailabilityService);
     TripJoinService tripJoinService = new TripJoinService(tripMemberRepository, support);
     TripActivityAspect tripActivityAspect = new TripActivityAspect(tripRepository);
     AspectJProxyFactory joinProxyFactory = new AspectJProxyFactory(tripJoinService);
@@ -174,11 +168,10 @@ class TripServiceTest {
     TripScheduleSnapshotService tripScheduleSnapshotService =
         new TripScheduleSnapshotService(
             snapshotRepository,
-            schedulePort,
-            googleCalendarPort,
+            scheduleAvailabilityService,
             support);
     RecommendationEngine recommendationEngine =
-        new RecommendationEngine(schedulePort, googleCalendarPort, holidayProvider);
+        new RecommendationEngine(scheduleAvailabilityService, holidayProvider);
     TripRecommendationService tripRecommendationServiceRaw =
         new TripRecommendationService(
             support,
@@ -201,7 +194,6 @@ class TripServiceTest {
             proxiedJoinService,
             tripRecommendationService,
             tripMemberQueryService,
-            userDirectoryPort,
             applicationEventPublisher);
     AspectJProxyFactory commandProxyFactory = new AspectJProxyFactory(tripCommandServiceRaw);
     commandProxyFactory.addAspect(tripActivityAspect);

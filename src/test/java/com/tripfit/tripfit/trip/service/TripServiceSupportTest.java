@@ -9,12 +9,12 @@ import static org.mockito.Mockito.when;
 import com.tripfit.tripfit.common.exception.CommonErrorCode;
 import com.tripfit.tripfit.common.exception.TripFitException;
 import com.tripfit.tripfit.trip.membership.dto.MemberPreviewResponse;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.trip.membership.repository.projection.TripMemberPreviewProjection;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.service.UserDirectoryService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -75,9 +75,9 @@ class TripServiceSupportTest {
   void loadMemberPreviewsByTripIds_assignsDedupedDisplayNamePerTrip() {
     TripRepository tripRepository = mock(TripRepository.class);
     TripMemberRepository tripMemberRepository = mock(TripMemberRepository.class);
-    UserDirectoryPort userDirectoryPort = mock(UserDirectoryPort.class);
+    UserDirectoryService userDirectoryService = mock(UserDirectoryService.class);
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
+        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryService);
 
     UUID tripId = UUID.randomUUID();
     User owner = user("민서", null);
@@ -88,7 +88,7 @@ class TripServiceSupportTest {
             List.of(
                 previewProjection(tripId, owner.getId(), "OWNER"),
                 previewProjection(tripId, duplicateNameMember.getId(), "MEMBER")));
-    when(userDirectoryPort.findAllById(any())).thenReturn(List.of(owner, duplicateNameMember));
+    when(userDirectoryService.findAllById(any())).thenReturn(List.of(owner, duplicateNameMember));
 
     Map<UUID, List<MemberPreviewResponse>> result =
         support.loadMemberPreviewsByTripIds(List.of(tripId));
@@ -102,16 +102,16 @@ class TripServiceSupportTest {
   void loadMemberPreviewsByTripIds_usesFirstNameOnly_whenProfileNameComplete() {
     TripRepository tripRepository = mock(TripRepository.class);
     TripMemberRepository tripMemberRepository = mock(TripMemberRepository.class);
-    UserDirectoryPort userDirectoryPort = mock(UserDirectoryPort.class);
+    UserDirectoryService userDirectoryService = mock(UserDirectoryService.class);
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
+        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryService);
 
     UUID tripId = UUID.randomUUID();
     User owner = userWithFullName("홍", "길동");
 
     when(tripMemberRepository.findMemberPreviewsByTripIds(List.of(tripId)))
         .thenReturn(List.of(previewProjection(tripId, owner.getId(), "OWNER")));
-    when(userDirectoryPort.findAllById(any())).thenReturn(List.of(owner));
+    when(userDirectoryService.findAllById(any())).thenReturn(List.of(owner));
 
     Map<UUID, List<MemberPreviewResponse>> result =
         support.loadMemberPreviewsByTripIds(List.of(tripId));

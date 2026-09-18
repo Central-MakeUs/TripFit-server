@@ -14,21 +14,18 @@ import com.tripfit.tripfit.trip.membership.domain.TripMemberRole;
 import com.tripfit.tripfit.trip.schedule.domain.TripMemberScheduleSnapshot;
 import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import com.tripfit.tripfit.trip.domain.TripStatus;
-import com.tripfit.tripfit.trip.port.out.GoogleCalendarPort;
-import com.tripfit.tripfit.trip.port.out.SchedulePort;
-import com.tripfit.tripfit.trip.port.out.UserDirectoryPort;
 import com.tripfit.tripfit.trip.membership.repository.TripMemberRepository;
 import com.tripfit.tripfit.trip.schedule.repository.TripMemberScheduleSnapshotRepository;
 import com.tripfit.tripfit.trip.repository.TripRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarPortAdapter;
 import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import com.tripfit.tripfit.user.repository.UserRepository;
 import com.tripfit.tripfit.user.schedule.domain.RegularSchedule;
 import com.tripfit.tripfit.user.schedule.repository.PersonalScheduleRepository;
 import com.tripfit.tripfit.user.schedule.repository.RegularScheduleRepository;
-import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityAdapter;
+import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService;
+import com.tripfit.tripfit.user.service.UserDirectoryService;
 import com.tripfit.tripfit.trip.service.TripServiceSupport;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -71,7 +68,7 @@ class TripScheduleSnapshotServiceTest {
   private GoogleCalendarService googleCalendarService;
 
   @Mock
-  private UserDirectoryPort userDirectoryPort;
+  private UserDirectoryService userDirectoryService;
 
   @Mock
   private UserRepository userRepository;
@@ -85,17 +82,15 @@ class TripScheduleSnapshotServiceTest {
   @BeforeEach
   void setUp() {
     TripServiceSupport support =
-        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryPort);
-    SchedulePort schedulePort =
-        new ScheduleAvailabilityAdapter(
+        new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryService);
+    ScheduleAvailabilityService scheduleAvailabilityService =
+        new ScheduleAvailabilityService(
             regularScheduleRepository, personalScheduleRepository, userRepository,
-            holidayProvider);
-    GoogleCalendarPort googleCalendarPort = new GoogleCalendarPortAdapter(googleCalendarService);
+            holidayProvider, googleCalendarService);
     snapshotService =
         new TripScheduleSnapshotService(
             snapshotRepository,
-            schedulePort,
-            googleCalendarPort,
+            scheduleAvailabilityService,
             support);
     user = new User("sub", SocialProvider.GOOGLE, "a@b.c", "nick", null);
     user.setId(USER_ID);
