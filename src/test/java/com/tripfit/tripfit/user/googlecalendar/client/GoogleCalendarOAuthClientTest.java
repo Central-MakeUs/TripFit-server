@@ -1,12 +1,18 @@
 package com.tripfit.tripfit.user.googlecalendar.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.tripfit.tripfit.auth.oauth.OAuthProperties;
+import com.tripfit.tripfit.user.googlecalendar.exception.GoogleCalendarAuthException;
+import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.util.LinkedMultiValueMap;
@@ -16,6 +22,8 @@ import org.springframework.web.client.RestClient;
 class GoogleCalendarOAuthClientTest {
 
   private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
+
+  private static final String FREE_BUSY_URL = "https://www.googleapis.com/calendar/v3/freeBusy";
 
   private GoogleCalendarOAuthClient newClient(MockRestServiceServer[] serverHolder) {
     RestClient.Builder builder = RestClient.builder();
@@ -82,6 +90,64 @@ class GoogleCalendarOAuthClientTest {
             "https://tripfit.online/settings/google-calendar/callback");
 
     assertThat(response.refreshToken()).isEqualTo("rt-value");
+    serverHolder[0].verify();
+  }
+
+  // 프로덕션에서 확인된 실제 실패(2026-08-20) — scope 부족은 재시도로 절대 안 풀리므로 401과 동일하게
+  // GoogleCalendarAuthException으로 승격돼야 syncUserInternal이 연동을 자동 해제한다
+  @Test
+  void queryFreeBusy_when403InsufficientScope_throwsGoogleCalendarAuthException() {
+    MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
+    GoogleCalendarOAuthClient client = newClient(serverHolder);
+    serverHolder[0]
+        .expect(requestTo(FREE_BUSY_URL))
+        .andRespond(
+            withStatus(HttpStatus.FORBIDDEN)
+                .body(
+                    """
+                        {"error": {"code": 403, "message": "Request had insufficient authentication scopes.",
+                          "errors": [{"message": "Insufficient Permission", "domain": "global", "reason": "insufficientPermissions"}],
+                          "status": "PERMISSION_DENIED",
+                          "details": [{"@type": "type.googleapis.com/google.rpc.ErrorInfo",
+                            "reason": "ACCESS_TOKEN_SCOPE_INSUFFICIENT", "domain": "googleapis.com"}]}}
+                        """)
+                .contentType(MediaType.APPLICATION_JSON));
+
+    assertThatThrownBy(
+        () -> client.queryFreeBusy(
+            UUID.randomUUID(),
+            "at",
+            Instant.parse("2026-08-20T00:00:00Z"),
+            Instant.parse("2026-08-25T00:00:00Z")))
+        .isInstanceOf(GoogleCalendarAuthException.class);
+    serverHolder[0].verify();
+  }
+
+  // 2026-08-01 회귀 버그 재발 방지 — scope 부족이 아닌 다른 403(예: rate limit)은 여전히 일시적 오류로 남아야
+  // connect() 직후 1회 sync가 일시적으로 삐끗해도 credential이 즉시 삭제되지 않는다
+  @Test
+  void queryFreeBusy_when403RateLimited_throwsPlainRuntimeException() {
+    MockRestServiceServer[] serverHolder = new MockRestServiceServer[1];
+    GoogleCalendarOAuthClient client = newClient(serverHolder);
+    serverHolder[0]
+        .expect(requestTo(FREE_BUSY_URL))
+        .andRespond(
+            withStatus(HttpStatus.FORBIDDEN)
+                .body(
+                    """
+                        {"error": {"code": 403, "message": "User Rate Limit Exceeded",
+                          "errors": [{"message": "User Rate Limit Exceeded", "domain": "usageLimits", "reason": "userRateLimitExceeded"}]}}
+                        """)
+                .contentType(MediaType.APPLICATION_JSON));
+
+    assertThatThrownBy(
+        () -> client.queryFreeBusy(
+            UUID.randomUUID(),
+            "at",
+            Instant.parse("2026-08-20T00:00:00Z"),
+            Instant.parse("2026-08-25T00:00:00Z")))
+        .isInstanceOf(RuntimeException.class)
+        .isNotInstanceOf(GoogleCalendarAuthException.class);
     serverHolder[0].verify();
   }
 }
