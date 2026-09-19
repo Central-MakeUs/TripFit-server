@@ -89,3 +89,29 @@
 
 - **C**: `FcmServiceTest`·`NotificationEventListenerTest.onScheduleReminder`의 얕은 테스트 커버리지(신규 테스트 작성은 구조 리팩터 범위 밖), 리스너 6개 메서드의 3종 어노테이션 반복(재사용처 1곳뿐이라 메타 어노테이션 추출 시 오히려 가독성 저하), `FcmProperties` Bean 등록이 `notification` 패키지가 아니라 `auth/security/AppConfig`(다른 Properties와 동일 컨벤션), `@TransactionalEventListener(AFTER_COMMIT)` 타이밍 자체를 검증하는 통합 테스트 부재(프레임워크 신뢰 영역) — `audit.md` C 참고
 - **D**: `FcmService.sendBatch()`의 광범위한 `catch (Exception)`(REQUIRES_NEW 트랜잭션·이력 저장 보존 목적, 의도적), `dispatch()`의 `notification_enabled` 재필터링(BR-USER-005 게이트 단일 지점 유지 목적, 의도적 중복), `ScheduleReminderBatch`/`FcmService`의 동일한 `BATCH_SIZE=500` 상수를 통합하지 않음(출처가 다른 값이라 결합 방지), `FirebaseConfig`의 `@Lazy` 초기화(로컬 개발 환경 부팅 보장) — `audit.md` D 참고
+
+## 2026-08-27 — Round 3 (SOLID/OOP 중심) A/B 없음, 반영 사항 없음
+
+감사([`audit-round3.md`](audit-round3.md)) 기준 **A 항목 없음, B 항목 없음** — 구조적으로 반영할 대상을 찾지 못했다. 코드 변경 없음.
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+이번엔 다른 도메인 3차 감사에서 자주 나온 문제 유형(안 쓰는데 남아 있는 기능, 어디서도 안 불리는 죽은 코드)을 이 도메인에서도 똑같이 찾아봤는데, 이미 다 깨끗한 상태였어요. 특히 2차 감사 때 제안했던 "토큰 등록이 동시에 겹치면 에러 날 수 있다"는 문제는, 그 뒤 실제 운영에서 비슷한 에러가 한 번 발생한 걸 계기로 이미 더 확실한 방식(DB 자체가 "있으면 갱신, 없으면 새로 만들기"를 한 번에 처리하도록)으로 고쳐져 있었고, 그 사고를 재현하는 테스트도 이미 마련돼 있었어요.
+
+### 확인한 것 (구현 없음)
+
+- 2차 A-2 제안(저장 실패 시 재조회·재할당 방식)은 실제로는 더 강한 방식(`UserDeviceTokenRepository.upsertToken()` 네이티브 원자적 upsert)으로 대체돼 반영됨 — 별도 조치 불필요, 기록만 갱신.
+- `NotificationHistory`/`UserDeviceToken` 엔티티에 미사용 setter 없음, Repository 메서드 전부 실사용처 있음 — 삭제 대상 없음.
+- SOLID/OOP 렌즈로 짚어본 3개 지점(이벤트 리스너의 6종 이벤트 구독, `FcmService` 인터페이스 부재, `NotificationResponse.from()`의 연관관계 탐색) 모두 근거 있는 현재 구조 — `audit-round3.md` C 참고.
+
+### 검증
+
+- 코드 변경이 없어 `./gradlew test`·`oasdiff` 재실행 불필요(직전 커밋 상태와 동일).
+
+### 남겨둔 C/D 항목 (Round 3)
+
+`audit-round3.md`의 C 3개(1·2차 재검증 + 신규 SOLID 렌즈 재확인 2건), D 3개(1·2차 재확인 + `NotificationEventListener`의 crossdomain Repository 직접 주입 유지) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round3.md` 해당 절 참고.
+
+### Later 후속 제안 (audit-round3.md §15, 상태 변화 없음)
+
+1·2차 §15의 6개 제안(FCM 재시도·실패율 지표·메시지 브로커·ETag·토큰 URL 노출·Idempotency-Key) 재확인 결과 상태 변화 없음 — 판단 그대로 유지.
