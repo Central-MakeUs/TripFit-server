@@ -53,7 +53,6 @@ import com.tripfit.tripfit.user.schedule.service.ScheduleAvailabilityService;
 import com.tripfit.tripfit.user.service.UserDirectoryService;
 import com.tripfit.tripfit.user.service.UserLookupService;
 import com.tripfit.tripfit.user.service.UserProfileService;
-import com.tripfit.tripfit.user.service.UserSummaryService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -140,10 +139,8 @@ class TripServiceTest {
     trip = ongoingTrip();
 
     UserLookupService userLookupService = new UserLookupService(userRepository);
-    UserSummaryService userSummaryService = new UserSummaryService();
     UserDirectoryService userDirectoryService =
-        new UserDirectoryService(
-            userLookupService, userRepository, userProfileService, userSummaryService);
+        new UserDirectoryService(userLookupService, userRepository, userProfileService);
     TripServiceSupport support =
         new TripServiceSupport(tripRepository, tripMemberRepository, userDirectoryService);
     TripQueryService tripQueryService = new TripQueryService(tripMemberRepository, support);

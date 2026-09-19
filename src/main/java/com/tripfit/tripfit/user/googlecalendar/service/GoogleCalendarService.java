@@ -129,6 +129,15 @@ public class GoogleCalendarService {
     if (!user.isGoogleCalendarConnected()) {
       throw new TripFitException(GoogleCalendarErrorCode.GOOGLE_CALENDAR_NOT_CONNECTED);
     }
+    revokeIfConnected(userId);
+    persistenceService.disconnectGoogleCalendar(userId);
+    User updated = userLookupService.requireUser(userId);
+    return userSummaryService.toSummary(updated);
+  }
+
+  // credential이 있으면 refresh token revoke(best-effort, HTTP) — disconnect()·회원 탈퇴 양쪽이 공유하는
+  // Google Calendar 연동 해제 프로토콜의 단일 소유 지점(round3 A-1)
+  public void revokeIfConnected(UUID userId) {
     credentialRepository
         .findByUser_Id(userId)
         .ifPresent(
@@ -136,9 +145,6 @@ public class GoogleCalendarService {
               String refreshToken = tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
               googleCalendarOAuthClient.revokeRefreshToken(userId, refreshToken);
             });
-    persistenceService.disconnectGoogleCalendar(userId);
-    User updated = userLookupService.requireUser(userId);
-    return userSummaryService.toSummary(updated);
   }
 
   // freeBusy → busy_day 갱신 (C1 윈도우) — 권한 영구 실패 시 flag=false·Google 레이어 정리. Google 서버와의
@@ -162,7 +168,7 @@ public class GoogleCalendarService {
       UUID userId,
       LocalDate startDate,
       LocalDate endDate) {
-    return indexBusyDays(
+    return GoogleCalendarBusyMapper.indexBusyDays(
         busyDayRepository.findByUser_IdAndScheduleDateBetweenOrderByScheduleDateAsc(
             userId,
             startDate,
@@ -189,15 +195,6 @@ public class GoogleCalendarService {
           .put(day.getScheduleDate(), day);
     }
     return result;
-  }
-
-  public static Map<LocalDate, GoogleCalendarBusyDay> indexBusyDays(
-      List<GoogleCalendarBusyDay> days) {
-    Map<LocalDate, GoogleCalendarBusyDay> byDate = new HashMap<>();
-    for (GoogleCalendarBusyDay day : days) {
-      byDate.put(day.getScheduleDate(), day);
-    }
-    return byDate;
   }
 
   // Google 서버와의 통신(access token 갱신·freeBusy 조회)을 끝낸 뒤, 결과만 persistenceService의 짧은

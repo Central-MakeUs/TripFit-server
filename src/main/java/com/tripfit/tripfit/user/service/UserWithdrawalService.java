@@ -3,13 +3,10 @@ package com.tripfit.tripfit.user.service;
 import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
-import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
-import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
-import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +23,7 @@ public class UserWithdrawalService {
 
   private final UserLookupService userLookupService;
 
-  private final GoogleCalendarCredentialRepository googleCalendarCredentialRepository;
-
-  private final GoogleCalendarOAuthClient googleCalendarOAuthClient;
-
-  private final SocialTokenCrypto tokenCrypto;
+  private final GoogleCalendarService googleCalendarService;
 
   private final KakaoUnlinkClient kakaoUnlinkClient;
 
@@ -59,20 +52,14 @@ public class UserWithdrawalService {
   }
 
   // Google Calendar 연동돼 있으면 credential hard delete 전에 refresh token revoke 호출 (best-effort,
-  // disconnect()와 동일 패턴) — 복호화 실패 등 예상 밖 오류도 탈퇴 자체를 막지 않도록 여기서 흡수함
+  // 소유 서비스 GoogleCalendarService에 위임 — round3 A-1) — 복호화 실패 등 예상 밖 오류도 탈퇴 자체를 막지
+  // 않도록 여기서 흡수함
   private void revokeGoogleCalendarIfConnected(UUID userId) {
-    googleCalendarCredentialRepository
-        .findByUser_Id(userId)
-        .ifPresent(
-            (GoogleCalendarCredential credential) -> {
-              try {
-                String refreshToken =
-                    tokenCrypto.decrypt(credential.getRefreshTokenCiphertext());
-                googleCalendarOAuthClient.revokeRefreshToken(userId, refreshToken);
-              } catch (Exception exception) {
-                log.warn("Google Calendar credential revoke failed", exception);
-              }
-            });
+    try {
+      googleCalendarService.revokeIfConnected(userId);
+    } catch (Exception exception) {
+      log.warn("Google Calendar credential revoke failed", exception);
+    }
   }
 
   // 카카오로 가입한 사용자면 Admin Key 기반 unlink 호출 (best-effort, 사용자 access_token 저장 불필요)

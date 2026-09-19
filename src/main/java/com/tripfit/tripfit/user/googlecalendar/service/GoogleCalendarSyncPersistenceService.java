@@ -128,7 +128,7 @@ public class GoogleCalendarSyncPersistenceService {
             windowStart,
             windowEnd);
     Map<LocalDate, GoogleCalendarBusyDay> existingByDate =
-        GoogleCalendarService.indexBusyDays(existing);
+        GoogleCalendarBusyMapper.indexBusyDays(existing);
 
     for (Map.Entry<LocalDate, SlotBusyFlags> entry : mapped.entrySet()) {
       LocalDate date = entry.getKey();

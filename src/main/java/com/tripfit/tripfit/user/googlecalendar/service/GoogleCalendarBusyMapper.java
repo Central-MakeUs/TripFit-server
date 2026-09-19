@@ -18,6 +18,16 @@ public final class GoogleCalendarBusyMapper {
 
   private GoogleCalendarBusyMapper() {}
 
+  // 조회 결과 리스트 → scheduleDate 기준 Map (달력 Merge 시 날짜별 O(1) 조회용)
+  public static Map<LocalDate, GoogleCalendarBusyDay> indexBusyDays(
+      List<GoogleCalendarBusyDay> days) {
+    Map<LocalDate, GoogleCalendarBusyDay> byDate = new HashMap<>();
+    for (GoogleCalendarBusyDay day : days) {
+      byDate.put(day.getScheduleDate(), day);
+    }
+    return byDate;
+  }
+
   // freeBusy busy[] → 날짜×슬롯 boolean (busy 슬롯 있는 날만 sparse)
   public static Map<LocalDate, SlotBusyFlags> mapIntervalsToDays(
       List<GoogleFreeBusyInterval> intervals) {

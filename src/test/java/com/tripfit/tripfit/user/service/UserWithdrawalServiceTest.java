@@ -1,20 +1,17 @@
 package com.tripfit.tripfit.user.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
-import com.tripfit.tripfit.common.security.SocialTokenCrypto;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
-import com.tripfit.tripfit.user.googlecalendar.client.GoogleCalendarOAuthClient;
-import com.tripfit.tripfit.user.googlecalendar.domain.GoogleCalendarCredential;
-import com.tripfit.tripfit.user.googlecalendar.repository.GoogleCalendarCredentialRepository;
-import java.util.Optional;
+import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,13 +30,7 @@ class UserWithdrawalServiceTest {
   private UserLookupService userLookupService;
 
   @Mock
-  private GoogleCalendarCredentialRepository googleCalendarCredentialRepository;
-
-  @Mock
-  private GoogleCalendarOAuthClient googleCalendarOAuthClient;
-
-  @Mock
-  private SocialTokenCrypto tokenCrypto;
+  private GoogleCalendarService googleCalendarService;
 
   @Mock
   private KakaoUnlinkClient kakaoUnlinkClient;
@@ -60,9 +51,7 @@ class UserWithdrawalServiceTest {
     userWithdrawalService =
         new UserWithdrawalService(
             userLookupService,
-            googleCalendarCredentialRepository,
-            googleCalendarOAuthClient,
-            tokenCrypto,
+            googleCalendarService,
             kakaoUnlinkClient,
             appleCredentialService,
             googleLoginCredentialService,
@@ -80,30 +69,27 @@ class UserWithdrawalServiceTest {
   }
 
   @Test
-  void withdraw_whenGoogleCalendarConnected_revokesRefreshTokenBeforeFinalizing() {
+  void withdraw_delegatesGoogleCalendarRevokeBeforeFinalizing() {
     User user = user();
-    GoogleCalendarCredential credential =
-        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
-        .thenReturn(Optional.of(credential));
-    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
+    verify(googleCalendarService).revokeIfConnected(USER_ID);
     verify(persistenceService).finalizeWithdrawal(USER_ID);
   }
 
   @Test
-  void withdraw_whenGoogleCalendarNotConnected_doesNotRevoke() {
+  void withdraw_whenGoogleCalendarRevokeThrows_stillFinalizesWithdrawal() {
     User user = user();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
+    doThrow(new RuntimeException("decrypt failed"))
+        .when(googleCalendarService)
+        .revokeIfConnected(USER_ID);
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient, never()).revokeRefreshToken(any(), any());
+    verify(persistenceService).finalizeWithdrawal(USER_ID);
   }
 
   @Test
@@ -120,16 +106,11 @@ class UserWithdrawalServiceTest {
   @Test
   void withdraw_whenKakaoProviderWithGoogleCalendarConnected_revokesCalendarAndUnlinksKakao() {
     User user = kakaoUser();
-    GoogleCalendarCredential credential =
-        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
-        .thenReturn(Optional.of(credential));
-    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
+    verify(googleCalendarService).revokeIfConnected(USER_ID);
     verify(kakaoUnlinkClient).unlink("kakao-sub");
   }
 
@@ -137,16 +118,11 @@ class UserWithdrawalServiceTest {
   @Test
   void withdraw_whenAppleProviderWithGoogleCalendarConnected_revokesCalendarAndAppleCredential() {
     User user = appleUser();
-    GoogleCalendarCredential credential =
-        GoogleCalendarCredential.create(user, "encrypted-refresh", "encrypted-access", null, null);
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-    when(googleCalendarCredentialRepository.findByUser_Id(USER_ID))
-        .thenReturn(Optional.of(credential));
-    when(tokenCrypto.decrypt("encrypted-refresh")).thenReturn("plain-refresh");
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(googleCalendarOAuthClient).revokeRefreshToken(USER_ID, "plain-refresh");
+    verify(googleCalendarService).revokeIfConnected(USER_ID);
     verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
   }
 
