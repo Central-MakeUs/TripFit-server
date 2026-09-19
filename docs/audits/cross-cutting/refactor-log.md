@@ -156,3 +156,46 @@
 ## 도메인 감사 완료
 
 이로써 `docs/audits/README.md` 진행 현황의 6개 도메인(auth, user, user-schedule, trip, notification, cross-cutting) 감사·구현이 모두 1라운드 완료됨.
+
+## 2026-08-27 — Round 3 (SOLID/OOP 중심) B-1 반영
+
+감사([`audit-round3.md`](audit-round3.md)) 기준 A 항목 없음, B(유지보수성) 1개 반영. 사용자 승인: "B-1 구현".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+에러를 400(잘못된 요청)으로 처리하는 코드 조각 3개가, 실제로는 "어떤 종류의 잘못된 요청이냐"만 다를 뿐 안에서 하는 일이 완전히 똑같았어요(같은 에러 코드·같은 메시지 반환). Spring이 기본으로 제공하는 "여러 종류를 한 곳에서 같이 처리" 기능으로 하나로 합쳤어요 — 사용자에게 보이는 응답(상태 코드·에러 메시지)은 전혀 바뀌지 않습니다.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| B-1 | `GlobalExceptionHandler`의 `handleMessageNotReadable`/`handleTypeMismatch`/`handleMissingParameter` 3개(동일 로직, 예외 타입만 다름)를 `@ExceptionHandler({...})` 배열 문법으로 `handleClientInputError` 하나로 통합 | `GlobalExceptionHandler.java`, `GlobalExceptionHandlerTest.java`(호출 대상 메서드명만 갱신) |
+
+### 변경 규모
+
+- 기존 파일 수정 2개 (main 1 · test 1): `GlobalExceptionHandler.java`(약 -13줄), `GlobalExceptionHandlerTest.java`(테스트 3개 메서드명·호출부만 갱신, 검증 내용 동일)
+- 신규 파일 없음
+- API 계약(Request/Response/HTTP Status/ErrorCode/Endpoint) 변경 없음 — 세 예외 타입 모두 여전히 400 `INVALID_INPUT`으로 매핑됨
+
+### 검증 결과
+
+- `./gradlew compileTestJava` — 통과
+- `./gradlew test`(전체, Testcontainers 실제 MySQL 8 컨테이너 포함, `ArchitectureTest` 포함) — **514개 전체 통과, 0개 실패**
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **"No changes"**(가장 엄격한 확인)
+
+**결론: cross-cutting(common) API 응답·에러코드 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목 (Round 3)
+
+`audit-round3.md`의 C 2개(`common/holiday/*` 패키지 위치 — Approved 스펙의 명시적 결정이라 amend 필요, 사용자 확인 별도 필요 / 1·2차 C 재검증), D 2개(`GlobalExceptionHandler`의 OCP 구조 유지 · 1·2차 D 재확인) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round3.md` 해당 절 참고.
+
+### Later 후속 제안 (audit-round3.md §15, 상태 변화 없음)
+
+1·2차 §15의 제안 재확인 결과 상태 변화 없음 — 판단 그대로 유지. `holiday/*`가 이미 Redis 캐시 계층(TTL 7일, staging-then-rename 원자 교체, fail-open)을 쓰고 있음을 신규로 확인했으나 추가 개선 여지 없음.
+
+## SOLID/OOP 3차 감사 시리즈 완료
+
+`auth`(2026-08-15) → `user`(2026-08-26) → `user-schedule`(2026-08-26) → `trip`(2026-08-26) → `notification`(2026-08-27, 변경 없음) → `cross-cutting`(2026-08-27, 이번 라운드)까지 6개 도메인 전체의 SOLID/OOP 관점 3차 라운드가 완료됐다. 각 도메인 `docs/audits/{domain}/audit-round3.md`·`refactor-log.md` 참고.

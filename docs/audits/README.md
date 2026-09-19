@@ -22,7 +22,7 @@
 | `user-schedule` | 완료 (2026-08-26, SOLID/OOP 3차 라운드까지) | 1차 A/B 반영 + 2차 라운드 A-1/B-1 반영 + 3차(SOLID/OOP) B-1~B-3 반영, oasdiff diff 0 확인 |
 | `trip` | 완료 (2026-08-26, SOLID/OOP 3차 라운드까지) | 1차 A-1·A-2·B-1~B-3 반영 + 2차 라운드 B-1·B-2 반영 + 3차(SOLID/OOP) B-1/B-2 반영, oasdiff diff 0 확인 |
 | `notification` | 완료 (2026-08-27, SOLID/OOP 3차 라운드까지) | 1차 A-1·B-1~B-3 반영 + 2차 라운드 A-1·A-2·B-1 반영 + 3차(SOLID/OOP) A/B 없음(코드 변경 없음), oasdiff diff 0 확인 |
-| `cross-cutting` | 완료 (2026-08-05) | A-1~A-3·B-1·B-2 반영, oasdiff diff 0 확인(기존 무관 drift 1건은 범위 밖으로 별도 기록) |
+| `cross-cutting` | 완료 (2026-08-27, SOLID/OOP 3차 라운드까지) | 1차 A-1~A-3·B-1·B-2 반영 + 3차(SOLID/OOP) B-1 반영, oasdiff diff 0 확인(기존 무관 drift 1건은 범위 밖으로 별도 기록) |
 
 ## 현재 단계 (2026-08-03)
 
