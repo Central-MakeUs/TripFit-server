@@ -84,18 +84,18 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  void handleMessageNotReadable_returnsCommonInvalidInput() {
+  void handleClientInputError_whenMessageNotReadable_returnsCommonInvalidInput() {
     HttpMessageNotReadableException exception =
         new HttpMessageNotReadableException("malformed json", (HttpInputMessage) null);
 
-    ResponseEntity<ErrorResponse> response = handler.handleMessageNotReadable(exception);
+    ResponseEntity<ErrorResponse> response = handler.handleClientInputError(exception);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(response.getBody().code()).isEqualTo("INVALID_INPUT");
   }
 
   @Test
-  void handleTypeMismatch_returnsCommonInvalidInput() {
+  void handleClientInputError_whenTypeMismatch_returnsCommonInvalidInput() {
     MethodArgumentTypeMismatchException exception =
         new MethodArgumentTypeMismatchException(
             "abc",
@@ -104,18 +104,18 @@ class GlobalExceptionHandlerTest {
             new MethodParameter(sampleMethod(), -1),
             new NumberFormatException("abc"));
 
-    ResponseEntity<ErrorResponse> response = handler.handleTypeMismatch(exception);
+    ResponseEntity<ErrorResponse> response = handler.handleClientInputError(exception);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(response.getBody().code()).isEqualTo("INVALID_INPUT");
   }
 
   @Test
-  void handleMissingParameter_returnsCommonInvalidInput() {
+  void handleClientInputError_whenMissingParameter_returnsCommonInvalidInput() {
     MissingServletRequestParameterException exception =
         new MissingServletRequestParameterException("startDate", "LocalDate");
 
-    ResponseEntity<ErrorResponse> response = handler.handleMissingParameter(exception);
+    ResponseEntity<ErrorResponse> response = handler.handleClientInputError(exception);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(response.getBody().code()).isEqualTo("INVALID_INPUT");

@@ -40,27 +40,13 @@ public class GlobalExceptionHandler {
         .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), errors));
   }
 
-  // 요청 body 파싱 실패(JSON 문법 오류·enum 밖 문자열 등) — 공통 INVALID_INPUT envelope로 통일
-  @ExceptionHandler(HttpMessageNotReadableException.class)
-  ResponseEntity<ErrorResponse> handleMessageNotReadable(
-      HttpMessageNotReadableException exception) {
-    ErrorCode errorCode = CommonErrorCode.INVALID_INPUT;
-    return ResponseEntity.badRequest()
-        .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
-  }
-
-  // path·query 파라미터 타입 불일치(예: rank에 숫자 아닌 값) — 공통 INVALID_INPUT envelope로 통일
-  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-  ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
-    ErrorCode errorCode = CommonErrorCode.INVALID_INPUT;
-    return ResponseEntity.badRequest()
-        .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
-  }
-
-  // 필수 @RequestParam 자체가 누락(타입은 맞는데 값이 없음) — 공통 INVALID_INPUT envelope로 통일
-  @ExceptionHandler(MissingServletRequestParameterException.class)
-  ResponseEntity<ErrorResponse> handleMissingParameter(
-      MissingServletRequestParameterException exception) {
+  // 요청 body 파싱 실패·path/query 파라미터 타입 불일치·필수 파라미터 누락 — 셋 다 공통 INVALID_INPUT envelope로 통일
+  @ExceptionHandler({
+      HttpMessageNotReadableException.class,
+      MethodArgumentTypeMismatchException.class,
+      MissingServletRequestParameterException.class
+  })
+  ResponseEntity<ErrorResponse> handleClientInputError(Exception exception) {
     ErrorCode errorCode = CommonErrorCode.INVALID_INPUT;
     return ResponseEntity.badRequest()
         .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
