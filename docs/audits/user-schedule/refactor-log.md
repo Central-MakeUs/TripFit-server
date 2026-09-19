@@ -68,3 +68,46 @@
 
 - **C**: `CreateRegularScheduleRequest`/`UpdateRegularScheduleRequest` 구조 중복(record 상속 불가로 공통화 시 오히려 복잡해짐), `ScheduleCalendarResolver.resolve()` 4-인자 오버로드(테스트 전용, 제거 시 10곳 넘는 호출부 수정 필요 대비 실익 낮음), `PersonalSchedule`/`RegularSchedule`의 전역 `@Setter` 컨벤션(저장소 전역 문제라 도메인 단위로 좁혀 고치면 일관성 저하) — audit.md 참고
 - **D**: `ScheduleErrorCode` 단일 상수 유지, `ScheduleCalendarResolver` 비-Bean 유지, `ScheduleService` 미분리 유지, `requireOwnedRegularSchedule()` 미추출 유지 — 전부 현재 구조가 더 낫다는 판단, audit.md 참고
+
+## 2026-08-26 — Round 3 (SOLID/OOP 중심) B-1~B-3 반영
+
+감사([`audit-round3.md`](audit-round3.md)) 기준 A 항목 없음, B(유지보수성) 3개 전부 반영. 사용자 승인: "전체 B 승인".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **B-1:** 최근(2026-08-26) `trip` 도메인의 "포트/어댑터" 구조를 걷어내는 작업으로 `ScheduleAvailabilityService`라는 클래스가 이 도메인으로 새로 옮겨왔는데, 옮겨오기 전 스타일(수동으로 생성자를 써서 부품을 조립하는 방식)이 그대로 남아 있었어요. 다른 모든 서비스 클래스가 쓰는 자동 조립 방식(`@RequiredArgsConstructor`)으로 통일했어요 — 동작은 똑같습니다.
+- **B-2:** 정기 일정을 만들거나 수정할 때 "무슨 요일에 반복되는지" 문자열을 검증할 때 한 번, 실제로 저장할 때 또 한 번, 총 두 번 해석하고 있었어요. 한 번만 해석해서 그 결과를 그대로 재사용하도록 정리했어요.
+- **B-3:** `ScheduleAvailabilityService`(B-1의 그 클래스)는 "구글 캘린더 일정 + 개인 일정을 합쳐서 보여주는" 핵심 로직을 담당하는데, 정작 이 클래스 하나만 콕 집어 확인하는 테스트가 없어서 다른 3개 기능의 테스트가 우연히 이 로직도 같이 검증해주는 상태였어요. 이 클래스를 바꿨을 때 문제가 생기면 바로 알 수 있도록 전용 테스트를 새로 만들었어요.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| B-1 | `ScheduleAvailabilityService` — `@Component` + 수동 생성자를 `@Service` + `@RequiredArgsConstructor`로 전환(필드 순서 유지로 생성자 시그니처 불변) | `ScheduleAvailabilityService.java` |
+| B-2 | `ScheduleService` — `validateRegularTimes()`·`normalizeDaysOfWeek()`가 각자 `Weekday.normalizeCsv()`를 호출해 `daysOfWeek`를 두 번 파싱하던 것을 `validateAndNormalizeRegularTimes()` 하나로 통합, `createRegular()`/`updateRegular()`가 반환값을 그대로 재사용 | `ScheduleService.java` |
+| B-3 | `ScheduleAvailabilityServiceTest` 신규 — batch grouping(`findRegularSchedulesByUserIds`/`findPersonalSchedulesByUserIds`)과 `resolveAvailability()`의 구글 busy 병합·조회 대상 외 유저 폴백(sparse) 계약을 직접 검증 | `ScheduleAvailabilityServiceTest.java`(신규) |
+
+### 변경 규모
+
+- 기존 파일 수정 2개 (main): `ScheduleAvailabilityService.java`(-19줄, 순감), `ScheduleService.java`(중복 파싱 메서드 통합)
+- 신규 파일 1개 (test): `ScheduleAvailabilityServiceTest.java`
+- API 계약(Request/Response/HTTP Status/ErrorCode/Endpoint) 변경 없음 — Controller·DTO·`ErrorCode` enum·`@Operation`/`@Schema` 파일 전부 미변경
+
+### 검증 결과
+
+- `./gradlew compileTestJava` — 통과
+- `./gradlew test`(전체, Testcontainers 실제 MySQL 8 컨테이너 포함, `ArchitectureTest` 포함) — **514개 전체 통과, 0개 실패**
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **"No changes"**(가장 엄격한 확인)
+
+**결론: user-schedule 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목 (Round 3)
+
+`audit-round3.md`의 C(1·2차 C 재검증, 변경 없음), D(2건 신규 + 1·2차 D 재검증) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round3.md` 해당 절 참고.
+
+### Later 후속 제안 (audit-round3.md §15)
+
+이번 라운드에서도 제안할 항목 없음(YAGNI) — 1차 판단 유지.
