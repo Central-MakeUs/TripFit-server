@@ -98,3 +98,45 @@
 - 탈퇴 시 provider revoke 4종 `@Async`화 (1차와 동일, Later 유지)
 - `GoogleCalendarSyncScheduler` 다중 인스턴스 분산 락 (1차와 동일, Later 유지)
 - **신규**: `@Scheduled` 기본 단일 스레드 풀을 3개 도메인 스케줄러(Google Calendar sync·notification·trip)가 공유 — 수정 파일이 `common/config/SchedulingConfig.java`라 user 도메인 단독 범위 밖. `cross-cutting` 도메인 감사 시 논의 권장
+
+## 2026-08-26 — Round 3 (SOLID/OOP 중심) A-1, B-1~2 반영
+
+감사([`audit-round3.md`](audit-round3.md)) 기준 A(반드시 수정) 1개, B(유지보수성) 2개 전부 반영. 사용자 승인: "전체 A/B 승인".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **A-1 (가장 중요):** 회원 탈퇴할 때 "Google Calendar 연동을 끊어달라"는 요청을 구글 서버에 보내는 코드가, 원래 이 일을 전담하는 `GoogleCalendarService`를 거치지 않고 `UserWithdrawalService`가 그 내부 부품(저장소·구글 API 클라이언트·암호화 도구)을 직접 가져다 써서 같은 로직을 한 번 더 작성해 놓은 상태였어요. 다른 3개 로그인 방식(구글 로그인·카카오·애플)은 전부 각자 담당 서비스한테 "끊어줘"라고 요청만 하는데 Google Calendar만 이렇게 예외적으로 되어 있었죠. 이러면 나중에 "연동 끊기" 절차가 바뀔 때 두 파일을 따로 고쳐야 하고, 하나를 깜빡하면 회원 탈퇴 경로와 일반 연동 해제 경로가 서로 다르게 동작하는 사고로 이어질 수 있었어요. `GoogleCalendarService`에 "연동돼 있으면 끊어줘"라는 메서드를 하나 만들어서, 탈퇴할 때도 이 메서드 하나만 호출하도록 통일했어요.
+- **B-1~2:** 기능 변화는 없고 코드 정리예요 — 받아만 놓고 한 번도 쓰지 않던 부품(의존성) 하나 제거, 순수 계산 함수 하나가 원래 있어야 할 전용 위치(변환 로직 모음 클래스)로 이동해서 엉뚱한 계층 간 참조를 끊음.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| A-1 | `GoogleCalendarService`에 `revokeIfConnected(UUID)` 신설(`disconnect()`의 revoke 블록을 그대로 추출) — `UserWithdrawalService.revokeGoogleCalendarIfConnected()`는 이 메서드 호출 하나로 축소, `GoogleCalendarCredentialRepository`·`GoogleCalendarOAuthClient`·`SocialTokenCrypto` 3개 의존성 제거 | `GoogleCalendarService.java`, `UserWithdrawalService.java` |
+| B-1 | `UserDirectoryService`의 미호출 `UserSummaryService` 의존성(필드·생성자 파라미터) 제거 | `UserDirectoryService.java` |
+| B-2 | `GoogleCalendarService.indexBusyDays()`(순수 변환)를 `GoogleCalendarBusyMapper`로 이동, `findBusyDaysByUserId()`·`GoogleCalendarSyncPersistenceService.replaceBusyDays()` 호출부 갱신 | `GoogleCalendarService.java`, `GoogleCalendarBusyMapper.java`, `GoogleCalendarSyncPersistenceService.java` |
+
+### 변경 규모
+
+- 기존 파일 수정 7개 (main 5 · test 2): `GoogleCalendarService.java`, `GoogleCalendarBusyMapper.java`, `GoogleCalendarSyncPersistenceService.java`, `UserDirectoryService.java`, `UserWithdrawalService.java`, `UserWithdrawalServiceTest.java`, `TripServiceTest.java`(`UserDirectoryService` 생성자 호출부 갱신)
+- 신규 파일 없음
+- API 계약(Request/Response/HTTP Status/ErrorCode/Endpoint) 변경 없음 — Controller·DTO·`ErrorCode` enum·`@Operation`/`@Schema` 파일 전부 미변경
+
+### 검증 결과
+
+- `./gradlew compileTestJava` — 통과
+- `./gradlew test`(전체, Testcontainers 실제 MySQL 8 컨테이너 포함, `ArchitectureTest` 포함) — **전체 통과, 0개 실패**
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **"No changes"**(가장 엄격한 확인)
+
+**결론: user 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 남겨둔 C/D 항목
+
+`audit-round3.md`의 C 4개(provider별 처리 Strategy 미승격·`SCHEDULE_ACTIVATION_REQUIRED` 재확인·`GoogleCalendarOAuthClient` God class 아님·트랜잭션 경계 등 1·2차 재확인), D 4개(User 조회 4개 서비스 미통합·`equals`/`hashCode` 미오버라이드·`GoogleCalendarBusyMapper` 비-빈 유지·`GoogleCalendarService` 의존성 8개는 정당) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round3.md` 해당 절 참고.
+
+### Later 후속 제안 (audit-round3.md §15, 상태 변화 없음)
+
+1·2차 §15의 3개 제안(Circuit Breaker·`@Async`·스케줄러 스레드풀 공유) 재확인 결과 코드 변화 없음 — Later 유지.
