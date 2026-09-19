@@ -48,3 +48,48 @@
 - 어댑터 개명(이번에 이미 반영했으므로 해당 없음 — 원래 "다음 후속" 후보였던 개명을 사용자가 이번 턴에 포함하기로 결정해 위 B-1에서 함께 처리)
 - `CalendarDayResponse` → `CalendarDay` 수동 필드 매핑 보일러플레이트 정적 팩터리 추출 (C-2, 감사 문서 참고) — 이번 요청 범위 밖
 - `RecommendationEngine` 연차 시뮬레이션 부분 클래스 분리 (D-1, 감사 문서 참고 — 분리하지 않는 게 낫다고 판단)
+
+## 2026-08-26 — Round 3 (SOLID/OOP 중심) B-1, B-2 반영
+
+감사([`audit-round3.md`](audit-round3.md)) 기준 A 항목 없음, B(유지보수성) 2개 전부 반영. 사용자 승인: "전체 B 승인".
+
+### 쉽게 설명하면 (`plain-language-reporting.md`)
+
+- **B-1:** 여행 희망 일정·개인 일정이 공유하는 "오전/오후/저녁 가능 여부" 값 하나(`SlotStatuses`)에, 슬롯 하나만 따로 바꿀 수 있는 기능(setter)이 3개 붙어 있었는데 실제로는 어디서도 쓰이지 않고 있었어요. 이 값은 항상 세 슬롯이 한 번에 같이 계산되는 성격이라, 이 기능이 남아 있으면 나중에 누군가 슬롯 하나만 따로 고치려다 나머지 두 슬롯과 안 맞는 상태를 만들 위험이 있었어요 — 삭제했어요.
+- **B-2:** 여행방 멤버십 존재 여부를 확인하는 조회 기능 하나가 선언만 되어 있고 실제로는 아무도 안 쓰고 있어서 삭제했어요.
+
+### 반영 항목
+
+| # | 요약 | 변경 파일 |
+|---|------|-----------|
+| B-1 | `SlotStatuses`의 미사용 `setMorningStatus`/`setAfternoonStatus`/`setEveningStatus` 3개 삭제 — 3개 소비 엔티티(`TripMemberScheduleSnapshot`·`RegularSchedule`·`PersonalSchedule`) 모두 생성자/`fromTimeRange()`로 전체 교체만 사용 | `trip/schedule/domain/SlotStatuses.java` |
+| B-2 | `TripMemberRepository.existsByTripIdAndUserIdAndDeletedAtIsNull` 미사용 선언 삭제 — 같은 조건이 필요한 지점은 이미 `findByTripIdAndUserIdAndDeletedAtIsNull(...).isPresent()`로 처리 중 | `trip/membership/repository/TripMemberRepository.java` |
+
+### 변경 규모
+
+- 기존 파일 수정 2개 (main): `SlotStatuses.java`(11줄 삭제), `TripMemberRepository.java`(1줄 삭제)
+- 신규 파일 없음
+- API 계약(Request/Response/HTTP Status/ErrorCode/Endpoint) 변경 없음 — `SlotStatuses`는 API DTO가 아닌 내부 `@Embeddable`, 삭제한 메서드 모두 Controller·DTO 변환에 관여하지 않음
+
+### 검증 결과
+
+- `./gradlew compileTestJava` — 통과
+- `./gradlew test`(전체, Testcontainers 실제 MySQL 8 컨테이너 포함, `ArchitectureTest` 포함) — **514개 전체 통과, 0개 실패**
+- **`oasdiff` API 계약 검증:**
+  1. `./gradlew test --tests OpenApiSpecExportTest` → `build/openapi/openapi.json` 생성 성공
+  2. `oasdiff breaking docs/api/openapi.json build/openapi/openapi.json` → **"No changes detected"**
+  3. `oasdiff diff docs/api/openapi.json build/openapi/openapi.json` → **"No changes"**(가장 엄격한 확인)
+
+**결론: trip 도메인 API 응답·요청·에러코드·엔드포인트 스펙은 리팩토링 전/후로 100% 동일함을 실제 실행으로 증명함.**
+
+### 기록 갱신 (구현 아님)
+
+2차 B-2("`TripScheduleSnapshotService`를 package-private로 낮추자")는 그 뒤 `membership`/`recommendation`/`schedule` feature 서브패키지 분리로 전제가 바뀌어(지금은 `TripRecommendationService`·`TripHomeMaintenanceService`가 서로 다른 패키지에서 호출) 더 이상 적용 불가능해졌다 — `audit-round3.md` 선행 문서 안내 참고. 코드 변경은 없음, 과거 판단이 stale해졌다는 사실만 기록.
+
+### 남겨둔 C/D 항목 (Round 3)
+
+`audit-round3.md`의 C 3개(1·2차 C 재검증 + `SlotStatuses` 크로스 도메인 공유 재검토), D 4개(`TripService` 파사드 미분할·`RecommendationEngine` 미분할 재확인·feature envy 아님 재확인·`TripAuthorizationInterceptor` 이중 접근 경로 유지) — 이번 라운드에서 변경하지 않음. 이유는 `audit-round3.md` 해당 절 참고.
+
+### Later 후속 제안 (audit-round3.md §15, 상태 변화 없음)
+
+1·2차 §15의 5개 제안(연차 시뮬레이션 계측·스케줄러 병렬화·읽기 replica·cursor pagination·idempotency key) 재확인 결과 상태 변화 없음 — 판단 그대로 유지.
