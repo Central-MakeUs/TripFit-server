@@ -62,16 +62,4 @@ public class SlotStatuses {
   public ScheduleStatus getEveningStatus() {
     return eveningStatus;
   }
-
-  public void setMorningStatus(ScheduleStatus morningStatus) {
-    this.morningStatus = morningStatus;
-  }
-
-  public void setAfternoonStatus(ScheduleStatus afternoonStatus) {
-    this.afternoonStatus = afternoonStatus;
-  }
-
-  public void setEveningStatus(ScheduleStatus eveningStatus) {
-    this.eveningStatus = eveningStatus;
-  }
 }

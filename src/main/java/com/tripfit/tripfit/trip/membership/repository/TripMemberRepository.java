@@ -16,8 +16,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
 
-  boolean existsByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
-
   Optional<TripMember> findByTripIdAndUserIdAndDeletedAtIsNull(UUID tripId, UUID userId);
 
   // 회원 탈퇴 cascade — 특정 role로 활성 참여 중인 멤버십 목록
