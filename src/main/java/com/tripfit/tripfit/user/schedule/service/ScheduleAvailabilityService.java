@@ -18,11 +18,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 // trip이 필요로 하는 정기·개별 일정 조회를 이 도메인(user.schedule)의 repository·ScheduleCalendarResolver를
 // 감싸서 제공한다 — trip 쪽 여러 서비스가 각자 repository를 중복 조회하지 않도록 이 클래스 하나로 모은다.
-@Component
+@Service
+@RequiredArgsConstructor
 public class ScheduleAvailabilityService {
 
   private final RegularScheduleRepository regularScheduleRepository;
@@ -34,19 +36,6 @@ public class ScheduleAvailabilityService {
   private final HolidayProvider holidayProvider;
 
   private final GoogleCalendarService googleCalendarService;
-
-  public ScheduleAvailabilityService(
-      RegularScheduleRepository regularScheduleRepository,
-      PersonalScheduleRepository personalScheduleRepository,
-      UserRepository userRepository,
-      HolidayProvider holidayProvider,
-      GoogleCalendarService googleCalendarService) {
-    this.regularScheduleRepository = regularScheduleRepository;
-    this.personalScheduleRepository = personalScheduleRepository;
-    this.userRepository = userRepository;
-    this.holidayProvider = holidayProvider;
-    this.googleCalendarService = googleCalendarService;
-  }
 
   // userId 목록으로 정기 일정을 한 번에 조회한 뒤 userId별로 묶어서 반환한다(N+1 방지 — 사용자 수만큼
   // 반복 쿼리하지 않음). resolveMergedSchedules도 내부에서 이 메서드를 재사용한다.

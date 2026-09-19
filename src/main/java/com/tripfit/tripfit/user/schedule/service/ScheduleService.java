@@ -75,12 +75,13 @@ public class ScheduleService {
   // 정기 일정 생성 — start/end로 슬롯 계산 후 저장
   @Transactional
   public RegularScheduleResponse createRegular(UUID userId, CreateRegularScheduleRequest request) {
-    // 1. 제목·시각 입력을 검증함
-    validateRegularTimes(
-        request.title(),
-        request.daysOfWeek(),
-        request.startTime(),
-        request.endTime());
+    // 1. 제목·시각·요일 입력을 검증하고 정규화된 daysOfWeek를 얻음
+    String normalizedDaysOfWeek =
+        validateAndNormalizeRegularTimes(
+            request.title(),
+            request.daysOfWeek(),
+            request.startTime(),
+            request.endTime());
 
     // 2. start/end로 슬롯을 계산해 정기 일정을 저장함
     User user = userLookupService.requireUser(userId);
@@ -88,7 +89,7 @@ public class ScheduleService {
         RegularSchedule.create(
             user,
             request.title().trim(),
-            normalizeDaysOfWeek(request.daysOfWeek()),
+            normalizedDaysOfWeek,
             request.startTime(),
             request.endTime());
     regularScheduleRepository.save(schedule);
@@ -101,15 +102,16 @@ public class ScheduleService {
       UUID userId,
       UUID regularId,
       UpdateRegularScheduleRequest request) {
-    validateRegularTimes(
-        request.title(),
-        request.daysOfWeek(),
-        request.startTime(),
-        request.endTime());
+    String normalizedDaysOfWeek =
+        validateAndNormalizeRegularTimes(
+            request.title(),
+            request.daysOfWeek(),
+            request.startTime(),
+            request.endTime());
     RegularSchedule schedule = requireOwnedRegularSchedule(regularId, userId);
     schedule.applyUpdate(
         request.title().trim(),
-        normalizeDaysOfWeek(request.daysOfWeek()),
+        normalizedDaysOfWeek,
         request.startTime(),
         request.endTime());
     return toRegularResponse(schedule);
@@ -314,7 +316,9 @@ public class ScheduleService {
             user.isHolidayRest()));
   }
 
-  private void validateRegularTimes(
+  // 제목·시각·요일을 검증하고, daysOfWeek는 검증과 함께 한 번만 파싱해 정규화된 값을 반환한다
+  // (round3 B-2 — 이전엔 검증용·저장용으로 각자 다시 파싱했음)
+  private static String validateAndNormalizeRegularTimes(
       String title,
       String daysOfWeek,
       LocalTime startTime,
@@ -326,7 +330,7 @@ public class ScheduleService {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
     try {
-      Weekday.normalizeCsv(daysOfWeek);
+      return Weekday.normalizeCsv(daysOfWeek);
     } catch (IllegalArgumentException ex) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
@@ -334,14 +338,6 @@ public class ScheduleService {
 
   private void validateVacationPolicy(int maxVacationDays) {
     if (maxVacationDays < 0 || maxVacationDays > User.MAX_VACATION_DAYS_LIMIT) {
-      throw new TripFitException(CommonErrorCode.INVALID_INPUT);
-    }
-  }
-
-  private static String normalizeDaysOfWeek(String daysOfWeek) {
-    try {
-      return Weekday.normalizeCsv(daysOfWeek);
-    } catch (IllegalArgumentException ex) {
       throw new TripFitException(CommonErrorCode.INVALID_INPUT);
     }
   }
