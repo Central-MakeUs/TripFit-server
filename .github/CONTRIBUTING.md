@@ -90,7 +90,7 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 ## 코드 리뷰 — N 룰
 
-리뷰 코멘트 등급 (**wave와 무관**).
+리뷰 코멘트 등급 (**Milestone과 무관**).
 
 | 등급 | 의미 |
 |------|------|
@@ -105,39 +105,39 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 ## 라벨 · 마일스톤
 
 ```bash
-./scripts/github-bootstrap.sh      # 라벨 + 마일스톤
-./scripts/github-sync-issues.sh    # 열린 이슈 wave 정렬 (선택)
+./scripts/github-bootstrap.sh      # 라벨 + 마일스톤 (재실행 가능)
 ```
 
 ### 라벨
 
 | prefix | 값 | 용도 |
 |--------|-----|------|
-| `wave:` | 1, 2, 3, 4 | **유일한 계획 축** |
+| `priority:` | must, could | **MoSCoW 우선순위** — 성능 개선·구조 정리·리팩터·최적화만 could, 그 외 기능 구현·버그 수정은 전부 must (2026-08-26 재정의). **Agent는 스스로 판단해 부여 금지 — 항상 사용자 확인** (`harness-wave.md`) |
 | `kind:` | feature, bug, chore, docs | 이슈 종류 |
-| `area:` | api, domain, deploy, docs, infra | 코드 위치 |
 | `meta:` | blocked, duplicate, wontfix | 상태 |
 
-Nice/Must 구분은 **Wave Backlog Issue** 본문 + 실행 Issue **비고** — `priority:` 라벨은 사용하지 않음.
+Must/Could 구분은 **이슈에 직접 붙는 `priority:` 라벨**로 표현한다. 상세: [`development-wave.md` §2](../docs/product/development-wave.md#2-priority-must--priority-could).
 
-이슈당 **wave 1개** + kind 1개 + area 1개 권장.
+`area:`는 2026-08-26 폐지 — 단일 모듈(Spring Boot monolith)에서 api/domain/deploy/infra 구분이 실제 필터링 가치가 적어 간결화 차원에서 제거(코드 위치는 이슈 제목·본문으로 충분).
+
+`wave:`도 2026-08-26 폐지 — 이슈의 46%가 한 Wave에 몰려 분류축 기능을 못 했고, Milestone(`MVP 출시`/`출시 이후`)이 그 역할을 대신함. 상세: [`development-wave.md` §0](../docs/product/development-wave.md#0-무엇이-바뀌었나).
+
+이슈당 **Milestone 1개** + priority 1개 + kind 1개 권장.
 
 ### `[미정]` 항목 처리
 
 중앙 트래커(구 `#2`)는 폐지됐다(2026-08-19) — 기획·스펙·BR의 `[미정]` 항목은 해당 문서에 표기만 남긴다. 상세: `.claude/rules/harness-wave.md`.
 
-### 마일스톤 (= wave)
+### 마일스톤
 
-| 마일스톤 | wave |
+| 마일스톤 | 의미 |
 |----------|------|
-| Wave 1 — 소셜 로그인 | 1 |
-| Wave 2 — MVP 로직 | 2 |
-| Wave 3 — 외부 API 연동 | 3 |
-| Wave 4 — 리팩토링·성능·런칭 후 UX | 4 |
+| MVP 출시 | `mvp.md` In Scope — 출시 전에 끝내야 함 |
+| 출시 이후 | 런칭 후 추가 기능 · 기술부채·리팩토링 |
 
 ## Agent 예시
 
-> "wave 1에 JWT 필터 이슈 만들어줘. area api, 스펙 링크 포함."
+> "회원 탈퇴 API 이슈 만들어줘. MVP 출시 마일스톤, 스펙 링크 포함."
 
 ## CI
 

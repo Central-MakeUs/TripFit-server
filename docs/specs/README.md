@@ -15,14 +15,14 @@
 
 새 스펙은 어느 도메인 패키지를 다루는지 먼저 정하고 그 폴더에 넣는다 (두 도메인에 걸치면 `.claude/rules/fe-context.md`와 동일 원칙 — 주로 바뀌는 상태가 속한 도메인 기준). 도메인 무관(PK 전략, CI, Swagger 설정 등)은 `cross-cutting/`.
 
-**Wave(개발 단계) 축은 이 폴더 축과 별개** — 요약: [`waves.md`](../product/waves.md), 운영 SSOT: [`development-wave.md`](../product/development-wave.md). 아래 각 표의 `wave` 열 참고.
+**릴리즈 Milestone(MVP 출시/출시 이후) 축은 이 폴더 축과 별개** — 운영 SSOT: [`development-wave.md`](../product/development-wave.md). 아래 각 표의 `wave` 열은 2026-08-26 폐지된 구 도메인 축의 **역사적 기록**(그 스펙이 당시 어느 도메인으로 계획됐는지)이며 더 이상 GitHub 라벨과 동기화되지 않는다.
 
 ## 작성 방법
 
 1. `specify` 스킬 사용 (또는 Plan Mode)
 2. 템플릿: [`.claude/skills/specify/references/spec-template.md`](../../.claude/skills/specify/references/spec-template.md)
 3. 파일명: kebab-case — 예) `trip-room-create.md` (접미사 `mvp`, `phase`, `p2` 금지), 대응 도메인 폴더에 저장
-4. 상단 메타: `wave`, `implements`, `deferred` — [`waves.md`](../product/waves.md)
+4. 상단 메타: `implements`, `deferred` — `wave:` 메타 필드는 폐지(2026-08-26), 새 스펙에 추가하지 않음
 5. 사용자 승인 후 구현 시작
 
 ## `auth/`
@@ -46,7 +46,7 @@
 | [`user-my-page.md`](user/user-my-page.md) | 1 | **Approved** / Implemented | 마이페이지 이름 PATCH | user-onboarding |
 | [`google-calendar-oauth.md`](user/google-calendar-oauth.md) | 3 | **Approved** (#44) · **Wave 4→3 이동**(2026-08-03) | Google Calendar OAuth · busy Merge · AES-256 | auth-social-login · user-onboarding |
 | [`google-calendar-client-id-separation.md`](user/google-calendar-client-id-separation.md) | 3 | **Implemented** (#78, Closed) · **Wave 4→3 이동** | 로그인·Calendar OAuth Client ID 분리 — GCP 콘솔 발급 가이드 포함 | google-calendar-oauth · google-login-revoke |
-| [`user-account-withdrawal.md`](user/user-account-withdrawal.md) | 2 | cascade·soft delete **Implemented**(`#47`) · `#64` provider revoke **Implemented** · **Wave 2 Nice** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · cascade · PII 스크럽 · Google/Kakao/Apple revoke | trip-member-leave · user-my-page |
+| [`user-account-withdrawal.md`](user/user-account-withdrawal.md) | 2 | cascade·soft delete **Implemented**(`#47`) · `#64` provider revoke **Implemented** · **Wave 2 Must** | 회원 탈퇴 · BR-USER-004 `[미정]` 해소 · cascade · PII 스크럽 · Google/Kakao/Apple revoke | trip-member-leave · user-my-page |
 | [`user-profile-image-s3-mirror.md`](user/user-profile-image-s3-mirror.md) | 4 | Draft | 프로필 이미지 S3 미러링 B안 | decision 006 |
 
 ## `user-schedule/`
@@ -73,8 +73,8 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`trip-duration-range.md`](trip/trip-duration-range.md) | 2 | Implemented (hotfix, `trip-room-api` D9 amend) | 여행 일수(n박m일) 검증 범위를 `n+1`~`min(n+2,T)`로 확장 | trip-room-api |
 | [`trip-last-activity-at.md`](trip/trip-last-activity-at.md) | 2 | **Approved** (#26) · L1~L4 | `last_activity_at` 갱신·`@TripActivity` AOP | #12 |
 | [`trip-home-schedulers.md`](trip/trip-home-schedulers.md) | 2 | **Implemented** (#27) · S1~S4 | EXPIRED DB·Pin batch · 00:05 KST | #12 |
-| [`trip-member-remove.md`](trip/trip-member-remove.md) | 2 | **Implemented** (#20) · **Wave 2 Nice** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
-| [`trip-member-leave.md`](trip/trip-member-leave.md) | 2 | **Implemented** (`#47` 브랜치) · **Wave 2 Nice** | 멤버 자진 탈퇴 · 방 상태 무관(ONGOING/CONFIRMED/EXPIRED) | #12 · #20 · #26 |
+| [`trip-member-remove.md`](trip/trip-member-remove.md) | 2 | **Implemented** (#20) · **Wave 2 Could** | 방장 MEMBER soft delete · 목록 응답 · recommendation 미터치 | #12 · #26 |
+| [`trip-member-leave.md`](trip/trip-member-leave.md) | 2 | **Implemented** (`#47` 브랜치) · **Wave 2 Must** | 멤버 자진 탈퇴 · 방 상태 무관(ONGOING/CONFIRMED/EXPIRED) | #12 · #20 · #26 |
 | [`trip-member-status-derive.md`](trip/trip-member-status-derive.md) | 2 | **Implemented** (#54) | `TripMember.status` 컬럼 제거 → `respondedAt` null 여부로 파생 계산 | #12 |
 | [`trip-member-fill-rate-refactor.md`](trip/trip-member-fill-rate-refactor.md) | 2 | **Implemented** (#60) | 상세 API 멤버 프리뷰 추가 · `memberFillRate` 전환 · `joinedMemberCount` API 미노출 | #12 |
 | [`trip-schedule-calendar-window.md`](trip/trip-schedule-calendar-window.md) | 2 | **Approved** (#37) · **구현 중/본 브랜치** · Wave 2 Must | 마이페이지 today+2년 · 방=희망 기간 · ONGOING 칩 | #17 · #12 |
@@ -117,7 +117,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | #13 | trip-recommendation (API 껍데기·DTO·ERD) | Open |
 | **#50** | trip-recommendation-algorithm (계산 로직) | Closed (PR #72) |
 | **#19** | kakao-invite-share | **Approved** · Wave 3 Must · create inviteCode 미노출 Implemented |
-| #20 | trip-member-remove | Implemented · **Wave 2 Nice** |
+| #20 | trip-member-remove | Implemented · **Wave 2 Could** |
 | **#21** | notification | Open · **Wave 3 Must** · 구현 중 |
 | **#26** | trip-last-activity-at | Implemented |
 | **#27** | trip-home-schedulers | Implemented |
@@ -128,7 +128,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#38** | trip-schedule-snapshot | Closed |
 | **#110** | trip-calendar-window-pre-join — `#114`로 본래 증상 해소 + 저장 윈도우 검증 추가 | Open · **Implemented** · wave 4 |
 | **#44** | google-calendar-oauth | Open · **Wave 3 Must**(2026-08-03 Wave 4→3 이동, 구 Swagger chore 폐기) |
-| **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Open · **Wave 2 Nice** |
+| **#47** | 나가기·내보내기·삭제·탈퇴 상태 정책 정합성 (hotfix) — `trip-member-leave`·`user-account-withdrawal` 정책 SSOT | Closed · **Wave 2 Must** |
 | **#48** | `TripStatus.CANCELED` 삭제 + `TERMINATED`→`EXPIRED` 리네임 (chore) | Implemented |
 | **#52** | 연차·휴일 정보를 `RegularSchedule`→`User`로 이동(스키마 리팩토링, wave 4) — `#105` 임시 우회("가장 먼저 등록된 행 기준")의 근본 수정. **이슈 번호 재사용**(구 "auth-dev-stub-verifier"는 `dev-login` 삭제로 폐기, 이 chore가 대체) | Open |
 | **#105** | trip-recommendation-algorithm 연차/반차 자동 반영 amend | Implemented(PR #108) · 실 계정 수동 검증만 별도 완료 기준으로 남아 Open |

@@ -34,7 +34,7 @@ MVP는 이를 **감수**. 선점/예약은 wave 4.
 - [x] 동시성 테스트 — 정원 1자리 남음 + N명이 동시에 hold 요청하는 시나리오
 - [x] `./gradlew test`
 
-## Nice to Have
+## Could Have
 
 - (해당 없음 — 명시적 hold 해제는 2026-08-10 Must Have로 승격)
 

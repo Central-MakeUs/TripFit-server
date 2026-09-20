@@ -1,7 +1,7 @@
 # 알림 (Notification) — FCM 푸시 · 알림 설정 · 알림센터
 
 > 상태: Approved (2026-07-29 — D1~D12 확정 반영, `#67` 브랜치에서 구현 착수 승인)
-> MVP: In scope (Wave 3 Must — Wave Backlog `#31`)
+> MVP: In scope (Wave 3 Must — 이슈 `#21` `priority: must` 라벨)
 > 관련 BR: BR-NOTI-001~005, 009 · BR-NOTI-008(카카오 공유, `#19` 소관) · BR-USER-005
 > wave: 3
 > implements: BR-NOTI-001, BR-NOTI-002, BR-NOTI-003, BR-NOTI-004, BR-NOTI-005, BR-NOTI-009, BR-USER-005

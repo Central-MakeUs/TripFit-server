@@ -8,33 +8,17 @@ body:
     attributes:
       value: |
         재현 단계를 모르면 **배경**만 채우고 Agent에게 로그·코드 기반으로 채워 달라고 요청해도 됩니다.
-        wave는 [`docs/product/development-wave.md`](../../docs/product/development-wave.md) 기준 — 회귀 버그면 **관련 PR·스펙**을 배경에 적어 주세요.
+        Milestone(`MVP 출시`/`출시 이후`)은 이슈 생성 시 사이드바에서 직접 지정 — 기준: [`docs/product/development-wave.md`](../../docs/product/development-wave.md). 회귀 버그면 **관련 PR·스펙**을 배경에 적어 주세요.
 
   - type: dropdown
-    id: wave
+    id: priority
     attributes:
-      label: wave (개발 물결)
-      description: 우선순위·마일스톤 정렬용. 해당 없으면 가장 가까운 wave.
+      label: priority (우선순위)
+      description: "버그 수정은 거의 항상 must. ⚠️ Agent는 스스로 판단해 채우지 말고 사용자에게 확인받을 것 — harness-wave.md"
       options:
-        - "1 — 소셜 로그인"
-        - "2 — MVP 로직"
-        - "3 — 외부 API 연동"
-        - "4 — 리팩토링·성능·런칭 후 UX"
-        - "미정"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: area
-    attributes:
-      label: 영역 (area)
-      options:
-        - api
-        - domain
-        - deploy
-        - infra
-        - docs
-        - other
+        - "must — 기능 구현 자체·버그 수정"
+        - "could — 성능 개선·폴더/패키지 구조 정리·리팩터·최적화"
+        - "해당 없음 (문서 메타 이슈)"
     validations:
       required: true
 
@@ -90,6 +74,15 @@ body:
       label: 실제 동작
     validations:
       required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 완료 조건
+      description: 이 버그가 해결됐다고 볼 기준 (위 priority 필드의 must/could와는 다른 개념). 단순 버그면 "기대 동작대로 재현 안 됨 + 회귀 테스트 1건"처럼 짧아도 됨
+      placeholder: |
+        - [ ] 재현 스텝에서 기대 동작대로 동작
+        - [ ] 회귀 테스트 추가
 
   - type: textarea
     id: logs

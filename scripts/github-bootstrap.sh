@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GitHub labels + milestones — wave 체계 (재실행 가능)
+# GitHub labels + milestones — Milestone(MVP 출시/출시 이후) + priority 체계 (재실행 가능)
 # Requires: gh auth login
 set -euo pipefail
 
@@ -38,27 +38,21 @@ LEGACY=(
   "type: feature" "type: bug" "type: chore" "type: docs"
   "priority: P0" "priority: P1" "priority: P2" "priority: out" "priority: nice"
   "size: S" "size: M" "size: T"
+  "area: api" "area: domain" "area: deploy" "area: docs" "area: infra"
+  "wave:1" "wave:2" "wave:3" "wave:4"
 )
 for label in "${LEGACY[@]}"; do
   delete_label "$label"
 done
 
-echo "[github-bootstrap] labels (wave / kind / area / meta)..."
-create_label "wave:1" "B60205" "기반 — 인증·API·배포"
-create_label "wave:2" "0E8A16" "핵심 — 여행방·일정·추천·확정"
-create_label "wave:3" "D93F0B" "마무리 — 알림·달력·공유"
-create_label "wave:4" "FEF2C0" "이후 — 계정연결·고도화"
+echo "[github-bootstrap] labels (priority / kind / meta)..."
+create_label "priority: must"  "B60205" "기능 구현 자체·버그 수정"
+create_label "priority: could" "C2E0C6" "성능 개선·폴더/패키지 구조 정리·리팩터·최적화 (MoSCoW Could have)"
 
 create_label "kind: feature" "0E8A16" "새 기능·API"
 create_label "kind: bug"     "D73A4A" "버그·오동작"
 create_label "kind: chore"   "FBCA04" "CI·리팩터·설정"
 create_label "kind: docs"    "0075CA" "문서만"
-
-create_label "area: api"     "1D76DB" "REST API · controller"
-create_label "area: domain"  "5319E7" "엔티티 · 도메인"
-create_label "area: deploy"  "B60205" "Docker · EC2 · CI"
-create_label "area: docs"    "C5DEF5" "docs/ 기획·스펙"
-create_label "area: infra"   "666666" "DB · 설정 · 인프라"
 
 create_label "meta: blocked"   "000000" "선행 작업 대기"
 create_label "meta: duplicate" "CFD3D7" "중복 이슈"
@@ -106,17 +100,21 @@ for old in \
   "MVP — 일정·조건·추천" \
   "MVP — 확정·시각화" \
   "MVP — 알림·공유 (P1)" \
-  "Backlog — P2+"; do
+  "Backlog — P2+" \
+  "Wave 1 — 준비" \
+  "Wave 2 — 핵심 MVP" \
+  "Wave 3 — 출시 UX" \
+  "Wave 4 — 운영·확장" \
+  "Wave 1 — 소셜 로그인" \
+  "Wave 2 — MVP 로직" \
+  "Wave 3 — 외부 API 연동" \
+  "Wave 4 — 리팩토링·성능·런칭 후 UX"; do
   close_milestone "$old"
 done
 
-upsert_milestone "Wave 1 — 준비" \
-  "인증·JWT·API 규약·배포. docs/product/waves.md · docs/product/development-wave.md"
-upsert_milestone "Wave 2 — 핵심 MVP" \
-  "여행방·참여·일정·조건·추천·확정. docs/product/waves.md · docs/product/development-wave.md"
-upsert_milestone "Wave 3 — 출시 UX" \
-  "알림·달력·공유. docs/product/waves.md · docs/product/development-wave.md"
-upsert_milestone "Wave 4 — 운영·확장" \
-  "계정연결·RTR·Apple S2S·고도화. docs/product/waves.md · docs/product/development-wave.md"
+upsert_milestone "MVP 출시" \
+  "mvp.md In Scope. docs/product/development-wave.md"
+upsert_milestone "출시 이후" \
+  "런칭 후 추가 기능 + 기술부채·리팩토링. docs/product/development-wave.md"
 
-echo "[github-bootstrap] done — run scripts/github-sync-issues.sh to fix open issues"
+echo "[github-bootstrap] done"

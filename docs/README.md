@@ -17,8 +17,7 @@ docs/
 │   ├── erd.md
 │   └── api-response.md       ← REST JSON envelope (확정)
 ├── product/                  ← 기획 SSOT
-│   ├── development-wave.md   ← Wave 운영·판단·GitHub Backlog
-│   ├── waves.md              ← Wave 1~4 요약표
+│   ├── development-wave.md   ← 릴리즈 Milestone(MVP 출시/출시 이후)·priority 운영 SSOT
 │   ├── mvp.md · platform.md · prd.md · glossary.md
 │   ├── design/ · business-rules/ · flows/ · fe-context/ · templates/
 ├── specs/                    ← 기능 스펙 — 목록 SSOT: specs/README.md
@@ -42,17 +41,16 @@ docs/
 `.claude/rules/harness-workflow.md`의 Before Coding 순서와 동일 — 두 목록이 따로 손으로 유지되지 않도록 여기서만 상세를 두고, harness는 이 순서를 그대로 참조한다.
 
 1. `architecture.md` — 레이어·패키지 구조
-2. `product/development-wave.md` — 활성 Wave·Must (Backlog `#29`~`#32`)
-3. `product/waves.md` — 요약표
-4. `product/platform.md` — 클라이언트·인증 전제
-5. `decisions/002-domain-split-vercel-api.md` — 도메인 분리 확정
-6. `product/mvp.md` — MVP In/Out
-7. `product/prd.md` + `business-rules/` · `glossary.md`
-8. `architecture/erd.md` + `architecture/api-response.md`
-9. `specs/{feature}.md` — [`specs/README.md`](specs/README.md)에서 선택 (`.claude/skills/specify`)
-10. 구현 후 `docs/`·이슈 동기화 (하네스 After Coding)
+2. `product/development-wave.md` — 활성 Milestone(`MVP 출시`/`출시 이후`)·Must
+3. `product/platform.md` — 클라이언트·인증 전제
+4. `decisions/002-domain-split-vercel-api.md` — 도메인 분리 확정
+5. `product/mvp.md` — MVP In/Out
+6. `product/prd.md` + `business-rules/` · `glossary.md`
+7. `architecture/erd.md` + `architecture/api-response.md`
+8. `specs/{feature}.md` — [`specs/README.md`](specs/README.md)에서 선택 (`.claude/skills/specify`)
+9. 구현 후 `docs/`·이슈 동기화 (하네스 After Coding)
 
-**Wave Must/Nice/Out·`[미정]`:** `.claude/rules/harness-wave.md`
+**priority: must/could·`[미정]`:** `.claude/rules/harness-wave.md`
 
 ## 런타임 vs 문서
 

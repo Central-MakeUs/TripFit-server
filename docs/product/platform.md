@@ -160,31 +160,31 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 4. 400 검증: `INVALID_INPUT` + **`errors: [{ field, message }]`**.
 5. 목록(제안): `data.items` + `data.pageInfo`. Base URL: `https://api.tripfit.online`, `/api/v1/...`.
 
-## wave별 인증·플랫폼 (Agent)
+## 인증·플랫폼 Milestone (Agent)
 
-계획 축: [`waves.md`](waves.md)
+계획 축: [`development-wave.md`](development-wave.md) (2026-08-26부터 Milestone `MVP 출시`/`출시 이후` 2단계 — 이전 wave 1~4 축은 폐지)
 
-| wave | 작업 |
+| Milestone | 작업 |
 |------|------|
-| **1** | [`auth-social-login.md`](../specs/auth/auth-social-login.md) — login/refresh/logout |
-| **4** | [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) — RTR + Redis |
-| **4** | 딥링크, 앱 버전 호환 |
-| **3~4** | 푸시, 분석, 결제 등 — 각각 스펙 + decisions |
-| **Release Gate**(wave 무관) | Apple S2S webhook(#5) 등 스토어 심사 필수 항목 — [`waves.md`](waves.md#-앱-배포심사-체크리스트-release-gate-wave와-무관-최우선) |
+| **MVP 출시** | [`auth-social-login.md`](../specs/auth/auth-social-login.md) — login/refresh/logout |
+| **출시 이후** | [`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md) — RTR + Redis |
+| **출시 이후** | 딥링크, 앱 버전 호환 |
+| **미정** | 푸시, 분석, 결제 등 — 각각 스펙 + decisions 확정 후 Milestone 지정 |
+| **Release Gate**(Milestone과 무관) | Apple S2S webhook(#5) 등 스토어 심사 필수 항목 — [`development-wave.md` §4](development-wave.md#4-앱-배포심사-release-gate--milestonepriority와-무관) |
 
 ## 관련 문서
 
 | 문서 | 용도 |
 |------|------|
-| `waves.md` | **계획·우선순위 SSOT** (wave 1~4) |
+| `development-wave.md` | **릴리즈 Milestone·priority 운영 SSOT** |
 | `mvp.md` | 기능 In/Out |
 | `prd.md` | 앱 설치·온보딩 등 사용자 시나리오 |
 | `design/figma-wireframe-v1.md` | 화면·상태 |
 | `architecture.md` | 서버 도메인 기반 레이어드·Controller/Service/Repository |
 | `architecture/api-response.md` | REST JSON envelope **초안** (프론트 합의용) |
-| `specs/auth-social-login.md` | wave 1 소셜 로그인·JWT |
-| `specs/google-calendar-oauth.md` | wave 3 Google Calendar · 환경 A/B · code→POST |
-| `specs/auth-token-rotation.md` | wave 4 RTR + Redis (Draft) |
+| `specs/auth-social-login.md` | MVP 출시 — 소셜 로그인·JWT |
+| `specs/google-calendar-oauth.md` | MVP 출시 — Google Calendar · 환경 A/B · code→POST |
+| `specs/auth-token-rotation.md` | 출시 이후 — RTR + Redis (Draft) |
 | `specs/auth-apple-server-notifications.md` | Apple 계정 변경 S2S webhook |
 | `decisions/001-auth-mobile-token-verification.md` | 모바일 토큰 검증 + JWT (안 B) |
 | `decisions/004-auth-token-rotation.md` | RTR + Redis 확정 |

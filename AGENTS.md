@@ -5,9 +5,9 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 ## How We Build
 
 **0. 문서·구현 정합 (최우선)** — 스펙·결정·문서 간 값·계약이 어긋나면 **구현하지 말고 사용자에게 질문**. 상세: `.claude/rules/harness-workflow.md` ⛔ STOP.  
-**Wave Must/Nice/Out** — 이슈 `## Must Have`·스펙 `MVP: In scope`만으로 Must를 단정하지 않음. SSOT: Wave Backlog(`#29`~`#32`) · `.claude/rules/harness-wave.md`.
+**priority: must/could** — 이슈 `## 완료 조건`·스펙 `MVP: In scope`만으로 must를 단정하지 않음. 기능 구현·버그 수정=must, 성능 개선·구조 정리·최적화=could. SSOT: `docs/product/development-wave.md` §2 · `.claude/rules/harness-wave.md`.
 
-기획·검증 기준을 먼저 고정하고, 그에 맞춰 구현합니다. **계획 축**은 `docs/product/development-wave.md` (운영) · `docs/product/waves.md` (요약, wave 1~4), **기획**은 `docs/product/`, **기능 설계**는 `docs/specs/`, **아키텍처 선택**은 `docs/decisions/`에 둡니다. DB·인증·다파일 변경 시 스펙 필수 (`harness-workflow` 규칙). 구현 후 `./gradlew test`와 PR·CI로 검증합니다.
+기획·검증 기준을 먼저 고정하고, 그에 맞춰 구현합니다. **계획 축**은 `docs/product/development-wave.md`(운영 SSOT — Milestone `MVP 출시`/`출시 이후` + `priority:` 라벨), **기획**은 `docs/product/`, **기능 설계**는 `docs/specs/`, **아키텍처 선택**은 `docs/decisions/`에 둡니다. DB·인증·다파일 변경 시 스펙 필수 (`harness-workflow` 규칙). 구현 후 `./gradlew test`와 PR·CI로 검증합니다.
 
 ## Tech Stack
 
@@ -29,7 +29,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 - **문서·스펙·결정 정합 최우선** — 문서 간·문서-구현 간 충돌 시 질문 없이 구현·기본값 변경 금지 (`.claude/rules/harness-workflow.md` ⛔ 섹션)
 - **ErrorCode·AOP** — 실패 분기·`last_activity_at` touch·권한 게이트 변경 시 **같은 턴**에 enum·어노테이션·스펙 갱신 (하네스 ⛔ ErrorCode 절)
 - **`[미정]` 항목:** 중앙 트래커(구 `#2`) 폐지(2026-08-19) — 기획 미확정 항목은 해당 문서에 표기만 남김 (하네스 `harness-wave` · CONTRIBUTING)
-- **Wave Must/Nice/Out:** Backlog(`#29`~`#32`) 없이 단정 금지 — `harness-wave.md`
+- **priority: must/could:** 근거 없이 단정 금지, 애매하면 사용자 확인 — `harness-wave.md`
 - **DB:** 상용 보존 데이터 없음 → Flyway/SQL 마이그레이션 **작성 금지**. 엔티티 최신본 + `ddl-auto`, 필요 시 DB 리셋 (`.claude/rules/harness-workflow.md`)
 - **레거시:** 현행 Approved와 다른 코드·호환 레이어·**교체된 구 메서드/상수**는 **같은 PR에서 즉시 삭제** (dev·구 클라/DB 호환 금지 — `harness-workflow` STOP §4)
 - **ERD:** 고정이 아님 — 스키마 개선을 **적극 제안**, 승인 시 엔티티+`erd.md`만 최신화 (`harness-follow-up.md`)
@@ -42,8 +42,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 | `src/main/java/com/tripfit/tripfit/` | 애플리케이션·도메인 코드 |
 | `src/main/resources/` | `application.yml`, 프로필별 `application-{profile}.yml` |
 | `src/test/java/` | 단위·통합 테스트 |
-| [`docs/product/waves.md`](docs/product/waves.md) | **계획·우선순위** — wave 1~4 요약 |
-| [`docs/product/development-wave.md`](docs/product/development-wave.md) | **Wave 운영·판단·GitHub Backlog** SSOT |
+| [`docs/product/development-wave.md`](docs/product/development-wave.md) | **릴리즈 Milestone·priority 운영·판단** SSOT |
 | [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
 | [`deploy/README.md`](deploy/README.md) | **배포 SSOT** — Docker·EC2·검증 스크립트 |
 | [`.claude/rules/README.md`](.claude/rules/README.md) | Claude Code 규칙·스킬·훅 |

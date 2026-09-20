@@ -71,7 +71,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 ## 작업 분류 (시작 전 30초)
 
-1. `docs/product/development-wave.md` 활성 Wave·Must · 요약 `docs/product/waves.md`
+1. `docs/product/development-wave.md` 활성 Milestone(MVP 출시/출시 이후)·Must
 2. GitHub 이슈 — 범위·완료 기준 확인/생성 (**브랜치용 `#n` 확정**, 새 이슈 생성은 아래 ⚠️ 확인 필수)
 3. DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현
 4. 그 외 → `AGENTS.md` + 관련 `docs/product/` 후 바로 구현

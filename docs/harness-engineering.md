@@ -40,7 +40,7 @@ Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontma
 | 파일 | 항상 로드? | 핵심 내용 |
 |------|-----------|-----------|
 | [`harness-workflow.md`](../.claude/rules/harness-workflow.md) | ✅ | ⛔ STOP(문서 정합·ErrorCode/AOP same-turn·DB 마이그레이션 금지·레거시 즉시 삭제·Breaking-Change-Reason) + Before/While/After Coding 절차 |
-| [`harness-wave.md`](../.claude/rules/harness-wave.md) | ✅ | Wave Must/Nice/Out을 Backlog 없이 단정 금지, `[미정]` 문서 표기(중앙 트래커는 2026-08-19 폐지), Release Gate(스토어 심사 필수 항목) |
+| [`harness-wave.md`](../.claude/rules/harness-wave.md) | ✅ | priority(must/could)를 근거 없이 단정 금지, `[미정]` 문서 표기(중앙 트래커는 2026-08-19 폐지), Release Gate(스토어 심사 필수 항목) |
 | [`harness-follow-up.md`](../.claude/rules/harness-follow-up.md) | ✅ | 구현 후 후속 제안 형식, 「다른 이슈로」범위 분리(Defer) 절차, ERD 적극 제안(스키마 고정 아님) |
 | [`workflow-tools.md`](../.claude/rules/workflow-tools.md) | ✅ | 도구 채택 우선순위(§7), 버그 재현 절차, 작업 유형→도구 매핑표 |
 | [`plain-language-reporting.md`](../.claude/rules/plain-language-reporting.md) | ✅ | 코드 주석과 **사용자 보고**의 문체를 분리 — 보고는 용어 풀어쓰기·비유 우선, 과장 금지 |
@@ -95,7 +95,7 @@ Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontma
 | 신규 `ErrorCode` "신규 vs 변경" 오분류(#75, 2026-07-31) | 기존 상수의 `HttpStatus`만 바뀐 것도 diff의 `+` 줄만 보고 "완전 신규"로 오판 | `-`(제거)에도 같은 이름이 있으면 "변경"으로 분리 표시하도록 스크립트 보정 |
 | PR 없이 main에 직접 push(#67) | merge-push는 중복 알림 방지로 breaking-change 알림을 skip하는데, PR 없이 직접 push하면 이 휴리스틱이 안 걸려 알림 자체가 안 나감 | `docs/api/README.md`에 이 사각지대를 명시적으로 기록 — PR 경유가 알림의 전제 조건임을 문서화 |
 | `warn-breaking-change.sh` 오차단 | §5 참고 | agent-type → command-type 훅으로 전환 |
-| Wave `Nice`/`Out` 혼용 표기(#19/#20) | 두 개념을 한 칸에 섞어 써서 "이번 wave에서 하는 건지 안 하는 건지" 불명확해짐 | `harness-wave.md`에 Must/Nice/Out을 Backlog 없이 단정 금지 + Nice·Out 혼용 표기 금지를 명문화 |
+| Wave `Nice`/`Out` 혼용 표기(#19/#20) | 두 개념을 한 칸에 섞어 써서 "이번 wave에서 하는 건지 안 하는 건지" 불명확해짐 | 당시 `harness-wave.md`에 Must/Nice/Out을 Backlog 없이 단정 금지 + Nice·Out 혼용 표기 금지를 명문화 (2026-08-26: Nice→Could로 개명, Backlog 텍스트 방식은 폐지하고 `priority:` 라벨로 이관 — `harness-wave.md` 참고) |
 | Google Calendar의 Wave 축 재분류 | "로그인 자격증명"(Wave 1)과 "로그인이 매개하는 외부 서비스 연동"(Wave 3)의 경계가 헷갈려 재분류가 필요했음 | 이후 이 경계에 걸리는 새 이슈는 에이전트가 스스로 확정하지 않고 사용자에게 한 줄 확인을 받도록 규칙화 |
 | `NotificationController` Swagger 스키마 소실 | 제네릭 wrapper(`SuccessResponse<T>`)를 raw 타입으로 `@Schema(implementation=...)`에 지정하면 springdoc이 실제 `data` 타입을 못 읽어 스키마 전체가 사라짐 | "`@Schema` 존재 ≠ 실제 Swagger 노출"이라는 STOP §1.6 규칙 + `useReturnTypeSchema=true` 해결책을 `spring-boot-java.md`에 고정 |
 
@@ -124,7 +124,7 @@ push/PR → OpenApiSpecExportTest → oasdiff breaking (스키마 diff)
 
 - **새 이슈·새 브랜치·새 PR 생성**은 사용자가 이미 명시적으로 요청한 게 아니면 항상 먼저 채팅으로 확인합니다(2026-08-04/08-05 사용자 결정) — 구현·커밋까지 승인받았다고 PR 생성까지 자동으로 승인된 게 아닙니다.
 - **DB·인증·다파일 변경**은 `specify` 스킬의 Approved 스펙 없이 구현을 시작하지 않습니다.
-- **Wave Must/Nice/Out**은 이슈나 스펙 문구만으로 단정하지 않고, Wave Backlog 이슈(#29~#32)를 SSOT로 확인합니다.
+- **priority: must/could**는 이슈나 스펙 문구만으로 단정하지 않고, 이슈의 `priority:` 라벨(`development-wave.md` §2가 SSOT)로 확인합니다.
 - **커밋은 사용자가 명시적으로 요청할 때만** 생성합니다 — 통상 주제별 최대 3개로 분할.
 
 ## 10. 컨텍스트 격리 — 자기 채점 편향을 피하는 구조

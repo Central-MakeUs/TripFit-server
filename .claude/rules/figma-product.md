@@ -11,8 +11,7 @@ API 계약·CORS·인증·DTO는 **`client-platform.md`** 참고.
 
 API·도메인 작업 전 **순서대로** 확인:
 
-1. `docs/product/development-wave.md` — 활성 Wave·Must
-2. `docs/product/waves.md` — wave 번호 요약
+1. `docs/product/development-wave.md` — 활성 Milestone(MVP 출시/출시 이후)·Must
 2. `docs/product/mvp.md` — MVP 범위인지
 3. `docs/product/platform.md` — React 앱·스토어 목표, API/인증 전제
 3. `docs/product/design/figma-wireframe-v1.md` — 화면 맵, 상태, 리소스 초안

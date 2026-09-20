@@ -1,24 +1,32 @@
-# Harness — Wave · 용어 · [미정]
+# Harness — 릴리즈 마일스톤·우선순위·용어·[미정]
 
 코어 STOP·코딩 흐름: `harness-workflow.md`
 
 ## 🚨 Release Gate — 앱 배포·심사 필수 체크리스트
 
-**Wave 4("리팩토링·성능·런칭 후 UX", 출시 이후 개선)와 혼동 금지.** 스토어 제출·심사를 **통과하기 위해 반드시 필요**한 항목 — 없어도 되는 개선이 아니다. 2026-07-28 도입 계기: `#5`(Apple S2S webhook)가 심사 요건이었는데도 Wave 4로 잘못 분류돼 있었음. 상세: [`development-wave.md` §5](../../docs/product/development-wave.md#5-앱-배포심사-release-gate--wave와-무관).
+**Milestone `출시 이후`(런칭 후 개선)와 혼동 금지.** 스토어 제출·심사를 **통과하기 위해 반드시 필요**한 항목 — 없어도 되는 개선이 아니다. 2026-07-28 도입 계기: `#5`(Apple S2S webhook)가 심사 요건이었는데도 한때 잘못 분류돼 있었음. 상세: [`development-wave.md` §4](../../docs/product/development-wave.md#4-앱-배포심사-release-gate--milestonepriority와-무관).
 
-**판단 기준:** "이게 없으면 스토어 심사를 통과 못 하는가?" → Yes면 Release Gate(`release: blocking` 라벨, Milestone 없음), No면 Wave 4.
+**판단 기준:** "이게 없으면 스토어 심사를 통과 못 하는가?" → Yes면 Release Gate(`release: blocking` 라벨, Milestone은 다른 이슈와 동일하게 지정), No면 `priority:`만으로 충분.
 
-**현재 상태·과거 항목 이력·이슈 번호 재사용 관행:** [`development-wave.md` §5](../../docs/product/development-wave.md#5-앱-배포심사-release-gate--wave와-무관)가 SSOT — 여기서 중복 서술하지 않는다. **새 Release Gate 항목 발견 시 새 이슈를 만들어**(생성 전 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용) 그 문서 §5에 등록.
+**현재 상태·과거 항목 이력·이슈 번호 재사용 관행:** [`development-wave.md` §4](../../docs/product/development-wave.md#4-앱-배포심사-release-gate--milestonepriority와-무관)가 SSOT — 여기서 중복 서술하지 않는다. **새 Release Gate 항목 발견 시 새 이슈를 만들어**(생성 전 `harness-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용) 그 문서 §4에 등록.
 
-**에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 Wave/출시 상태를 논의할 때, `development-wave.md` §5에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
+**에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 릴리즈 상태를 논의할 때, `development-wave.md` §4에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
 
-**금지:** Release Gate 항목을 Wave 4로 분류
+**금지:** Release Gate 항목을 `출시 이후`로 분류
 
-## Wave 축 (2026-08 개편 — 도메인 축)
+## 릴리즈 축 (2026-08-26 개편 — Wave 도메인 축 폐지)
 
-Wave = **도메인/기술 축**: 1 소셜 로그인 · 2 MVP 로직(trip·recommend·member) · 3 외부 API 연동(Google Calendar·Firebase·Kakao) · 4 리팩토링·성능·런칭 후 UX. 상세 정의·이슈 매핑: [`development-wave.md` §1](../../docs/product/development-wave.md#1-wave-14-정의).
+과거엔 이슈를 "Wave"라는 도메인 축(1 소셜 로그인·2 MVP 로직·3 외부 API 연동·4 리팩토링·성능·런칭후UX) 4단계로 나눴으나, 실제 이슈의 46%가 Wave 2에 몰리고 Wave 4가 "기술부채"와 "런칭후 신규기능"을 억지로 묶고 있던 문제로 **폐지했다**(상세·변경 이력: [`development-wave.md` §0](../../docs/product/development-wave.md#0-무엇이-바뀌었나)).
 
-**로그인(Wave 1) vs 외부 연동(Wave 3) 경계 주의:** "로그인 자격증명 자체"(카카오·구글·애플 로그인, JWT)는 Wave 1, "로그인이 매개하는 외부 서비스 연동"(Google Calendar, FCM)은 Wave 3 — 헷갈리기 쉬우므로 새 이슈를 이 경계로 분류할 땐 **에이전트가 스스로 확정하지 않고 사용자에게 한 줄로 확인**받는다 (2026-08 Google Calendar가 Wave 축 개편 중 재분류되며 얻은 교훈).
+지금은 서로 겹치지 않는 3개 축만 쓴다:
+
+| 질문 | 담당 |
+|---|---|
+| MVP 범위인가? | `mvp.md` In/Out |
+| 출시 전/후? | Milestone `MVP 출시` / `출시 이후` |
+| 기능·버그(must) vs 성능·구조정리(could)? | 아래 `priority:` 절 |
+
+**Wave 관련 용어(`wave:N` 라벨, Wave 배치 결정 트리, "로그인 vs 외부연동 경계" 판단)는 전부 폐지됐다 — 새 이슈에 더 이상 적용하지 않는다.**
 
 ## `[미정]` 항목 처리 (전용 트래커 폐지 — 2026-08-19)
 
@@ -31,23 +39,25 @@ Wave = **도메인/기술 축**: 1 소셜 로그인 · 2 MVP 로직(trip·recomm
 
 **금지:** `[미정]`을 묻지 않고 임의 확정해 구현·커밋 · 폐지된 `#2` 트래커에 새 `[미정]` 추가
 
-## ⛔ Wave Must / Nice / Out · 용어 (단정 금지)
+## ⛔ priority: must / could · 용어 (단정 금지, 2026-08-26 기준 재정의)
 
-에이전트가 “Must다 / Nice다 / Out이다”를 **Backlog 없이** 단정하지 않는다. 분류 SSOT는 Wave Backlog Issue(`#29`~`#32`).
+**판단 기준 (Wave DoD 필수 여부가 아니라 작업 성격 기준):** 성능 개선·폴더/패키지 구조 정리·리팩터·최적화 = `priority: could`. 그 외 **기능 구현 자체·버그 수정은 전부** `priority: must`. 현재 could는 `#9`(S3 미러링, 이미지 서빙 안정성 개선)·`#52`·`#54`·`#86`(Calendar 동기화 신뢰성 개선)·`#100`(전부 구조정리·리팩터·인프라 안정성 성격) 5개뿐 — 나머지는 전부 must.
+
+**⛔ 에이전트가 스스로 must/could를 판단해 라벨을 부여·변경하지 않는다 — 반드시 사용자에게 먼저 확인.** 2026-08-26 `#9`(S3 미러링)·`#86`(Calendar 동기화 방식 변경)을 에이전트가 "기능 구현/신뢰성 우선"으로 자체 판단해 must로 분류했다가, 사용자가 could로 정정한 사고 계기 — "새 기능([Feat]) 태그가 붙어 있다"는 표면적 신호만으로 must를 단정하지 말고, 실제 작업 성격(안정성·효율 개선인지)을 봐야 한다. 신규 이슈 생성 시에도 동일 — priority 필드는 애매하면 사용자 확인 후 채운다.
 
 | 용어 | 의미 | SSOT |
 |------|------|------|
-| **이슈 `## Must Have`** | **그 이슈**를 끝내는 체크리스트 | 해당 Feature Issue |
-| **Wave Must** | 해당 Wave **DoD에 필수** | Backlog **Must** 섹션 |
-| **스펙 `MVP: In scope`** | 제품 범위에 들어감 — **Wave Must 자동 아님** | Must로 쓰려면 Backlog Must에 **명시** |
-| **Nice** | `wave:N`이지만 DoD **불필요** | Backlog **Nice** + 이슈 비고 `분류: Wave N Nice` |
-| **Out** | **이 Wave에서 안 함** (보류·다음 Wave·안 함) | Backlog **Out** — Nice와 **혼용 표기 금지** (`Nice / Out` 금지) |
+| **이슈 `## 완료 조건`** (구 `## Must Have`) | **그 이슈**를 끝내는 체크리스트. `priority: must`와 이름이 겹쳐 헷갈려서 개명함 | 해당 Feature/Bug Issue |
+| **Must** | 기능 구현 자체·버그 수정 | 이슈의 `priority: must` 라벨 |
+| **Could** | 성능 개선·폴더/패키지 구조 정리·리팩터·최적화 (MoSCoW Could have) | 이슈의 `priority: could` 라벨 |
+| **스펙 `MVP: In scope`** | 제품 범위에 들어감 — **`priority: must`와 별개 축** (범위 vs 작업 성격) | 혼동 금지 |
 
 **금지**
 
-- Backlog에 없는 이슈를 Wave Must/Nice라고 말함
-- `MVP: In scope`만 보고 Wave Must로 취급
-- Nice와 Out을 한 칸에 섞어 씀 (`#19`/`#20` 사고)
+- 근거(라벨) 없이 이슈를 Must/Could라고 말함
+- **사용자 확인 없이 priority 라벨을 부여·변경**(신규 이슈 포함)
+- Milestone·`priority:` 라벨 없이 이슈 방치
+- 이미 구현·머지된 기능을 문서가 stale하다는 이유로 mvp.md Out으로 방치 (`#107` 사고 — 실제 의존관계가 생기면 In Scope·Must로 재승격하고 문서를 amend)
 
 ## 일정·기간 용어 (혼동 금지 — glossary SSOT)
 

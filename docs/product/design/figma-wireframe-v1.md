@@ -110,7 +110,7 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 | 항목 | 정리 |
 |------|------|
 | **destination** | ver2·Figma ROOM_02 — ERD **MVP In** (PRD 구버전보다 최신) |
-| **Pin·내보내기** | Pin MVP In (D5 홈 2뷰). 내보내기 API [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) (**Wave 2 Nice**) |
+| **Pin·내보내기** | Pin MVP In (D5 홈 2뷰). 내보내기 API [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) (**Wave 2 Could**) |
 | **불가 사유 UI** | 팝업 텍스트 노출 여부 `[미정]` — API `note` 없음 |
 | **TBD** | 상태값으로 확정 (시간대 아님) |
 

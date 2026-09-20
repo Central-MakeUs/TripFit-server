@@ -1,6 +1,6 @@
 # 여행방 확정 일정 동적 썸네일 이미지 생성
 
-> wave: TBD (Backlog #29~#32 미반영 — Wave 배치는 Backlog 확인 후 결정)
+> wave: TBD (`#62` 이슈에 `wave:4` 라벨은 있으나 이 스펙에는 아직 미반영 — 확정 시 이 헤더 amend)
 > deferred from: [`kakao-invite-share.md`](kakao-invite-share.md) (Approved, wave 3) — B(확정 후 공유) 모드 데이터 확장
 > 상태: Draft
 > MVP: TBD
@@ -104,7 +104,7 @@ GET /api/v1/trips/{tripId} 응답에 thumbnailImageUrl 필드로 노출 (B 모�
 | 날짜 텍스트에 한글 포함 여부("6월 12일" vs "6.12") | [미정] | 한글 폰트 번들링 필요 여부에 영향 |
 | 재생성 정책(확정 후 일정 변경 시) | [미정] | 확정 후 일정이 실제로 변경될 수 있는지 `trip-schedule-snapshot.md`와 대조 필요 |
 | 카카오 클라이언트/크롤러의 이미지 캐싱 동작 | [미정] | 공식 문서에 명시 없음 — 실기기 테스트로 확인 필요 |
-| Wave 배치 | [미정] | Backlog(#29~#32)에 없음 — 사용자 확인 필요 |
+| Wave 배치 | [미정] | 이 스펙 헤더(`wave: TBD`)에 미반영 — `#62` 이슈 라벨(`wave:4`/`priority: could`)과 맞는지 사용자 확인 필요 |
 
 ## 완료 기준
 

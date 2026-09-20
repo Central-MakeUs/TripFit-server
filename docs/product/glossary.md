@@ -27,9 +27,9 @@
 | **마이페이지 조회 윈도우** | 본인 `GET /users/schedule/calendar` 허용 구간: **`today` ~ `max(today+2년−1일, 참여 중 ONGOING 여행 endRange 최댓값)`** (#37 C1 · #53 R4) | 여행방 희망 기간과 **별 축**. ONGOING 여행 희망 기간 종료일이 +2년보다 뒤면 그 날짜까지 확장 |
 | **A1** | (구) 요청 구간 길이 ≤730일. **#37 Approved:** 구간 ⊆ **`today`~`today+2년−1`** · today 이전 400 | #17 Implemented · #37 amend |
 | **여행 일수** | 여행을 몇 박 며칠로 진행할지. DB는 `duration_nights`(n박)+`duration_days`(m일) 둘 다 저장(파생 아님). 유효 범위 `nights+1 ≤ days ≤ min(nights+2, 희망기간일수)`. **0박(당일치기)도 동일 규칙**(days=1 또는 2) | API `durationNights`+`durationDays` |
-| **Wave Must** | 해당 Wave DoD에 필수인 이슈 | Backlog Must 섹션 SSOT — 이슈 `## Must Have`와 **다름** |
-| **Nice** | wave 소속이지만 DoD 불필요 | Backlog Nice · 비고 `분류: Wave N Nice` |
-| **Out** | 이 Wave에서 안 함 | Backlog Out — Nice와 혼용 금지 |
+| **Must** | 기능 구현 자체·버그 수정 (2026-08-26 재정의 — Wave DoD 필수 여부 아님) | 이슈의 `priority: must` 라벨 — 이슈 `## 완료 조건`(구 `## Must Have`)와 **다름** |
+| **Could** | 성능 개선·폴더/패키지 구조 정리·리팩터·최적화 (MoSCoW Could have, 구 명칭 "Nice") | 이슈의 `priority: could` 라벨 |
+| **Out** | MVP 범위 밖 (런칭 후 또는 안 함) | `mvp.md` Out — Could(작업 성격)와 별개 축, 혼동 금지 |
 | **미정(불확실) 일정** | 참석 가능 여부 미확정 | `personal_schedule` · `TBD` |
 | **schedule (폐기)** | 구 A안 단일 테이블 (`row_type`) | → `regular_schedule` + `personal_schedule` |
 | **오전/오후/저녁** | 하루를 세 단위로 나눈 일정 입력 최소 단위 | 오전(00:00–13:00), 오후(13:00–18:00), 저녁(18:00–24:00) — 정책서 4-3 |
@@ -57,4 +57,4 @@
 | **MVP** | Minimum Viable Product | 핵심 가치를 검증하기 위한 최소 기능 제품 |
 | **KPI** | Key Performance Indicator | 핵심 성과 지표 |
 | **BR** | Business Rule | `business-rules/` 규칙 ID 접두 |
-| **wave** | 개발 물결 | 계획·우선순위 유일 축 — [`waves.md`](waves.md) |
+| **wave** (폐지, 2026-08-26) | 구 도메인 축(1~4) | Milestone(`MVP 출시`/`출시 이후`)로 대체 — [`development-wave.md`](development-wave.md) |

@@ -7,33 +7,19 @@ body:
   - type: markdown
     attributes:
       value: |
-        계획 축: [`docs/product/development-wave.md`](../../docs/product/development-wave.md) · 요약 [`waves.md`](../../docs/product/waves.md)
+        계획 축: [`docs/product/development-wave.md`](../../docs/product/development-wave.md) — Milestone(`MVP 출시`/`출시 이후`)은 이슈 생성 시 사이드바에서 직접 지정
         DB·인증·다파일 변경 시 merge 전 [`docs/specs/`](../../docs/specs/) 스펙 링크 필요.
         본문은 아래 섹션 순서를 유지하면 Agent·PR과 연동하기 쉽습니다.
 
   - type: dropdown
-    id: wave
+    id: priority
     attributes:
-      label: wave (개발 물결)
-      description: "판단: Issue 생성 **전** development-wave.md §2 결정 트리 · SSOT → development-wave.md"
+      label: priority (우선순위)
+      description: "성능 개선·폴더/패키지 구조 정리·리팩터·최적화면 could, 그 외 기능 구현 자체·버그 수정이면 must. ⚠️ Agent는 스스로 판단해 채우지 말고 사용자에게 확인받을 것 — harness-wave.md"
       options:
-        - "1 — 소셜 로그인: 카카오·구글·애플 로그인, JWT, 온보딩"
-        - "2 — MVP 로직: trip·recommend·member 등 서버 도메인 로직"
-        - "3 — 외부 API 연동: Google Calendar·Firebase·Kakao 등"
-        - "4 — 리팩토링·성능·런칭 후 UX: 백엔드 성능·인프라 + MVP 이후 추가 기능"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: area
-    attributes:
-      label: 영역 (area)
-      options:
-        - api
-        - domain
-        - deploy
-        - docs
-        - infra
+        - "must — 기능 구현 자체·버그 수정"
+        - "could — 성능 개선·폴더/패키지 구조 정리·리팩터·최적화"
+        - "해당 없음 (문서 메타 이슈)"
     validations:
       required: true
 
@@ -53,7 +39,7 @@ body:
       description: 왜 지금 이 이슈가 생겼는지 — 문제·모순·트리거·분리/defer 사유
       placeholder: |
         - D5 구현 중 last_activity_at hook이 create/join만 있어 #26으로 분리
-        - submit·sparse·온보딩 skip이 한 세트로 모순 → wave 1에서 재설계
+        - submit·sparse·온보딩 skip이 한 세트로 모순 → 재설계 필요
     validations:
       required: true
 
@@ -89,7 +75,8 @@ body:
   - type: textarea
     id: requirements
     attributes:
-      label: Must Have (완료 기준)
+      label: 완료 조건
+      description: 이 이슈 자체가 끝났다고 볼 체크리스트 (위 priority 필드의 must/could와는 다른 개념)
       placeholder: |
         - [ ] API POST /api/v1/trips
         - [ ] `./gradlew test`
@@ -102,7 +89,7 @@ body:
       label: 범위 밖
       placeholder: |
         - join 미리보기 → #19
-        - 알림 → #21 (wave 3)
+        - 알림 → #21
 
   - type: textarea
     id: notes

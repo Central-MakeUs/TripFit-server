@@ -28,10 +28,9 @@
 - 숙소/교통 제휴 예약 서비스
 - 비회원·게스트 참여
 
-## 개발 물결 (wave)
+## 릴리즈 Milestone
 
-기능 우선순위·출시 단계는 [`waves.md`](waves.md) **wave 1~4** 만 사용한다. 기능→wave 매핑 표는 [`waves.md`](waves.md)가 SSOT — 여기서 중복 정의하지 않는다.  
-**운영·판단·Backlog:** [`development-wave.md`](development-wave.md) · 요약표: [`waves.md`](waves.md)
+기능 우선순위·출시 단계는 Milestone `MVP 출시`(이 문서 In Scope) / `출시 이후` 2단계만 사용한다(2026-08-26 — 이전 Wave 1~4 도메인 축은 폐지). **운영·판단 SSOT:** [`development-wave.md`](development-wave.md).
 
 ## MVP 완료 기준
 

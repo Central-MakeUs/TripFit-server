@@ -42,7 +42,7 @@
 
 - 프로필 이미지 변경 ([`user-profile-image-s3-mirror.md`](user-profile-image-s3-mirror.md) — wave 4)
 - 캘린더 연동 API
-- 회원 탈퇴 → [`user-account-withdrawal.md`](user-account-withdrawal.md)(Implemented, `#47` 브랜치, Wave 2 Nice)로 위임
+- 회원 탈퇴 → [`user-account-withdrawal.md`](user-account-withdrawal.md)(Implemented, `#47` 브랜치, Wave 2 Must)로 위임
 - `user_condition` CRUD
 
 ## API
