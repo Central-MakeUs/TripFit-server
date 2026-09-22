@@ -47,7 +47,7 @@ oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** �
 
 **추가 수정 (2026-07-31 amend, `#75` 코멘트 후속 — 위 두 감지로도 못 잡는 경로 2개 추가):**
 
-3. **ErrorCode·`@ApiResponse` HTTP 상태 불일치** — `ErrorResponse.code`가 `String`이라 컨트롤러의 `@ApiResponse(responseCode = "403", description = "AUTH_FORBIDDEN — ...")` 같은 리터럴과 실제 enum의 `HttpStatus`가 컴파일 타임으로 안 묶여 있습니다. enum의 `HttpStatus`만 바꾸고 컨트롤러 쪽 갱신을 깜빡하면, 런타임은 새 상태코드를 내려주는데 Swagger·oasdiff 기준 스펙은 옛 상태코드 그대로 남습니다. `@ApiResponse` description에 ErrorCode 이름이 그대로 적히는 컨벤션(`spring-boot-java.md`)을 단서로, `GIT_RANGE` diff가 아니라 **현재 트리 전체**를 매번 스캔해 실제 enum `HttpStatus`와 컨트롤러 `responseCode` 리터럴을 교차검증합니다("enum은 안 건드리고 컨트롤러만 잘못 고친" 경우까지 잡으려면 diff만으론 부족하기 때문).
+3. **ErrorCode·`@ApiResponse` HTTP 상태 불일치** — `ErrorResponse.code`가 `String`이라 컨트롤러의 `@ApiResponse(responseCode = "403", description = "AUTH_FORBIDDEN — ...")` 같은 리터럴과 실제 enum의 `HttpStatus`가 컴파일 타임으로 안 묶여 있습니다. enum의 `HttpStatus`만 바꾸고 컨트롤러 쪽 갱신을 깜빡하면, 런타임은 새 상태코드를 내려주는데 Swagger·oasdiff 기준 스펙은 옛 상태코드 그대로 남습니다. `@ApiResponse` description에 ErrorCode 이름이 그대로 적히는 컨벤션(`openapi-conventions.md`)을 단서로, `GIT_RANGE` diff가 아니라 **현재 트리 전체**를 매번 스캔해 실제 enum `HttpStatus`와 컨트롤러 `responseCode` 리터럴을 교차검증합니다("enum은 안 건드리고 컨트롤러만 잘못 고친" 경우까지 잡으려면 diff만으론 부족하기 때문).
 4. **권한 게이트(`@TripMemberOnly`/`@TripOwnerOnly`) 추가·제거** — 기존 `ErrorCode`(예: `AUTH_FORBIDDEN`)를 재사용해 새 엔드포인트에 게이트를 걸거나 떼면 신규 ErrorCode 탐지도, 스키마 필드 diff도 안 걸리는 가장 조용한 경로입니다. `GIT_RANGE`의 컨트롤러 diff에서 이 두 애노테이션이 추가/제거된 줄만 뽑아 알립니다.
 
 3·4 중 하나라도 있으면 `🕵️ oasdiff 스키마 diff 밖 위험 신호` embed를 별도로 보냅니다 — `BREAKING_COUNT`·`ADDITIONS_COUNT`와 **무관하게 항상** 확인합니다(oasdiff가 이미 다른 breaking change를 찾은 김에 같은 PR에 이 신호도 섞여 있을 수 있어서).

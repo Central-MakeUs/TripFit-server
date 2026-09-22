@@ -5,6 +5,8 @@ paths:
 
 # Spring Boot / Java
 
+OpenAPI 어노테이션(`@Schema`·`@Operation`·`@Parameter`·`@ApiResponses`) 규칙은 [`openapi-conventions.md`](openapi-conventions.md), 주석(`//`·Javadoc) 작성 스타일은 [`java-comments.md`](java-comments.md) — 이 파일은 레이어·Entity·Enum·SOLID/OOP/ACID·스타일·테스트를 다룬다.
+
 ## Package Layout (Domain-Driven Layered Architecture)
 
 최상위는 **도메인 단위**(`auth`, `trip`, `user`, `notification`, `common`)로 분리하고, 각 도메인 내부는 **계층형 레이어**(`controller/dto/service/domain/repository`, 필요 시 `client/exception/config`)를 일관되게 유지한다. **전체 패키지 트리 SSOT는 [`docs/architecture.md`](../../docs/architecture.md)** — 여기서 중복 유지하지 않는다.
@@ -74,7 +76,8 @@ Spotless(Eclipse): `alignment_for_enum_constants=48`, enum 상수 인자는 wrap
 - 테이블·컬럼: snake_case. 예약어 컬럼은 `@Column(name = "...")` 명시 (`rank` → `recommendation_rank`). 테이블명: **`users`**(구 `user` — MySQL 예약어 회피, Java 엔티티는 `User`)
 - `globally_quoted_identifiers: true` **사용 금지** (TEXT quoting 등과 조합 시 DDL 실패 유발). 스키마 drift 원인은 보통 **단일 설정이 아니라** TEXT quoting + 예약어 + dialect + naming strategy **조합** — Docker/배포 설정은 `deployment.md` SSOT
 - **PK / FK:** 모든 테이블 PK·FK는 **UUID v4**. Java `java.util.UUID`, DB `CHAR(36)`. `@GeneratedValue` + `@UuidGenerator` + `@JdbcTypeCode(SqlTypes.CHAR)` (`length = 36`). **`Long` / `IDENTITY` / `bigint` PK 금지.** SSOT: `docs/architecture/erd.md`, `docs/specs/cross-cutting/uuid-primary-key.md`
-- **필드 설명:** Entity·enum·베이스 클래스의 **클래스·필드·enum 상수**마다 `@Schema(description = "...")` (springdoc). nullable·example·requiredMode는 ERD·스펙과 맞출 것. 상세: 아래 OpenAPI 섹션
+- **필드 설명:** Entity·enum·베이스 클래스의 **클래스·필드·enum 상수**마다 `@Schema(description = "...")` (springdoc). nullable·example·requiredMode는 ERD·스펙과 맞출 것. 상세: `openapi-conventions.md` **OpenAPI @Schema** 절
+- **캡슐화(상태 전이):** 클래스 레벨 `@Setter` 금지, 상태 전이는 도메인 메서드로 한다 — 상세: 아래 **SOLID / OOP 원칙** 절
 
 ```java
 // ✅ PK
@@ -117,203 +120,72 @@ public enum VacationApplyPeriod {
 }
 ```
 
+## 표기 규칙 (casing)
+
+| 계층 | 규칙 | 예 |
+|------|------|-----|
+| DB·JPA | snake_case, 단수 테이블 | `trip`, `trip_member` |
+| Java | PascalCase / camelCase | `Trip`, `tripMember` |
+| API path | kebab-case 또는 snake | `/api/v1/trip-rooms` |
+| UI 한글 | `docs/product/glossary.md` 기준 | "여행방" ≠ 임의 영문 |
+
 ## 네이밍 우선 원칙 (프론트 · 신규 개발자 가독성)
 
 `@Schema`·`@Operation`·`//`로 "왜 이런 이름인지"부터 설명해야 한다면, 설명을 늘리기 전에 **이름 자체를 바꿀 수 있는지 먼저 검토한다.** 좋은 이름은 설명 없이도 오해를 안 만든다 — 문서는 이름이 못 담는 맥락(언제·왜·전제)만 보강하는 역할이다.
 
 - 새 enum 상수·필드명을 짓거나 리뷰할 때: "이 이름만 보고 신규 개발자·프론트가 오해하지 않을까?"를 먼저 묻는다. 오해 소지가 있으면 `@Schema`로 땜질하지 말고 **이름을 먼저 교체**한다.
 - **같은 개념 = 같은 필드명.** 같은 enum을 가리키는데 DTO마다 `status`/`memberStatus`/`myMemberStatus`처럼 이름이 흩어지면 안 된다 — "내 것" vs "타인 것" 구분만 접두사(`my`)로 통일하고 나머지는 동일한 이름을 쓴다.
-- 이름을 바꾸면 **같은 턴에** 전부 최신화한다: enum·DTO·테스트 · `docs/specs/` · `docs/architecture/erd.md` · `docs/product/glossary.md` · `docs/product/fe-context/`. 한 곳이라도 구 이름이 남으면 "구 이름 방치"로 `harness-workflow.md` STOP §4(레거시)와 동일하게 취급한다.
+- 이름을 바꾸면 **같은 턴에** 전부 최신화한다: enum·DTO·테스트 · `docs/specs/` · `docs/architecture/erd.md` · `docs/product/glossary.md`. 한 곳이라도 구 이름이 남으면 "구 이름 방치"로 `harness-workflow.md` STOP §4(레거시)와 동일하게 취급한다.
 - `@Schema`/`@Operation` 설명이 **3문단 넘게** 길어지거나 값별로 "의미"를 장황하게 반복해야 한다면, 우선 이름부터 다시 의심할 것 — 설명으로 이름의 결함을 메우지 않는다.
 - 예: `TripMemberStatus`의 구 `JOINED`→`SCHEDULE_PENDING`, 구 `RESPONDED`→`ACTIVE` 개명 — "방에 참여했다"로 오독되던 이름을 "일정 확인 대기중 / 방 활동 가능"으로 이름만으로 뜻이 드러나게 바꾼 사례 (`docs/specs/trip/trip-member-status-derive.md` 변경 이력).
 
-## OpenAPI 설명 어노테이션 (전부)
+## SOLID / OOP 원칙 (실용적 적용)
 
-springdoc OpenAPI 3 + `therapi-runtime-javadoc`(build.gradle). **설명 문자열이 들어가는 어노테이션은 종류와 무관하게 동일 규칙**을 쓴다.
+**전제 — 이 저장소는 풀 DDD·포트/어댑터 인터페이스 레이어를 채택하지 않는다** (`docs/decisions/003-architecture-guide.md` 결정 11 — 크로스 도메인 포트 인터페이스는 2026-08-26에 폐기됐다: "구현체가 항상 1개뿐이라 실질적 이득이 없었다"). 아래 규칙은 이 결정과 **충돌하지 않는 범위**에서만 SOLID/OOP를 적용한다 — 추상화를 위한 추상화(불필요한 인터페이스·레이어 추가)는 여기서도 금지다.
 
-| 어노테이션 | 위치 | 설명 출처 |
-|------------|------|-----------|
-| `@Schema(description)` | Entity · DTO · enum · ErrorCode · envelope | 어노테이션 문자열 (그대로 유지) |
-| `@Operation(summary)` | Controller | `summary`만 어노테이션, 상세 설명은 **메서드 Javadoc** — 아래 **OpenAPI @Operation · JWT** 절 |
-| `@Parameter(description)` | Controller 쿼리·path | 어노테이션 문자열 |
-| `@Tag(name/description)` | Controller | 어노테이션 문자열 |
-| 기타 (`@ApiResponse` description 등) | 있으면 동일 | 어노테이션 문자열 |
+### SRP — Service 책임 분리
 
-**독자:** 프론트·신규 서버 개발자. 구현 메모·이슈 트래커용 문자열이 아니다.
+- `*Service` 클래스는 **하나의 응집된 유스케이스 그룹**만 담당한다. 서로 다른 책임(예: 멤버십 관리 + 추천 로직)이 한 클래스에 섞이면 분리 신호다.
+- 이미 확립된 분리 패턴: `TripService`(facade) + `TripCommandService` / `TripQueryService` / `TripMemberQueryService`(`docs/decisions/003` 결정 10) — 다른 도메인의 Service가 커지면 같은 패턴(facade + Command/Query 분리)을 따른다.
+- 참고용 정량 신호(기계적 강제 아님): 한 Service가 300~400줄을 넘거나 서로 다른 도메인 개념을 다루면 분리를 검토한다. 줄 수만으로 쪼개지 않는다 — Controller처럼 실제로는 얇은 위임 + Swagger 어노테이션이 대부분이면 분리 대상이 아니다.
 
-**전 어노테이션 공통 금지**
+### OCP / ISP — 인터페이스는 다형성이 실제로 필요할 때만
 
-- GitHub 이슈 번호 (`#39` …)
-- BR/스펙 ID (`BR-USER-007`, `D5`, `D-JOIN-ENTRY`, `C1` 단독 등)
-- `docs/specs/...` 경로만 나열
-- `구 XXX 대체` 같은 레거시 메모
-- Bearer/JWT 문구 (`@Operation` — 자물쇠·`security`로만)
+- 기본은 **concrete 클래스 직접 주입**(`@RequiredArgsConstructor` + `private final`)이다. 구현체가 하나뿐인 의존성에 "나중에 갈아끼울 수도 있으니" 인터페이스를 미리 만들지 않는다 — 위 포트 폐기 사유와 동일한 이유다.
+- 인터페이스가 정당화되는 경우: **실제로 다형성이 있는** 의존성만. 예: `SocialTokenVerifier`(GOOGLE/KAKAO/APPLE 등 여러 concrete 구현이 실제로 존재하고 provider별로 동작이 다름), `JpaRepository`(Spring Data가 구현체를 생성).
+- 새 인터페이스를 추가하기 전 "지금 구현체가 2개 이상 존재하거나, 곧 그렇게 될 근거가 있는가?"를 먼저 답한다 — 아니면 concrete 클래스로 시작한다.
 
-**허용:** 도메인 용어의 **의미**, HTTP 상태·`ErrorCode` 상수명, idempotent/정렬/쿼리 의미
+### 캡슐화 — Entity는 의도가 드러나는 메서드로 상태를 바꾼다
 
-## OpenAPI @Schema (Entity · DTO · enum)
+- Entity 클래스에 **클래스 레벨 `@Setter` 금지**(저장소 전역에 이미 확립된 컨벤션 — 아래 **Style** 절). 여러 필드를 함께 바꾸는 상태 전이(예: 멤버십 활성화, 알림 읽음 처리)는 Service에서 setter를 여러 번 호출하지 않고, Entity에 `activate()`·`markRead(LocalDateTime now)`처럼 **의도가 드러나는 메서드**를 두고 그 안에서 처리한다 (`TripMember.activate()`, `NotificationHistory.markRead()` 참고). 무결성 조건(예: A 상태일 때만 B로 전이 가능)이 있으면 그 검증도 메서드 안에 둔다.
+- **Law of Demeter — 과도한 getter 체이닝 자제.** `@ManyToOne` 연관관계 자유 탐색은 이미 결정된 방침이라 1~2단계 탐색(`tripMember.getTrip()`, `trip.getOwner()`)은 문제 없다. 다만 **3단계 이상** 이어지거나(`a.getB().getC().getD()`), 같은 체이닝을 여러 Service 메서드에서 반복해야 한다면 — 자주 쓰는 값이라는 신호이니 중간 객체에 조회 메서드를 추가하거나 Repository/Support에서 필요한 값만 직접 가져오는 방식으로 승격한다.
+- 이 규칙은 풀 DDD(애그리거트 불변식·행위 중심 모델)를 의미하지 않는다 — JPA 연관관계 자유 탐색은 그대로 허용이고(`docs/decisions/003`), 여기서 막는 건 "여러 필드를 흩어진 setter 호출로 바꾸는" 절차적 패턴과 과도한 getter 체이닝 두 가지뿐이다.
 
-| 대상 | `@Schema` 위치 | 필수 |
-|------|----------------|------|
-| JPA `@Entity` / `@MappedSuperclass` | 클래스 + **모든 필드** | ✓ |
-| `{domain}/domain/` enum | enum + **각 상수** | ✓ |
-| `{domain}/dto/` record·class | record/class + **각 컴포넌트·필드** | ✓ (API 노출 DTO) |
-| `common/api/` envelope | record + 필드 | ✓ |
-| verifier 경계 record (`OAuthProfile` 등) | record + 필드 | ✓ |
-| Controller | `@Tag`, `@Operation`, `@Parameter` (아래 양식) | API 추가 시 |
+## ACID / 트랜잭션 경계
 
-**작성 규칙**
+`@Transactional` 자체는 위 **레이어** 절에서 다룬다 — 여기서는 트랜잭션 **안에서** 지켜야 할 것을 다룬다.
 
-- 설명은 **한국어**. Entity는 컬럼 의미·제약(nullable, UNIQUE, FK). API DTO는 **FE가 쓰는 의미** · null 의미 · 단위/범위
-- API 필드: `example`, `nullable`, `requiredMode = REQUIRED` (validation `@NotNull`/`@NotBlank`와 일치)
-- **클래스 `@Schema`:** 무엇인지 + 주로 쓰이는 API 경로 (이슈 번호 금지)
-- Entity는 Swagger UI에 직접 안 나와도 **코드·ERD SSOT**로 동일하게 작성
-- Javadoc 대신 `@Schema` 우선 (필드 의미). 메서드·API 흐름 주석은 아래 **Comments** 절
-- 계약 값·정책 SSOT: `docs/architecture/erd.md`, 해당 `docs/specs/` — 불일치 시 문서 먼저. **스펙 경로·스펙 ID는 `@Schema` 문자열에 넣지 않음**
+### Atomicity — 외부 I/O는 트랜잭션 밖에서 먼저 끝낸다
 
-### 상태성 enum `@Schema` (SCHEDULE_PENDING/ACTIVE · TripStatus 등)
+소셜 로그인 토큰 검증·FCM 발송·Google Calendar 호출 같은 **외부 API 호출**은 가능하면 `@Transactional` 시작 **전에** 끝내고, DB 쓰기만 짧게 트랜잭션 안에 넣는다. 외부 provider가 느려지거나 장애가 나도 DB 커넥션 풀을 오래 붙잡지 않기 위함이다 — provider 지연이 그 기능과 무관한 다른 요청까지 함께 느려지게 만들 수 있다.
 
-상수마다 **의미 / 언제 / 가능·불가**를 빈 줄로 구분한다. 클래스 `@Schema`는 “무엇인지 + 값 한 줄 요약”만.
+### Consistency — 무결성은 가능하면 DB 제약으로
 
-```java
-@Schema(description = """
-		여행방 안에서의 멤버 진행 상태 (SCHEDULE_PENDING | ACTIVE).
-		""")
-public enum TripMemberStatus {
-	@Schema(description = """
-			의미: 방장이 방을 만들었지만, 아직 이 방 일정 확인을 끝내지 않은 상태.
+FK·UNIQUE 제약으로 표현 가능한 무결성은 DB 제약을 우선한다. Service 레벨 검증은 DB 제약으로 표현할 수 없는 비즈니스 규칙(BR-*)에만 쓴다.
 
-			언제: 방장=POST /trips 직후, 참여자=POST /trips/join 직후 ~ POST .../activate 전.
+### Isolation — 동시 쓰기 충돌 지점은 스펙에 명시
 
-			불가: 방 상세·멤버·달력·초대 공유.
-			""")
-	SCHEDULE_PENDING,
-	// ...
-}
-```
+같은 row를 여러 요청이 동시에 갱신할 수 있는 유스케이스(예: 정원 체크 후 멤버 추가, 멤버 상태 동시 전이)는 lost update 위험을 인지하고 스펙에 동시성 처리 방식을 명시한다 — 낙관적 락(`@Version`) 또는 재조회 후 조건부 갱신 중 하나를 스펙 단계에서 선택한다(현재 저장소에 `@Version` 사용 사례는 아직 없다 — 필요해지면 그때 도입). 기본 격리수준(MySQL InnoDB `REPEATABLE READ`)을 벗어나는 요구가 있으면 그 이유를 스펙에 남긴다.
 
-### 파생·조회 시 계산 필드 (DB 컬럼 없음)
+### Durability — 롤백돼야 하는 것과 커밋 후에만 나가야 하는 것을 분리
 
-Entity·`user` 테이블에 **저장되지 않는** API 필드(예: `hasCompletedPreSchedule` — `users.vacation_apply_period IS NOT NULL` 파생)는 아래를 **반드시** 남긴다.
-
-| 위치 | 필수 내용 |
-|------|-----------|
-| **DTO `@Schema(description)`** | 어떤 조건인지 · **저장 안 함** · **true/false가 바뀌는 트리거**(어떤 CRUD) · **값이 클라이언트에 실리는 API**(login/me 등). 스펙 ID·이슈 번호 금지 |
-| **계산 Service** (`UserSummaryService` 등) | 클래스·public 메서드 `//` — **어디서 호출되는지**, EXISTS/집계 **How**, 정책 **Why(평문)** |
-| **Repository** | EXISTS·집계 메서드 — **파생 필드 SSOT 조회**임을 한 줄 (`existsByUserId` 등) |
-| **스펙** | `docs/specs/` 해당 정책 ID — **스펙 문서용**, Swagger·역할 `//` 본문 아님 |
-
-- ❌ DTO 필드명만으로 “알아서 파생값” 가정 — OpenAPI·프론트 계약 깨짐
-- 일정 CRUD 응답에 `user` 요약이 **없으면** `@Schema` 또는 Service 주석에 **me 재조회 필요** 명시
-
-```java
-@Schema(description = "소셜 로그인 요청")
-public record LoginRequest(
-		@Schema(description = "소셜 제공자", example = "GOOGLE", requiredMode = Schema.RequiredMode.REQUIRED)
-		@NotNull
-		SocialProvider provider,
-
-		@Schema(description = "GOOGLE/APPLE: id_token, KAKAO: access_token", requiredMode = Schema.RequiredMode.REQUIRED)
-		@NotBlank
-		String token
-) {}
-```
-
-## OpenAPI @Operation · JWT (Controller)
-
-`OpenApiConfig`에 **`bearer-jwt`** HTTP Bearer 스키마 + **전역 `security`** 가 있다. Swagger UI 자물쇠 = JWT 필요.
-
-**독자:** 프론트·신규 서버 개발자. Javadoc은 구현자 메모가 아니라 **호출 가이드**다.
-
-| 엔드포인트 | 코드 | Swagger |
-|------------|------|---------|
-| JWT 필요 (`@AuthorizedUser` 사용) | `@Operation(summary)`만 — **전역 security 유지** | 자물쇠 ON |
-| JWT 불필요 (login/refresh/logout 등) | `security = {}`로 전역 해제 | 자물쇠 OFF |
-
-**`summary`:** `@Operation` 어노테이션에 한국어 한 줄 (동사+대상). **`description` 속성은 쓰지 않는다** — 상세 설명은 메서드 위 Javadoc(`/** ... */`)에 쓰고 `therapi-runtime-javadoc`이 런타임에 읽어 Swagger `description`으로 자동 반영한다(springdoc이 classpath의 therapi를 자동 감지 — 별도 설정 불필요).
-
-**Javadoc 내용 — Stripe/GitHub 스타일: 자유 서술, 고정 헤더 없음.** 이름·시그니처·`@ApiResponse` 예시로 이미 드러나는 건 반복하지 않고, **이름만으로는 모를 것만** 짧게 쓴다 — 전제조건, 부작용(상태 전이), idempotent 여부, 흔한 에러 원인 정도. 설명할 게 없으면(단순 CRUD 조회 등) Javadoc 자체를 생략해도 된다 — `summary`만으로 충분하면 그걸로 끝.
-
-- 문단 구분은 Javadoc 그대로(빈 줄) — Markdown 헤더(`목적:`, `결과:` 등)를 강제하지 않는다
-- `@Tag(name, description)` — 태그 한 줄 목적
-- 쿼리 의미가 한눈에 안 들어오면 `@Parameter(description)` 보강
-- **인증 여부는 `security`로만** (`"Bearer 필수"` 문구 금지)
-- `@AuthorizedUser` 있는 메서드에 `security = {}` 두지 말 것
-- `SecurityConfig` `permitAll`과 Controller `security = {}`를 **같이** 맞춤
-
-**Javadoc(`@Operation`/`@Tag`/`@Parameter` 설명 포함) 공통 금지**
-
-- GitHub 이슈 번호 (`#39`, `#17` …)
-- BR/스펙 ID (`BR-USER-007`, `D5`, `D-JOIN-ENTRY`, `C1` 단독 등)
-- `docs/specs/...` 경로만 나열
-- Bearer/JWT 문구 (자물쇠와 중복)
-
-**허용:** 도메인 용어의 **의미** (`SCHEDULE_PENDING` = 멤버이지만 일정 확인 전), HTTP 상태·`ErrorCode` 상수명, idempotent/정렬/쿼리 의미
-
-**예시**
-
-```java
-/**
- * 일정 확인을 끝내 여행방 입장을 완료한다. 방장·참여자 모두 이 API로 SCHEDULE_PENDING → ACTIVE가 된다.
- * 이미 ACTIVE면 상태 변경 없이 동일 응답(idempotent)이고, 방 안 API는 이 호출 이후에만 쓸 수 있다.
- */
-@Operation(summary = "여행방 멤버십 활성화")
-@PostMapping("/{tripId}/activate")
-ResponseEntity<SuccessResponse<TripDetailResponse>> activateMembership(...) { ... }
-
-// ✅ 설명할 게 없으면 Javadoc 생략 — summary만으로 충분
-@Operation(summary = "정기 일정 목록")
-@GetMapping("/regular")
-ResponseEntity<?> listRegular(@AuthorizedUser UUID userId) { ... }
-
-// ✅ JWT 불필요 — security = {} 필수
-/** 소셜 토큰으로 로그인하고 access·refresh를 발급한다. 앱 최초 로그인·재로그인에 사용. */
-@Operation(summary = "소셜 로그인", security = {})
-@PostMapping("/login")
-ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
-```
-
-### OpenAPI 200 성공 응답 (`@ApiResponse`) — 필수
-
-지금까지 `@ApiResponses`는 **에러 코드만** 문서화해 Swagger UI에서 성공 example을 볼 수 없었다. **모든 API**는 성공 케이스도 에러와 **같은 `@ApiResponses` 배열**에 명시한다 (프론트가 200 응답 example을 바로 확인할 수 있어야 함).
-
-- 실제 성공 HTTP 상태로 `responseCode`(`"200"`/`"201"`/`"204"`) 지정 — 배열 **맨 앞**(에러보다 먼저)에 둔다.
-- **Body 있는 응답: `useReturnTypeSchema = true` + `content = @Content(examples = @ExampleObject(value = "..."))`** — `schema`는 명시하지 않는다. Controller 메서드의 실제 반환 타입(`ResponseEntity<SuccessResponse<XxxResponse>>`)에서 springdoc이 `SuccessResponseXxxResponse`라는 파생 스키마를 자동 생성해, 그 안의 필드·enum까지 Swagger UI Schema 탭에 전부 노출된다.
-- **`schema = @Schema(implementation = SuccessResponse.class)`로 직접 지정 금지(성공 200/201에서).** 이 raw 타입 지정은 제네릭을 지워버려 springdoc이 실제 `data` 타입(리스트·필드·enum 포함)을 전혀 못 읽는다 — `data`가 무타입 처리되고 example 문자열만 남아, 프론트가 Swagger Schema 탭에서 응답 필드·enum 값을 확인할 수 없게 된다(`NotificationController` 사고 사례, `docs/specs/notification/notification.md` 변경 이력 참고). 에러 응답(`ErrorResponse.class`)은 제네릭이 아니므로 `schema = @Schema(implementation = ErrorResponse.class)`를 그대로 써도 된다.
-- `SuccessResponse`는 `@JsonInclude(NON_NULL)`이라 성공 시 `message`/`code` 키가 실제 응답 바디에 **없다** — example도 `{"data": {...}}`만 쓰고 `message`/`code`는 넣지 않는다.
-- `data` 안 값은 **실제 DTO 필드 전부**를 반영한 값으로 채운다 — DTO에 없는 필드를 지어내지 않는다.
-- `ResponseEntity<Void>`(204 No Content): `content` 없이 `@ApiResponse(responseCode = "204", description = "...")`만.
-- 목록 API의 `data`는 실제 응답 DTO 구조(예: 배열 필드명)를 example에 그대로 반영.
-
-```java
-// ✅ 200을 배열 맨 앞에 추가 (me 예시) — useReturnTypeSchema로 SuccessResponseUserSummaryResponse 자동 생성
-@ApiResponses({
-		@ApiResponse(
-				responseCode = "200",
-				description = "조회 성공",
-				useReturnTypeSchema = true,
-				content = @Content(
-						examples = @ExampleObject(value = """
-								{"data": {"id": "3f2e2c1a-...", "name": "김트립", "hasCompletedPreSchedule": true}}
-								"""))),
-		@ApiResponse(
-				responseCode = "401",
-				description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-				content = @Content(
-						schema = @Schema(implementation = ErrorResponse.class),
-						examples = @ExampleObject(value = """
-								{"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-								""")))
-})
-// ✅ 반환 타입도 반드시 구체 타입 — ResponseEntity<?>가 아니라 ResponseEntity<SuccessResponse<UserSummaryResponse>>
-ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) { ... }
-```
+트랜잭션이 롤백되면 그 안에서 준비한 부수 효과(알림 발행 등)도 함께 취소돼야 자연스러운데, 실제 발송처럼 **커밋 이후에만** 실행돼야 하는 부수 효과를 트랜잭션 내부에서 직접 호출하면 롤백된 트랜잭션의 알림이 이미 나가버리는 사고로 이어진다. 이런 부수 효과는 `@TransactionalEventListener(phase = AFTER_COMMIT)`로 분리한다 — `NotificationEventListener`(여행방·리마인드 이벤트를 트랜잭션 커밋 후 받아 FCM 발송·이력 저장)가 이미 이 패턴을 쓰고 있다.
 
 ## Style
 
 - Java 21 (records, pattern matching) 사용 가능
 - Lombok — Entity(JPA)·`@ConfigurationProperties` 클래스·**Service**만 사용. Controller/DTO(record)는 미사용(2026-08-14 개정 — 이전엔 Service도 미사용이었으나 생성자 보일러플레이트 제거를 위해 허용으로 변경).
-  - Entity: `@Getter`(+`@Setter`)만. `@Data`/`@EqualsAndHashCode`/`@ToString`은 Entity에 금지(JPA 프록시·지연로딩 함정)
+  - Entity: **클래스 레벨 `@Getter`만.** `@Setter`는 클래스 레벨에 두지 않는다 — 상태 전이는 도메인 메서드로 한다(위 **SOLID / OOP 원칙 — 캡슐화** 절). 예외: PK(`id`) 필드에 한해 테스트 픽스처용 **필드 레벨** `@Setter`를 허용한다(`updatable = false`라 런타임 갱신 경로가 없음 — `Trip.id`/`TripMember.id` 참고). `@Data`/`@EqualsAndHashCode`/`@ToString`은 Entity에 금지(JPA 프록시·지연로딩 함정)
   - Service: 생성자 주입 필드는 `@RequiredArgsConstructor` + `private final` — 수동 생성자 작성 금지(ArchitectureTest가 필드 주입 금지는 이미 검증, 생성자 스타일은 리뷰로 확인)
     - **예외 — 수동 생성자 유지:** 생성자 바디에 필드 대입 외 로직(검증·파생값 계산 — `JwtService`의 secret 길이 검증 등)이 있거나, `@Lazy`처럼 **생성자 파라미터에만** 걸려야 의미가 살아나는 스프링 애너테이션이 있는 경우(필드에 붙이면 Lombok이 생성자로 복사하지 않음 — `FcmService`의 `@Lazy FirebaseMessaging` 사고 사례, 2026-08-14). 이런 경우 수동 생성자를 유지하고 이유를 `//` 한 줄로 남긴다
   - 단일 필드 `@ConfigurationProperties`(`FcmProperties`, `SocialTokenCryptoProperties`)는 예외적으로 수동 getter/setter 유지 — 유출 위험 없음, `cross-cutting/audit.md` C에서 검토 후 유지 결정
@@ -345,121 +217,13 @@ ResponseEntity<...> updateProfile(
 		UpdateProfileRequest request) { ... }
 ```
 
-## Comments
-
-**독자:** 신규 서버 개발자. `//`는 구현자 메모·이슈 트래커용 약어가 아니라 **이름만으로 안 드러나는 것**을 평문으로 남긴다.
-필드 의미는 `@Schema`, API 계약·요약은 `@Operation`·`@Parameter`가 SSOT.
-
-**원칙: 이름을 먼저 의심하고, 주석은 이름이 못 담는 것만.** 메서드명·파라미터명만 읽고 신규 개발자가 오해할 만하면 주석 누락 — 그게 아니라 이름이 이미 자명하면 **주석 없이 통과**다(`removeMember`처럼 이름이 곧 설명인 1~2줄 facade 위임 등). "이름 우선" 원칙(위 **네이밍 우선 원칙** 절)과 같은 방향 — 주석으로 이름의 결함을 메우지 않는다.
-`//`가 필요하면 **(1) 이름이 못 담는 전제·부작용(평문 한 줄)** + **(2) Why·정책·다단계 How** 를 담는다.
-
-### 역할 줄 템플릿
-
-```text
-// {행위} — {핵심 전제·결과 한 조각}
-```
-
-예: `// 방장 일정 확인을 끝내 SCHEDULE_PENDING→ACTIVE로 바꾼다 — 이미 ACTIVE면 동일 상세 반환(idempotent)`
-
-### 쓰지 않음
-
-- `@Operation`/`@Parameter`·record 필드명과 **완전히 동일한** 문장 반복
-- 단순 `@param`/`@return` Javadoc
-- Controller에서 Service 비즈니스 로직을 장황히 반복
-- 역할 줄 본문을 `#13`, `BR-TRIP-005`, `D5`, `R-freeze` **약어만으로** 대체
-
-### 역할 줄 · 본문 금지 / 허용
-
-| | 역할 `//` (메서드 위) | 본문 Why / `// 1.` | `// TODO` · `// FIXME` |
-|--|----------------------|-------------------|------------------------|
-| **금지** | `#n`·`BR-*`·스펙 ID만으로 설명 | 약어만으로 Why 대체 | 방향 없는 `TODO` |
-| **허용** | 도메인 용어의 **의미** (`SCHEDULE_PENDING`=일정 확인 전) | 평문 정책·에러코드명 | 말미에 스펙 경로·`#n` — `// TODO: … — docs/specs/….md (#13)` |
-
-### stub / 미구현
-
-역할 줄과 TODO를 **분리**한다. 역할 = 유스케이스 의미, TODO = 남은 작업.
-
-```java
-// 방장이 추천 모드로 TOP3 후보를 생성한다 (미구현 stub)
-@Transactional
-public void generateRecommendations(...) {
-  // TODO: 기존 추천 hard DELETE 후 TOP3 INSERT, lastRecommendationMode 갱신
-  // 상세: docs/specs/trip/trip-recommendation.md (#13)
-}
-```
-
-### 레이어별 초점
-
-| 레이어 | 주석 대상 |
-|--------|-----------|
-| **Controller** | 접근 권한(`@AuthorizedUser`, `@TripMemberOnly` 등)·인터셉터·`@Valid` 검증. **유스케이스 역할 주석 금지**(Service에 둠) |
-| **Service / facade** | 이름으로 안 드러나면 역할 `//` 한 줄(아래 표). 분기 Why · 다단계 `// 1.` |
-| **Support / Helper / Resolver** | 공유 검증·매핑·가드의 **역할 `//`** + 정책·에러코드·배치 vs lazy Why |
-| **Interceptor / Aspect / Filter / ArgumentResolver / Scheduler** | 엔트리(`preHandle`·advice·`runForDate` 등) **역할 `//`** + 교차 관심사 Why |
-| **client** | Service와 동일 — 역할 `//` + 단계·catch 의도 |
-| **Repository** | `@Query` 정렬·필터·fetch 의도. **파생 API 필드용 EXISTS·집계**는 SSOT 조회 한 줄 |
-| **DTO / Entity / 공통 envelope** | 필드는 `@Schema` SSOT. Schema로 안 담기는 배경만 `//` |
-| **exception** | `ErrorCode` 계약·message override·Handler 범위 |
-
-### 메서드 역할 주석 — Service · Support · Interceptor · Aspect · Scheduler · client
-
-**위치:** 필요하면 메서드 시그니처·어노테이션 **바로 위**에 `//` 한 줄.
-
-| 대상 | 규칙 |
-|------|------|
-| **이름·시그니처만으로 동작이 안 드러나는 public 메서드** | 역할 한 줄 필수 — 전제·부작용·idempotent 여부 등 이름이 못 담는 것 |
-| **이름이 곧 설명인 facade 위임·1~2줄 자명한 메서드** | **생략 가능** — 억지로 채우지 않는다 (예: `removeMember`가 그대로 `tripCommandService.removeMember(...)`를 위임하면 주석 없이 통과) |
-| **비자명 `private` 헬퍼** | live/snapshot 빌더·윈도우 검증·복합 매핑 등 — 역할 `//` |
-| **생략 가능** | 생성자 · getter/setter · 이름만으로 자명한 1라이너 (`findUser`, `normalizeX`, 단순 DTO `toXxx`) |
-
-**Before (금지 — 여전히 약어만으로 대체는 금지)**
-
-```java
-// #13 stub — 추천 생성 (BR-TRIP-005 hard DELETE·TOP3)
-// 방장 SCHEDULE_PENDING → ACTIVE. 이미 ACTIVE면 idempotent (#39)
-```
-
-**After**
-
-```java
-// 방장 멤버십을 SCHEDULE_PENDING→ACTIVE로 activate — 이미 ACTIVE면 동일 상세 반환(idempotent)
-@Transactional
-@TripActivity(tripIdParam = "tripId")
-public TripDetailResponse activateMembership(UUID tripId, UUID userId) { ... }
-
-// 멤버 목록 조회 — 모집률·동명이인 displayName 포함(이름만으론 안 드러남)
-public TripMembersResponse listMembers(UUID tripId, UUID userId) { ... }
-
-// ✅ 이름이 곧 설명인 facade 위임 — 주석 없이 통과
-public TripMembersResponse removeMember(...) {
-  return tripCommandService.removeMember(...);
-}
-```
-
-### 다단계 · Why (본문)
-
-- 본문이 **2단계 이상**이면 `// 1.` `// 2.` `// 3.` 로 **How** 순서 표시 (역할 한 줄과 **병행**)
-- 정책·에러코드 선택은 단계 옆·직후 **Why** 짧게(평문) — Why만/How만 강제하지 않음
-- 외부 API·복잡 Stream·TX 경계·`catch` 의도(Why)
-- 어조: 간결한 개발자체 (`~함`, `~을 위해 분기`)
-
-### 기술 부채
-
-- `// TODO:` / `// FIXME:` + **남은 작업(평문)** + 말미에 스펙 경로·이슈 번호(선택)
-
-### Javadoc (`/** */`)
-
-- **Controller 메서드:** `@Operation` `description`을 대체하는 용도로 Javadoc을 쓴다 — 위 **OpenAPI @Operation · JWT** 절 참고(`therapi-runtime-javadoc`이 Swagger로 읽어감).
-- **Service/Support 등 나머지 레이어:** 역할·Why는 여전히 `//`(위 절들)를 쓴다 — Javadoc `@param`/`@return` 남발 금지, 클래스 한 줄 요약 정도만 허용.
-- 어느 쪽이든 `#n`·`BR-*`만으로 쓰지 말 것.
-
 ## API (추가 시)
 
 - `@RestController` + `@RequestMapping("/api/v1/...")`
 - 응답 envelope: `docs/architecture/api-response.md` (확정)
 - 요청 검증: Jakarta Validation (`@Valid`)
 - 예외: `@RestControllerAdvice` + `{ code, message }`
-- 문서: springdoc — `@Tag`, `@Operation`(위 **OpenAPI @Operation · JWT**), DTO·Entity·enum `@Schema`, enum은 **Enum** 절
+- 문서: springdoc — `@Tag`·`@Operation`·`@Schema` 작성 규칙은 `openapi-conventions.md`, enum 목록은 위 **Enum** 절
 - Controller 파라미터 스타일: 위 **Controller 메서드 파라미터** 절 준수
 - **계약 변경(필드 추가·삭제·이름변경·타입변경·필수화, enum 값, `ErrorCode`, 경로·메서드):** optional 필드 추가라도 커밋 본문에 `Breaking-Change-Reason:` 트레일러 필수 — `harness-workflow.md` STOP §5 · `docs/api/README.md`
 

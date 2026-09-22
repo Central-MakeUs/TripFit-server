@@ -63,7 +63,7 @@ com.tripfit.tripfit
 - **controller**: HTTP 입출력·DTO 변환만. 비즈니스 로직·트랜잭션 금지.
 - **dto**: API 요청·응답 타입. `controller/dto/` 중첩 금지.
 - **service**: 유스케이스 조율, `@Transactional`, Repository·client 호출.
-- **domain**: JPA `@Entity`, enum. `@ManyToOne` 등 연관관계 사용 가능. 필드 설명은 `@Schema(description)` (springdoc) — `.claude/rules/spring-boot-java.md` OpenAPI 섹션.
+- **domain**: JPA `@Entity`, enum. `@ManyToOne` 등 연관관계 사용 가능. 필드 설명은 `@Schema(description)` (springdoc) — `.claude/rules/openapi-conventions.md`.
 - **repository**: `JpaRepository`만. Entity는 `domain/`에 둔다.
 - **client**: 외부 OAuth·HTTP adapter (auth 등).
 - **common**: 도메인 간 공유 설정·예외·베이스 엔티티.

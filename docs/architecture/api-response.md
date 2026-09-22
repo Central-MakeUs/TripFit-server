@@ -3,7 +3,7 @@
 > **상태: 확정**  
 > 백엔드 REST API의 JSON envelope SSOT. Controller·`GlobalExceptionHandler`·`docs/specs/`는 이 문서를 따른다.
 
-백엔드 구현·Agent 작업 시 참고: `.claude/rules/spring-boot-java.md`, `client-platform.md`  
+백엔드 구현·Agent 작업 시 참고: `.claude/rules/spring-boot-java.md`, `.claude/rules/openapi-conventions.md`, `client-platform.md`  
 프론트 협의 맥락: `docs/product/platform.md`
 
 ## 확정 항목

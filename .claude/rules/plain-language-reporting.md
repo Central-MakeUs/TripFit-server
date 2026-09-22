@@ -1,7 +1,7 @@
 # Plain-Language Reporting (비전공자용 쉬운 설명)
 
 **적용 범위:** 사용자에게 **말로 설명하는 모든 곳** — 채팅 응답, `docs/audits/{domain}/refactor-log.md`, 감사 요약, PR 설명, 완료 보고.
-**적용 안 함:** `.java` 파일의 `//`·Javadoc 주석. 그건 `spring-boot-java.md` Comments 절(독자=신규 서버 개발자, WHAT 설명 금지)이 SSOT — 이 규칙과 충돌하지 않는다(2026-08-04 사용자 결정: 코드는 개발자 컨벤션 유지, 설명은 보고서·채팅에서만 쉽게).
+**적용 안 함:** `.java` 파일의 `//`·Javadoc 주석. 그건 `java-comments.md`(독자=신규 서버 개발자, WHAT 설명 금지)가 SSOT — 이 규칙과 충돌하지 않는다(2026-08-04 사용자 결정: 코드는 개발자 컨벤션 유지, 설명은 보고서·채팅에서만 쉽게).
 
 ## 원칙
 
