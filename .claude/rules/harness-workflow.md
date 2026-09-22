@@ -69,6 +69,14 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 
 **금지:** 트레일러 없이 커밋 · oasdiff `breaking` 카테고리(스키마 파괴적 변경)에만 해당한다고 임의로 좁혀 해석 · "나중에 CI 알림 뜨면 추가" 미루기.
 
+### 6. 보안·아키텍처 성격 로직 변경 — `docs/how-it-works.md` 같은 턴 갱신
+
+인증·세션·토큰 저장 방식, 결제, 개인정보 저장·암호화, 그 외 "이게 바뀐 걸 사용자가 한참 뒤에야 알면 곤란한" 성격의 로직을 바꾸면, 그 작업과 **같은 턴**에 [`docs/how-it-works.md`](../../docs/how-it-works.md)의 해당 절도 쉬운 말로 고친다(없던 주제면 새 절 추가). "나중에 정리"·"스펙에 이미 적었으니 됐다" 금지 — ErrorCode·AOP(§2)와 동일한 패턴.
+
+**대상(예):** 토큰·세션 저장 위치·전달 방식, 비밀번호·시크릿 처리, 결제 흐름, 대량 개인정보 접근·삭제 로직.
+
+**금지:** `docs/specs/`에만 적어두고 `how-it-works.md`는 방치 · "사소한 변경"이라며 임의로 갱신 생략 · 기술 용어를 그대로 옮겨적기(사용자가 다른 문서 없이도 읽히게 — `plain-language-reporting.md` 준수).
+
 ## 작업 분류 (시작 전 30초)
 
 1. `docs/product/development-wave.md` 활성 Milestone(MVP 출시/출시 이후)·Must
@@ -102,7 +110,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - **레거시** — 경로·상수·검증·API를 바꾸면 **구 구현·미사용 메서드·구 assert·‘현행’ 문서 문구를 같은 변경에서 삭제** (STOP §4). “나중에” 금지
 - **ErrorCode·AOP** — 실패·touch·권한 변경 시 **같은 턴** (STOP §2)
 - 기존 스타일 유지. 내 변경으로 생긴 unused만 정리
-- 패키지·Entity·DTO·enum·JWT `@Operation`·**메서드 역할 `//` 주석**: `spring-boot-java.md` (Comments — public 유스케이스 생략 금지)
+- 패키지·Entity·DTO·enum: `spring-boot-java.md` · JWT `@Operation`: `openapi-conventions.md` · **메서드 역할 `//` 주석**: `java-comments.md` (public 유스케이스 생략 금지)
 - 핵심 로직 변경 시 `./gradlew test`
 - 변경한 모든 줄은 사용자 요청에 직접 연결
 
@@ -111,6 +119,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - 변경 요약 + 검증 (`./gradlew test` 등)
 - 스펙 있으면 완료 기준 체크리스트 대조
 - **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`) + STOP §5 대상이면 커밋에 `Breaking-Change-Reason:` 트레일러 포함 확인
+- **보안·아키텍처 성격 변경:** STOP §6 대상(토큰·세션·결제·개인정보 저장 방식 등)이면 `docs/how-it-works.md` 해당 절 갱신 확인
 - **PR 전:** `Closes #n`·PR 체크리스트를 구현·테스트와 대조 (`[x]`만 실제 완료). 수동·미구현·`[제안]`·wave 밖은 체크 금지. **`gh pr create` 실행 전 사용자에게 먼저 확인** — 위 "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절
 - 커밋·PR: CONTRIBUTING — `{Type}: {한글}`, base `main`, **Create a merge commit** (Squash 금지)
 - **PR merge 확인 후:** 작업 브랜치 삭제 (원격+로컬) — CONTRIBUTING Pull Request "merge 후" 절. merge 안 된 브랜치는 삭제 금지
@@ -128,6 +137,7 @@ SSOT: [`docs/architecture/api-response.md`](../../docs/architecture/api-response
 - 문서·스펙·결정과 충돌하는 값을 묻지 않고 구현·커밋 — STOP §1
 - **교체 후 구 경로·상수·‘현행’ 문서 방치** — STOP §4 (dev에서 호환 레이어 불필요)
 - **프론트 대응이 필요한 API 계약 변경에 `Breaking-Change-Reason` 트레일러 누락** — STOP §5 (optional 필드 추가·enum 값 추가도 대상)
+- **보안·아키텍처 성격 로직을 바꾸고 `docs/how-it-works.md` 미갱신** — STOP §6 (사용자가 나중에야 알게 됨)
 - `git push --force` (main/master), `rm -rf`, 운영 DB 파괴
 - `.env`·API 키를 코드·커밋에 포함
 

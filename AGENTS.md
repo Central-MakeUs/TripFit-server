@@ -5,7 +5,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 ## How We Build
 
 **0. 문서·구현 정합 (최우선)** — 스펙·결정·문서 간 값·계약이 어긋나면 **구현하지 말고 사용자에게 질문**. 상세: `.claude/rules/harness-workflow.md` ⛔ STOP.  
-**priority: must/could** — 이슈 `## 완료 조건`·스펙 `MVP: In scope`만으로 must를 단정하지 않음. 기능 구현·버그 수정=must, 성능 개선·구조 정리·최적화=could. SSOT: `docs/product/development-wave.md` §2 · `.claude/rules/harness-wave.md`.
+**priority: must/could** — 이슈 `## 완료 조건`·스펙 `MVP: In scope`만으로 must를 단정하지 않음, 판단 기준·용어는 임의 재서술하지 말고 SSOT 확인. SSOT: `docs/product/development-wave.md` §2 · `.claude/rules/harness-wave.md`.
 
 기획·검증 기준을 먼저 고정하고, 그에 맞춰 구현합니다. **계획 축**은 `docs/product/development-wave.md`(운영 SSOT — Milestone `MVP 출시`/`출시 이후` + `priority:` 라벨), **기획**은 `docs/product/`, **기능 설계**는 `docs/specs/`, **아키텍처 선택**은 `docs/decisions/`에 둡니다. DB·인증·다파일 변경 시 스펙 필수 (`harness-workflow` 규칙). 구현 후 `./gradlew test`와 PR·CI로 검증합니다.
 
@@ -22,7 +22,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 
 - 패키지: `com.tripfit.tripfit` — 도메인 기반 레이어드 (`{domain}/controller|dto|service|domain|repository|client`, 필요 시 `{domain}/{feature}/…`, 공통 `common/`)
 - DB/API 네이밍은 기능 추가 시 `docs/architecture.md` 기준으로 통일
-- Java 주석: Swagger·`@Schema`와 중복 금지 — **이름·시그니처만으로 안 드러나는 것만** 메서드 위 `//` 역할 한 줄(이름이 곧 설명인 facade·자명한 위임은 생략 가능) · 다단계는 `// 1.`+Why · Controller는 권한·검증만, API 설명은 `@Operation(summary)` + Javadoc(`therapi-runtime-javadoc`) — `.claude/rules/spring-boot-java.md` Comments·OpenAPI 절
+- Java 주석: Swagger·`@Schema`와 중복 금지, **완전한 문장으로 쓰는 산문체** — **이름·시그니처만으로 안 드러나는 것만** 메서드 위 `//` 역할 주석(이름이 곧 설명인 facade·자명한 위임은 생략 가능) · 다단계는 `// 1.`+Why · Controller는 권한·검증만, API 설명은 `@Operation(summary)` + Javadoc(`therapi-runtime-javadoc`) — `.claude/rules/java-comments.md`·`.claude/rules/openapi-conventions.md`
 - 범위 밖 리팩터링·포맷 변경 금지 — 요청된 작업만 수정
 - 커밋은 사용자가 명시적으로 요청할 때만
 - 커밋 요청 시 주제별 **최대 3개**로 분할 (상세: `.github/CONTRIBUTING.md`, `.claude/rules/harness-workflow.md`)
@@ -42,6 +42,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 | `src/main/java/com/tripfit/tripfit/` | 애플리케이션·도메인 코드 |
 | `src/main/resources/` | `application.yml`, 프로필별 `application-{profile}.yml` |
 | `src/test/java/` | 단위·통합 테스트 |
+| [`docs/how-it-works.md`](docs/how-it-works.md) | **"지금 이렇게 동작합니다"** — 쉬운 말로 쓴 현재 동작 요약(스펙 아님). 보안·아키텍처 로직 변경 시 같은 턴 갱신 |
 | [`docs/product/development-wave.md`](docs/product/development-wave.md) | **릴리즈 Milestone·priority 운영·판단** SSOT |
 | [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
 | [`deploy/README.md`](deploy/README.md) | **배포 SSOT** — Docker·EC2·검증 스크립트 |

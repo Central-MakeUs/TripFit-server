@@ -1,6 +1,6 @@
 # 인증 토큰 저장·전달 방식 개편 — Refresh Redis 이관 + HttpOnly 쿠키
 
-> 상태: Implemented (코드·테스트 완료, 커밋·PR 대기 — 2026-09-15)
+> 상태: Implemented (`#2` Closed · PR #121 merge·배포 완료 — 2026-08-19)
 > MVP: In scope (기존 인증 흐름 전체에 영향 — 신규 기능이 아니라 인프라·보안 개편)
 > 관련 BR: 해당 없음
 > 이슈: [#2](https://github.com/Central-MakeUs/TripFit-server/issues/2)
@@ -205,4 +205,4 @@
 |------|------|
 | 2026-08-17 | 초안 — 사용자 요청(refreshToken Redis 이관 + 블랙리스트 폐기 + HttpOnly 쿠키 전환) 반영, TTL 900초·Redis SPOF 리스크 감수·login도 쿠키 통일 확정 |
 | 2026-08-17 (같은 날, 후속) | "프론트엔드 권장 사항" 절 추가 — accessToken localStorage 비영속화 + 앱 부팅 시 silent refresh(사용자 요청, 백엔드 구현 범위 밖이라 Must Have 아닌 전달용 절로 분리) |
-| 2026-09-15 | **Implemented** — Redis 4-키 설계(active/family/revoked/user 인덱스) 구현, 블랙리스트·jti 클레임 전체 삭제, 쿠키 전환, TTL 900초 반영. `docs/decisions/004`·`erd.md`·`auth-token-rotation.md` 동기화. `./gradlew test` 491개 전체 통과. 커밋·PR·프론트 실제 반영은 후속 |
+| 2026-08-19 | **Implemented** — Redis 4-키 설계(active/family/revoked/user 인덱스) 구현, 블랙리스트·jti 클레임 전체 삭제, 쿠키 전환, TTL 900초 반영. `docs/decisions/004`·`erd.md`·`auth-token-rotation.md` 동기화. `./gradlew test` 491개 전체 통과. PR #121 merge·배포 완료(같은 날) — `TripFit-client` 쪽 실제 클라이언트 반영은 프론트팀 별도 작업 |
