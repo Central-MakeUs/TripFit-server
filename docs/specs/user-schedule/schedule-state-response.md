@@ -13,7 +13,7 @@
 ## 유효한 진단 (대체 스펙이 이어받음)
 
 - **프론트가 서버 계산을 재구현하고 있었다.** 서버에 입장 가능 여부를 판단하는 `UserSummaryService.canEnterRoom`(`isAllFree || hasPreSchedule`)이 있는데 어떤 응답에도 실리지 않아, 프론트가 403을 미리 피하려고 같은 식을 손으로 다시 짰다(`hasSavedSchedule = hasPreSchedule || isAllFree`).
-- **그 재구현이 실제 사고로 이어졌다.** QA 이슈 1(정기 일정 없음 사용자가 빠져나올 수 없는 빈 정기 화면에 갇힘) · 이슈 2(P1, 기존 일정 보유 참여자가 일정 확인 없이 방 입장)는 모두 이 조합식을 분기 조건으로 쓰다 생긴 문제다. 수정 지점은 [`fe-context/trip/trip-room-create-join.md`](../../product/fe-context/trip/trip-room-create-join.md) "이미 확인된 위반 2건" 절.
+- **그 재구현이 실제 사고로 이어졌다.** QA 이슈 1(정기 일정 없음 사용자가 빠져나올 수 없는 빈 정기 화면에 갇힘) · 이슈 2(P1, 기존 일정 보유 참여자가 일정 확인 없이 방 입장)는 모두 이 조합식을 분기 조건으로 쓰다 생긴 문제다. 수정 지점은 [`trip-join-schedule-gate.md`](../trip/trip-join-schedule-gate.md) 참고.
 - **`isAllFree`는 이름과 동작이 어긋나 있다.** "전부 free 선언"으로 읽히지만 사용자가 선언하는 API는 없고, 일정 0건인 채로 `join`/`activate`를 호출하는 순간 서버가 자동으로 켠다. 이슈 1이 "방을 두 번 입장해야 재현된다"는 기묘한 조건을 가진 이유가 여기 있다.
 - **정기 일정 유무 분기에 `hasPreSchedule`을 쓰면 안 된다.** 정기 0건·개별 1건 이상인 사용자에게 "입력하신 일정을 확인해주세요"를 띄우고 정기 화면이 텅 빈 막다른 길을 만든다.
 

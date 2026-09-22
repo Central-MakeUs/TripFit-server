@@ -18,6 +18,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 ├── settings.local.json    ← 개인 권한 allowlist (버전 관리)
 ├── hooks/
 │   ├── block-dangerous.sh
+│   ├── block-db-migration.sh
 │   ├── warn-breaking-change.sh
 │   └── format-java.sh
 ├── rules/                 ← 상황별 AI 규칙 (.md + paths frontmatter)
@@ -28,11 +29,11 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 │   ├── workflow-tools.md          # Claude Code 도구 매핑 (always-load)
 │   ├── plain-language-reporting.md # 비전공자용 쉬운 설명 (보고·채팅만, 코드 주석 제외, always-load)
 │   ├── spring-boot-java.md
-│   ├── figma-product.md
+│   ├── openapi-conventions.md
+│   ├── java-comments.md
 │   ├── client-platform.md
 │   ├── deployment.md
 │   ├── testing.md
-│   └── fe-context.md
 └── skills/                ← 반복 워크플로 스킬
     ├── specify/
     │   ├── SKILL.md
@@ -81,12 +82,12 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 
 | 파일 | `paths` | 요약 |
 |------|---------|------|
-| `spring-boot-java.md` | `**/*.java` | 레이어·enum·Entity·**ErrorCode·AOP**·OpenAPI(FE용 섹션 템플릿·JWT)·주석 |
-| `figma-product.md` | domain, service, specs | 도메인·BR·와이어프레임 |
+| `spring-boot-java.md` | `**/*.java` | 레이어·enum·Entity·**ErrorCode·AOP**·**SOLID/OOP·ACID**·스타일·테스트 |
+| `openapi-conventions.md` | `**/*.java` | `@Schema`·`@Operation`·`@Parameter`·`@ApiResponses`(FE용 섹션 템플릿·JWT) — 2026-08-27 `spring-boot-java.md`에서 분리 |
+| `java-comments.md` | `**/*.java` | `//`·Javadoc 작성 스타일(역할 줄·다단계 Why·레이어별 초점) — 2026-08-27 `spring-boot-java.md`에서 분리 |
 | `client-platform.md` | controller, service, config, specs | React 앱·스토어·API·인증 |
 | `deployment.md` | yml, Docker, deploy | 배포 가드레일 — 절차는 `deploy/README.md` (MySQL 예약어·quoting은 `spring-boot-java.md`로 이동) |
 | `testing.md` | `**/*Test.java`, `src/test/**` | JUnit 5·프로필·테스트 네이밍 |
-| `fe-context.md` | `docs/product/fe-context/**` | 도메인별 폴더(user/user-schedule/trip)·드리프트 체크리스트·상호 링크 규칙 |
 | `README.md`(이 파일) | `.claude/**` | 구조 인덱스 — 사람이 보는 디렉터리 맵이라 행동 규칙이 아님, 2026-08-11부터 `.claude/` 작업 시에만 로드 |
 
 ### 규칙 추가·분리 가이드
@@ -128,7 +129,7 @@ Claude Code가 이 저장소에서 작업할 때 참조하는 **프로젝트 전
 
 ## `settings.json` / `settings.local.json`
 
-`settings.json`은 훅 등 팀 공통 설정으로 버전 관리한다. `settings.local.json`은 개인 권한 allowlist — 버전 관리하되 개인별 조정 가능.
+`settings.json`은 훅 등 팀 공통 설정으로 버전 관리한다. `settings.local.json`은 개인 권한 allowlist — **전역 `~/.config/git/ignore`로 gitignore돼 있어 실제로는 이 머신에만 있고 커밋되지 않는다**(2026-08-27 확인). 팀원 간 공유되지 않으므로 개인별로 자유롭게 정리해도 된다.
 
 ## CLAUDE.md / AGENTS.md와의 관계
 
@@ -147,12 +148,12 @@ docs/specs/        → 기능별 설계 산출물 (specify 스킬 결과)
 ## 유지보수 체크리스트
 
 - [ ] 클라이언트·스토어 전제 변경 시 `docs/product/platform.md` + `client-platform.md` 동기화
-- [ ] 새 도메인 enum·상태 추가 시 `figma-product.md` 또는 glossary 동기화
+- [ ] 새 도메인 enum·상태 추가 시 `docs/product/glossary.md` 동기화
 - [ ] ddl-auto·프로필 변경 시 `docs/architecture.md` + `deployment.md` 동기화
 - [ ] Wave/`[미정]`/용어 규칙 변경 → `harness-wave.md`만 (workflow에 중복 금지)
 - [ ] 후속·Defer·ERD 제안 규칙 변경 → `harness-follow-up.md`만
 - [ ] 반복되는 코드 리뷰 코멘트 → 해당 `rules/*.md`에 한 줄 규칙으로 승격
 - [ ] 위험 명령 패턴 추가 필요 시 `hooks/block-dangerous.sh` + `settings.json` matcher 동시 수정
-- [ ] 훅 추가·삭제 시 이 README **Hooks** 절 표 동시 갱신 (이번 감사에서 실제로 2개 훅이 누락된 채 방치됐던 사례 있음)
+- [ ] 훅 추가·삭제 시 이 README **디렉터리 구조 다이어그램 + Hooks 절 표**, 그리고 [`docs/harness-engineering.md`](../../docs/harness-engineering.md) §5 표까지 3곳 동시 갱신 (이번 감사에서 이 README 자체의 디렉터리 다이어그램이 훅 1개 누락된 채 방치됐던 사례 있음 — 같은 파일 안에서도 표와 다이어그램이 따로 놀 수 있으니 둘 다 확인)
+- [ ] 규칙·스킬 개수가 바뀌면(추가/삭제) 이 README **Always-load 표 + Skills 표**와 [`docs/harness-engineering.md`](../../docs/harness-engineering.md) §3·§4의 대응 표를 함께 갱신 (harness-engineering.md는 발표·질의 대비용 서술형 총정리라 별도 유지되며, 내용이 어긋나면 이 README가 맞음 — 하지만 방치하면 발표 자료가 stale해짐)
 - [ ] 레이어·PK 등 구조 규칙 변경 시 `src/test/java/com/tripfit/tripfit/architecture/ArchitectureTest.java`(ArchUnit) 반영 검토 — 일부 규칙은 prose가 아니라 `./gradlew test`가 실제로 검증함
-- [ ] 공용 응답 DTO에 필드 추가·삭제, 새 `ErrorCode`, 요청 DTO 필수/선택 여부 변경 시 → 해당 도메인 `docs/product/fe-context/{user,user-schedule,trip}/` 문서 동기화 (`fe-context.md` 드리프트 체크리스트)

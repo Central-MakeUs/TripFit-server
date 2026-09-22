@@ -31,7 +31,7 @@ description: 요구사항을 정리하고 docs/specs/에 스펙 파일을 생성
 - kebab-case: `trip-room-create.md`, `user-social-login.md`
 - 한 파일 = 한 기능 또는 한 리팩터 단위
 - 대형 기능은 `trip-schedule-phase1.md`처럼 단계 분리
-- **도메인 폴더** — `docs/specs/README.md`의 폴더↔패키지 매핑 표 기준으로 저장 위치를 정한다: `auth/`, `user/`(+googlecalendar), `user-schedule/`, `trip/`(recommendation 포함), `notification/`, 도메인 무관은 `cross-cutting/`. 두 도메인에 걸치면 `.claude/rules/fe-context.md`와 동일 원칙(주로 바뀌는 상태가 속한 도메인) — 애매하면 사용자에게 한 줄로 확인
+- **도메인 폴더** — `docs/specs/README.md`의 폴더↔패키지 매핑 표 기준으로 저장 위치를 정한다: `auth/`, `user/`(+googlecalendar), `user-schedule/`, `trip/`(recommendation 포함), `notification/`, 도메인 무관은 `cross-cutting/`. 두 도메인에 걸치면 **주로 바뀌는 상태가 속한 도메인** 기준으로 정한다 — 애매하면 사용자에게 한 줄로 확인
 
 ## Spec Must Include
 

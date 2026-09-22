@@ -4,7 +4,7 @@
 > MVP: In scope (`docs/product/mvp.md` — "참여자 일정 입력(오전/오후/저녁 단위, 미정 상태 포함)")
 > 관련 BR: BR-TRIP-002, BR-TRIP-003, BR-TRIP-004, BR-USER-008
 > supersedes: [`schedule-calendar-resolve.md`](schedule-calendar-resolve.md) **S1**(개별 존재 시 그 날 전체 대체) · R1(병합 규칙 1) — **R2(정기 복수 IMPOSSIBLE 우선)는 그대로 유지**
-> related: [`schedule-unified.md`](schedule-unified.md), [`google-calendar-merge.md`](../../product/fe-context/user/google-calendar-merge.md), [`schedule-personal-override-scenarios.md`](../../product/fe-context/user-schedule/schedule-personal-override-scenarios.md)(유저 시나리오, 페르소나 기반 프론트 공유용)
+> related: [`schedule-unified.md`](schedule-unified.md)
 
 ## 목표
 
@@ -63,7 +63,6 @@
 - [ ] **(O1.4, 버그 회귀 테스트)** 정기 패턴이 일부 슬롯을 `IMPOSSIBLE`로 계산하는 날짜에 사용자가 슬롯 3개를 전부 `POSSIBLE`로 명시 오버라이드해도 **삭제되지 않고 그대로 저장**되는지 확인 — "개별이 항상 정기를 이긴다" 규칙이 깨지지 않는지 검증(`schedule-personal-override-scenarios.md` 시나리오 12 참고)
 - [ ] `docs/architecture/erd.md`의 `personal_schedule` 컬럼 nullable 표기(N→Y) + 의미 갱신
 - [ ] `schedule-unified.md`, `schedule-calendar-resolve.md` 개정(S1 폐기 반영, 본 스펙 링크) — **미반영 상태, 아래 "리스크·미결정" 참고**
-- [ ] `docs/product/fe-context/schedule-calendar-merge.md` 개정 — **`action` 개념 삭제**, `slots`/`uncertain` 선택적 필드 사용법, "되돌리기(초기화) 기능 없음" 반영 — **미반영 상태, 아래 "리스크·미결정" 참고**
 - [ ] Swagger `@RequestBody` 예시를 O1.4 플랫 구조로 갱신(슬롯만/uncertain만/둘 다)
 - [ ] 커밋에 `Breaking-Change-Reason:` 트레일러 — `action` 필드·`CLEAR` 액션 삭제, 요청 아이템 구조가 폴리모픽 3종에서 flat 1종(`slots`/`uncertain` 선택적 필드)으로 전환
 
@@ -238,11 +237,7 @@ function resolveDay(date, regulars, personal, googleBusyMap):
 
 ## 유저 시나리오
 
-페르소나(유저 A) 기반의 "캘린더 조회 → 수정 → 결과" 시나리오와 엣지 케이스는 별도 문서로 분리했다 — 프론트와 공유할 때는 그 문서를 쓴다.
-
-→ [`docs/product/fe-context/schedule-personal-override-scenarios.md`](../../product/fe-context/user-schedule/schedule-personal-override-scenarios.md)
-
-이 문서에 나오는 값(정기 패턴 R1/R2, 8월 날짜, 응답 JSON)은 위 O1.4 계약(`병합 알고리즘`, `계약 개정 이력`)에서 파생된 것이다 — 값이 어긋나면 이 스펙이 SSOT이므로 시나리오 문서를 고친다.
+페르소나(유저 A) 기반의 "캘린더 조회 → 수정 → 결과" 시나리오와 엣지 케이스를 담았던 프론트 공유용 별도 문서(`schedule-personal-override-scenarios.md`)는 더 이상 쓰이지 않아 삭제했다 — 이 스펙(O1.4 계약, `병합 알고리즘`·`계약 개정 이력`)이 유일한 SSOT다.
 
 ## 비즈니스 규칙
 
@@ -286,9 +281,9 @@ function resolveDay(date, regulars, personal, googleBusyMap):
 - [ ] `./gradlew test` 통과 (`user.schedule.*`, `trip.service.TripMemberQueryService*`, `trip.service.TripScheduleSnapshotService*`)
 - [ ] `./gradlew build` 성공
 - [ ] 위 검증 시나리오 전부 테스트로 커버
-- [ ] **(O1.4)** `docs/product/fe-context/schedule-personal-override-scenarios.md` 시나리오 1~18(부분 오버라이드 유지·정기 변경 트레이드오프·버그 픽스·uncertain 단독/동시·중복 날짜 400·sparse↔비sparse 전환) 전부 통합 테스트로 커버 — **응답 슬롯 값(아침/오후/저녁)은 사용자 검수 완료된 고정 기준**, 구현 세부사항이 바뀌어도 이 값들은 동일해야 함
+- [ ] **(O1.4)** 부분 오버라이드 유지·정기 변경 트레이드오프·버그 픽스·uncertain 단독/동시·중복 날짜 400·sparse↔비sparse 전환 시나리오 전부 통합 테스트로 커버 — **응답 슬롯 값(아침/오후/저녁)은 사용자 검수 완료된 고정 기준**, 구현 세부사항이 바뀌어도 이 값들은 동일해야 함
 - [ ] OpenAPI `@Schema`(`PersonalScheduleItem` flat record, `slots`/`uncertain` 선택적 필드) 반영, `@RequestBody` 예시 갱신
-- [ ] `docs/architecture/erd.md`·`schedule-unified.md`·`schedule-calendar-resolve.md`·`docs/product/fe-context/schedule-calendar-merge.md` 동기화
+- [ ] `docs/architecture/erd.md`·`schedule-unified.md`·`schedule-calendar-resolve.md` 동기화
 - [ ] 커밋 본문에 `Breaking-Change-Reason` 트레일러
 
 ## 리스크·미결정

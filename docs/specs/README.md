@@ -2,18 +2,18 @@
 
 구현 **전**에 작성하는 기능·리팩터 설계 문서입니다.
 
-**폴더 = 도메인** (2026-08-03 재구성) — `com.tripfit.tripfit` 최상위 패키지와 1:1 대응. `docs/product/fe-context/`와 동일한 축이라 스펙(서버 설계) ↔ fe-context(FE 번역) 폴더 이름이 그대로 짝지어진다.
+**폴더 = 도메인** (2026-08-03 재구성) — `com.tripfit.tripfit` 최상위 패키지와 1:1 대응.
 
 | 폴더 | 대응 패키지 | 개수 |
 |------|-------------|------|
-| [`auth/`](auth/) | `auth` | 8 |
+| [`auth/`](auth/) | `auth` | 9 |
 | [`user/`](user/) | `user` (+`user/googlecalendar`) | 6 |
 | [`user-schedule/`](user-schedule/) | `user/schedule` | 6 |
 | [`trip/`](trip/) | `trip` (recommendation 포함 — 별도 최상위 패키지 아님, flat) | 20 |
 | [`notification/`](notification/) | `notification` | 1 |
-| [`cross-cutting/`](cross-cutting/) | 도메인 무관 (PK 전략·OpenAPI·CI 등) | 5 |
+| [`cross-cutting/`](cross-cutting/) | 도메인 무관 (PK 전략·OpenAPI·CI 등) | 6 |
 
-새 스펙은 어느 도메인 패키지를 다루는지 먼저 정하고 그 폴더에 넣는다 (두 도메인에 걸치면 `.claude/rules/fe-context.md`와 동일 원칙 — 주로 바뀌는 상태가 속한 도메인 기준). 도메인 무관(PK 전략, CI, Swagger 설정 등)은 `cross-cutting/`.
+새 스펙은 어느 도메인 패키지를 다루는지 먼저 정하고 그 폴더에 넣는다 (두 도메인에 걸치면 주로 바뀌는 상태가 속한 도메인 기준). 도메인 무관(PK 전략, CI, Swagger 설정 등)은 `cross-cutting/`.
 
 **릴리즈 Milestone(MVP 출시/출시 이후) 축은 이 폴더 축과 별개** — 운영 SSOT: [`development-wave.md`](../product/development-wave.md). 아래 각 표의 `wave` 열은 2026-08-26 폐지된 구 도메인 축의 **역사적 기록**(그 스펙이 당시 어느 도메인으로 계획됐는지)이며 더 이상 GitHub 라벨과 동기화되지 않는다.
 
@@ -34,6 +34,7 @@
 | [`google-login-revoke.md`](auth/google-login-revoke.md) | 2 | **Implemented** (`#64` 후속, Closed) · 구 Release Gate | Google 로그인 시 authorization code 확보·저장 → 탈퇴 시 revoke | auth-social-login · user-account-withdrawal |
 | [`auth-error-code-granularity.md`](auth/auth-error-code-granularity.md) | 무관 | **Implemented** (#57, Closed) | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` | auth-social-login |
 | [`auth-token-rotation.md`](auth/auth-token-rotation.md) | 4 | **Approved** (`#4`) · 코드·인프라(EC2 D) 구현 완료, 배포 검증 대기 | RTR + Redis Blacklist | auth-social-login · decision 004·010 |
+| [`auth-refresh-redis-cookie.md`](auth/auth-refresh-redis-cookie.md) | 무관 | **Implemented** (`#2` Closed, PR #121 — 2026-08-19) | Refresh token Redis 이관 + HttpOnly 쿠키 전달 — auth-token-rotation의 전제(MySQL SSOT·Access Blacklist)를 뒤집는 후속 개편 | auth-token-rotation |
 | [`auth-apple-server-notifications.md`](auth/auth-apple-server-notifications.md) | 4 | Approved | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`dev-mock-login.md`](auth/dev-mock-login.md) | 도구 | **Removed** (2026-08-15) | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 — 더 이상 필요 없어 삭제 | auth-social-login |
 | [`google-login-native-sdk-decision.md`](auth/google-login-native-sdk-decision.md) | 도구 | **Resolved** (#77, 결정 불필요로 정정) | WebView 앱 Google 로그인 방식 — FE 확인 결과 네이티브 SDK 이미 구현·배포 완료 | google-login-revoke |
@@ -104,6 +105,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`api-contract-diff-ci.md`](cross-cutting/api-contract-diff-ci.md) | 도구 | **Approved** (이슈 미생성) | oasdiff CLI로 breaking change 감지 + Discord `#frontend` push 알림, 별도 프론트 저장소 동기화 보조 | — |
 | [`openapi-response-schema-generics.md`](cross-cutting/openapi-response-schema-generics.md) | 도구 | **Approved** (이슈 미생성) | `SuccessResponse<T>` 응답 스키마가 스펙에 필드 노출 안 되는 문제 — `useReturnTypeSchema = true`로 해결 | api-contract-diff-ci |
 | [`social-integration-structured-logging.md`](cross-cutting/social-integration-structured-logging.md) | 도구 | Draft (`#65`) | 소셜 로그인(Google/Kakao/Apple)·Google Calendar 연동 구조화 JSON 로깅 — provider/action/httpStatus/providerErrorReason 필드, PII 마스킹 | google-calendar-oauth · auth-social-login |
+| [`terraform-iac-migration.md`](cross-cutting/terraform-iac-migration.md) | 무관 | Draft (`#125`) | 수동 생성된 AWS 인프라(EC2 4대·SG·EIP·Route 53)를 Terraform으로 1:1 import — `infra/terraform/`, S3+native lockfile state | decision 002·009·010 |
 
 **구현 순서 (wave 2 축):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
@@ -140,6 +142,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#62** | trip-thumbnail-image (Draft) — 2026-08-02 재작성, 구 "OAuth 콘솔 설정값" 내용은 `#86`으로 이관 | Open |
 | **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
 | **#107** | schedule-holiday-rest (Draft — 데이터 소스는 decision 011로 확정, 스펙 승인 대기) | Open · **Wave 2** |
+| **#125** | terraform-iac-migration (Draft — 스펙 승인 대기) | Open · **출시 이후** · `priority: could` |
 
 ## 완료 후
 

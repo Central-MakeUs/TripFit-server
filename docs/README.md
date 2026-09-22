@@ -7,11 +7,14 @@
 
 **"AI를 어떻게 활용했는가"에 대한 총정리 서술 문서:** [`harness-engineering.md`](harness-engineering.md) — 다층 SSOT·규칙·스킬·훅 구조와, 그 구조가 실제 인시던트를 겪으며 어떻게 보강됐는지까지 기록.
 
+**"지금 이 순간 실제로 어떻게 동작하는가"를 쉬운 말로 담은 문서:** [`how-it-works.md`](how-it-works.md) — 스펙·ADR이 아니라 현재 동작 요약. 인증·세션 등 보안·아키텍처 성격 로직을 바꾸면 같은 턴에 갱신 (`.claude/rules/harness-workflow.md` STOP §6).
+
 ## 디렉터리 맵
 
 ```
 docs/
 ├── README.md                 ← 이 파일 (인덱스)
+├── how-it-works.md           ← 쉬운 말로 쓴 "지금 이렇게 동작합니다" (스펙 아님)
 ├── architecture.md           ← 레이어·패키지·설정·DB 요약
 ├── architecture/
 │   ├── erd.md
@@ -19,7 +22,7 @@ docs/
 ├── product/                  ← 기획 SSOT
 │   ├── development-wave.md   ← 릴리즈 Milestone(MVP 출시/출시 이후)·priority 운영 SSOT
 │   ├── mvp.md · platform.md · prd.md · glossary.md
-│   ├── design/ · business-rules/ · flows/ · fe-context/ · templates/
+│   ├── design/ · business-rules/ · flows/ · templates/
 ├── specs/                    ← 기능 스펙 — 목록 SSOT: specs/README.md
 └── decisions/                ← 아키텍처 결정 — 목록: decisions/README.md
 ```
@@ -34,7 +37,6 @@ docs/
 | [`decisions/README.md`](decisions/README.md) | ADR 목록 |
 | [`product/flows/README.md`](product/flows/README.md) | 사용자 플로우 (제품 정책·시나리오) |
 | [`product/business-rules/README.md`](product/business-rules/README.md) | BR-* |
-| [`product/fe-context/README.md`](product/fe-context/README.md) | 프론트 구현 규칙 (스펙·코드의 파생물, `flows/`와 역할 다름) |
 
 ## 읽는 순서 (기능 구현 시)
 

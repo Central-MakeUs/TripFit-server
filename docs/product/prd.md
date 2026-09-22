@@ -76,4 +76,4 @@
 
 ### 확정 사항
 
-BR-* 확정 내역·최신 changelog는 각 `business-rules/{trip,user,notification}.md`가 SSOT — 여기서 날짜 고정된 스냅샷을 중복 유지하지 않는다 (이 표는 2026-07-08 시점 이후 갱신되지 않아 각 BR 파일의 후속 amend와 어긋났었음). wave 매핑은 [`waves.md`](waves.md) SSOT.
+BR-* 확정 내역·최신 changelog는 각 `business-rules/{trip,user,notification}.md`가 SSOT — 여기서 날짜 고정된 스냅샷을 중복 유지하지 않는다 (이 표는 2026-07-08 시점 이후 갱신되지 않아 각 BR 파일의 후속 amend와 어긋났었음). 릴리즈 Milestone·priority는 [`development-wave.md`](development-wave.md) SSOT (2026-08-26 Wave 도메인 축 폐지 — 구 `waves.md`는 안내 스텁으로만 유지).

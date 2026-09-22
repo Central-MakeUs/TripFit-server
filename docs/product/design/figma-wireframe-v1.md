@@ -121,4 +121,4 @@ BR-NOTI-* 규칙·wave 매핑은 [`business-rules/notification.md`](../business-
 - ERD: [`docs/architecture/erd.md`](../../architecture/erd.md)
 - BR: [`docs/product/business-rules/`](../business-rules/)
 - 플로우: [`docs/product/flows/`](../flows/)
-- 에이전트 규칙: [`.claude/rules/figma-product.md`](../../../.claude/rules/figma-product.md)
+- 에이전트 표기 규칙: [`.claude/rules/spring-boot-java.md`](../../../.claude/rules/spring-boot-java.md) 표기 규칙 절

@@ -8,7 +8,7 @@ paths:
 
 # Client Platform (React → Play / App Store)
 
-도메인·BR·와이어프레임 매핑은 **`figma-product.md`** 참고.
+도메인·BR 규칙은 `docs/product/business-rules/`, 와이어프레임은 `docs/product/design/figma-wireframe-v1.md`, 표기 규칙(casing)은 `spring-boot-java.md` 참고.
 
 이 저장소는 **백엔드만**. 클라이언트는 **React(프론트 2명)**, 최종 **Play·App Store** 앱 배포 목표.
 
@@ -42,7 +42,7 @@ paths:
 ## 프론트 협업
 
 - API 변경은 OpenAPI(springdoc) 반영 권장 — **enum 값 목록 SSOT는 `/v3/api-docs`(Swagger), enum 전용 md는 두지 않음**
-- Swagger `description`/`@Schema`는 FE 가독성 규칙(`spring-boot-java` OpenAPI 절: 목적·호출 시점·전제·결과 섹션) 준수 — 이슈 번호·BR/스펙 ID 금지
+- Swagger `description`/`@Schema`는 FE 가독성 규칙(`openapi-conventions.md`: 목적·호출 시점·전제·결과 섹션) 준수 — 이슈 번호·BR/스펙 ID 금지
 - 새 enum·상수 의미는 해당 `docs/specs/`(+ 필요 시 `glossary.md` 한글 라벨)에만 적고, 프론트에는 OpenAPI 스키마로 전달
 - JWT 필요 API는 Swagger 자물쇠(`bearer-jwt`)로 구분 — Authorize에 access token 입력
 - 화면 용어: `glossary.md` / Figma — API 필드명과 혼동하지 않기

@@ -305,7 +305,7 @@ trip CRUD 전이면 **①만** 구현.
 | 아침/오후/저녁 각 행의 버튼("여행 가능해요" ↔ "일정이 있어요") | 각각 `morningStatus`/`afternoonStatus`/`eveningStatus` — "여행 가능해요"=`POSSIBLE`, "일정이 있어요"=`IMPOSSIBLE` |
 | "저장하기" 버튼 | `PATCH /users/schedule/personal`을 그 날짜 1건만 담아 호출(3슬롯+`uncertain` 전부 포함, 위 "구현 순서" 참고) |
 
-프론트 저장소에 그대로 전달할 구현 규칙 버전은 [`docs/product/fe-context/schedule-calendar-merge.md`](../../product/fe-context/user-schedule/schedule-calendar-merge.md) 참고.
+병합 규칙은 이 스펙이 SSOT다.
 
 ---
 

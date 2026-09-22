@@ -37,29 +37,13 @@ src/, deploy/        실제 구현
 
 Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontmatter가 없으면 **매 세션 항상 로드**, 있으면 **매칭되는 파일에 접근할 때만 로드**됩니다. 구조 SSOT: [`.claude/rules/README.md`](../.claude/rules/README.md).
 
-| 파일 | 항상 로드? | 핵심 내용 |
-|------|-----------|-----------|
-| [`harness-workflow.md`](../.claude/rules/harness-workflow.md) | ✅ | ⛔ STOP(문서 정합·ErrorCode/AOP same-turn·DB 마이그레이션 금지·레거시 즉시 삭제·Breaking-Change-Reason) + Before/While/After Coding 절차 |
-| [`harness-wave.md`](../.claude/rules/harness-wave.md) | ✅ | priority(must/could)를 근거 없이 단정 금지, `[미정]` 문서 표기(중앙 트래커는 2026-08-19 폐지), Release Gate(스토어 심사 필수 항목) |
-| [`harness-follow-up.md`](../.claude/rules/harness-follow-up.md) | ✅ | 구현 후 후속 제안 형식, 「다른 이슈로」범위 분리(Defer) 절차, ERD 적극 제안(스키마 고정 아님) |
-| [`workflow-tools.md`](../.claude/rules/workflow-tools.md) | ✅ | 도구 채택 우선순위(§7), 버그 재현 절차, 작업 유형→도구 매핑표 |
-| [`plain-language-reporting.md`](../.claude/rules/plain-language-reporting.md) | ✅ | 코드 주석과 **사용자 보고**의 문체를 분리 — 보고는 용어 풀어쓰기·비유 우선, 과장 금지 |
-| `spring-boot-java.md` | `**/*.java`일 때만 | 레이어·Entity·enum·ErrorCode·AOP·OpenAPI·주석 컨벤션 |
-| `client-platform.md`, `figma-product.md` | 도메인·컨트롤러·스펙 파일일 때만 | React 클라이언트 전제, 상태 매핑, BR 참조 순서 |
-| `deployment.md`, `testing.md`, `fe-context.md` | 각 대응 파일 패턴 | 배포 가드레일, JUnit 프로필, FE 문서 드리프트 체크리스트 |
+Always-load 규칙 5개(`harness-workflow`·`harness-wave`·`harness-follow-up`·`workflow-tools`·`plain-language-reporting`) + path-scoped 규칙 7개(`spring-boot-java`·`openapi-conventions`·`java-comments`·`client-platform`·`deployment`·`testing`·`README`)로 나뉩니다(2026-08-27, `spring-boot-java.md`에서 OpenAPI·주석 규칙을 2개 파일로 분리하고, 다른 문서와 80% 이상 중복이던 `figma-product.md`는 폐기 — 표기 규칙만 `spring-boot-java.md`로 이관. `docs/product/fe-context/`가 더 이상 쓰이지 않게 되며 `fe-context.md`도 함께 폐기). 파일별 정확한 역할·`paths:` 패턴은 여기서 다시 나열하지 않습니다 — 표가 바뀔 때마다 이 문서까지 손으로 맞춰야 해서 실제로 드리프트가 난 적이 있습니다. 최신 표: [`.claude/rules/README.md`](../.claude/rules/README.md) "Rules" 절.
 
 이렇게 나눈 이유는 토큰 낭비 방지입니다 — Java 파일을 안 건드리는 세션에서 Spring 컨벤션 전체를 매번 로드할 필요가 없습니다.
 
 ## 4. 스킬 (`.claude/skills/`) — 승인 게이트가 있는 반복 워크플로
 
-"바로 구현"을 막고 **문서 → 승인 → 코드 → 기계적 검증** 순서를 강제하는 4개 스킬입니다(승인 게이트가 없는 절차형 스킬 `debug-bug`는 아래 별도 서술).
-
-| 스킬 | 강제하는 것 | 트리거 | 산출물 |
-|------|-------------|--------|--------|
-| **specify** | 구현 전 스펙 승인 | 새 API·DB 스키마·인증 흐름, 3파일+ 리팩터 | `docs/specs/{domain}/{feature}.md` — Must/Nice 체크리스트, API 표, `[미정]` 항목 |
-| **refactor-audit** | 기존 코드 리팩토링도 감사→승인→구현→**기계적 무손실 증명** 순서 | "아키텍처 감사·정리" 요청 | `docs/audits/{domain}/audit.md`(A/B/C/D 분류) + `refactor-log.md`(반영 이력) |
-| **verify** | "완료/통과" 선언 전 실제 확인 | 완료 보고 직전, 특히 API·DB 변경 | 없음(검증 절차) — `./gradlew test` + 스펙 체크리스트 대조 + `oasdiff` |
-| **defer-followup** | 범위 미룰 때도 이슈만 던지지 않고 문서까지 같은 턴에 | 「다른 이슈로 빼」·「wave 밖」 지시 | Draft 스펙 + Approved 스펙 amend + (확인 후) GitHub 이슈 |
+"바로 구현"을 막고 **문서 → 승인 → 코드 → 기계적 검증** 순서를 강제하는 4개 스킬(`specify`·`refactor-audit`·`verify`·`defer-followup`)입니다(승인 게이트가 없는 절차형 스킬 `debug-bug`는 아래 별도 서술). 각 스킬의 트리거·산출물은 이 문서에 표로 다시 두지 않습니다 — 최신 표: [`.claude/rules/README.md`](../.claude/rules/README.md) "Skills" 절.
 
 **공통 설계 원칙:** 세 스킬(`specify`/`refactor-audit`/`verify`) 모두 "LLM의 자기 보고를 신뢰하지 않는다"가 핵심입니다 — `refactor-audit`은 "안 바꿨다"는 말 대신 `oasdiff` diff가 정말 0인지, `verify`는 "테스트 통과했다"는 말 대신 `./gradlew test`를 실제로 돌린 결과를 요구합니다.
 
@@ -71,18 +55,11 @@ Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontma
 
 ## 5. 훅 (`.claude/hooks/`) — 프롬프트로 안 되는 결정론적 하한선
 
-규칙 문서는 에이전트가 "읽고 따르는" 소프트 가드레일이지만, 훅은 `.claude/settings.json`에 등록된 이벤트에서 **exit code로 결정론적으로** 실행을 막거나 자동화합니다. 프롬프트 지시만으로는 100% 보장이 안 되는 것들(특히 파괴적 명령)을 여기서 강제합니다.
-
-| 이벤트 | 훅 | 동작 |
-|--------|-----|------|
-| `PreToolUse` (Bash) | `block-dangerous.sh` | `git push --force`, `rm -rf`, `git reset --hard`, `docker compose down -v` **차단**(exit 2, fail-closed) |
-| `PreToolUse` (Bash) | `warn-breaking-change.sh` | `git commit`에 DTO/ErrorCode/Controller 변경이 staged됐는데 `Breaking-Change-Reason:` 트레일러가 없으면 advisory 경고(항상 exit 0 — **커밋을 막지 않음**) |
-| `PreToolUse` (Write\|Edit) | `block-db-migration.sh` | `db/migration/` 경로나 Flyway 네이밍(`V1__x.sql`) 파일 생성 **차단**(exit 2) — 상용 보존 데이터가 없어 스키마 SSOT는 JPA 엔티티+`ddl-auto` 하나뿐이라는 정책을 파일 생성 시점에 강제 |
-| `PostToolUse` (Edit\|Write) | `format-java.sh` | Java 파일 저장마다 `spotlessApply` 자동 포맷(non-blocking) |
+규칙 문서는 에이전트가 "읽고 따르는" 소프트 가드레일이지만, 훅은 `.claude/settings.json`에 등록된 이벤트에서 **exit code로 결정론적으로** 실행을 막거나 자동화합니다. 프롬프트 지시만으로는 100% 보장이 안 되는 것들(특히 파괴적 명령)을 여기서 강제합니다. 현재 4개(`block-dangerous.sh`·`block-db-migration.sh`·`warn-breaking-change.sh`·`format-java.sh`) — 이벤트·매처·동작 표는 여기서 다시 두지 않습니다: [`.claude/rules/README.md`](../.claude/rules/README.md) "Hooks" 절이 SSOT.
 
 ### 인시던트에서 배운 것 — "판단이 필요 없는 곳엔 LLM을 쓰지 않는다"
 
-`warn-breaking-change.sh`는 처음엔 `agent`-type(서브에이전트가 diff를 읽고 breaking 여부를 판단)으로 만들었습니다. 하지만 staged 변경이 아니라 working tree의 무관한 변경까지 오판해서, "이 훅은 절대 커밋을 막지 마라"는 명시적 지시가 있었는데도 실제로 커밋을 막는 사고가 있었습니다. 이후 advisory-only 훅은 **`command`-type(스크립트가 exit code로 결정)**을 기본으로 확정했습니다 — "판단"이 필요한 건 LLM에게, "이건 항상 이렇게 동작해야 한다"는 건 결정론적 스크립트에게 맡기는 경계를 이 사고로 얻었습니다. SSOT: [`.claude/rules/README.md`](../.claude/rules/README.md) Hooks 절.
+`warn-breaking-change.sh`는 처음엔 `agent`-type(서브에이전트가 diff를 읽고 breaking 여부를 판단)으로 만들었다가, working tree의 무관한 변경까지 오판해 "절대 막지 마라"는 지시에도 커밋을 막는 사고를 낸 뒤 `command`-type(exit code로 결정론적 통제)으로 전환했습니다 — "판단"은 LLM에게, "항상 이렇게 동작해야 한다"는 결정론적 스크립트에게 맡기는 경계를 이 사고로 얻었습니다. 전체 경위: [`.claude/rules/README.md`](../.claude/rules/README.md) "agent-type 훅 관련 교훈" 절(SSOT).
 
 ## 6. 실제 인시던트가 규칙이 된 사례들
 
@@ -97,7 +74,7 @@ Cursor의 `.mdc`(`globs`/`alwaysApply`)에 대응하는 구조. `paths:` frontma
 | `warn-breaking-change.sh` 오차단 | §5 참고 | agent-type → command-type 훅으로 전환 |
 | Wave `Nice`/`Out` 혼용 표기(#19/#20) | 두 개념을 한 칸에 섞어 써서 "이번 wave에서 하는 건지 안 하는 건지" 불명확해짐 | 당시 `harness-wave.md`에 Must/Nice/Out을 Backlog 없이 단정 금지 + Nice·Out 혼용 표기 금지를 명문화 (2026-08-26: Nice→Could로 개명, Backlog 텍스트 방식은 폐지하고 `priority:` 라벨로 이관 — `harness-wave.md` 참고) |
 | Google Calendar의 Wave 축 재분류 | "로그인 자격증명"(Wave 1)과 "로그인이 매개하는 외부 서비스 연동"(Wave 3)의 경계가 헷갈려 재분류가 필요했음 | 이후 이 경계에 걸리는 새 이슈는 에이전트가 스스로 확정하지 않고 사용자에게 한 줄 확인을 받도록 규칙화 |
-| `NotificationController` Swagger 스키마 소실 | 제네릭 wrapper(`SuccessResponse<T>`)를 raw 타입으로 `@Schema(implementation=...)`에 지정하면 springdoc이 실제 `data` 타입을 못 읽어 스키마 전체가 사라짐 | "`@Schema` 존재 ≠ 실제 Swagger 노출"이라는 STOP §1.6 규칙 + `useReturnTypeSchema=true` 해결책을 `spring-boot-java.md`에 고정 |
+| `NotificationController` Swagger 스키마 소실 | 제네릭 wrapper(`SuccessResponse<T>`)를 raw 타입으로 `@Schema(implementation=...)`에 지정하면 springdoc이 실제 `data` 타입을 못 읽어 스키마 전체가 사라짐 | "`@Schema` 존재 ≠ 실제 Swagger 노출"이라는 STOP §1.6 규칙 + `useReturnTypeSchema=true` 해결책을 `openapi-conventions.md`에 고정 |
 
 ## 7. API 계약 변경 감지·알림 파이프라인
 
@@ -149,7 +126,7 @@ Superpowers 같은 서드파티 플러그인(`brainstorming`, `writing-plans`, `
 2026-08-05 기준 `git log` 측정:
 
 - 전체 커밋 383개 중 **155개**가 `Co-Authored-By: Claude` 트레일러 포함 (`git log --grep "Co-Authored-By: Claude" --oneline | wc -l`)
-- 스펙 문서 42개(`docs/specs/` 전 도메인 합계), ADR 9개, always-load 규칙 5개 + path-scoped 규칙 7개, 스킬 5개, 훅 4개
+- 스펙 문서 42개(`docs/specs/` 전 도메인 합계), ADR 9개, always-load 규칙 5개 + path-scoped 규칙 9개, 스킬 5개, 훅 4개
 
 이 수치는 "AI가 얼마나 많이 타이핑했는가"가 아니라 — 위 §1~§12의 장치들이 실제로 매 세션 반복 적용됐다는 근거로 읽는 게 맞습니다. 코드 자체뿐 아니라 이 문서를 포함한 스펙·ADR·규칙 문서 대부분도 AI가 초안을 작성하고 사람이 승인·확정하는 방식으로 만들어졌습니다.
 
