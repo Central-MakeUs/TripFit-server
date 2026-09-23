@@ -60,16 +60,17 @@ public class AuthController {
   }
 
   /**
-   * [소셜 로그인]
-   * 소셜(Apple/Google) 인증으로 로그인하고 JWT 토큰을 발급합니다.
+   * [소셜 로그인] 소셜(Apple/Google) 인증으로 로그인하고 JWT 토큰을 발급합니다.
    *
-   * <p>■ FE 유의사항
-   * <br>- APPLE/GOOGLE 모두 매 로그인 시 새로 발급받은 authorizationCode를 보내야 합니다.
-   * <br>- GOOGLE 브라우저 리다이렉트 로그인이면 redirectUri도 실제 값과 일치하게 보내야 합니다.
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - APPLE/GOOGLE 모두 매 로그인 시 새로 발급받은 authorizationCode를 보내야 합니다. <br>
+   * - GOOGLE 브라우저 리다이렉트 로그인이면 redirectUri도 실제 값과 일치하게 보내야 합니다.
    *
-   * <p>■ BE 처리
-   * <br>- Refresh Token은 HttpOnly 쿠키로 응답하며, 클라이언트에서 직접 다루지 않습니다.
-   * <br>- GOOGLE은 redirectUri 불일치 시 토큰 교환이 조용히 스킵될 수 있습니다(best-effort).
+   * <p>
+   * ■ BE 처리 <br>
+   * - Refresh Token은 HttpOnly 쿠키로 응답하며, 클라이언트에서 직접 다루지 않습니다. <br>
+   * - GOOGLE은 redirectUri 불일치 시 토큰 교환이 조용히 스킵될 수 있습니다(best-effort).
    */
   @Operation(summary = "소셜 로그인")
   @ApiResponses({
@@ -119,15 +120,16 @@ public class AuthController {
   }
 
   /**
-   * [액세스·리프레시 토큰 재발급 (RTR)]
-   * Refresh 쿠키를 이용해 Access/Refresh 토큰을 함께 갱신합니다.
+   * [액세스·리프레시 토큰 재발급 (RTR)] Refresh 쿠키를 이용해 Access/Refresh 토큰을 함께 갱신합니다.
    *
-   * <p>■ FE 유의사항
-   * <br>- 브라우저에 저장된 기존 refresh token 쿠키를 전송해야 합니다.
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 브라우저에 저장된 기존 refresh token 쿠키를 전송해야 합니다.
    *
-   * <p>■ BE 처리
-   * <br>- 기존 refresh token은 즉시 폐기되고 새 쿠키가 발급됩니다.
-   * <br>- 이미 폐기된 쿠키가 제출되면 탈취로 간주해 연관된 로그인 체인 전체를 폐기합니다.
+   * <p>
+   * ■ BE 처리 <br>
+   * - 기존 refresh token은 즉시 폐기되고 새 쿠키가 발급됩니다. <br>
+   * - 이미 폐기된 쿠키가 제출되면 탈취로 간주해 연관된 로그인 체인 전체를 폐기합니다.
    */
   @Operation(summary = "액세스·리프레시 토큰 재발급 (RTR)")
   @ApiResponses({
@@ -157,15 +159,16 @@ public class AuthController {
   }
 
   /**
-   * [로그아웃]
-   * 발급된 Refresh Token을 폐기하여 재발급을 막습니다.
+   * [로그아웃] 발급된 Refresh Token을 폐기하여 재발급을 막습니다.
    *
-   * <p>■ FE 유의사항
-   * <br>- 액세스 토큰은 남은 수명(TTL) 동안 유효할 수 있습니다 (블랙리스트 없음).
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 액세스 토큰은 남은 수명(TTL) 동안 유효할 수 있습니다 (블랙리스트 없음).
    *
-   * <p>■ BE 처리
-   * <br>- Refresh Token 쿠키를 서버 및 브라우저에서 폐기합니다.
-   * <br>- 쿠키가 없거나 만료됐어도 에러 없이 성공(204) 처리됩니다.
+   * <p>
+   * ■ BE 처리 <br>
+   * - Refresh Token 쿠키를 서버 및 브라우저에서 폐기합니다. <br>
+   * - 쿠키가 없거나 만료됐어도 에러 없이 성공(204) 처리됩니다.
    */
   @Operation(summary = "로그아웃")
   @ApiResponses({
@@ -185,14 +188,15 @@ public class AuthController {
   }
 
   /**
-   * [현재 사용자 조회]
-   * 로그인한 사용자의 요약 정보를 조회합니다.
+   * [현재 사용자 조회] 로그인한 사용자의 요약 정보를 조회합니다.
    *
-   * <p>■ FE 유의사항
-   * <br>- 화면 렌더링에 필요한 현재 사용자 상태를 반환합니다.
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 화면 렌더링에 필요한 현재 사용자 상태를 반환합니다.
    *
-   * <p>■ BE 처리
-   * <br>- hasCompletedPreSchedule 값은 사전 신청일 저장 여부에서 동적 계산됩니다.
+   * <p>
+   * ■ BE 처리 <br>
+   * - hasCompletedPreSchedule 값은 사전 신청일 저장 여부에서 동적 계산됩니다.
    */
   @Operation(summary = "현재 사용자 조회")
   @ApiResponses({
@@ -213,15 +217,16 @@ public class AuthController {
   }
 
   /**
-   * [Apple 계정 변경 알림 수신]
-   * Apple Server-to-Server Notification을 수신합니다.
+   * [Apple 계정 변경 알림 수신] Apple Server-to-Server Notification을 수신합니다.
    *
-   * <p>■ FE 유의사항
-   * <br>- 클라이언트가 아닌 Apple 서버가 직접 호출하는 웹훅입니다.
+   * <p>
+   * ■ FE 유의사항 <br>
+   * - 클라이언트가 아닌 Apple 서버가 직접 호출하는 웹훅입니다.
    *
-   * <p>■ BE 처리
-   * <br>- Apple 계정 변경 이벤트(연동 해제, 계정 삭제 등)를 수신해 사용자 정보를 동기화합니다.
-   * <br>- consent-revoked는 토큰만 폐기, account-delete는 계정 Soft Delete까지 수행합니다.
+   * <p>
+   * ■ BE 처리 <br>
+   * - Apple 계정 변경 이벤트(연동 해제, 계정 삭제 등)를 수신해 사용자 정보를 동기화합니다. <br>
+   * - consent-revoked는 토큰만 폐기, account-delete는 계정 Soft Delete까지 수행합니다.
    */
   @Operation(summary = "Apple 계정 변경 알림 수신")
   @ApiResponses({

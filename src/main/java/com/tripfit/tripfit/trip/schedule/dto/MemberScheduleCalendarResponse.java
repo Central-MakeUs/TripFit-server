@@ -8,12 +8,16 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "여행방 멤버 전원의 정기+개별 일정을 합친 달력. GET /trips/{tripId}/members/schedule-calendar")
+@Schema(
+    description = "여행방 멤버 전원의 정기 및 개별 일정을 합산한 달력 응답입니다. (GET /trips/{tripId}/members/schedule-calendar)")
 public record MemberScheduleCalendarResponse(
     @Schema(description = "조회 시작 날짜 (여행방 희망 기간 startRange)") LocalDate startDate,
     @Schema(description = "조회 종료 날짜 (여행방 희망 기간 endRange)") LocalDate endDate,
     @Schema(
-        description = "읽기 전용 여부. CONFIRMED·EXPIRED이면 true. 일정 snapshot 고정, 수정 불가") boolean readOnly,
+        description = """
+            달력의 읽기 전용 여부입니다.
+            - 여행방이 CONFIRMED 또는 EXPIRED 상태일 경우 true이며, 일정은 수정할 수 없는 스냅샷으로 고정됩니다.
+            """) boolean readOnly,
     @Schema(description = "멤버별 정기+개별 합친 달력") List<MemberCalendar> members
 ) {
 

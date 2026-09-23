@@ -5,13 +5,12 @@ import com.tripfit.tripfit.trip.membership.domain.TripMemberStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
-@Schema(
-    description = """
-        방 진입 상태. POST /trips(생성) · POST /trips/join(참여) 공통 응답.
-        방장·참여자 모두 SCHEDULE_PENDING으로 시작. 일정 확인 플로우를 마치고 activate하면 ACTIVE가 된다.
-        클라는 myMemberStatus 하나로 라우팅한다(SCHEDULE_PENDING=일정 플로우, ACTIVE=방 안).
-        inviteCode 필드 없음. 입장(ACTIVE) 후 상세에서만 공유용 코드를 제공한다.
-        """)
+@Schema(description = """
+    여행방 진입 상태 응답입니다. (생성 및 참여 시 공통 반환)
+    - 방장 및 참여자 모두 초기 상태는 SCHEDULE_PENDING입니다. 일정 확인 플로우를 완료(activate)하면 ACTIVE가 됩니다.
+    - 클라이언트는 myMemberStatus를 기준으로 화면을 라우팅합니다. (SCHEDULE_PENDING: 일정 플로우, ACTIVE: 여행방 내부)
+    - 이 응답에는 초대 코드(inviteCode)가 포함되지 않습니다. (입장 후 상세 API에서만 제공)
+    """)
 public record TripEntryResponse(
 
     @Schema(description = "여행방 ID") UUID tripId,
@@ -20,8 +19,9 @@ public record TripEntryResponse(
 
     @Schema(
         description = """
-            호출자의 이 방 멤버십 상태. create·신규 join 직후 항상 SCHEDULE_PENDING.
-            이미 멤버인 사용자가 join을 다시 호출하면 그 시점의 실제 상태(SCHEDULE_PENDING 또는 ACTIVE)를 그대로 반환한다.
+            호출자의 현재 방 멤버십 상태입니다.
+            - 생성 및 신규 참여 직후에는 항상 SCHEDULE_PENDING입니다.
+            - 이미 멤버인 사용자가 다시 참여(join)를 호출하면, 현재의 실제 상태(SCHEDULE_PENDING 또는 ACTIVE)를 반환합니다.
             """) TripMemberStatus myMemberStatus
 
 ) {

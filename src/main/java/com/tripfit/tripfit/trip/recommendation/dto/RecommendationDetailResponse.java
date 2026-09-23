@@ -5,8 +5,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.List;
 
-@Schema(description = "추천 근거 상세 (후보 1건). GET /trips/{tripId}/recommendations/{rank} (방장 전용)")
-
+@Schema(description = """
+    단일 추천 후보의 상세 근거 정보입니다. (GET /trips/{tripId}/recommendations/{rank})
+    - 방장 전용 기능입니다.
+    """)
 public record RecommendationDetailResponse(
     @Schema(description = "추천 순위 (1=1순위)", example = "1") int rank,
 
@@ -24,10 +26,14 @@ public record RecommendationDetailResponse(
 
     @Schema(description = "총 연차 일수 (반차=0.5일 환산 합계)", example = "2.0") double totalVacationDays,
 
-    @Schema(description = "응답 참여자별 브레이크다운. 화면의 '주의가 필요한 인원'/'참석 가능한 인원' 그룹핑은"
-        + " attendance != FULL_ATTEND 이거나 uncertainDays > 0 인지로 FE가 계산") List<MemberAttendanceResponse> members,
+    @Schema(
+        description = """
+            참여자별 참석 세부 정보 목록입니다.
+            - 클라이언트는 `attendance != FULL_ATTEND`이거나 `uncertainDays > 0`인 경우 '주의가 필요한 인원'으로, 그 외는 '참석 가능한 인원'으로 직접 그룹화합니다.
+            """) List<MemberAttendanceResponse> members,
 
-    @Schema(description = "방장이 이 후보에 남긴 피드백. 남긴 적 없으면 null",
+    @Schema(
+        description = "방장이 해당 후보에 대해 남긴 피드백 정보입니다. 피드백이 없으면 null을 반환합니다.",
         nullable = true) RecommendationFeedbackResponse feedback
 ) {
 }

@@ -6,16 +6,30 @@ import com.tripfit.tripfit.trip.domain.TripStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Optional;
 
-@Schema(description = "홈 여행방 목록 조회 쿼리. GET /trips")
+@Schema(description = "홈 화면의 여행방 목록 조회 파라미터입니다. (GET /trips)")
 public record TripListQuery(
-    @Schema(description = "목록 뷰. ongoing=진행 중 캐러셀, all=전체 보기 (기본 all)",
+    @Schema(
+        description = """
+            조회할 목록의 뷰 타입입니다.
+            - ongoing: 진행 중인 여행방 캐러셀
+            - all: 전체 여행방 보기 (기본값)
+            """,
         defaultValue = "all") TripListScope scope,
 
     @Schema(
-        description = "상태 필터. ALL(기본)=필터 없음 · ONGOING=조율 중 · CONFIRMED=일정 확정. scope=all일 때만 적용") Optional<TripStatus> statusFilter,
+        description = """
+            여행방 상태 필터입니다.
+            - ALL: 필터 없음 (기본값)
+            - ONGOING: 조율 중
+            - CONFIRMED: 일정 확정
+            - 참고: 이 필터는 `scope=all`인 경우에만 적용됩니다.
+            """) Optional<TripStatus> statusFilter,
 
     @Schema(
-        description = "내가 방장(OWNER)인 방만. scope=all일 때만 적용",
+        description = """
+            방장(OWNER)인 방만 필터링할지 여부입니다.
+            - 참고: 이 필터는 `scope=all`인 경우에만 적용됩니다.
+            """,
         defaultValue = "false") boolean ownerOnly
 ) {
 
