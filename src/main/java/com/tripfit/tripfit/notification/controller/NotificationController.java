@@ -32,14 +32,13 @@ public class NotificationController {
 
   /**
    * [알림센터 목록 조회]
+   * 본인이 받은 알림 이력을 최신순으로 조회합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 본인이 받은 알림 이력을 최신순으로 조회합니다.
+   * <p>■ FE 유의사항
+   * <br>- 최신순으로 정렬된 알림 목록을 반환합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 최근 7일 이내에 발송된 알림만 쿼리하여 반환하며, 8일 이전 알림은 노출되지 않습니다.
+   * <p>■ BE 처리
+   * <br>- 최근 7일 이내에 발송된 알림만 쿼리하며, 8일 이전 데이터는 노출되지 않습니다.
    */
   @Operation(summary = "알림센터 목록 조회")
   @ApiResponses({
@@ -60,15 +59,13 @@ public class NotificationController {
 
   /**
    * [알림 읽음 처리]
+   * 알림센터에서 특정 알림을 열람했음을 서버에 기록합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 알림센터에서 특정 알림을 열람했음을 서버에 기록합니다.
+   * <p>■ FE 유의사항
+   * <br>- 읽음 처리 완료 시 204 No Content를 반환합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 해당 알림의 isRead 상태를 true로 업데이트합니다. <br>
-   * - 이미 읽음 상태라면 변경 없이 동일하게 처리(204)합니다 (idempotent).
+   * <p>■ BE 처리
+   * <br>- 해당 알림의 isRead 상태를 true로 업데이트합니다 (Idempotent).
    */
   @Operation(summary = "알림 읽음 처리")
   @ApiResponses({

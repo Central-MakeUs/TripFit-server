@@ -33,15 +33,13 @@ public class GoogleCalendarController {
 
   /**
    * [Google Calendar 연동]
+   * Google OAuth 동의 후 구글 캘린더 읽기 권한을 연동합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 앱/웹에서 Google OAuth 동의 후 받은 authorization code로 구글 캘린더 읽기 권한을 연동합니다. <br>
-   * - 브라우저 리다이렉트 방식인 경우 redirectUri도 함께 보내야 합니다.
+   * <p>■ FE 유의사항
+   * <br>- 브라우저 리다이렉트 방식인 경우 redirectUri도 함께 보내야 합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - authorization code를 검증하여 연동을 완료하고, 연동 직후 freeBusy(스케줄) 정보를 1회 동기화합니다.
+   * <p>■ BE 처리
+   * <br>- authorization code 검증 후 연동하며, 직후 freeBusy(스케줄) 정보를 1회 동기화합니다.
    */
   @Operation(summary = "Google Calendar 연동")
   @ApiResponses({
@@ -76,15 +74,14 @@ public class GoogleCalendarController {
 
   /**
    * [Google Calendar 연동 해제]
+   * 구글 캘린더 연동을 해제합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 사용자가 의도적으로 구글 캘린더 연동을 해제할 때 호출합니다.
+   * <p>■ FE 유의사항
+   * <br>- 사용자가 명시적으로 연동 해제를 요청할 때 호출합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - Google OAuth 토큰을 revoke 처리(best-effort)하고 관련 credential과 busy_day 데이터를 삭제합니다. <br>
-   * - 연동이 해제되어도 사용자가 직접 입력한 정기·개별 일정 데이터는 그대로 유지됩니다.
+   * <p>■ BE 처리
+   * <br>- Google OAuth 토큰 Revoke 및 관련 동기화 데이터를 삭제합니다.
+   * <br>- 연동 해제 시에도 사용자가 직접 입력한 정기·개별 일정은 그대로 유지됩니다.
    */
   @Operation(summary = "Google Calendar 연동 해제")
   @ApiResponses({

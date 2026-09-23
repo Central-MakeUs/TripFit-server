@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -40,7 +39,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Trip", description = "여행방 생성·목록·상세·참여·일정 확인·Pin")
 @RestController
 @RequestMapping("/api/v1/trips")
-@SecurityRequirement(name = "bearer-jwt")
 public class TripController {
   private final TripService tripService;
 
@@ -50,17 +48,14 @@ public class TripController {
 
   /**
    * [여행방 생성]
+   * 새 여행방을 생성하고 호출자를 방장(OWNER)으로 등록합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 새 여행방을 만들면 호출자는 자동으로 방장으로 등록됩니다. <br>
-   * - 생성 직후에는 방 입장이나 초대 공유가 불가능하며 응답에 inviteCode가 없습니다. <br>
-   * - 이후 일정 확인 플로우를 거쳐 activate를 완료해야 ACTIVE 상태가 되며, 상세 조회에서 inviteCode를 얻을 수 있습니다.
+   * <p>■ FE 유의사항
+   * <br>- 생성 직후엔 초대 코드가 없으며, 일정 확인(activate)을 마쳐야 ACTIVE 상태가 되어 초대 코드가 발급됩니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 여행방 정보를 저장하고 생성자를 방장(OWNER) 권한으로 등록합니다. <br>
-   * - 생성된 방장의 멤버 상태는 SCHEDULE_PENDING(activate 전)으로 초기화됩니다.
+   * <p>■ BE 처리
+   * <br>- 여행방 저장 및 방장 권한 등록을 수행합니다.
+   * <br>- 방장의 초기 상태는 SCHEDULE_PENDING으로 설정됩니다.
    */
   @Operation(summary = "여행방 생성")
   @ApiResponses({
@@ -94,18 +89,15 @@ public class TripController {
 
   /**
    * [내 여행방 목록]
+   * 내가 속한 여행방 카드 목록을 조회합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 내가 속한 여행방 카드 목록을 조회합니다. <br>
-   * - 목록 카드에는 inviteCode가 포함되지 않습니다(초대 공유는 입장 후 상세 화면에서 수행). <br>
-   * - SCHEDULE_PENDING 상태인 카드가 섞여 나올 수 있으며, 이 경우 카드를 탭했을 때 방 상세 화면이 아닌 일정 activate 플로우로 라우팅해야 합니다.
+   * <p>■ FE 유의사항
+   * <br>- 목록에는 inviteCode가 포함되지 않습니다 (상세 화면에서 조회).
+   * <br>- SCHEDULE_PENDING 상태인 카드를 탭하면 방 상세가 아닌 '일정 activate 플로우'로 라우팅해야 합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - scope=ongoing: endRange가 오늘 이후인 방 목록을 Pin 여부(우선) 및 일정순으로 정렬합니다. <br>
-   * - scope=all: Pin과 무관하게 최근 활동순으로 모든 방을 반환합니다. <br>
-   * - ownerOnly 파라미터로 본인이 방장인 방만 필터링할 수 있습니다.
+   * <p>■ BE 처리
+   * <br>- scope=ongoing: 진행 중인 방을 Pin 여부 및 일정순으로 정렬하여 반환합니다.
+   * <br>- scope=all: 모든 방을 최근 활동순으로 정렬하여 반환합니다.
    */
   @Operation(summary = "내 여행방 목록")
   @ApiResponses({
@@ -134,16 +126,14 @@ public class TripController {
 
   /**
    * [여행방 상세]
+   * 여행방의 상세 정보와 멤버 요약 리스트를 조회합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - ACTIVE 상태(일정 activate/join 완료)인 멤버만 조회할 수 있습니다. SCHEDULE_PENDING 상태면
-   * SCHEDULE_ACTIVATION_REQUIRED로 거부됩니다. <br>
-   * - 이 API 응답부터 inviteCode가 포함되어 방장이 초대를 공유할 수 있습니다.
+   * <p>■ FE 유의사항
+   * <br>- ACTIVE 상태(일정 activate 완료)인 멤버만 호출 가능합니다 (SCHEDULE_PENDING 시 에러 발생).
+   * <br>- 응답에 inviteCode가 포함되어 초대 공유가 가능해집니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 사용자 권한 및 멤버 상태를 검증 후 여행방의 상세 정보와 멤버 요약 리스트를 반환합니다.
+   * <p>■ BE 처리
+   * <br>- 사용자 권한 및 멤버 ACTIVE 상태 검증 후 데이터를 반환합니다.
    */
   @TripMemberOnly
   @Operation(summary = "여행방 상세")
@@ -177,16 +167,14 @@ public class TripController {
 
   /**
    * [여행방 메타 수정]
+   * 방 이름, 인원, 여행지 등 메타 정보를 수정합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 방 이름, 인원, 여행지 등 메타 정보를 수정합니다. <br>
-   * - 희망 기간(startRange, endRange)은 이 API로 수정할 수 없습니다. <br>
-   * - 방장만 호출 가능하며, 여행방이 ONGOING(조율 중) 상태일 때만 가능합니다.
+   * <p>■ FE 유의사항
+   * <br>- 방장만 호출 가능하며, 여행방이 ONGOING(조율 중) 상태일 때만 가능합니다.
+   * <br>- 희망 기간(startRange, endRange)은 이 API로 수정할 수 없습니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 요청자가 방장인지, 여행방이 ONGOING 상태인지 검증 후 메타 정보를 갱신합니다.
+   * <p>■ BE 처리
+   * <br>- 권한(방장) 및 상태(ONGOING) 검증 후 정보를 갱신합니다.
    */
   @TripOwnerOnly
   @Operation(summary = "여행방 메타 수정")
@@ -231,16 +219,13 @@ public class TripController {
 
   /**
    * [여행방 삭제]
+   * 여행방과 연관된 데이터를 삭제(Soft Delete)합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 방장 전용 기능이며, 방을 삭제 처리합니다.
+   * <p>■ FE 유의사항
+   * <br>- 방장 전용 기능입니다. SCHEDULE_PENDING 상태에서도 즉시 삭제 가능합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 여행방 엔티티를 soft delete 처리합니다. <br>
-   * - 연관된 멤버(TripMember) 데이터도 함께 연쇄적으로 soft delete됩니다. <br>
-   * - 방장인 경우 SCHEDULE_PENDING 상태(일정 확정 전)에서도 즉시 삭제 가능합니다.
+   * <p>■ BE 처리
+   * <br>- 방장 권한 검증 후 여행방 엔티티와 연관된 멤버 데이터를 연쇄적으로 Soft Delete 처리합니다.
    */
   @TripOwnerOnly
   @Operation(summary = "여행방 삭제")
@@ -272,18 +257,16 @@ public class TripController {
 
   /**
    * [초대 링크로 참여]
+   * 초대 링크를 통해 여행방의 멤버로 참여합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 초대 링크를 연 직후, 일정 확인 화면에 들어가기 전에 가장 먼저 호출합니다. <br>
-   * - 이 API만으로는 방 안의 다른 API(상세 조회 등)를 사용할 수 없습니다. 일정 확인을 마친 후 activate API를 호출해야 합니다. <br>
-   * - 이미 참여 중인 사용자가 재호출하면 에러 대신 현재 상태(myMemberStatus)를 그대로 반환합니다(idempotent). 이를 기반으로 일정 플로우로 보낼지 방
-   * 안으로 보낼지 라우팅하세요.
+   * <p>■ FE 유의사항
+   * <br>- 링크 접속 직후, 가장 먼저 호출해야 합니다.
+   * <br>- 이 API 완료 후, 일정 확인 플로우를 거쳐 activate를 호출해야 최종 입장(ACTIVE)됩니다.
+   * <br>- 기참여자의 재호출 시 에러 없이 현재 상태(myMemberStatus)를 반환하므로, 이에 맞춰 라우팅 분기 처리가 필요합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 사용자를 해당 방의 멤버로 추가하며 초기 상태는 SCHEDULE_PENDING으로 설정합니다. <br>
-   * - 방의 정원은 SCHEDULE_PENDING 멤버도 포함하여 계산하며 초과 시 TRIP_MEMBER_FULL 에러를 반환합니다.
+   * <p>■ BE 처리
+   * <br>- 사용자를 멤버로 추가하며 초기 상태를 SCHEDULE_PENDING으로 설정합니다.
+   * <br>- PENDING 인원 포함 정원 초과 시 에러를 반환합니다.
    */
   @Operation(summary = "초대 링크로 참여")
   @ApiResponses({
@@ -326,19 +309,15 @@ public class TripController {
 
   /**
    * [여행방 멤버십 활성화]
+   * 일정 확인을 마친 후 호출하여 최종적으로 방 입장을 완료(ACTIVE)합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 일정 확인(사전 일정 입력 등)을 끝낸 후 호출하여 여행방 입장을 완료합니다. <br>
-   * - 사전 일정 입력(연차·휴일 등)을 한 번도 완료하지 않았다면 403 PRE_SCHEDULE_REQUIRED가 발생합니다. (등록된 일정이 0건인 것은 문제되지 않음)
-   * <br>
-   * - 이미 활성화된 상태에서 호출해도 문제없이 동일 응답을 반환합니다(idempotent). <br>
-   * - 이 호출 이후부터 방 상세 API 등 모든 방 안 기능을 사용할 수 있습니다.
+   * <p>■ FE 유의사항
+   * <br>- 사전 일정 입력을 한 번도 완료하지 않았다면 403 에러가 발생합니다.
+   * <br>- 이미 활성화된 상태에서 호출해도 문제없이 동일 응답을 반환합니다(idempotent).
+   * <br>- 이 호출 이후부터 방 상세 API 등 방 안의 모든 기능을 사용할 수 있습니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 호출자의 멤버십 상태를 SCHEDULE_PENDING에서 ACTIVE로 갱신합니다. <br>
-   * - 상태 변경 후 방에 속한 전체 멤버의 요약 정보를 포함한 최신 방 상세 데이터를 반환합니다.
+   * <p>■ BE 처리
+   * <br>- 호출자의 멤버십 상태를 SCHEDULE_PENDING에서 ACTIVE로 갱신합니다.
    */
   @Operation(summary = "여행방 멤버십 활성화")
   @ApiResponses({
@@ -366,15 +345,13 @@ public class TripController {
 
   /**
    * [Pin 토글]
+   * 홈 목록에서 특정 여행방을 상단 고정(Pin)하거나 해제합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 홈 목록에서 특정 방을 상단 고정(Pin)하거나 해제합니다. <br>
-   * - 해당 방의 멤버이기만 하면 입장(ACTIVE) 전이더라도 호출 가능합니다.
+   * <p>■ FE 유의사항
+   * <br>- 멤버십에 속해 있다면, 입장(ACTIVE) 전이더라도 호출 가능합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 멤버십 검증 후 사용자의 해당 방 Pin 상태(boolean)를 토글/저장합니다.
+   * <p>■ BE 처리
+   * <br>- 멤버십 검증 후 사용자의 해당 방 Pin 상태를 토글합니다.
    */
   @TripMembershipOnly
   @Operation(summary = "Pin 토글")

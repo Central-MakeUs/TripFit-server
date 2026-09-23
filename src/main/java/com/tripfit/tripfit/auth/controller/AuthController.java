@@ -61,21 +61,15 @@ public class AuthController {
 
   /**
    * [소셜 로그인]
+   * 소셜(Apple/Google) 인증으로 로그인하고 JWT 토큰을 발급합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - provider가 APPLE 또는 GOOGLE이면 각 OAuth 플로우에서 받은 authorizationCode도 함께 보내야 합니다
-   * ({@code LoginRequest.authorizationCode} 필드 설명 참고). <br>
-   * - GOOGLE 브라우저 리다이렉트 로그인이면 {@code redirectUri}도 실제 리다이렉트에 쓴 값과 정확히 일치하게 보내야 합니다. <br>
-   * - APPLE과 GOOGLE은 매번(최초 및 재로그인 모두) authorizationCode를 새로 발급받아 보내야 합니다 (탈퇴 시 revoke용 refresh
-   * token 확보).
+   * <p>■ FE 유의사항
+   * <br>- APPLE/GOOGLE 모두 매 로그인 시 새로 발급받은 authorizationCode를 보내야 합니다.
+   * <br>- GOOGLE 브라우저 리다이렉트 로그인이면 redirectUri도 실제 값과 일치하게 보내야 합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - refresh token은 응답 바디가 아니라 HttpOnly 쿠키({@code Set-Cookie: refreshToken=...})로 내려갑니다. 클라이언트
-   * JavaScript가 값을 직접 다루지 않아도 되며, 이후 refresh 및 logout 요청 시 브라우저가 자동으로 실어 보냅니다. <br>
-   * - GOOGLE은 재로그인 시 credential이 갱신되지 않을 수 있고, redirectUri가 실제 값과 다르면 토큰 교환이 조용히 스킵됩니다 (로그인 자체는 계속
-   * 성공, best-effort).
+   * <p>■ BE 처리
+   * <br>- Refresh Token은 HttpOnly 쿠키로 응답하며, 클라이언트에서 직접 다루지 않습니다.
+   * <br>- GOOGLE은 redirectUri 불일치 시 토큰 교환이 조용히 스킵될 수 있습니다(best-effort).
    */
   @Operation(summary = "소셜 로그인")
   @ApiResponses({
@@ -126,17 +120,14 @@ public class AuthController {
 
   /**
    * [액세스·리프레시 토큰 재발급 (RTR)]
+   * Refresh 쿠키를 이용해 Access/Refresh 토큰을 함께 갱신합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 기존 refresh token 쿠키를 전송해야 합니다.
+   * <p>■ FE 유의사항
+   * <br>- 브라우저에 저장된 기존 refresh token 쿠키를 전송해야 합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - refresh token 쿠키로 access와 refresh를 함께 재발급합니다(RTR). 기존 refresh는 이 호출과 동시에 폐기되고, 응답이
-   * Set-Cookie로 내려주는 새 값으로 브라우저가 자동 교체합니다. <br>
-   * - 이미 폐기된(rotate로 소비된) refresh token이 재제출되면 탈취 재사용으로 간주해 같은 로그인 체인 전체를 폐기합니다 (401
-   * AUTH_REFRESH_REUSE).
+   * <p>■ BE 처리
+   * <br>- 기존 refresh token은 즉시 폐기되고 새 쿠키가 발급됩니다.
+   * <br>- 이미 폐기된 쿠키가 제출되면 탈취로 간주해 연관된 로그인 체인 전체를 폐기합니다.
    */
   @Operation(summary = "액세스·리프레시 토큰 재발급 (RTR)")
   @ApiResponses({
@@ -167,15 +158,14 @@ public class AuthController {
 
   /**
    * [로그아웃]
+   * 발급된 Refresh Token을 폐기하여 재발급을 막습니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 액세스 토큰은 블랙리스트 없이 자체 만료(TTL)로만 무효화되므로, 로그아웃 후에도 이미 발급된 액세스 토큰은 남은 수명 동안 유효할 수 있습니다.
+   * <p>■ FE 유의사항
+   * <br>- 액세스 토큰은 남은 수명(TTL) 동안 유효할 수 있습니다 (블랙리스트 없음).
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - refresh token 쿠키를 폐기해 재발급을 막고 브라우저에서도 쿠키를 지웁니다. <br>
-   * - 쿠키가 이미 없거나 만료됐어도 조용히 넘어가고 로그아웃 자체는 계속 성공합니다.
+   * <p>■ BE 처리
+   * <br>- Refresh Token 쿠키를 서버 및 브라우저에서 폐기합니다.
+   * <br>- 쿠키가 없거나 만료됐어도 에러 없이 성공(204) 처리됩니다.
    */
   @Operation(summary = "로그아웃")
   @ApiResponses({
@@ -196,14 +186,13 @@ public class AuthController {
 
   /**
    * [현재 사용자 조회]
+   * 로그인한 사용자의 요약 정보를 조회합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 로그인한 현재 사용자의 요약 정보를 조회합니다.
+   * <p>■ FE 유의사항
+   * <br>- 화면 렌더링에 필요한 현재 사용자 상태를 반환합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - hasCompletedPreSchedule은 DB 컬럼이 아니라 연차·휴일 정보의 사전 신청일 저장 여부에서 파생됩니다.
+   * <p>■ BE 처리
+   * <br>- hasCompletedPreSchedule 값은 사전 신청일 저장 여부에서 동적 계산됩니다.
    */
   @Operation(summary = "현재 사용자 조회")
   @ApiResponses({
@@ -225,22 +214,16 @@ public class AuthController {
 
   /**
    * [Apple 계정 변경 알림 수신]
+   * Apple Server-to-Server Notification을 수신합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 이 API는 클라이언트가 아니라 Apple 서버가 직접 호출합니다 (Apple Developer Console에 Server-to-Server Notification
-   * Endpoint로 등록됨).
+   * <p>■ FE 유의사항
+   * <br>- 클라이언트가 아닌 Apple 서버가 직접 호출하는 웹훅입니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - Apple이 push하는 계정 변경 이벤트(연동 해제, 계정 삭제 등)를 수신해 user 및 refresh_token을 동기화합니다 (TripFit 클라이언트의 로그인
-   * 흐름과 무관). <br>
-   * - consent-revoked는 refresh_token만 폐기(계정 유지), account-delete는 user soft delete 및 refresh_token
-   * 폐기를 수행합니다. <br>
-   * - email-enabled/disabled는 로그만 남기며(user.email 미보유), 존재하지 않는 sub나 미인식 type의 이벤트도 200(no-op)으로
-   * 응답합니다.
+   * <p>■ BE 처리
+   * <br>- Apple 계정 변경 이벤트(연동 해제, 계정 삭제 등)를 수신해 사용자 정보를 동기화합니다.
+   * <br>- consent-revoked는 토큰만 폐기, account-delete는 계정 Soft Delete까지 수행합니다.
    */
-  @Operation(summary = "Apple 계정 변경 알림 수신", security = {})
+  @Operation(summary = "Apple 계정 변경 알림 수신")
   @ApiResponses({
       @ApiResponse(responseCode = "200",
           description = "수신·처리 완료. no-op(존재하지 않는 sub·미인식 type)도 포함"),

@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Trip Members", description = "여행방 참여자 목록·그룹 달력·내보내기")
 @RestController
 @RequestMapping("/api/v1/trips/{tripId}/members")
-@SecurityRequirement(name = "bearer-jwt")
 public class TripMemberController {
   private final TripService tripService;
 
@@ -36,16 +34,14 @@ public class TripMemberController {
 
   /**
    * [참여자 목록]
+   * 여행방 참여자 목록을 조회합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 여행방 참여자 목록을 조회합니다. <br>
-   * - 해당 방에서 상태가 ACTIVE인 멤버만 호출할 수 있으며, SCHEDULE_PENDING 상태인 경우 403 에러가 반환됩니다. <br>
-   * - 동명이인이 있을 경우 표시명에 {@code (2)}처럼 번호가 붙어 반환됩니다.
+   * <p>■ FE 유의사항
+   * <br>- 상태가 ACTIVE인 멤버만 호출 가능합니다 (SCHEDULE_PENDING 상태 시 403 에러).
+   * <br>- 동명이인 표시명에 '(2)' 등 번호가 자동 부여됩니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 멤버 권한 및 상태 검증 후 참여자 리스트(TripMember)를 반환합니다.
+   * <p>■ BE 처리
+   * <br>- 멤버 권한 및 상태 검증 후 조회합니다.
    */
   @TripMemberOnly
   @Operation(summary = "참여자 목록")
@@ -79,15 +75,14 @@ public class TripMemberController {
 
   /**
    * [멤버 정기+개별 합친 일정 달력]
+   * 희망 기간(startRange~endRange) 동안 멤버 전원의 스케줄이 취합된 달력 데이터를 조회합니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 여행방의 희망 기간(startRange~endRange) 동안 멤버 전원의 스케줄이 취합된 달력 데이터를 조회합니다.
+   * <p>■ FE 유의사항
+   * <br>- 방 상태(ONGOING, CONFIRMED 등)와 무관하게 동일한 포맷의 달력을 제공합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 조율 중(ONGOING)인 방은 실시간 일정을 합산하여 반환합니다. <br>
-   * - 이미 확정(CONFIRMED)되거나 종료(EXPIRED)된 방은 당시 저장된 스냅샷(읽기 전용)을 반환합니다.
+   * <p>■ BE 처리
+   * <br>- 조율 중(ONGOING)인 방은 실시간 일정을 합산하여 반환합니다.
+   * <br>- 확정(CONFIRMED)되거나 종료(EXPIRED)된 방은 저장된 스냅샷을 반환합니다.
    */
   @TripMemberOnly
   @Operation(summary = "멤버 정기+개별 합친 일정 달력")
@@ -122,16 +117,14 @@ public class TripMemberController {
 
   /**
    * [참여자 내보내기]
+   * 방장이 특정 참여자(MEMBER)를 여행방에서 내보냅니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 방장이 특정 참여자(MEMBER)를 내보낼 때 호출합니다. <br>
-   * - 여행방이 ONGOING 상태일 때만 가능하며, 자기 자신(방장)을 내보낼 수는 없습니다.
+   * <p>■ FE 유의사항
+   * <br>- 방장 전용 기능이며 ONGOING 상태일 때만 가능합니다. (자기 자신은 내보낼 수 없음)
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 대상 참여자를 soft delete 처리하고 갱신된 멤버 목록을 반환합니다. <br>
-   * - 단, 추천 캐시는 건드리지 않으므로 이후 추천 재계산이 필요할 수 있습니다.
+   * <p>■ BE 처리
+   * <br>- 대상 참여자를 Soft Delete 처리합니다.
+   * <br>- 기존 추천 결과 캐시는 유지되므로 필요 시 클라이언트에서 추천 재계산을 유도해야 합니다.
    */
   @TripOwnerOnly
   @Operation(summary = "참여자 내보내기")
@@ -176,18 +169,14 @@ public class TripMemberController {
 
   /**
    * [여행방 나가기]
+   * 참여자 스스로 여행방에서 나갑니다.
    *
-   * <p>
-   * ■ FE 유의사항 <br>
-   * - 참여자(MEMBER)가 스스로 여행방에서 나갑니다. <br>
-   * - 이 방에 입장 완료(ACTIVE)한 멤버만 호출할 수 있고, 일정 확인 전(SCHEDULE_PENDING)이면 403이 발생합니다. <br>
-   * - 방장은 이 API를 사용할 수 없습니다 (방 삭제를 대신 사용해야 함). <br>
-   * - 방 상태(ONGOING/CONFIRMED/EXPIRED)와 무관하게 언제든 나갈 수 있습니다. <br>
-   * - 나간 이후에도 같은 초대 코드로 다시 참여할 수 있습니다.
+   * <p>■ FE 유의사항
+   * <br>- ACTIVE 멤버 전용 기능입니다 (일정 확인 전이면 403).
+   * <br>- 방장은 방 삭제 API를 사용해야 하며, 이 API는 방장 호출 시 에러가 발생합니다.
    *
-   * <p>
-   * ■ BE 처리 <br>
-   * - 해당 참여자의 TripMember 엔티티를 soft delete 처리합니다.
+   * <p>■ BE 처리
+   * <br>- 해당 참여자의 데이터를 Soft Delete 처리합니다.
    */
   @TripMemberOnly
   @Operation(summary = "여행방 나가기")
