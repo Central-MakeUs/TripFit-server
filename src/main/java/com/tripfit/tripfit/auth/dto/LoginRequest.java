@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-@Schema(description = "소셜 로그인 요청. POST /auth/login")
+@Schema(description = "소셜 로그인 요청입니다. (POST /auth/login)")
 public record LoginRequest(
     @Schema(
         description = "소셜 로그인 제공자",
@@ -13,19 +13,22 @@ public record LoginRequest(
         requiredMode = Schema.RequiredMode.REQUIRED) @NotNull SocialProvider provider,
 
     @Schema(
-        description = "소셜 토큰. GOOGLE/APPLE: id_token, KAKAO: access_token",
+        description = """
+            소셜 액세스 토큰 또는 ID 토큰입니다.
+            - GOOGLE/APPLE: id_token
+            - KAKAO: access_token
+            """,
         example = "eyJhbG...",
         requiredMode = Schema.RequiredMode.REQUIRED) @NotBlank String token,
 
     @Schema(
         description = """
-            APPLE 또는 GOOGLE 로그인 시 authorization code. 두 provider는 필수, KAKAO는 보내지 않음(값이 있어도 무시). 탈퇴 시 해당 provider 쪽 연결을 해제(revoke)하는 데 쓰일 refresh token을 교환하기 위한 값이다.
-
-            GOOGLE(네이티브 앱 로그인): Google Sign-In SDK를 offline access로 설정했을 때 함께 내려오는 serverAuthCode 값.
-
-            GOOGLE(브라우저 리다이렉트 로그인): authorization code(hybrid) 방식으로 요청했을 때 id_token과 함께 받는 code 값.
-
-            APPLE: 네이티브 Sign in 인증 결과에 포함된 authorizationCode 원문.
+            APPLE 또는 GOOGLE 로그인 시 필요한 인가 코드(authorization code)입니다.
+            - 탈퇴 시 연결 해제(revoke)에 사용될 리프레시 토큰 교환을 위해 필요합니다.
+            - GOOGLE (네이티브): serverAuthCode
+            - GOOGLE (웹 리다이렉트): 인증 코드로 반환된 code 값
+            - APPLE: authorizationCode 원문
+            - KAKAO: 사용하지 않음 (생략 가능)
             """,
         example = "c1234...",
         nullable = true,
@@ -33,9 +36,9 @@ public record LoginRequest(
 
     @Schema(
         description = """
-            GOOGLE 브라우저 리다이렉트 로그인 시에만 필요한 redirect_uri 원문(예: https://tripfit.online/auth/google/callback). Google authorization code 교환 시 요청에 실제로 썼던 값과 정확히 일치해야 한다.
-
-            GOOGLE 네이티브 앱 로그인(serverAuthCode)과 KAKAO·APPLE은 보내지 않아도 된다(값이 있어도 무시).
+            GOOGLE 웹 리다이렉트 로그인 시에만 필요한 redirect_uri입니다.
+            - Google authorization code 교환 시 사용했던 값과 정확히 일치해야 합니다.
+            - KAKAO, APPLE, GOOGLE 네이티브 로그인의 경우 생략합니다.
             """,
         example = "https://tripfit.online/auth/google/callback",
         nullable = true,

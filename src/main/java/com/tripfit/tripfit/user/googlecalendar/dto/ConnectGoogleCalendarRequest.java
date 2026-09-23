@@ -3,18 +3,21 @@ package com.tripfit.tripfit.user.googlecalendar.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "Google Calendar OAuth 연동 요청")
+@Schema(description = "Google Calendar 연동 요청입니다. (POST /users/settings/google-calendar)")
 public record ConnectGoogleCalendarRequest(
     @Schema(
-        description = "Google OAuth authorization code (앱·웹이 Google 동의 후 수신)",
+        description = """
+            Google OAuth 인가 코드(authorization code)입니다.
+            - 앱이나 웹에서 Google 권한 동의 후 수신한 코드입니다.
+            """,
         example = "4/0AeanS...",
         requiredMode = Schema.RequiredMode.REQUIRED) @NotBlank String authorizationCode,
 
     @Schema(
         description = """
-            브라우저 리다이렉트 방식으로 연동할 때만 필요한 redirect_uri 원문. Google authorization code 교환 시 요청에 실제로 썼던 값과 정확히 일치해야 한다.
-
-            네이티브 앱(serverAuthCode) 방식은 보내지 않아도 된다(값이 있어도 무시).
+            웹 브라우저 리다이렉트 방식으로 연동할 때만 필요한 redirect_uri입니다.
+            - 인가 코드 교환 시 사용했던 값과 정확히 일치해야 합니다.
+            - 네이티브 앱 연동 시에는 생략 가능합니다.
             """,
         example = "https://tripfit.online/settings/google-calendar/callback",
         nullable = true,
