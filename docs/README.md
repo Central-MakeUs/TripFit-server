@@ -5,7 +5,7 @@
 
 에이전트 행동 규칙: [`.claude/rules/README.md`](../.claude/rules/README.md) · 하네스 코어 [`harness-workflow.md`](../.claude/rules/harness-workflow.md)
 
-**"AI를 어떻게 활용했는가"에 대한 총정리 서술 문서:** [`harness-engineering.md`](harness-engineering.md) — 다층 SSOT·규칙·스킬·훅 구조와, 그 구조가 실제 인시던트를 겪으며 어떻게 보강됐는지까지 기록.
+**"AI를 어떻게 활용했는가"에 대한 총정리 서술 문서:** [`harness-engineering.md`](harness-engineering.md) — 다층 SSOT·규칙·스킬·훅 구조와, 그 구조가 실제 인시던트를 겪으며 어떻게 보강됐는지까지 기록. **레이어별 실행 흐름 상세**는 [`harness/`](harness/README.md).
 
 **"지금 이 순간 실제로 어떻게 동작하는가"를 쉬운 말로 담은 문서:** [`how-it-works.md`](how-it-works.md) — 스펙·ADR이 아니라 현재 동작 요약. 인증·세션 등 보안·아키텍처 성격 로직을 바꾸면 같은 턴에 갱신 (`.claude/rules/harness-workflow.md` STOP §6).
 
