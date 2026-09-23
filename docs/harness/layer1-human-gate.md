@@ -1,0 +1,106 @@
+# Layer 1 — Human Gate (AI가 멈추고 사람에게 묻는 지점)
+
+> 분류: **rule** (`.claude/rules/`) · 강제 수단: 프롬프트(소프트 가드레일) · 대응 다이어그램: "Layer 1: Human Gate"
+
+## 1. 기본 사항
+
+### 이 레이어가 나타내는 것
+
+에이전트가 코드를 쓰기 **전에** 스스로 판단하면 안 되는 지점을 규정한 층입니다. 핵심 명제는 하나입니다 — **문서와 구현이 어긋날 때 에이전트가 "더 합리적인 쪽"을 임의로 고르지 않는다.** 고르는 순간 그 선택은 아무 기록도 남기지 않고 코드에 박히기 때문입니다.
+
+### 파일 위치와 분류
+
+| 파일 | 분류 | 로딩 방식 | 담당 |
+|---|---|---|---|
+| [`CLAUDE.md`](../../CLAUDE.md) | rule (진입점) | 세션 시작 시 항상 | `@AGENTS.md` import + Claude Code 전용 보충 |
+| [`AGENTS.md`](../../AGENTS.md) | rule (프로젝트 지도) | 세션 시작 시 항상 | 기술 스택·컨벤션·경로 맵 |
+| [`.claude/rules/harness-workflow.md`](../../.claude/rules/harness-workflow.md) | rule (**코어**) | 세션 시작 시 항상 | ⛔ STOP §1~§6 · Before/While/After Coding |
+| [`.claude/rules/harness-wave.md`](../../.claude/rules/harness-wave.md) | rule | 세션 시작 시 항상 | priority(must/could) 단정 금지 · Release Gate · `[미정]` 처리 |
+| [`.claude/rules/harness-follow-up.md`](../../.claude/rules/harness-follow-up.md) | rule | 세션 시작 시 항상 | 후속 제안 · Defer · ERD 개선 제안 |
+| [`.claude/rules/workflow-tools.md`](../../.claude/rules/workflow-tools.md) | rule | 세션 시작 시 항상 | 도구 우선순위·작업유형→도구 매핑 |
+| [`.claude/rules/plain-language-reporting.md`](../../.claude/rules/plain-language-reporting.md) | rule | 세션 시작 시 항상 | 사용자 보고는 쉬운 말로 (코드 주석은 제외) |
+| `spring-boot-java.md` · `openapi-conventions.md` · `java-comments.md` | rule | **`**/*.java` 접근 시에만** | Java 레이어·`@Schema`·주석 스타일 |
+| `client-platform.md` | rule | **controller/service 접근 시에만** | 클라이언트 계약·인증 전제 |
+| `deployment.md` | rule | **yml·docker-compose 접근 시에만** | 배포 가드레일 |
+| `testing.md` | rule | **`*Test.java`·`src/test/**` 접근 시에만** | JUnit·Testcontainers |
+
+**로딩 메커니즘:** `.claude/rules/*.md`에 YAML frontmatter `paths:`가 **없으면** 세션 시작 시 항상 주입되고, **있으면** 그 glob에 매칭되는 파일을 읽거나 쓸 때만 주입됩니다(Cursor `.mdc`의 `alwaysApply`/`globs`에 대응). 이렇게 나눈 이유는 토큰 절약입니다 — Java를 안 건드리는 세션에서 Spring 컨벤션 전체를 매번 실을 필요가 없습니다.
+
+## 2. 언제 발동하고, 어떤 흐름을 타는가
+
+### 트리거
+
+세션 시작 시 **무조건** 1회(always-load 규칙 주입), 그 뒤로는 특정 파일에 접근할 때마다 해당 path-scoped 규칙이 추가 주입됩니다. STOP 조건 자체는 "구현·기본값 변경·커밋 전"에 매번 재확인 대상입니다.
+
+### 실제 로딩 흐름 (이 문서를 쓴 세션에서 관측된 순서)
+
+```
+1. 세션 시작
+   → CLAUDE.md 주입 → 그 안의 @AGENTS.md import 따라 AGENTS.md 주입
+   → .claude/rules/ 중 frontmatter 없는 5개 주입
+     (harness-workflow · harness-wave · harness-follow-up
+      · workflow-tools · plain-language-reporting)
+
+2. 에이전트가 src/main/java/.../JwtProperties.java 를 Read
+   → paths: ["**/*.java"] 매칭
+   → spring-boot-java.md · openapi-conventions.md · java-comments.md 3개 추가 주입
+
+3. 에이전트가 .../controller/AuthController.java 를 Read
+   → paths: ["**/controller/**", "**/service/**"] 매칭
+   → client-platform.md 추가 주입
+```
+
+즉 규칙은 "한 번에 다 읽는 매뉴얼"이 아니라 **작업 대상에 따라 그때그때 조립되는 컨텍스트**입니다.
+
+### STOP 조건별로 실제 읽는 파일
+
+STOP은 성격이 3가지로 갈립니다. 다이어그램은 가독성을 위해 4단계 순차 판단으로 단순화했지만, 실제로는 아래가 **모든 변경에 동시에** 걸립니다.
+
+| STOP | 조건 | 발동 시 읽는 파일 | 결과 |
+|---|---|---|---|
+| §1 문서·구현 정합 | 스펙·ADR·기획 문서와 코드의 TTL·enum·env·경로가 다름 | `docs/specs/{domain}/*.md`, `docs/decisions/*.md`, `docs/architecture.md` | **중단 → 충돌 목록화 → 사용자 질문** |
+| §1.5 | "미구현"이라고 보고하기 직전 | 관련 Controller·Service·테스트를 **직접 grep/Read** | 스펙 문구만으로 단정 금지 |
+| §1.6 | "Swagger에 있다"고 보고하기 직전 | `/v3/api-docs` 또는 `docs/api/openapi.json` **실제 생성 문서** | `@Schema` 존재만으로 단정 금지 |
+| §2 ErrorCode·AOP | 새 실패 분기·권한 게이트·`last_activity_at` touch 추가 | `{Domain}ErrorCode.java`, 스펙 에러 표 | **같은 턴에** enum+throw+스펙 동시 갱신 (미루기 금지) |
+| §3 DB | Flyway·`V1__*.sql` 작성 시도 | — | **금지** (Layer 3 훅이 물리적으로도 차단) |
+| §4 레거시 | 경로·상수·API를 교체 | 교체된 구 메서드·상수·테스트 assert | **같은 PR에서 삭제** (호환 레이어 금지) |
+| §5 API 계약 | DTO·enum·ErrorCode·경로 변경 | — | 커밋 본문에 `Breaking-Change-Reason:` 트레일러 |
+| §6 보안·아키텍처 | 토큰·세션·결제·개인정보 저장 방식 변경 | [`docs/how-it-works.md`](../how-it-works.md) | **같은 턴에** 쉬운 말로 갱신 |
+| 별도 | 새 이슈·브랜치·PR 생성 | — | 실행 전 채팅으로 먼저 확인 |
+| 별도 | priority must/could 판단 | 이슈의 `priority:` 라벨 | 에이전트가 임의 부여 금지 |
+
+## 3. 실제 사례 — Redis 문서 드리프트 (2026-08-28)
+
+이 레이어가 **실패했다가 복구된** 사례라 오히려 설명 가치가 큽니다.
+
+**1) 실패:** 사용자가 배포 다이어그램을 검토해 달라고 했을 때, 에이전트가 [`docs/decisions/010-redis-infra.md`](../decisions/010-redis-infra.md)를 읽고 "EC2 D의 Redis는 access token 블랙리스트 저장소"라고 단정해 사용자 코드를 잘못 지적했습니다.
+
+**2) 문서가 stale했음:** 실제로는 `#2`(PR #121)에서 블랙리스트가 폐기되고 Redis가 refresh token 저장소로 바뀐 상태였는데, ADR이 갱신되지 않았습니다.
+
+**3) 복구 — STOP §1.5 절차 적용:** 사용자 지적 후 문서가 아니라 **코드를 먼저** 확인했습니다.
+
+```bash
+grep -rn "blacklist\|Blacklist" src/main/java   # → 결과 0건
+ls src/main/java/com/tripfit/tripfit/auth/service/
+# → RefreshTokenService.java, IssuedRefreshToken.java
+```
+
+`JwtProperties.java`의 주석에는 이미 "access token 블랙리스트를 폐기해"라고 적혀 있었습니다. 즉 **코드가 진실, 문서가 거짓**인 상태였습니다.
+
+**4) 결과:** `docs/` 전체를 코드와 대조해 19개 파일을 정정하고 3개 커밋으로 분리 반영했습니다(`caa16e3`, `1eba357`, `758e9fa`). 부수적으로 Closed된 이슈 9개가 문서엔 Open으로 남아있던 것, 깨진 링크 2건도 함께 정리했습니다.
+
+**교훈:** STOP §1.5("구현 상태 보고 전 코드 우선 확인")는 바로 이 실패 모드 때문에 미리 규칙에 박아둔 조항이었고, 실제로 그 절차가 복구 경로가 됐습니다. 규칙이 실패를 **막지는** 못했지만, 실패를 **체계적으로 되돌리는 절차**를 제공했습니다.
+
+## 4. AI-native 관점에서의 강조 포인트
+
+| 순위 | 강조할 것 | 근거 |
+|---|---|---|
+| 1 | **path-scoped 규칙 로딩으로 컨텍스트 예산을 설계했다** | always-load 5개 + path-scoped 7개로 분리. "규칙을 많이 쓰면 좋다"가 아니라 "언제 무엇을 실을지"를 토큰 비용 관점에서 설계했다는 점이 차별점 |
+| 2 | **문서 드리프트를 실패 모드로 인정하고 절차를 만들었다** | STOP §1.5·§1.6은 "문서를 믿지 말고 코드/생성물을 확인하라"는 규칙. 문서 SSOT를 만들면서 동시에 그 SSOT가 썩는다는 걸 전제한 설계 |
+| 3 | 충돌 시 임의 판단 금지 (STOP §1) | 흔한 주장이라 단독으로는 약함. 위 2번 사례와 묶어서 말해야 설득력이 생김 |
+
+**주의 — 면접에서 이 레이어만 강조하면 약합니다.** "AI에게 규칙 파일을 잘 써줬다"는 프롬프트 엔지니어링에 가깝고, 누구나 보여줄 수 있습니다. 이 레이어는 [Layer 3](layer3-deterministic-hooks.md)의 결정론적 강제와 **대비**시킬 때 가치가 살아납니다 — "소프트 가드레일로 되는 것과 안 되는 것을 구분했다"는 판단이 핵심입니다.
+
+## 5. `docs/`는 왜 별도 레이어가 아닌가
+
+`docs/product/` → `docs/specs/` → `docs/decisions/`로 이어지는 다층 SSOT는 이 레이어의 **판단 근거 데이터**이지 독립된 통제 장치가 아닙니다. 문서가 잘 정리돼 있다는 것 자체는 AI-native의 증거가 아니고(문서 잘 쓰는 팀은 AI 없이도 많습니다), 이 저장소에서 `docs/`가 의미 있는 이유는 **에이전트가 매 턴 읽고 어긋나면 멈추는 제어면**이기 때문입니다. 그 역할은 위 STOP 표가 이미 표현하고 있습니다.
