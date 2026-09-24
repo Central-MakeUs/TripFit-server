@@ -47,11 +47,6 @@ public class NotificationController {
           responseCode = "200",
           description = "조회 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping
   ResponseEntity<SuccessResponse<List<NotificationResponse>>> list(@AuthorizedUser UUID userId) {
@@ -77,11 +72,6 @@ public class NotificationController {
           description = "NOTIFICATION_NOT_FOUND (존재하지 않거나 본인 것이 아닌 알림)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PatchMapping("/{id}/read")
   ResponseEntity<Void> markRead(@AuthorizedUser UUID userId, @PathVariable UUID id) {

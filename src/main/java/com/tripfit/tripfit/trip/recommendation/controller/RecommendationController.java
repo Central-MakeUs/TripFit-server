@@ -67,16 +67,6 @@ public class RecommendationController {
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
@@ -117,16 +107,6 @@ public class RecommendationController {
           description = "조회 성공",
           useReturnTypeSchema = true),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
@@ -159,16 +139,6 @@ public class RecommendationController {
           description = "조회 성공",
           useReturnTypeSchema = true),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND (여행방 없음 )· RECOMMENDATION_NOT_FOUND (해당 rank 없음)",
           content = @Content(
@@ -178,7 +148,7 @@ public class RecommendationController {
   ResponseEntity<SuccessResponse<RecommendationDetailResponse>> getRecommendationDetail(
       @PathVariable UUID tripId,
       @AuthorizedUser UUID userId,
-      @Parameter(description = "추천 순위 (1~3)", example = "1") @PathVariable int rank) {
+      @Parameter(description = "추천 순위 (1~3)") @PathVariable int rank) {
     return ResponseEntity.ok(
         SuccessResponse.of(tripService.getRecommendationDetail(tripId, userId, rank)));
   }
@@ -206,16 +176,6 @@ public class RecommendationController {
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND (여행방 없음 )· RECOMMENDATION_NOT_FOUND (해당 rank 없음)",
           content = @Content(
@@ -225,7 +185,7 @@ public class RecommendationController {
   ResponseEntity<Void> saveRecommendationFeedback(
       @PathVariable UUID tripId,
       @AuthorizedUser UUID userId,
-      @Parameter(description = "추천 순위 (1~3)", example = "1") @PathVariable int rank,
+      @Parameter(description = "추천 순위 (1~3)") @PathVariable int rank,
       @Valid @RequestBody SaveRecommendationFeedbackRequest request) {
     tripService.saveRecommendationFeedback(tripId, userId, rank, request);
     return ResponseEntity.noContent().build();
@@ -254,16 +214,6 @@ public class RecommendationController {
       @ApiResponse(
           responseCode = "400",
           description = "INVALID_CONFIRM_REQUEST · CONFIRM_DURATION_MISMATCH · INVALID_INPUT",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
@@ -306,16 +256,6 @@ public class RecommendationController {
       @ApiResponse(
           responseCode = "400",
           description = "INVALID_UNCONFIRM_REASON",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(

@@ -55,11 +55,6 @@ public class DeviceTokenController {
           description = "INVALID_INPUT (deviceType 누락(필수))·정의되지 않은 값",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping
   ResponseEntity<Void> register(
@@ -88,11 +83,6 @@ public class DeviceTokenController {
           description = "NOTIFICATION_TOKEN_NOT_FOUND (토큰이 없거나 본인 것이 아님)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @DeleteMapping
   ResponseEntity<Void> unregister(

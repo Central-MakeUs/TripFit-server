@@ -1,7 +1,6 @@
 package com.tripfit.tripfit.user.controller;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
-import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.user.dto.OnboardingNameRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
@@ -9,8 +8,6 @@ import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
 import com.tripfit.tripfit.user.service.UserWithdrawalService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,16 +52,6 @@ public class UserController {
           responseCode = "200",
           description = "저장 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PatchMapping("/onboarding/name")
   ResponseEntity<SuccessResponse<UserSummaryResponse>> registerOnboardingName(
@@ -92,16 +79,6 @@ public class UserController {
           responseCode = "200",
           description = "수정 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PatchMapping("/profile")
   ResponseEntity<SuccessResponse<UserSummaryResponse>> updateProfile(
@@ -126,11 +103,6 @@ public class UserController {
   @Operation(summary = "회원 탈퇴")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "탈퇴 성공(No Content)"),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @DeleteMapping("/me")
   ResponseEntity<Void> withdraw(@AuthorizedUser UUID userId) {

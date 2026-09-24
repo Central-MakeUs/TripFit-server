@@ -80,11 +80,6 @@ public class AuthController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "400",
           description = "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED (provider가 APPLE인데 authorizationCode 누락)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
@@ -204,11 +199,6 @@ public class AuthController {
           responseCode = "200",
           description = "조회 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping("/me")
   ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) {

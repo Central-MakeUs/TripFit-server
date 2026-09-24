@@ -49,16 +49,6 @@ public class GoogleCalendarController {
           description = "연동 성공",
           useReturnTypeSchema = true),
       @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "502",
           description = "GOOGLE_CALENDAR_CONNECT_FAILED (authorization code 교환)·Google API 호출 실패",
           content = @Content(
@@ -91,11 +81,6 @@ public class GoogleCalendarController {
           responseCode = "200",
           description = "연동 해제 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
           description = "GOOGLE_CALENDAR_NOT_CONNECTED (미연동 상태에서 해제 요청)",

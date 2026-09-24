@@ -52,11 +52,6 @@ public class TripMemberController {
           description = "조회 성공",
           useReturnTypeSchema = true),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "403",
           description = "TRIP_ACCESS_DENIED (비참여자 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료(SCHEDULE_PENDING))",
           content = @Content(
@@ -93,11 +88,6 @@ public class TripMemberController {
           responseCode = "200",
           description = "조회 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
           description = "TRIP_ACCESS_DENIED (비참여자 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료)",
@@ -142,16 +132,6 @@ public class TripMemberController {
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND (여행방 없음 )· TRIP_MEMBER_NOT_FOUND (대상 참여자 없음)·이미 내보냄",
           content = @Content(
@@ -189,11 +169,6 @@ public class TripMemberController {
       @ApiResponse(
           responseCode = "400",
           description = "TRIP_OWNER_CANNOT_LEAVE (방장은 나갈 수 없음(방 삭제 사용))",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(

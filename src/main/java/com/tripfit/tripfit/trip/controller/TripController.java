@@ -65,16 +65,6 @@ public class TripController {
           description = "생성 성공",
           useReturnTypeSchema = true),
       @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "403",
           description = "PROFILE_NAME_REQUIRED (성)·이름 미입력",
           content = @Content(
@@ -107,19 +97,14 @@ public class TripController {
           responseCode = "200",
           description = "조회 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping
   ResponseEntity<SuccessResponse<TripListResponse>> listTrips(
       @AuthorizedUser UUID userId,
-      @Parameter(description = "목록 뷰. ongoing=진행 중 캐러셀, all=전체",
-          example = "all") @RequestParam(defaultValue = "all") String scope,
-      @Parameter(description = "여행방 상태 필터. ONGOING|CONFIRMED|ALL",
-          example = "ALL") @RequestParam(defaultValue = "ALL") String status,
+      @Parameter(description = "목록 뷰. ongoing=진행 중 캐러셀, all=전체") @RequestParam(
+          defaultValue = "all") String scope,
+      @Parameter(description = "여행방 상태 필터. ONGOING|CONFIRMED|ALL") @RequestParam(
+          defaultValue = "ALL") String status,
       @Parameter(description = "true면 본인이 방장인 방만") @RequestParam(
           defaultValue = "false") boolean ownerOnly) {
     TripListQuery query = TripListQuery.parse(scope, status, ownerOnly);
@@ -145,11 +130,6 @@ public class TripController {
           responseCode = "200",
           description = "조회 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
           description = "TRIP_ACCESS_DENIED (비참여자 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료)",
@@ -188,21 +168,6 @@ public class TripController {
           description = "수정 성공",
           useReturnTypeSchema = true),
       @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
@@ -237,16 +202,6 @@ public class TripController {
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "삭제 성공(No Content)"),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "403",
-          description = "TRIP_FORBIDDEN (방장 아님)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "404",
           description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
           content = @Content(
@@ -280,16 +235,6 @@ public class TripController {
           responseCode = "200",
           description = "참여 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "400",
-          description = "요청 값 검증 실패 (INVALID_INPUT)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
           description = "PROFILE_NAME_REQUIRED (성)·이름 미입력",
@@ -333,11 +278,6 @@ public class TripController {
           description = "활성화 성공",
           useReturnTypeSchema = true),
       @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(
           responseCode = "403",
           description = "TRIP_ACCESS_DENIED (비참여자 )· PRE_SCHEDULE_REQUIRED (사전 일정 입력 미완료)",
           content = @Content(
@@ -368,11 +308,6 @@ public class TripController {
           responseCode = "200",
           description = "Pin 변경 성공",
           useReturnTypeSchema = true),
-      @ApiResponse(
-          responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-          content = @Content(
-              schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
           description = "TRIP_ACCESS_DENIED (비참여자)",
