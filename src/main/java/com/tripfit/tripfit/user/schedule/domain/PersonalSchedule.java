@@ -33,7 +33,7 @@ import org.hibernate.type.SqlTypes;
     uniqueConstraints = @UniqueConstraint(
         name = "uk_personal_schedule_user_date",
         columnNames = {"user_id", "schedule_date"}))
-@Schema(description = "User 개인(개별) 일정. 특정 날짜의 오전/오후/저녁 + 날짜 단위 불확실. trip FK 없음")
+@Schema(description = "사용자의 개별 일정 정보입니다. 특정 날짜의 오전, 오후, 저녁 및 불확실 상태를 포함합니다.")
 public class PersonalSchedule extends BaseTimeEntity {
 
   @Schema(
@@ -47,12 +47,12 @@ public class PersonalSchedule extends BaseTimeEntity {
   @Setter
   private UUID id;
 
-  @Schema(description = "소유 사용자")
+  @Schema(description = "일정을 소유한 사용자입니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Schema(description = "일정 날짜", example = "2026-08-03")
+  @Schema(description = "해당 일정의 날짜입니다.", example = "2026-08-03")
   @Column(name = "schedule_date", nullable = false)
   private LocalDate scheduleDate;
 

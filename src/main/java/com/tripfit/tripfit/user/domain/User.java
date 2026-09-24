@@ -47,55 +47,57 @@ public class User extends SoftDeleteEntity {
   @Column(nullable = false)
   private String socialId;
 
-  @Schema(description = "소셜 로그인 제공자")
+  @Schema(description = "소셜 로그인 제공자 정보입니다.")
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private SocialProvider provider;
 
   @Schema(
-      description = "소셜 계정 이메일. Apple relay·미제공 시 null. UNIQUE·식별 키 아님",
+      description = "소셜 계정의 이메일 정보입니다. 제공되지 않거나 Apple Relay 계정인 경우 null입니다.",
       nullable = true,
       example = "user@example.com")
   @Column
   private String email;
 
-  @Schema(description = "유저 입력 이름 (필수, PATCH profile). 미입력 시 null", nullable = true, example = "길동")
+  @Schema(description = "사용자가 입력한 이름 정보입니다. 미입력 시 null을 반환합니다.", nullable = true, example = "길동")
   @Column(name = "first_name")
   private String firstName;
 
-  @Schema(description = "유저 입력 성 (필수, PATCH profile). 미입력 시 null", nullable = true, example = "홍")
+  @Schema(description = "사용자가 입력한 성입니다. (PATCH profile 시 필수) 미입력 시 null을 반환합니다.", nullable = true,
+      example = "홍")
   @Column(name = "last_name")
   private String lastName;
 
   @Schema(
-      description = "소셜 provider 표시명 (prefill·참고용). 미제공 시 null. fallback 없음",
+      description = "소셜 제공자에서 받아온 표시명입니다. (초기 입력값 제공 및 참고용) 미제공 시 null이며, 대체값은 제공하지 않습니다.",
       nullable = true,
       example = "홍길동")
   @Column
   private String nickname;
 
   @Schema(
-      description = "프로필 이미지 URL. wave 1(A안): provider CDN URL 그대로. wave 4(B안): TripFit S3 URL 예정",
+      description = "프로필 이미지 URL입니다.",
       nullable = true,
       example = "https://lh3.googleusercontent.com/a/example")
   @Column(name = "profile_image_url")
   private String profileImageUrl;
 
-  @Schema(description = "Google Calendar OAuth 연동 여부", example = "false")
+  @Schema(description = "Google Calendar OAuth 연동 여부를 나타냅니다.", example = "false")
   @Column(name = "is_google_calendar_connected", nullable = false)
   private boolean isGoogleCalendarConnected;
 
-  @Schema(description = "알림 수신 여부(BR-USER-005). default true. false면 NOTI-001~005·009 전부 미발송",
+  @Schema(description = "알림 수신 여부입니다. 기본값은 true이며, false일 경우 모든 관련 푸시 알림이 발송되지 않습니다.",
       example = "true")
   @Column(name = "notification_enabled", nullable = false)
   private boolean notificationEnabled;
 
-  @Schema(description = "여행당 사용 가능 최대 연차 일수. default 2, 최대 10", example = "2")
+  @Schema(description = "하나의 여행당 사용할 수 있는 최대 연차 일수입니다. 기본값은 2일이며 최대 10일까지 설정할 수 있습니다.",
+      example = "2")
   @Column(name = "max_vacation_days", nullable = false)
   private int maxVacationDays = DEFAULT_MAX_VACATION_DAYS;
 
   @Schema(
-      description = "연차 신청 가능 시점(사전 신청일). null = 사전 일정 입력 미완료. 최초/갱신 입력 판정 마커",
+      description = "연차 신청이 가능한 시점(사전 신청일)입니다. null인 경우 사전 일정 입력이 완료되지 않은 상태를 의미합니다.",
       nullable = true)
   @Enumerated(EnumType.STRING)
   @Column(name = "vacation_apply_period")

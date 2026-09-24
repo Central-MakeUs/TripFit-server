@@ -4,12 +4,12 @@ import com.tripfit.tripfit.common.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.http.HttpStatus;
 
-@Schema(description = "Google Calendar 연동 에러 코드")
+@Schema(description = "구글 캘린더 연동 관련 에러 코드입니다.")
 public enum GoogleCalendarErrorCode implements ErrorCode {
-  @Schema(description = "authorization code 교환·Google API 호출 실패")
+  @Schema(description = "구글 캘린더 인증 코드 교환에 실패했거나 Google API 호출 중 오류가 발생했습니다.")
   GOOGLE_CALENDAR_CONNECT_FAILED(HttpStatus.BAD_GATEWAY, "GOOGLE_CALENDAR_CONNECT_FAILED", "Google Calendar 연동에 실패했습니다."),
 
-  @Schema(description = "연동되지 않은 상태에서 해제 요청")
+  @Schema(description = "구글 캘린더와 연동되어 있지 않은 상태에서 연동 해제를 요청했습니다.")
   GOOGLE_CALENDAR_NOT_CONNECTED(HttpStatus.CONFLICT, "GOOGLE_CALENDAR_NOT_CONNECTED", "Google Calendar가 연동되어 있지 않습니다.");
 
   private final HttpStatus httpStatus;

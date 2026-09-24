@@ -32,10 +32,11 @@ import org.hibernate.type.SqlTypes;
     uniqueConstraints = @UniqueConstraint(
         name = "uk_trip_member_schedule_snapshot",
         columnNames = {"trip_id", "user_id", "schedule_date"}))
-@Schema(description = "확정·종료된 여행방의 멤버 정기+개별 합친 일정 스냅샷. 희망 기간만, 빈 날은 저장하지 않음")
+@Schema(
+    description = "확정되거나 종료된 여행방 멤버의 정기 및 개별 일정을 합친 스냅샷입니다. 희망 기간 내의 일정만 저장하며 비어있는 날은 저장하지 않습니다.")
 public class TripMemberScheduleSnapshot extends BaseTimeEntity {
 
-  @Schema(description = "snapshot 행 ID (UUID v4)")
+  @Schema(description = "스냅샷 행의 식별자(ID)입니다. (UUID v4 형식)")
   @Id
   @GeneratedValue
   @UuidGenerator
@@ -43,28 +44,28 @@ public class TripMemberScheduleSnapshot extends BaseTimeEntity {
   @Column(length = 36, nullable = false, updatable = false)
   private UUID id;
 
-  @Schema(description = "소속 여행방")
+  @Schema(description = "스냅샷이 속한 여행방입니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "trip_id", nullable = false)
   private Trip trip;
 
-  @Schema(description = "멤버 사용자")
+  @Schema(description = "스냅샷의 대상이 되는 멤버 사용자입니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Schema(description = "일정 날짜", example = "2026-08-03")
+  @Schema(description = "일정이 해당하는 날짜입니다.", example = "2026-08-03")
   @Column(name = "schedule_date", nullable = false)
   private LocalDate scheduleDate;
 
   @Embedded
   private SlotStatuses slotStatuses = SlotStatuses.empty();
 
-  @Schema(description = "날짜 단위 불확실", example = "false")
+  @Schema(description = "해당 날짜 전체의 일정이 불확실한지 여부를 나타냅니다.", example = "false")
   @Column(name = "is_uncertain", nullable = false)
   private boolean uncertain;
 
-  @Schema(description = "freeze 시각", example = "2026-07-21T00:05:00")
+  @Schema(description = "일정 스냅샷이 고정(freeze)된 시각입니다.", example = "2026-07-21T00:05:00")
   @Column(name = "frozen_at", nullable = false)
   private LocalDateTime frozenAt;
 

@@ -13,9 +13,9 @@ import java.util.UUID;
     """)
 public record TripEntryResponse(
 
-    @Schema(description = "여행방 ID") UUID tripId,
+    @Schema(description = "여행방의 고유 식별자(ID)입니다.") UUID tripId,
 
-    @Schema(description = "여행방 진행 상태. create·join 직후 ONGOING") TripStatus status,
+    @Schema(description = "여행방의 진행 상태입니다. 방 생성 또는 참여 직후에는 ONGOING 상태가 됩니다.") TripStatus status,
 
     @Schema(
         description = """

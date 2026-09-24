@@ -46,7 +46,7 @@ public class GoogleCalendarBusyDay {
   @Column(length = 36, nullable = false, updatable = false)
   private UUID id;
 
-  @Schema(description = "소유 사용자")
+  @Schema(description = "데이터를 소유한 사용자입니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
@@ -55,19 +55,19 @@ public class GoogleCalendarBusyDay {
   @Column(name = "schedule_date", nullable = false)
   private LocalDate scheduleDate;
 
-  @Schema(description = "오전 슬롯 busy 여부", example = "true")
+  @Schema(description = "오전 시간에 일정이 있는지(busy) 여부를 나타냅니다.", example = "true")
   @Column(name = "morning_busy", nullable = false)
   private boolean morningBusy;
 
-  @Schema(description = "오후 슬롯 busy 여부", example = "false")
+  @Schema(description = "오후 시간에 일정이 있는지(busy) 여부를 나타냅니다.", example = "false")
   @Column(name = "afternoon_busy", nullable = false)
   private boolean afternoonBusy;
 
-  @Schema(description = "저녁 슬롯 busy 여부", example = "false")
+  @Schema(description = "저녁 시간에 일정이 있는지(busy) 여부를 나타냅니다.", example = "false")
   @Column(name = "evening_busy", nullable = false)
   private boolean eveningBusy;
 
-  @Schema(description = "마지막 sync 반영 시각")
+  @Schema(description = "마지막으로 동기화(sync)가 반영된 시각입니다.")
   @LastModifiedDate
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;

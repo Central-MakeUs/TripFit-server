@@ -12,17 +12,18 @@ import java.util.List;
 public record RecommendationDetailResponse(
     @Schema(description = "추천 순위 (1=1순위)", example = "1") int rank,
 
-    @Schema(description = "이 후보를 계산한 추천 모드") RecommendationMode mode,
+    @Schema(description = "해당 추천 후보를 계산할 때 사용한 추천 모드입니다.") RecommendationMode mode,
 
-    @Schema(description = "추천 여행 시작일", example = "2026-08-03") LocalDate startDate,
+    @Schema(description = "추천된 여행 시작일입니다.", example = "2026-08-03") LocalDate startDate,
 
-    @Schema(description = "추천 여행 종료일", example = "2026-08-06") LocalDate endDate,
+    @Schema(description = "추천된 여행 종료일입니다.", example = "2026-08-06") LocalDate endDate,
 
-    @Schema(description = "참석률(%). (전체참석+부분참석 인원)/응답 참여자 수", example = "92") int attendRate,
+    @Schema(description = "참석률(%)입니다. 전체참석 인원과 부분참석 인원을 합친 수를 일정에 응답한 전체 참여자 수로 나눈 값입니다.",
+        example = "92") int attendRate,
 
-    @Schema(description = "부분 참석 인원 수", example = "1") int partialAttendCount,
+    @Schema(description = "부분 참석이 가능한 인원 수입니다.", example = "1") int partialAttendCount,
 
-    @Schema(description = "불확실 일정이 있는 인원 수", example = "1") int uncertainCount,
+    @Schema(description = "불확실한 일정을 가진 인원 수입니다.", example = "1") int uncertainCount,
 
     @Schema(description = "총 연차 일수 (반차=0.5일 환산 합계)", example = "2.0") double totalVacationDays,
 

@@ -29,11 +29,11 @@ import org.hibernate.type.SqlTypes;
 @Entity
 
 @Table(name = "trip_member")
-@Schema(description = "여행방 참여자. trip–user 매핑 및 응답 상태")
+@Schema(description = "여행방 참여자 정보입니다. 여행방과 사용자의 매핑 관계 및 응답 상태를 관리합니다.")
 public class TripMember extends SoftDeleteEntity {
 
   @Schema(
-      description = "참여자 레코드 ID (UUID v4)",
+      description = "참여자 레코드의 식별자(ID)입니다. (UUID v4 형식)",
       example = "550e8400-e29b-41d4-a716-446655440000")
   @Id
   @GeneratedValue
@@ -43,23 +43,23 @@ public class TripMember extends SoftDeleteEntity {
   @Setter
   private UUID id;
 
-  @Schema(description = "소속 여행방")
+  @Schema(description = "참여자가 소속된 여행방입니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "trip_id", nullable = false)
   private Trip trip;
 
-  @Schema(description = "참여 사용자 (소셜 로그인으로 생성된 User)",
+  @Schema(description = "참여한 사용자 정보입니다. (소셜 로그인을 통해 생성된 사용자)",
       requiredMode = Schema.RequiredMode.REQUIRED)
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Schema(description = "방 내 역할 (방장/멤버)")
+  @Schema(description = "여행방 내에서의 역할입니다. (방장 또는 일반 멤버)")
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private TripMemberRole role;
 
-  @Schema(description = "방 참여 시각 (멤버 row 생성)", example = "2026-07-07T12:00:00")
+  @Schema(description = "여행방에 참여한 시각입니다.", example = "2026-07-07T12:00:00")
   @Column(nullable = false)
   private LocalDateTime joinedAt;
 
@@ -71,11 +71,12 @@ public class TripMember extends SoftDeleteEntity {
   @Column(name = "activated_at")
   private LocalDateTime activatedAt;
 
-  @Schema(description = "홈 화면 고정 여부 (참여자별 · 진행 중 캐러셀)", example = "false")
+  @Schema(description = "홈 화면 고정(Pin) 여부입니다. (참여자별로 다르게 설정되며, 진행 중인 캐러셀 영역에 표시됩니다)",
+      example = "false")
   @Column(name = "is_pinned", nullable = false)
   private boolean pinned;
 
-  @Schema(description = "Pin을 켠 시각. Pin OFF면 null", nullable = true,
+  @Schema(description = "홈 화면 고정(Pin)을 설정한 시각입니다. 고정되어 있지 않은 경우 null입니다.", nullable = true,
       example = "2026-07-19T14:00:00")
   @Column(name = "pinned_at")
   private LocalDateTime pinnedAt;
@@ -92,7 +93,7 @@ public class TripMember extends SoftDeleteEntity {
     }
   }
 
-  @Schema(description = "일정 응답 진행 상태")
+  @Schema(description = "참여자의 일정 응답 진행 상태를 나타냅니다.")
   public TripMemberStatus getStatus() {
     return activatedAt == null ? TripMemberStatus.SCHEDULE_PENDING : TripMemberStatus.ACTIVE;
   }

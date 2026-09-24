@@ -158,15 +158,14 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 
 ### OpenAPI 200 성공 응답 (`@ApiResponse`) — 필수
 
-지금까지 `@ApiResponses`는 **에러 코드만** 문서화해 Swagger UI에서 성공 example을 볼 수 없었다. **모든 API**는 성공 케이스도 에러와 **같은 `@ApiResponses` 배열**에 명시한다 (프론트가 200 응답 example을 바로 확인할 수 있어야 함).
+지금까지 `@ApiResponses`는 **에러 코드만** 문서화해 Swagger UI에서 성공 example을 볼 수 없었다. **모든 API**는 성공 케이스도 에러와 **같은 `@ApiResponses` 배열**에 명시한다.
 
 - 실제 성공 HTTP 상태로 `responseCode`(`"200"`/`"201"`/`"204"`) 지정 — 배열 **맨 앞**(에러보다 먼저)에 둔다.
-- **Body 있는 응답: `useReturnTypeSchema = true` + `content = @Content(examples = @ExampleObject(value = "..."))`** — `schema`는 명시하지 않는다. Controller 메서드의 실제 반환 타입(`ResponseEntity<SuccessResponse<XxxResponse>>`)에서 springdoc이 `SuccessResponseXxxResponse`라는 파생 스키마를 자동 생성해, 그 안의 필드·enum까지 Swagger UI Schema 탭에 전부 노출된다.
-- **`schema = @Schema(implementation = SuccessResponse.class)`로 직접 지정 금지(성공 200/201에서).** 이 raw 타입 지정은 제네릭을 지워버려 springdoc이 실제 `data` 타입(리스트·필드·enum 포함)을 전혀 못 읽는다 — `data`가 무타입 처리되고 example 문자열만 남아, 프론트가 Swagger Schema 탭에서 응답 필드·enum 값을 확인할 수 없게 된다(`NotificationController` 사고 사례, `docs/specs/notification/notification.md` 변경 이력 참고). 에러 응답(`ErrorResponse.class`)은 제네릭이 아니므로 `schema = @Schema(implementation = ErrorResponse.class)`를 그대로 써도 된다.
-- `SuccessResponse`는 `@JsonInclude(NON_NULL)`이라 성공 시 `message`/`code` 키가 실제 응답 바디에 **없다** — example도 `{"data": {...}}`만 쓰고 `message`/`code`는 넣지 않는다.
-- `data` 안 값은 **실제 DTO 필드 전부**를 반영한 값으로 채운다 — DTO에 없는 필드를 지어내지 않는다.
-- `ResponseEntity<Void>`(204 No Content): `content` 없이 `@ApiResponse(responseCode = "204", description = "...")`만.
-- 목록 API의 `data`는 실제 응답 DTO 구조(예: 배열 필드명)를 example에 그대로 반영.
+- **Body 있는 응답: `useReturnTypeSchema = true`만 지정** — `schema`나 `content(examples = ...)`는 명시하지 않는다. Controller 메서드의 실제 반환 타입(`ResponseEntity<SuccessResponse<XxxResponse>>`)에서 springdoc이 `SuccessResponseXxxResponse`라는 파생 스키마를 자동 생성해, 그 안의 필드·enum까지 Swagger UI Schema 탭에 전부 노출된다.
+- **`schema = @Schema(implementation = SuccessResponse.class)`로 직접 지정 금지(성공 200/201에서).** 이 raw 타입 지정은 제네릭을 지워버려 springdoc이 실제 `data` 타입(리스트·필드·enum 포함)을 전혀 못 읽는다. 에러 응답(`ErrorResponse.class`)은 제네릭이 아니므로 `schema = @Schema(implementation = ErrorResponse.class)`를 그대로 써도 된다.
+- `SuccessResponse`는 `@JsonInclude(NON_NULL)`이라 성공 시 `message`/`code` 키가 실제 응답 바디에 **없다**.
+- `ResponseEntity<Void>`(204 No Content): `content` 없이 `@ApiResponse(responseCode = "204", description = "...")`만 기재한다.
+- **Controller 내 `@ExampleObject`, `@Parameter(example = "...")` 사용 금지:** Swagger 어노테이션 간결화를 위해 컨트롤러에서는 예시 값 직접 작성을 생략하고, DTO의 `@Schema(example = "...")`에 작성된 예시를 활용한다.
 
 ```java
 // ✅ 200을 배열 맨 앞에 추가 (me 예시) — useReturnTypeSchema로 SuccessResponseUserSummaryResponse 자동 생성
@@ -174,20 +173,30 @@ ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) { ... }
 		@ApiResponse(
 				responseCode = "200",
 				description = "조회 성공",
-				useReturnTypeSchema = true,
-				content = @Content(
-						examples = @ExampleObject(value = """
-								{"data": {"id": "3f2e2c1a-...", "name": "김트립", "hasCompletedPreSchedule": true}}
-								"""))),
+				useReturnTypeSchema = true),
 		@ApiResponse(
 				responseCode = "401",
 				description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
-				content = @Content(
-						schema = @Schema(implementation = ErrorResponse.class),
-						examples = @ExampleObject(value = """
-								{"code": "AUTH_EXPIRED", "message": "액세스 토큰이 만료되었습니다."}
-								""")))
+				content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
 })
 // ✅ 반환 타입도 반드시 구체 타입 — ResponseEntity<?>가 아니라 ResponseEntity<SuccessResponse<UserSummaryResponse>>
 ResponseEntity<SuccessResponse<UserSummaryResponse>> me(@AuthorizedUser UUID userId) { ... }
 ```
+
+### OpenAPI 400/401/404/409 등 에러 응답 (`@ApiResponse`) — 예시 자동 주입
+
+컨트롤러에 별도의 커스텀 어노테이션(예: `@ApiErrorCode`)을 추가할 필요가 **전혀 없습니다**.
+`@ApiResponse`의 `description` 속성에 에러 코드 상수명(예: `AUTH_EXPIRED`)을 괄호로 묶어서 적어두면, Spring doc 구동 시 `OpenApiResponseSupport` 커스터마이저가 정규식(`\(([A-Z0-9_]+)\)`)으로 이를 파싱하여 Swagger UI에 해당 `ErrorCode`의 JSON 예시를 동적으로 주입합니다.
+
+- **작성 규칙**: `description` 문자열 내에 발생 가능한 도메인 에러코드명을 `(에러코드명)` 형식으로 포함시킵니다.
+- **예시**:
+  ```java
+  @ApiResponse(
+      responseCode = "401",
+      description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+      content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  ```
+- **효과**: Swagger UI에서 해당 응답의 "Example Value" 탭을 열어보면 `AUTH_INVALID_TOKEN`, `AUTH_EXPIRED`에 해당하는 각각의 실제 `ErrorResponse` JSON 예시 객체를 선택해서 볼 수 있습니다.
+- **주의사항**:
+  - 에러 코드명은 서버에 정의된 `ErrorCode` Enum 구현체의 실제 상수명(`[A-Z0-9_]+`)과 정확히 일치해야 합니다.
+  - 괄호 안의 코드를 메모리에 로드된 `ErrorCode` 목록과 자동 매핑하므로, 별도의 `@ExampleObject`를 사용하여 예시를 하드코딩하지 마세요.

@@ -25,7 +25,7 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "google_calendar_credential")
 @Schema(
-    description = "Google Calendar OAuth credential. user당 1행, refresh·access token AES-256 암호화 저장")
+    description = "구글 캘린더 연동을 위한 인증 자격 증명 정보입니다. 사용자의 토큰 정보가 암호화되어 저장됩니다.")
 public class GoogleCalendarCredential extends BaseTimeEntity {
 
   @Schema(
@@ -44,7 +44,7 @@ public class GoogleCalendarCredential extends BaseTimeEntity {
   private User user;
 
   @Schema(
-      description = "연동에 사용한 Google 계정 이메일. API Must 미노출(재연동 UX·운영용). 조회 실패 시 null",
+      description = "연동에 사용한 구글 계정 이메일입니다. 조회에 실패한 경우 null이 될 수 있습니다.",
       nullable = true,
       example = "user@gmail.com")
   @Column(name = "google_account_email")

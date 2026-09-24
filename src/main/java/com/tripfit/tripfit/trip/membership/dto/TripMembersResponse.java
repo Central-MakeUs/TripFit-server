@@ -6,9 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "여행방 참여자 목록 응답입니다. (GET /trips/{tripId}/members)")
+@Schema(description = "여행방 참여자 목록 응답 정보입니다.")
 public record TripMembersResponse(
-    @Schema(description = "방장이 설정한 전체 모집 정원입니다. (1~10)") int memberCount,
+    @Schema(description = "방장이 설정한 여행방의 전체 모집 정원입니다. (1~10명)") int memberCount,
 
     @Schema(description = "일정 확인을 완료한(ACTIVE 상태) 멤버 수입니다.") int activeMemberCount,
 
@@ -26,18 +26,20 @@ public record TripMembersResponse(
   public record TripMemberItemResponse(
       @Schema(description = "사용자 ID입니다.") UUID userId,
 
-      @Schema(description = "표시 이름입니다. (동명이인 시 접미사 추가)", example = "홍길동(2)") String displayName,
+      @Schema(description = "사용자의 표시 이름입니다. 동명이인이 있을 경우 접미사가 추가될 수 있습니다.",
+          example = "홍길동(2)") String displayName,
 
-      @Schema(description = "여행방 내의 역할입니다. (OWNER: 방장, MEMBER: 일반 멤버)") TripMemberRole role,
+      @Schema(description = "여행방 내에서의 역할입니다. (OWNER: 방장, MEMBER: 일반 멤버)") TripMemberRole role,
 
       @Schema(
           description = """
-              멤버십 상태입니다.
-              - SCHEDULE_PENDING: 방장 생성 직후 (입장 불가)
-              - ACTIVE: 방장 activate 완료 후 또는 일반 멤버 join 완료 후 (입장 가능)
+              멤버십 상태를 나타냅니다.
+              - SCHEDULE_PENDING: 방장이 방을 생성한 직후 상태입니다. (입장 불가)
+              - ACTIVE: 방장이 일정을 활성화(activate)했거나, 일반 멤버가 참여(join)를 완료한 상태입니다. (입장 가능)
               """) TripMemberStatus memberStatus,
 
-      @Schema(description = "본인이 이 방을 홈 상단에 고정(Pin)했는지 여부입니다. (본인 데이터에만 유효)") boolean pinned
+      @Schema(
+          description = "사용자 본인이 이 여행방을 홈 화면 상단에 고정(Pin)했는지 여부를 나타냅니다. 본인의 데이터에 대해서만 유효한 값을 가집니다.") boolean pinned
   ) {
   }
 }

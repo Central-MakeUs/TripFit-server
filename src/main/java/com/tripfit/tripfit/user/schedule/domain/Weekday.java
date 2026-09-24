@@ -8,27 +8,27 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-@Schema(description = "정기 일정 반복 요일. API·DB는 콤마 구분 문자열(MON,TUE,...)")
+@Schema(description = "정기 일정이 반복되는 요일입니다.")
 public enum Weekday {
-  @Schema(description = "월요일")
+  @Schema(description = "월요일을 나타냅니다.")
   MON(DayOfWeek.MONDAY),
 
-  @Schema(description = "화요일")
+  @Schema(description = "화요일을 나타냅니다.")
   TUE(DayOfWeek.TUESDAY),
 
-  @Schema(description = "수요일")
+  @Schema(description = "수요일을 나타냅니다.")
   WED(DayOfWeek.WEDNESDAY),
 
-  @Schema(description = "목요일")
+  @Schema(description = "목요일을 나타냅니다.")
   THU(DayOfWeek.THURSDAY),
 
-  @Schema(description = "금요일")
+  @Schema(description = "금요일을 나타냅니다.")
   FRI(DayOfWeek.FRIDAY),
 
-  @Schema(description = "토요일")
+  @Schema(description = "토요일을 나타냅니다.")
   SAT(DayOfWeek.SATURDAY),
 
-  @Schema(description = "일요일")
+  @Schema(description = "일요일을 나타냅니다.")
   SUN(DayOfWeek.SUNDAY);
 
   private final DayOfWeek dayOfWeek;

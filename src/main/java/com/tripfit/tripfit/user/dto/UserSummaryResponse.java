@@ -12,27 +12,27 @@ public record UserSummaryResponse(
         example = "550e8400-e29b-41d4-a716-446655440000") UUID id,
 
     @Schema(
-        description = "소셜 계정 이메일. provider가 제공하지 않으면 null",
+        description = "소셜 계정의 이메일 주소입니다. 소셜 제공자가 이메일을 제공하지 않는 경우 null을 반환합니다.",
         nullable = true,
         example = "user@example.com") String email,
 
     @Schema(
-        description = "사용자가 입력한 이름. 미입력 시 null",
+        description = "사용자가 입력한 이름입니다. 입력하지 않은 경우 null을 반환합니다.",
         nullable = true,
         example = "길동") String firstName,
 
     @Schema(
-        description = "사용자가 입력한 성. 미입력 시 null",
+        description = "사용자가 입력한 성입니다. 입력하지 않은 경우 null을 반환합니다.",
         nullable = true,
         example = "홍") String lastName,
 
     @Schema(
-        description = "소셜 provider 표시명. 프로필 입력 prefill용. 미제공 시 null",
+        description = "소셜 계정의 표시명입니다. 프로필 입력 화면의 초기값(prefill)으로 사용될 수 있으며, 제공되지 않은 경우 null을 반환합니다.",
         nullable = true,
         example = "홍길동") String nickname,
 
     @Schema(
-        description = "프로필 이미지 URL. 현재는 소셜 provider CDN URL. 미제공 시 null",
+        description = "프로필 이미지 URL입니다. 현재는 소셜 제공자의 CDN URL을 그대로 사용하며, 제공되지 않은 경우 null을 반환합니다.",
         nullable = true,
         example = "https://lh3.googleusercontent.com/a/example") String profileImageUrl,
 

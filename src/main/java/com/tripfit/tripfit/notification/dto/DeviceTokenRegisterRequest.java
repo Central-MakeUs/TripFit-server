@@ -12,7 +12,7 @@ public record DeviceTokenRegisterRequest(
     @Schema(
         description = """
             FCM(Firebase Cloud Messaging) 디바이스 등록 토큰입니다.
-            - 빈 값 전송 시 NOTIFICATION_TOKEN_REQUIRED 에러 발생
+            - 빈 값을 전송할 경우 에러가 발생합니다.
             """,
         example = "dEf3...",
         requiredMode = Schema.RequiredMode.REQUIRED) String token,

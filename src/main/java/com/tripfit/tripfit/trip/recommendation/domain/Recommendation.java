@@ -28,7 +28,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "recommendation")
 @EntityListeners(AuditingEntityListener.class)
-@Schema(description = "여행방 추천 일정 후보 (순위·기간·참여자 통계)")
+@Schema(description = "여행방의 추천 일정 후보 정보입니다. 순위, 추천 기간, 참여자 통계 등을 포함합니다.")
 public class Recommendation {
 
   @Schema(
@@ -41,7 +41,7 @@ public class Recommendation {
   @Column(length = 36, nullable = false, updatable = false)
   private UUID id;
 
-  @Schema(description = "대상 여행방")
+  @Schema(description = "일정을 추천받는 대상 여행방입니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "trip_id", nullable = false)
   private Trip trip;
@@ -50,23 +50,24 @@ public class Recommendation {
   @Column(name = "recommendation_rank", nullable = false)
   private Integer rank;
 
-  @Schema(description = "추천 여행 시작일", example = "2026-08-03")
+  @Schema(description = "추천된 여행 시작일입니다.", example = "2026-08-03")
   @Column(nullable = false)
   private LocalDate startDate;
 
-  @Schema(description = "추천 여행 종료일", example = "2026-08-06")
+  @Schema(description = "추천된 여행 종료일입니다.", example = "2026-08-06")
   @Column(nullable = false)
   private LocalDate endDate;
 
-  @Schema(description = "참석률(%). (전체참석+부분참석 인원)/응답 참여자 수", example = "80")
+  @Schema(description = "참석률(%)입니다. 전체참석 인원과 부분참석 인원을 합친 수를 일정에 응답한 전체 참여자 수로 나눈 값입니다.",
+      example = "80")
   @Column(name = "attend_rate", nullable = false)
   private int attendRate;
 
-  @Schema(description = "부분 참석 인원 수", example = "1")
+  @Schema(description = "부분 참석이 가능한 인원 수입니다.", example = "1")
   @Column(name = "partial_attend_count", nullable = false)
   private int partialAttendCount;
 
-  @Schema(description = "불확실 일정이 있는 인원 수", example = "1")
+  @Schema(description = "불확실한 일정을 가진 인원 수입니다.", example = "1")
   @Column(name = "uncertain_count", nullable = false)
   private int uncertainCount;
 
@@ -74,11 +75,11 @@ public class Recommendation {
   @Column(name = "total_vacation_days", nullable = false)
   private double totalVacationDays;
 
-  @Schema(description = "추천 점수 (100 - Σ패널티×가중치, 순위·동점 비교용)", example = "91.5")
+  @Schema(description = "추천 점수입니다. 점수가 높을수록 추천 순위가 높아집니다.", example = "91.5")
   @Column(nullable = false)
   private double score;
 
-  @Schema(description = "추천 생성 시각", example = "2026-07-07T12:00:00")
+  @Schema(description = "추천 일정이 생성된 시각입니다.", example = "2026-07-07T12:00:00")
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;

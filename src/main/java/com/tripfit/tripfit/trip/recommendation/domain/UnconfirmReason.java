@@ -2,7 +2,7 @@ package com.tripfit.tripfit.trip.recommendation.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "방장이 확정을 취소하는 사유")
+@Schema(description = "방장이 여행 일정 확정을 취소하는 사유입니다.")
 public enum UnconfirmReason {
   @Schema(description = "새로운 일정이 생겼어요")
   NEW_SCHEDULE_ADDED,
@@ -19,6 +19,6 @@ public enum UnconfirmReason {
   @Schema(description = "여행 계획이 변경되었어요")
   TRIP_PLAN_CHANGED,
 
-  @Schema(description = "기타. reasonDetail(서술형) 필수")
+  @Schema(description = "기타 사유입니다. 이 항목을 선택한 경우 상세 내용(reasonDetail)을 필수로 입력해야 합니다.")
   OTHER
 }

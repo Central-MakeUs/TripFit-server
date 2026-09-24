@@ -32,8 +32,6 @@ public class AppleTokenVerifier implements SocialTokenVerifier {
     return SocialProvider.APPLE;
   }
 
-  // TODO: iss(https://appleid.apple.com) 명시 검증을 추가해야 한다. JWKS 소스가 애플 전용이라 실질적인 위험은 낮지만,
-  // AppleNotificationVerifier처럼 iss까지 명시 검증하는 편이 일관적이다.
   @Override
   public OAuthProfile verify(String token) {
 

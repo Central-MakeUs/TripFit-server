@@ -8,13 +8,13 @@ import java.time.LocalTime;
     - 시간대는 반개구간 [시작시간, 종료시간) 형태로 적용됩니다.
     """)
 public enum TimeSlot {
-  @Schema(description = "오전 슬롯 (00:00 ~ 13:00)")
+  @Schema(description = "오전(00:00 ~ 13:00) 슬롯입니다.")
   MORNING(LocalTime.MIDNIGHT, LocalTime.of(13, 0)),
 
-  @Schema(description = "오후 슬롯 (13:00 ~ 18:00)")
+  @Schema(description = "오후(13:00 ~ 18:00) 슬롯입니다.")
   AFTERNOON(LocalTime.of(13, 0), LocalTime.of(18, 0)),
 
-  @Schema(description = "저녁 슬롯 (18:00 ~ 24:00)")
+  @Schema(description = "저녁(18:00 ~ 24:00) 슬롯입니다.")
   EVENING(LocalTime.of(18, 0), null);
 
   private final LocalTime startInclusive;

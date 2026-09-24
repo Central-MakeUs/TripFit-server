@@ -8,12 +8,19 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import com.tripfit.tripfit.common.exception.ErrorCode;
+import io.swagger.v3.oas.models.examples.Example;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.beans.factory.config.BeanDefinition;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-// 여러 도메인의 OperationCustomizer(auth/config, trip/config)가 공통으로 쓰는 헬퍼를 모은다.
-// 어노테이션이 항상 같은 ErrorCode만 던지는 엔드포인트에 한해 그 상태 코드의 @ApiResponse를
-// 자동으로 채우고, 컨트롤러가 이미 같은 상태 코드를 직접 선언해 둔 경우(도메인별 사유가 섞인
-// 403·404 등)는 덮어쓰지 않는다.
 public final class OpenApiResponseSupport {
 
   private OpenApiResponseSupport() {}
@@ -43,5 +50,77 @@ public final class OpenApiResponseSupport {
                         .schema(
                             new Schema<>().$ref(
                                 "#/components/schemas/" + ErrorResponse.class.getSimpleName())))));
+  }
+
+  private static final Map<String, ErrorCode> ERROR_CODE_MAP = new HashMap<>();
+
+  static {
+    try {
+      ClassPathScanningCandidateComponentProvider provider =
+          new ClassPathScanningCandidateComponentProvider(false);
+      provider.addIncludeFilter(new AssignableTypeFilter(ErrorCode.class));
+      for (BeanDefinition component : provider.findCandidateComponents("com.tripfit.tripfit")) {
+        Class<?> cls = Class.forName(component.getBeanClassName());
+        if (cls.isEnum()) {
+          for (Object enumConstant : cls.getEnumConstants()) {
+            ErrorCode code = (ErrorCode) enumConstant;
+            ERROR_CODE_MAP.put(((Enum<?>) enumConstant).name(), code);
+          }
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to scan ErrorCode enums for Swagger", e);
+    }
+  }
+
+  public static void addApiErrorCodes(Operation operation, HandlerMethod handlerMethod) {
+    if (operation.getResponses() == null) {
+      return;
+    }
+
+    Pattern pattern = Pattern.compile("\\(([A-Z0-9_]+)\\)");
+
+    for (Map.Entry<String, ApiResponse> entry : operation.getResponses().entrySet()) {
+      ApiResponse response = entry.getValue();
+      if (response.getDescription() == null) {
+        continue;
+      }
+
+      Matcher matcher = pattern.matcher(response.getDescription());
+      List<ErrorCode> foundCodes = new ArrayList<>();
+      while (matcher.find()) {
+        ErrorCode code = ERROR_CODE_MAP.get(matcher.group(1));
+        if (code != null) {
+          foundCodes.add(code);
+        }
+      }
+
+      if (!foundCodes.isEmpty()) {
+        MediaType mediaType = new MediaType().schema(
+            new Schema<>().$ref("#/components/schemas/" + ErrorResponse.class.getSimpleName()));
+
+        for (ErrorCode errorCode : foundCodes) {
+          Example example = new Example();
+          example.description(errorCode.getMessage());
+          example.value(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
+          mediaType.addExamples(errorCode.getCode(), example);
+        }
+
+        if (response.getContent() == null) {
+          response.setContent(new Content());
+        }
+        if (response.getContent().get("application/json") == null) {
+          response.getContent().addMediaType("application/json", mediaType);
+        } else {
+          MediaType existingMediaType = response.getContent().get("application/json");
+          for (ErrorCode errorCode : foundCodes) {
+            Example example = new Example();
+            example.description(errorCode.getMessage());
+            example.value(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
+            existingMediaType.addExamples(errorCode.getCode(), example);
+          }
+        }
+      }
+    }
   }
 }

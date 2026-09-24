@@ -12,7 +12,7 @@ import lombok.Getter;
 public abstract class SoftDeleteEntity extends BaseTimeEntity {
 
   @Schema(
-      description = "Soft delete 시각. null이면 활성 레코드",
+      description = "데이터가 논리적으로 삭제(Soft delete)된 시각입니다. null인 경우 현재 활성화된 레코드를 의미합니다.",
       nullable = true,
       example = "2026-07-07T12:00:00")
   @Column

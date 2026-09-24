@@ -2,9 +2,7 @@ package com.tripfit.tripfit.trip.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = """
-    여행방의 현재 진행 상태입니다. (목록 필터 및 상세 화면 표시용)
-    """)
+@Schema(description = "여행방의 현재 진행 상태를 나타냅니다. (목록 필터링 및 상세 화면 표시에 사용됩니다)")
 public enum TripStatus {
   @Schema(
       description = """

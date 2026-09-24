@@ -53,7 +53,7 @@ public record RegularScheduleResponse(
 
   @Schema(description = "정기 일정 목록 응답입니다. (GET /users/schedule/regular)")
   public record RegularScheduleListResponse(
-      @Schema(description = "정기 일정 항목 목록") List<RegularScheduleResponse> items
+      @Schema(description = "정기 일정 항목들의 목록입니다.") List<RegularScheduleResponse> items
   ) {
   }
 }

@@ -13,14 +13,12 @@ public record ErrorResponse(
     @Schema(
         description = """
             서버에서 정의한 에러 코드입니다.
-            """,
-        example = "AUTH_INVALID_TOKEN") String code,
+            """) String code,
 
     @Schema(
         description = """
             사용자에게 노출 가능한 에러 메시지입니다.
-            """,
-        example = "유효하지 않은 토큰입니다.") String message,
+            """) String message,
 
     @Schema(
         description = """

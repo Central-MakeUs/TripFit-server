@@ -18,17 +18,19 @@ import java.util.UUID;
     """)
 
 public record TripDetailResponse(
-    @Schema(description = "여행방 ID") UUID tripId,
+    @Schema(description = "여행방의 고유 식별자(ID)입니다.") UUID tripId,
 
-    @Schema(description = "여행방 이름", maxLength = 15) String name,
+    @Schema(description = "여행방의 이름입니다.", maxLength = 15) String name,
 
-    @Schema(description = "여행지. null=미정", nullable = true) String destination,
+    @Schema(description = "목적지(여행지)입니다. 아직 정해지지 않은 경우 null입니다.",
+        nullable = true) String destination,
 
-    @Schema(description = "희망 여행 기간 시작일") LocalDate startRange,
+    @Schema(description = "여행을 희망하는 기간의 시작일입니다.") LocalDate startRange,
 
-    @Schema(description = "희망 여행 기간 종료일") LocalDate endRange,
+    @Schema(description = "여행을 희망하는 기간의 종료일입니다.") LocalDate endRange,
 
-    @Schema(description = "희망 여행 일수 (m일). null=미정", nullable = true) Integer durationDays,
+    @Schema(description = "희망하는 여행 일수입니다. 아직 정해지지 않은 경우 null입니다.",
+        nullable = true) Integer durationDays,
 
     @Schema(
         description = """
@@ -48,10 +50,10 @@ public record TripDetailResponse(
     @Schema(
         description = "초대 코드(6자리)입니다. (공유용, 방 입장 후 상세 조회에서만 노출됩니다)") String inviteCode,
 
-    @Schema(description = "확정 시작일. CONFIRMED/EXPIRED에서만 값 있음",
+    @Schema(description = "확정된 여행 시작일입니다. 상태가 CONFIRMED 또는 EXPIRED인 경우에만 값이 존재합니다.",
         nullable = true) LocalDate confirmedStartDate,
 
-    @Schema(description = "확정 종료일. CONFIRMED/EXPIRED에서만 값 있음",
+    @Schema(description = "확정된 여행 종료일입니다. 상태가 CONFIRMED 또는 EXPIRED인 경우에만 값이 존재합니다.",
         nullable = true) LocalDate confirmedEndDate,
 
     @Schema(
@@ -66,12 +68,12 @@ public record TripDetailResponse(
         description = "확정 시점의 불확실 일정 인원 수입니다. (CONFIRMED/EXPIRED 상태일 때만 값이 존재합니다)",
         nullable = true) Integer confirmedUncertainCount,
 
-    @Schema(description = "마지막 추천 모드. 아직 추천 전이면 null",
+    @Schema(description = "가장 마지막으로 실행한 추천 모드입니다. 추천을 받은 적이 없으면 null입니다.",
         nullable = true) RecommendationMode lastRecommendationMode,
 
-    @Schema(description = "여행방 최근 활동 시각") LocalDateTime lastActivityAt,
+    @Schema(description = "여행방에서 일어난 최근 활동의 시각입니다.") LocalDateTime lastActivityAt,
 
-    @Schema(description = "본인이 이 방을 홈 상단에 Pin했는지") boolean pinned,
+    @Schema(description = "사용자 본인이 이 여행방을 홈 화면 상단에 고정(Pin)했는지 여부입니다.") boolean pinned,
 
     @Schema(description = "본인 역할 (방장 OWNER / 일반 MEMBER)") TripMemberRole myRole,
 
@@ -82,7 +84,7 @@ public record TripDetailResponse(
             - ACTIVE: 방장 activate 완료 후 또는 일반 멤버 join 완료 후 (입장 가능)
             """) TripMemberStatus myMemberStatus,
 
-    @Schema(description = "일정 확인 완료(ACTIVE) 멤버 수") int activeMemberCount,
+    @Schema(description = "일정 확인을 완료하여 활성 상태(ACTIVE)인 멤버의 수입니다.") int activeMemberCount,
 
     @Schema(
         description = """
@@ -92,9 +94,9 @@ public record TripDetailResponse(
         example = "0.5") double memberFillRate,
 
     @Schema(
-        description = "참여자 미리보기 (방장 우선 · joinedAt DESC · 최대 4명)") List<MemberPreviewResponse> membersPreview,
+        description = "참여자 목록의 미리보기 정보입니다. (방장 우선, 최신순으로 정렬되며 최대 4명까지 표시됩니다)") List<MemberPreviewResponse> membersPreview,
 
     @Schema(
-        description = "미리보기 초과 인원 (참여 인원 - 4, 최소 0). +N 배지 표시용") int membersPreviewOverflow
+        description = "미리보기에 표시되지 않은 초과 인원 수입니다. (화면상에 +N 배지로 표시하기 위한 용도입니다)") int membersPreviewOverflow
 ) {
 }

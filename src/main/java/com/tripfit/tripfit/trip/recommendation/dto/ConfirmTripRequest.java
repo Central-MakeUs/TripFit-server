@@ -10,17 +10,17 @@ import java.time.LocalDate;
     """)
 public record ConfirmTripRequest(
     @Schema(
-        description = "확정할 추천 후보의 순위입니다. (1~3) / 직접 입력 시 null",
+        description = "확정할 추천 후보의 순위(1~3)입니다. 직접 날짜를 입력하는 경우에는 null입니다.",
         nullable = true,
         example = "1") Integer recommendationRank,
 
     @Schema(
-        description = "직접 입력할 경우의 시작일입니다. / 후보 선택 시 null",
+        description = "직접 날짜를 입력하여 확정할 경우의 여행 시작일입니다. 추천 후보를 선택한 경우에는 null입니다.",
         nullable = true,
         example = "2026-08-04") LocalDate startDate,
 
     @Schema(
-        description = "직접 입력할 경우의 종료일입니다. / 후보 선택 시 null",
+        description = "직접 날짜를 입력하여 확정할 경우의 여행 종료일입니다. 추천 후보를 선택한 경우에는 null입니다.",
         nullable = true,
         example = "2026-08-07") LocalDate endDate
 ) {

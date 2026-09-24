@@ -27,7 +27,7 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "regular_schedule")
-@Schema(description = "User 정기 일정 (출근·수업·회의 등). 여행방 FK 없음. 사용자당 여러 행")
+@Schema(description = "사용자의 정기 일정(출근, 수업, 회의 등) 정보입니다.")
 public class RegularSchedule extends BaseTimeEntity {
 
   @Schema(
@@ -41,12 +41,12 @@ public class RegularSchedule extends BaseTimeEntity {
   @Setter
   private UUID id;
 
-  @Schema(description = "소유 사용자")
+  @Schema(description = "정기 일정을 소유한 사용자입니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Schema(description = "표시명 (출근·수업·회의 등)", example = "출근")
+  @Schema(description = "일정의 표시명입니다. (예: 출근, 수업, 회의 등)", example = "출근")
   @Column(nullable = false)
   private String title;
 
@@ -57,11 +57,11 @@ public class RegularSchedule extends BaseTimeEntity {
   @Column(name = "days_of_week")
   private String daysOfWeek;
 
-  @Schema(description = "시작 시각", nullable = true, example = "09:00:00")
+  @Schema(description = "일정이 시작되는 시각입니다.", nullable = true, example = "09:00:00")
   @Column(name = "start_time")
   private LocalTime startTime;
 
-  @Schema(description = "종료 시각", nullable = true, example = "18:00:00")
+  @Schema(description = "일정이 종료되는 시각입니다.", nullable = true, example = "18:00:00")
   @Column(name = "end_time")
   private LocalTime endTime;
 

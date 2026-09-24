@@ -13,15 +13,15 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-@Schema(description = "생성·수정 시각 공통 베이스 (JPA Auditing)")
+@Schema(description = "엔티티의 생성 및 수정 시각을 공통으로 관리하는 베이스 클래스입니다.")
 public abstract class BaseTimeEntity {
 
-  @Schema(description = "레코드 생성 시각", example = "2026-07-07T12:00:00")
+  @Schema(description = "해당 레코드가 생성된 시각입니다.", example = "2026-07-07T12:00:00")
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @Schema(description = "레코드 최종 수정 시각", example = "2026-07-07T12:00:00")
+  @Schema(description = "해당 레코드가 가장 마지막으로 수정된 시각입니다.", example = "2026-07-07T12:00:00")
   @LastModifiedDate
   @Column(nullable = false)
   private LocalDateTime updatedAt;

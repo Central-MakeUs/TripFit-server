@@ -36,16 +36,16 @@ public class UserDeviceToken extends BaseTimeEntity {
   @Column(length = 36, nullable = false, updatable = false)
   private UUID id;
 
-  @Schema(description = "토큰 소유 사용자. 동일 토큰 재등록 시 재할당")
+  @Schema(description = "토큰을 소유한 사용자입니다. 동일 토큰 재등록 시 재할당됩니다.")
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Schema(description = "FCM 등록 토큰 값. 기기·앱 설치당 UNIQUE", example = "dEf3...")
+  @Schema(description = "FCM 등록 토큰 값입니다. 기기 및 앱 설치당 고유한 값을 가집니다.", example = "dEf3...")
   @Column(nullable = false, unique = true, length = 512)
   private String token;
 
-  @Schema(description = "토큰을 발급한 기기 플랫폼")
+  @Schema(description = "해당 토큰을 발급한 기기 플랫폼(운영체제) 정보입니다.")
   @Enumerated(EnumType.STRING)
   @Column(name = "device_type", nullable = false)
   private DeviceType deviceType;

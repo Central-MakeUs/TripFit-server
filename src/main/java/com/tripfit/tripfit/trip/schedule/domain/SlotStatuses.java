@@ -8,20 +8,20 @@ import jakarta.persistence.Enumerated;
 import java.time.LocalTime;
 
 @Embeddable
-@Schema(description = "TimeSlot별 가능/불가 상태 (정기·개별 일정 공통)")
+@Schema(description = "시간대별 일정 가능 및 불가 상태입니다. (정기 일정과 개별 일정에서 공통으로 사용됩니다)")
 public class SlotStatuses {
 
-  @Schema(description = "오전 슬롯 상태", example = "IMPOSSIBLE", nullable = true)
+  @Schema(description = "오전 슬롯의 상태입니다.", example = "IMPOSSIBLE", nullable = true)
   @Enumerated(EnumType.STRING)
   @Column(name = "morning_status")
   private ScheduleStatus morningStatus;
 
-  @Schema(description = "오후 슬롯 상태", example = "POSSIBLE", nullable = true)
+  @Schema(description = "오후 슬롯의 상태입니다.", example = "POSSIBLE", nullable = true)
   @Enumerated(EnumType.STRING)
   @Column(name = "afternoon_status")
   private ScheduleStatus afternoonStatus;
 
-  @Schema(description = "저녁 슬롯 상태", example = "POSSIBLE", nullable = true)
+  @Schema(description = "저녁 슬롯의 상태입니다.", example = "POSSIBLE", nullable = true)
   @Enumerated(EnumType.STRING)
   @Column(name = "evening_status")
   private ScheduleStatus eveningStatus;

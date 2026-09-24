@@ -8,15 +8,15 @@ import jakarta.validation.constraints.NotNull;
 @Schema(description = "소셜 로그인 요청입니다. (POST /auth/login)")
 public record LoginRequest(
     @Schema(
-        description = "소셜 로그인 제공자",
+        description = "소셜 로그인 제공자입니다.",
         example = "GOOGLE",
         requiredMode = Schema.RequiredMode.REQUIRED) @NotNull SocialProvider provider,
 
     @Schema(
         description = """
             소셜 액세스 토큰 또는 ID 토큰입니다.
-            - GOOGLE/APPLE: id_token
-            - KAKAO: access_token
+            - GOOGLE, APPLE의 경우: id_token을 사용합니다.
+            - KAKAO의 경우: access_token을 사용합니다.
             """,
         example = "eyJhbG...",
         requiredMode = Schema.RequiredMode.REQUIRED) @NotBlank String token,
