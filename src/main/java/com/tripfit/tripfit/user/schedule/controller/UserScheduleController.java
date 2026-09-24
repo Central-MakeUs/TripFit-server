@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "User Schedule", description = "본인 정기·개별 일정과 정기+개별을 합친 달력")
+@Tag(name = "User Schedule", description = "사용자의 정기 및 개별 일정을 관리하고, 병합된 달력을 조회하는 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/users/schedule")
 public class UserScheduleController {
@@ -115,7 +115,7 @@ public class UserScheduleController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "404",
-          description = "REGULAR_SCHEDULE_NOT_FOUND (없거나 본인 소유가 아님)",
+          description = "수정할 정기 일정을 찾을 수 없거나 본인 소유의 일정이 아닙니다(REGULAR_SCHEDULE_NOT_FOUND).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -141,10 +141,10 @@ public class UserScheduleController {
    */
   @Operation(summary = "정기 일정 삭제")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "삭제 성공(No Content)"),
+      @ApiResponse(responseCode = "204", description = "정기 일정 삭제가 성공적으로 완료되었습니다. (No Content)"),
       @ApiResponse(
           responseCode = "404",
-          description = "REGULAR_SCHEDULE_NOT_FOUND (없거나 본인 소유가 아님)",
+          description = "삭제할 정기 일정을 찾을 수 없거나 본인 소유의 일정이 아닙니다(REGULAR_SCHEDULE_NOT_FOUND).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -170,7 +170,8 @@ public class UserScheduleController {
    */
   @Operation(summary = "정기 일정 전체 삭제")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "삭제 성공(No Content). 0건이어도 동일"),
+      @ApiResponse(responseCode = "204",
+          description = "정기 일정 일괄 삭제가 성공적으로 완료되었습니다. 일정이 없는 경우에도 성공 처리됩니다. (No Content)"),
   })
   @DeleteMapping("/regular")
   ResponseEntity<Void> deleteAllRegular(@AuthorizedUser UUID userId) {
@@ -223,7 +224,7 @@ public class UserScheduleController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "필수 필드 누락 또는 값 검증 실패 (INVALID_INPUT). 4개 필드 중 하나라도 빠지면 여기에 해당",
+          description = "필수 필드가 누락되었거나 값 검증에 실패했습니다(INVALID_INPUT). (필수 4개 필드 중 하나라도 누락 시 발생)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
   })
@@ -256,7 +257,7 @@ public class UserScheduleController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT (items 비어 있음)·scheduleDate 중복·한 항목에 slots·uncertain 둘 다 없음·slots 필드 일부 누락·scheduleDate가 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖",
+          description = "입력값이 올바르지 않습니다(INVALID_INPUT). (items가 비어있음, scheduleDate 중복, 한 항목에 slots와 uncertain 동시 누락, slots 필드 일부 누락, 또는 scheduleDate가 허용된 윈도우 범위를 벗어남)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
   })
@@ -288,7 +289,7 @@ public class UserScheduleController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT (조회 구간이 허용 윈도우(오늘~오늘+2년−1, 단 ONGOING 여행 희망 기간 종료일이 뒤면 그 날짜까지) 밖)",
+          description = "조회 구간이 허용된 윈도우 범위를 벗어났습니다(INVALID_INPUT). (허용 범위: 오늘부터 최대 2년 후까지. 단, 조율 중인 여행의 희망 종료일이 더 뒤라면 그 날짜까지 허용)",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
   })

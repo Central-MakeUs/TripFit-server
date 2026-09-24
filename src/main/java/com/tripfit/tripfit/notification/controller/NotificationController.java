@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Notification", description = "알림센터. 알림 이력 조회·읽음 처리")
+@Tag(name = "Notification", description = "알림센터 기능으로, 사용자의 알림 이력 조회 및 읽음 처리 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/notifications")
 public class NotificationController {
@@ -66,10 +66,10 @@ public class NotificationController {
    */
   @Operation(summary = "알림 읽음 처리")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "읽음 처리 성공(No Content)"),
+      @ApiResponse(responseCode = "204", description = "알림 읽음 처리가 성공적으로 완료되었습니다. (No Content)"),
       @ApiResponse(
           responseCode = "404",
-          description = "NOTIFICATION_NOT_FOUND (존재하지 않거나 본인 것이 아닌 알림)",
+          description = "요청한 알림이 존재하지 않거나, 본인의 알림이 아닙니다(NOTIFICATION_NOT_FOUND).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
   })

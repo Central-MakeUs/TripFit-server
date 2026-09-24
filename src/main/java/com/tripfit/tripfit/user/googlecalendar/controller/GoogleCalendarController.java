@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Google Calendar", description = "Google Calendar OAuth 연동·해제")
+@Tag(name = "Google Calendar", description = "구글 캘린더 OAuth 연동 및 해제 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/users/google-calendar")
 public class GoogleCalendarController {
@@ -50,7 +50,7 @@ public class GoogleCalendarController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "502",
-          description = "GOOGLE_CALENDAR_CONNECT_FAILED (authorization code 교환)·Google API 호출 실패",
+          description = "인증 코드(authorization code) 교환에 실패했거나 Google API 호출에 실패했습니다(GOOGLE_CALENDAR_CONNECT_FAILED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -83,7 +83,7 @@ public class GoogleCalendarController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "409",
-          description = "GOOGLE_CALENDAR_NOT_CONNECTED (미연동 상태에서 해제 요청)",
+          description = "연동되지 않은 상태에서 해제를 요청했습니다(GOOGLE_CALENDAR_NOT_CONNECTED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

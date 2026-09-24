@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Auth", description = "소셜 로그인·토큰·현재 사용자")
+@Tag(name = "Auth", description = "소셜 로그인, 토큰 재발급, 현재 사용자 조회 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -76,26 +76,26 @@ public class AuthController {
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
-          description = "로그인 성공. Set-Cookie로 refreshToken 전달(HttpOnly)",
+          description = "로그인이 성공적으로 처리되었습니다. (Set-Cookie를 통해 refreshToken이 HttpOnly로 전달됩니다)",
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED (provider가 APPLE인데 authorizationCode 누락)",
+          description = "소셜 로그인 제공자가 APPLE인데 인증 코드(authorizationCode)가 누락되었습니다(AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "400",
-          description = "AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED (provider가 GOOGLE인데 authorizationCode 누락)",
+          description = "소셜 로그인 제공자가 GOOGLE인데 인증 코드(authorizationCode)가 누락되었습니다(AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_SOCIAL_TOKEN_EXPIRED (소셜 토큰 만료 )· AUTH_SOCIAL_TOKEN_INVALID (그 외 소셜 토큰 무효)",
+          description = "소셜 토큰이 만료되었거나(AUTH_SOCIAL_TOKEN_EXPIRED) 유효하지 않은 토큰입니다(AUTH_SOCIAL_TOKEN_INVALID).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "503",
-          description = "AUTH_SOCIAL_PROVIDER_UNAVAILABLE (소셜 provider API 접근 실패(네트워크)·타임아웃)",
+          description = "네트워크 문제나 타임아웃 등으로 인해 소셜 제공자 API에 접근할 수 없습니다(AUTH_SOCIAL_PROVIDER_UNAVAILABLE).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -130,18 +130,18 @@ public class AuthController {
   @ApiResponses({
       @ApiResponse(
           responseCode = "200",
-          description = "재발급 성공. Set-Cookie로 새 refreshToken 전달(HttpOnly)",
+          description = "토큰 재발급이 성공적으로 처리되었습니다. (Set-Cookie를 통해 새 refreshToken이 HttpOnly로 전달됩니다)",
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_INVALID_REFRESH (refresh 쿠키 없음)·만료 · AUTH_REFRESH_REUSE (이미 폐기된 refresh 재사용(탈취 의심, 재로그인 필요))",
+          description = "refresh 쿠키가 없거나 만료되었거나(AUTH_INVALID_REFRESH), 이미 폐기된 refresh 토큰이 재사용되었습니다(AUTH_REFRESH_REUSE). 재로그인이 필요합니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/refresh")
   ResponseEntity<SuccessResponse<RefreshResponse>> refresh(
       @Parameter(in = ParameterIn.COOKIE,
-          description = "login 또는 이전 refresh 응답이 내려준 refresh token 쿠키") @CookieValue(
+          description = "로그인 또는 이전 재발급 응답에서 받은 refresh token 쿠키 값입니다.") @CookieValue(
               value = "refreshToken", required = false) String refreshToken) {
     if (refreshToken == null) {
       throw new TripFitException(AuthErrorCode.AUTH_INVALID_REFRESH);
@@ -168,12 +168,13 @@ public class AuthController {
   @Operation(summary = "로그아웃")
   @ApiResponses({
       @ApiResponse(responseCode = "204",
-          description = "로그아웃 성공(No Content). Set-Cookie로 refreshToken 쿠키 삭제")
+          description = "로그아웃이 성공적으로 완료되었습니다. (No Content, Set-Cookie를 통해 refreshToken 쿠키가 삭제됩니다)")
   })
   @PostMapping("/logout")
   ResponseEntity<Void> logout(
       @Parameter(in = ParameterIn.COOKIE,
-          description = "폐기할 refresh token 쿠키. 없어도 로그아웃은 성공한다") @CookieValue(value = "refreshToken",
+          description = "폐기할 refresh token 쿠키 값입니다. (제공되지 않아도 로그아웃은 성공 처리됩니다)") @CookieValue(
+              value = "refreshToken",
               required = false) String refreshToken) {
     authService.logout(refreshToken);
     ResponseCookie cookie = refreshCookieFactory.clear();
@@ -221,15 +222,15 @@ public class AuthController {
   @Operation(summary = "Apple 계정 변경 알림 수신")
   @ApiResponses({
       @ApiResponse(responseCode = "200",
-          description = "수신·처리 완료. no-op(존재하지 않는 sub·미인식 type)도 포함"),
+          description = "이벤트 수신 및 처리가 완료되었습니다. (존재하지 않는 sub이거나 인식할 수 없는 type인 경우에도 성공 처리됩니다)"),
       @ApiResponse(
           responseCode = "400",
-          description = "AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD (payload)·events JSON 형식 오류·필수 필드 누락",
+          description = "payload 또는 events의 JSON 형식 오류가 있거나, 필수 필드가 누락되었습니다(AUTH_APPLE_NOTIFICATION_INVALID_PAYLOAD).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
-          description = "AUTH_APPLE_NOTIFICATION_ISSUER_INVALID (iss 불일치 )· AUTH_APPLE_NOTIFICATION_AUDIENCE_INVALID (aud 불일치 )· AUTH_APPLE_NOTIFICATION_SIGNATURE_INVALID (서명 불일치)·만료",
+          description = "서명 불일치, 만료 등으로 인해 토큰 검증에 실패했습니다(AUTH_APPLE_NOTIFICATION_ISSUER_INVALID, AUDIENCE_INVALID, SIGNATURE_INVALID).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Trip", description = "여행방 생성·목록·상세·참여·일정 확인·Pin")
+@Tag(name = "Trip", description = "여행방 생성, 목록 조회, 상세 조회, 참여, 일정 확인 및 고정(Pin) 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/trips")
 public class TripController {
@@ -66,7 +66,7 @@ public class TripController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "403",
-          description = "PROFILE_NAME_REQUIRED (성)·이름 미입력",
+          description = "프로필 이름(성, 이름)이 입력되지 않았습니다(PROFILE_NAME_REQUIRED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -132,12 +132,12 @@ public class TripController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED (비참여자 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료)",
+          description = "비참여자이거나, 해당 방의 사전 일정 입력을 아직 완료하지 않은 상태(TRIP_ACCESS_DENIED, SCHEDULE_ACTIVATION_REQUIRED)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -169,12 +169,12 @@ public class TripController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_NOT_ONGOING (조율 중이 아닌 여행방)",
+          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -203,7 +203,7 @@ public class TripController {
       @ApiResponse(responseCode = "204", description = "삭제 성공(No Content)"),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -237,7 +237,7 @@ public class TripController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "403",
-          description = "PROFILE_NAME_REQUIRED (성)·이름 미입력",
+          description = "프로필 이름(성, 이름)이 입력되지 않았습니다(PROFILE_NAME_REQUIRED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
@@ -247,7 +247,7 @@ public class TripController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_MEMBER_FULL (정원 초과 )· TRIP_ALREADY_CONFIRMED (확정된 방 )· TRIP_EXPIRED (종료된 방)",
+          description = "여행방 정원이 초과되었거나, 이미 확정 혹은 종료된 방입니다(TRIP_MEMBER_FULL, TRIP_ALREADY_CONFIRMED, TRIP_EXPIRED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -279,7 +279,7 @@ public class TripController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED (비참여자 )· PRE_SCHEDULE_REQUIRED (사전 일정 입력 미완료)",
+          description = "비참여자이거나, 해당 방의 사전 일정 입력을 아직 완료하지 않은 상태(TRIP_ACCESS_DENIED, PRE_SCHEDULE_REQUIRED)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -315,7 +315,7 @@ public class TripController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

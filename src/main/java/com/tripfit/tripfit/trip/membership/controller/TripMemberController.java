@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Trip Members", description = "여행방 참여자 목록·그룹 달력·내보내기")
+@Tag(name = "Trip Members", description = "여행방 참여자 목록, 그룹 달력 조회, 참여자 내보내기 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/trips/{tripId}/members")
 public class TripMemberController {
@@ -53,12 +53,12 @@ public class TripMemberController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED (비참여자 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료(SCHEDULE_PENDING))",
+          description = "비참여자이거나, 해당 방의 일정 확인(SCHEDULE_PENDING)을 아직 완료하지 않은 상태(TRIP_ACCESS_DENIED, SCHEDULE_ACTIVATION_REQUIRED)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -90,12 +90,12 @@ public class TripMemberController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED (비참여자 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료)",
+          description = "비참여자이거나, 해당 방의 일정 확인을 아직 완료하지 않은 상태(TRIP_ACCESS_DENIED, SCHEDULE_ACTIVATION_REQUIRED)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -128,17 +128,17 @@ public class TripMemberController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "CANNOT_REMOVE_OWNER (방장은 내보낼 수 없음)",
+          description = "방장은 방에서 내보낼 수 없습니다(CANNOT_REMOVE_OWNER).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음 )· TRIP_MEMBER_NOT_FOUND (대상 참여자 없음)·이미 내보냄",
+          description = "여행방이 없거나, 대상 참여자가 존재하지 않거나, 이미 내보내진 상태(TRIP_NOT_FOUND, TRIP_MEMBER_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_NOT_ONGOING (조율 중이 아닌 여행방)",
+          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -165,15 +165,15 @@ public class TripMemberController {
   @TripMemberOnly
   @Operation(summary = "여행방 나가기")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "나가기 성공(No Content)"),
+      @ApiResponse(responseCode = "204", description = "나가기 처리가 성공적으로 완료되었습니다. (No Content)"),
       @ApiResponse(
           responseCode = "400",
-          description = "TRIP_OWNER_CANNOT_LEAVE (방장은 나갈 수 없음(방 삭제 사용))",
+          description = "방장은 방을 나갈 수 없습니다. 여행방 삭제 기능을 사용해야 합니다(TRIP_OWNER_CANNOT_LEAVE).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "403",
-          description = "TRIP_ACCESS_DENIED (비참여자 또는 이미 나감 )· SCHEDULE_ACTIVATION_REQUIRED (이 방 일정 확인 미완료(SCHEDULE_PENDING))",
+          description = "비참여자이거나 이미 방을 나간 상태이거나, 일정 확인(SCHEDULE_PENDING)을 아직 완료하지 않은 상태(TRIP_ACCESS_DENIED, SCHEDULE_ACTIVATION_REQUIRED)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

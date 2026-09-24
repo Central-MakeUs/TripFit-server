@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Notification Device Token", description = "FCM 디바이스 토큰 등록·해제")
+@Tag(name = "Notification Device Token", description = "FCM 디바이스 토큰 등록 및 해제 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/notifications/device-tokens")
 public class DeviceTokenController {
@@ -44,15 +44,16 @@ public class DeviceTokenController {
    */
   @Operation(summary = "디바이스 토큰 등록·갱신")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "등록·갱신 성공(No Content)"),
+      @ApiResponse(responseCode = "204",
+          description = "디바이스 토큰이 성공적으로 등록 또는 갱신되었습니다. (No Content)"),
       @ApiResponse(
           responseCode = "400",
-          description = "NOTIFICATION_TOKEN_REQUIRED (토큰 값 누락)",
+          description = "FCM 토큰 값이 누락되었습니다(NOTIFICATION_TOKEN_REQUIRED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT (deviceType 누락(필수))·정의되지 않은 값",
+          description = "디바이스 타입(deviceType)이 누락되었거나 정의되지 않은 유효하지 않은 값입니다(INVALID_INPUT).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
   })
@@ -77,17 +78,17 @@ public class DeviceTokenController {
    */
   @Operation(summary = "디바이스 토큰 해제")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "해제 성공(No Content)"),
+      @ApiResponse(responseCode = "204", description = "디바이스 토큰이 성공적으로 해제되었습니다. (No Content)"),
       @ApiResponse(
           responseCode = "404",
-          description = "NOTIFICATION_TOKEN_NOT_FOUND (토큰이 없거나 본인 것이 아님)",
+          description = "해당 토큰을 찾을 수 없거나 본인의 토큰이 아닙니다(NOTIFICATION_TOKEN_NOT_FOUND).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
   })
   @DeleteMapping
   ResponseEntity<Void> unregister(
       @AuthorizedUser UUID userId,
-      @Parameter(description = "해제할 FCM 등록 토큰 값") @RequestParam String token) {
+      @Parameter(description = "해제할 FCM 등록 토큰 값입니다.") @RequestParam String token) {
     deviceTokenService.unregisterToken(userId, token);
     return ResponseEntity.noContent().build();
   }

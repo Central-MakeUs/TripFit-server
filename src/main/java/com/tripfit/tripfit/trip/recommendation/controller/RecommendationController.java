@@ -30,9 +30,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(
-    name = "Recommendation",
-    description = "추천 4모드·확정·확정취소. 후보·근거·피드백은 방장 전용, 확정 결과는 방장·참여자 공통(GET /trips/{tripId})")
+@Tag(name = "Trip Recommendation",
+    description = "일정 추천 결과 조회, 확정 및 확정 취소 기능을 제공합니다. (후보, 근거, 피드백은 방장 전용이며, 확정 결과는 참여자 모두 조회 가능합니다)")
 @RestController
 @RequestMapping("/api/v1/trips/{tripId}")
 public class RecommendationController {
@@ -63,17 +62,17 @@ public class RecommendationController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "요청 값 검증 실패(INVALID_INPUT). mode가 enum 밖이거나 여행 일수 미정",
+          description = "입력값이 올바르지 않습니다(INVALID_INPUT). 추천 모드(mode)가 유효하지 않거나 여행 일수가 정해지지 않았습니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_NOT_ONGOING (조율 중이 아닌 여행방)",
+          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -108,7 +107,7 @@ public class RecommendationController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -140,7 +139,7 @@ public class RecommendationController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음 )· RECOMMENDATION_NOT_FOUND (해당 rank 없음)",
+          description = "여행방을 찾을 수 없거나, 해당 순위(rank)의 추천 결과가 존재하지 않습니다(TRIP_NOT_FOUND, RECOMMENDATION_NOT_FOUND).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -172,12 +171,12 @@ public class RecommendationController {
       @ApiResponse(responseCode = "204", description = "저장 성공(No Content)"),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_RECOMMENDATION_FEEDBACK (사유 누락)·불완전",
+          description = "피드백 사유가 누락되었거나 불완전합니다(INVALID_RECOMMENDATION_FEEDBACK).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음 )· RECOMMENDATION_NOT_FOUND (해당 rank 없음)",
+          description = "여행방을 찾을 수 없거나, 해당 순위(rank)의 추천 결과가 존재하지 않습니다(TRIP_NOT_FOUND, RECOMMENDATION_NOT_FOUND).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -213,17 +212,17 @@ public class RecommendationController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_CONFIRM_REQUEST · CONFIRM_DURATION_MISMATCH · INVALID_INPUT",
+          description = "확정 요청이 올바르지 않거나, 기간이 불일치하거나, 입력값이 유효하지 않습니다(INVALID_CONFIRM_REQUEST, CONFIRM_DURATION_MISMATCH, INVALID_INPUT).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음 )· RECOMMENDATION_NOT_FOUND (존재하지 않는 rank)",
+          description = "여행방을 찾을 수 없거나, 존재하지 않는 추천 순위(rank)입니다(TRIP_NOT_FOUND, RECOMMENDATION_NOT_FOUND).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_NOT_ONGOING (조율 중이 아닌 여행방(이미 CONFIRMED면 확정 취소 후 재시도))",
+          description = "조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING). 이미 확정된 상태라면 확정 취소 후 재시도해야 합니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -255,17 +254,17 @@ public class RecommendationController {
       @ApiResponse(responseCode = "204", description = "취소 성공(No Content)"),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_UNCONFIRM_REASON",
+          description = "확정 취소 사유가 유효하지 않습니다(INVALID_UNCONFIRM_REASON).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "404",
-          description = "TRIP_NOT_FOUND (여행방 없음)·soft deleted",
+          description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "TRIP_NOT_CONFIRMED (확정된 방이 아님)",
+          description = "아직 확정되지 않은 여행방입니다(TRIP_NOT_CONFIRMED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Holiday", description = "대한민국 공휴일 날짜 조회. 캘린더 화면 표시 지원")
+@Tag(name = "Holiday", description = "대한민국 공휴일 날짜를 조회하여 캘린더 화면 표시를 지원합니다.")
 @RestController
 @RequestMapping("/api/v1/holidays")
 public class HolidayController {
@@ -48,20 +48,20 @@ public class HolidayController {
           useReturnTypeSchema = true),
       @ApiResponse(
           responseCode = "400",
-          description = "INVALID_INPUT (startDate가 endDate보다 뒤)",
+          description = "시작일(startDate)이 종료일(endDate)보다 뒤에 있습니다(INVALID_INPUT).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "401",
-          description = "액세스 토큰 없음·무효(AUTH_INVALID_TOKEN)·만료(AUTH_EXPIRED)",
+          description = "액세스 토큰이 없거나, 무효하거나(AUTH_INVALID_TOKEN), 만료되었습니다(AUTH_EXPIRED).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping
   ResponseEntity<SuccessResponse<HolidayListResponse>> getHolidays(
-      @Parameter(description = "조회 시작일(포함)", example = "2027-01-01") @RequestParam @DateTimeFormat(
+      @Parameter(description = "조회 시작일입니다. (해당 날짜 포함)") @RequestParam @DateTimeFormat(
           iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-      @Parameter(description = "조회 종료일(포함)", example = "2027-01-31") @RequestParam @DateTimeFormat(
+      @Parameter(description = "조회 종료일입니다. (해당 날짜 포함)") @RequestParam @DateTimeFormat(
           iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
     return ResponseEntity.ok(
         SuccessResponse.of(holidayQueryService.getHolidays(startDate, endDate)));

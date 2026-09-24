@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "User", description = "온보딩 이름 등록·마이페이지 프로필 수정·탈퇴")
+@Tag(name = "User", description = "온보딩 시 이름 등록, 마이페이지 프로필 수정, 회원 탈퇴 기능을 제공합니다.")
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
@@ -102,7 +102,7 @@ public class UserController {
    */
   @Operation(summary = "회원 탈퇴")
   @ApiResponses({
-      @ApiResponse(responseCode = "204", description = "탈퇴 성공(No Content)"),
+      @ApiResponse(responseCode = "204", description = "회원 탈퇴 처리가 성공적으로 완료되었습니다. (No Content)"),
   })
   @DeleteMapping("/me")
   ResponseEntity<Void> withdraw(@AuthorizedUser UUID userId) {
