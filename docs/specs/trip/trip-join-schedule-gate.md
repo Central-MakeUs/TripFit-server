@@ -4,6 +4,7 @@
 > MVP: In scope (방 입장 플로우)
 > 관련 BR: BR-USER-006 · BR-USER-007 · BR-USER-011 (**BR 개정 포함** — J-7)
 > 흡수한 스펙: [`user-schedule/schedule-state-response.md`](../user-schedule/schedule-state-response.md) (Superseded)
+> 개정: J-4 ①(정원 초과 방지)은 2026-10-02 `#130`에서 낙관적 락으로 대체됐다 — [`trip-join-optimistic-lock.md`](trip-join-optimistic-lock.md). 이 문서의 비관적 락 서술은 이력이다.
 
 ## 목표
 
@@ -176,12 +177,14 @@ hold는 실제로 두 가지 일을 하고 있었다.
 
 #### ① 정원 초과 방지 — **B안(DB 비관적 락) 확정 (2026-08-17)**
 
+> **대체됨 (2026-10-02, `#130`):** 현행은 `trip.joined_member_count`를 버전 번호와 함께 올리고 충돌 시 다시 시도하는 낙관적 락이다. `findByInviteCodeForUpdate`와 멤버 수 카운트 쿼리는 삭제됐다. 아래 표와 카운트 기준(`SCHEDULE_PENDING` 포함), ②(이탈자 자리 미회수)는 그대로 유효하다. 상세: [`trip-join-optimistic-lock.md`](trip-join-optimistic-lock.md)
+
 | 안 | 방식 | 트레이드오프 |
 |----|------|--------------|
 | A. hold 로직 유지 (기각) | 엔드포인트 2개만 없애고 Redis 원자 체크는 `join` 내부에서 계속 사용 | 검증된 보장을 유지하지만, 정답이 되는 데이터가 Redis 카운터·DB 멤버 row **두 곳**으로 남는다 — 두 값이 어긋날 위험(예: Redis 체크는 통과했는데 DB INSERT가 실패하면 카운터를 되돌리는 보정 로직이 별도로 필요, Redis 장애 시 join 전체가 막힐 새 위험 추가) |
 | **B. DB 비관적 락 (채택)** | `trip` 행을 잠그고 카운트+INSERT를 한 트랜잭션에서 처리 | 정답이 DB **한 곳**뿐이라 어긋날 일이 없다. hold 코드(Redis Lua·TTL) 전부 삭제 가능. 이 저장소에 락 사용례가 없어 새 패턴이 하나 생기지만, 방 정원 규모(수십 명 미만)에서 락 경합은 무시할 수준 |
 
-**카운트 기준 (2026-08-19 명시):** 락 아래에서 세는 대상은 **삭제되지 않은 전체 멤버 row — `SCHEDULE_PENDING` 포함**이다(`countByTripIdAndDeletedAtIsNull`, 현행과 동일). ②가 "이탈자 자리를 회수하지 않는다"로 확정된 이상, `SCHEDULE_PENDING`도 자리를 차지한다는 것이 정의다. 반대로 `activate`에는 정원 체크를 **넣지 않는다** — 이미 자리를 확보한 사람의 상태 전이일 뿐이라 여기서 409가 새로 생기면 안 된다(②에서 "가"안을 기각한 이유와 동일).
+**카운트 기준 (2026-08-19 명시):** 세는 대상은 **삭제되지 않은 전체 멤버 row — `SCHEDULE_PENDING` 포함**이다. 2026-10-02 `#130`부터는 이 값을 매번 세지 않고 `trip.joined_member_count`에 저장해 두고 쓴다(구 `countByTripIdAndDeletedAtIsNull`은 삭제). ②가 "이탈자 자리를 회수하지 않는다"로 확정된 이상, `SCHEDULE_PENDING`도 자리를 차지한다는 것이 정의다. 반대로 `activate`에는 정원 체크를 **넣지 않는다** — 이미 자리를 확보한 사람의 상태 전이일 뿐이라 여기서 409가 새로 생기면 안 된다(②에서 "가"안을 기각한 이유와 동일).
 
 **채택 이유:** ②를 "나"(자동 회수 없음)로 정하면서 Redis가 원래 하던 두 가지 일 중 하나(TTL 자동 회수)가 애초에 필요 없어졌다. 남은 이유(원자적 체크)만으로 별도 인프라(Redis)를 계속 끌고 갈 근거가 부족해, DB 트랜잭션 하나로 대체한다.
 
@@ -272,7 +275,7 @@ J-1 이후 이 전제가 깨진다 — `SCHEDULE_PENDING` 멤버로 정원이 �
 
 | Method | Path | 변경 |
 |--------|------|------|
-| `POST` | `/api/v1/trips/join` | 멤버를 `SCHEDULE_PENDING`으로 생성(호출 시점: 일정 플로우 진입 **전**) · 비관적 락으로 정원 체크 · 응답 축소 · **이미 멤버면 현재 `myMemberStatus`로 200(멱등)** |
+| `POST` | `/api/v1/trips/join` | 멤버를 `SCHEDULE_PENDING`으로 생성(호출 시점: 일정 플로우 진입 **전**) · 낙관적 락으로 정원 체크(`#130`, 구 비관적 락) · 응답 축소 · **이미 멤버면 현재 `myMemberStatus`로 200(멱등)** |
 | `POST` | `/api/v1/trips/{tripId}/activate` | 계약 불변 — 참여자도 호출한다는 점만 문서화. 알림 2종(`ALL_MEMBERS_SUBMITTED`·참여 완료) 발행 지점이 여기로 이동 |
 | `POST` | `/api/v1/trips/join/hold` | **삭제** |
 | `DELETE` | `/api/v1/trips/{tripId}/join/hold` | **삭제** |
@@ -280,7 +283,7 @@ J-1 이후 이 전제가 깨진다 — `SCHEDULE_PENDING` 멤버로 정원이 �
 
 ### 에러
 
-일정 확인 전 방 안 API 호출은 기존 `SCHEDULE_ACTIVATION_REQUIRED`(403)가 그대로 처리한다. 신규 `ErrorCode`는 없고, **`SCHEDULE_ENTRY_REQUIRED`(403)는 삭제된다**(J-7) — 이 코드가 실제로 발생하는 경로가 없었고, 남은 방 접근 실패는 전부 `SCHEDULE_ACTIVATION_REQUIRED`가 답한다. Controller `@ApiResponse` description 2곳(`TripController` · `TripMemberController`)에서도 같은 턴에 제거한다. 정원이 찬 방에 대한 `TRIP_MEMBER_FULL`(409)은 **호출 지점만 이동**한다 — 기존에는 `hold` 획득 시점에서 던졌다면, hold 삭제 후에는 `POST /api/v1/trips/join`이 비관적 락 하에 카운트 체크를 하면서 동일 코드로 던진다(`activate`에는 새 실패 케이스가 추가되지 않는다 — J-4 ② "나" 확정).
+일정 확인 전 방 안 API 호출은 기존 `SCHEDULE_ACTIVATION_REQUIRED`(403)가 그대로 처리한다. 신규 `ErrorCode`는 없고, **`SCHEDULE_ENTRY_REQUIRED`(403)는 삭제된다**(J-7) — 이 코드가 실제로 발생하는 경로가 없었고, 남은 방 접근 실패는 전부 `SCHEDULE_ACTIVATION_REQUIRED`가 답한다. Controller `@ApiResponse` description 2곳(`TripController` · `TripMemberController`)에서도 같은 턴에 제거한다. 정원이 찬 방에 대한 `TRIP_MEMBER_FULL`(409)은 **호출 지점만 이동**한다 — 기존에는 `hold` 획득 시점에서 던졌다면, hold 삭제 후에는 `POST /api/v1/trips/join`이 정원 체크를 하면서 동일 코드로 던진다(체크 방식은 `#114` 비관적 락 → 2026-10-02 `#130` 낙관적 락. `activate`에는 새 실패 케이스가 추가되지 않는다 — J-4 ② "나" 확정).
 
 ## 완료 기준
 
@@ -336,6 +339,7 @@ J-1 이후 이 전제가 깨진다 — `SCHEDULE_PENDING` 멤버로 정원이 �
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-02 | **J-4 ① 개정 (`#130`)** — 정원 초과 방지를 DB 비관적 락에서 낙관적 락으로 대체. 카운트 기준과 J-4 ②는 변경 없음. 상세: [`trip-join-optimistic-lock.md`](trip-join-optimistic-lock.md) |
 | 2026-08-19 | **구현 완료 (`#114`)** — J-1(`join`을 플로우 맨 앞·`SCHEDULE_PENDING`) · J-3(`TripEntryResponse` 축소 + 멱등) · J-4(초대코드 조회를 `SELECT ... FOR UPDATE`로 잠그고 카운트+INSERT를 한 트랜잭션에서 처리, hold 코드 전체 삭제) · J-6(알림 2종을 `activate`로 이동) · J-9(touch를 `activate`로 일원화, `tripIdFromReturn` 삭제). 구현 중 확인: 락을 트랜잭션의 **첫 조회**로 두지 않으면 REPEATABLE READ 스냅샷 때문에 정원 카운트가 옛 값을 읽어 동시 join 8건 중 5건이 통과했다 — `findByInviteCodeForUpdate`를 join 트랜잭션의 첫 쿼리로 고정해 해결. 알림은 `TripMemberRole.MEMBER`일 때만 참여 완료 이벤트를 발행(방장 자기 방 제외) |
 | 2026-08-19 | **재검토 후 6건 확정 (사용자 결정)** — ① 입장 전 방 정보 화면은 없다(피그마 기준) → `TripJoinPreviewResponse` 대체 API 없이 삭제 ② `join` **멱등화** — 이미 멤버면 403이 아니라 현재 `myMemberStatus`로 200(에러 코드로 라우팅하는 구조 제거, J-5와 정합) ③ `TripJoinCompletedEvent`도 `activate`로 이동 ④ **J-9 신설** — `last_activity_at` touch를 `activate` 한 곳으로 모으고, `@TripActivity(tripIdFromReturn)`이 J-3의 응답 축소로 조용히 깨지는 문제를 옵션·Aspect 분기 삭제로 해소 ⑤ 정원 카운트 기준(`SCHEDULE_PENDING` 포함)·`activate` 정원 미체크 명시 ⑥ "Redis 코드 전부 삭제"의 범위를 hold 코드로 한정(토큰 무효화는 Redis 계속 사용) |
 | 2026-08-18 | **J-7 추가 + 적용 범위 확정 (사용자 결정, A안)** — ① "매 방 입장" 해석을 **(가) 새 방 참여 시 1회**(재진입 제외)로 확정 ② 전역 입장 게이트(`is_all_free` 컬럼·`canEnterRoom`·`SCHEDULE_ENTRY_REQUIRED`·`markAllFreeIfNoSchedules`)를 **응답에서만 제거 → 장치째 삭제**로 전환. 근거: `ACTIVE` 멤버에게 항상 참이라 아무것도 막지 못하는 죽은 게이트인데, 자동으로 켜지는 특성 때문에 QA 이슈 1의 "두 번째 입장부터 달라짐" 재현 조건을 만들고 있었음 ③ 선행 검토였던 `user-schedule/schedule-state-response.md`를 **Superseded**로 전환하고 유효한 진단만 이관 — `regularScheduleState`·선언 저장·`canEnterRoom` 노출은 모두 폐기 ④ J-2는 J-7에 흡수 |

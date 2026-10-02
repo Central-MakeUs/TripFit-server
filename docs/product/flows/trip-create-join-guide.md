@@ -10,7 +10,7 @@
 
 > ## ⚠️ 2026-08-19 amend — ① 방장·참여자 **2단계 통일**(`#114`) ② 사전 일정 입력 **최초/갱신** 2분기 ③ `activate` 입력 완료 게이트
 >
-> 1. **참여자도 방장과 같은 2단계다.** `POST /trips/join`이 일정 플로우 **맨 앞**으로 옮겨져 `SCHEDULE_PENDING` 멤버를 만들고, 플로우를 마친 뒤 `POST .../activate`로 `ACTIVE`가 된다. 구 "일정 먼저 → join = 즉시 ACTIVE"·"멤버에게 중간 상태 없음"은 **폐지**됐고, Redis 정원 hold(`#35`)도 DB 비관적 락으로 대체·삭제됐다. `last_activity_at` touch도 `join`이 아니라 `activate`에서만 일어난다(J-9).
+> 1. **참여자도 방장과 같은 2단계다.** `POST /trips/join`이 일정 플로우 **맨 앞**으로 옮겨져 `SCHEDULE_PENDING` 멤버를 만들고, 플로우를 마친 뒤 `POST .../activate`로 `ACTIVE`가 된다. 구 "일정 먼저 → join = 즉시 ACTIVE"·"멤버에게 중간 상태 없음"은 **폐지**됐고, Redis 정원 hold(`#35`)도 DB 비관적 락으로 대체·삭제됐다(정원 보장은 2026-10-02 `#130`부터 낙관적 락이다 — 아래 "B. 정원"). `last_activity_at` touch도 `join`이 아니라 `activate`에서만 일어난다(J-9).
 > 2. **일정 플로우는 「정기 일정 유무」가 아니라 「최초 입력 / 갱신 입력」으로 갈린다.** 판정은 `hasCompletedPreSchedule`(= `users.vacation_apply_period`, 연차·휴일 정보의 **사전 신청일** 저장 여부) 하나이며, 두 갈래 모두 **연차·휴일 정보 화면을 지난다.**
 > 3. **`activate`는 사전 일정 입력을 한 번도 끝내지 않은 사용자를 403 `PRE_SCHEDULE_REQUIRED`로 거부한다.** 정기·개별 일정이 0건인 것은 거부 사유가 아니다.
 > 4. **방 나가기도 입장(`ACTIVE`) 후에만 가능하다**(`#122`). 미입장(`SCHEDULE_PENDING`) 상태에서는 403 `SCHEDULE_ACTIVATION_REQUIRED`이고, 그 자리는 **방장 내보내기**로만 회수된다.
@@ -42,7 +42,7 @@
 1. 초대 링크 → `POST /api/v1/trips/join` `{ inviteCode }` → INSERT **`SCHEDULE_PENDING`** (응답에 `inviteCode` 없음)
 2. **사전 일정 입력 플로우** (최초/갱신 2분기 · 정기 → 연차·휴일 정보 → 개별 · 건너뛰기 없음)
 3. `POST /api/v1/trips/{tripId}/activate` → **`ACTIVE`** — 방장과 **같은 2단계** (`#114`)
-4. 정원 full → 409(락으로 동시 요청까지 보장) · 이미 멤버면 `join` 멱등(현재 `myMemberStatus` 반환) · 사전 일정 미완료로 `activate` 실패 → 403 `PRE_SCHEDULE_REQUIRED`
+4. 정원 full → 409 `TRIP_MEMBER_FULL`(버전 비교로 동시 요청까지 보장) · 동시 요청이 계속 부딪혀 서버가 다시 시도하고도 못 끝내면 409 `CONCURRENT_MODIFICATION`(같은 요청을 다시 보내면 됨) · 이미 멤버면 `join` 멱등(현재 `myMemberStatus` 반환) · 사전 일정 미완료로 `activate` 실패 → 403 `PRE_SCHEDULE_REQUIRED`
 
 모집 현황(응답률): `memberFillRate = activeMemberCount / memberCount`(구 공식 `joinedMemberCount / memberCount`에서 전환, `joinedMemberCount`는 API 미노출 — [`trip-member-fill-rate-refactor.md`](../../specs/trip/trip-member-fill-rate-refactor.md)). 사전 조건: 소셜 로그인 필수(BR-USER-002) + 이름 완료. 상세·정책·시나리오는 아래 1~5절.
 
@@ -158,7 +158,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 이미 `ACTIVE` 멤버 | 방 상세 직행 (BR-USER-010) |
 | 변경 없이 통과 + 일정 row 0 | activate 그대로 통과 — 단 **사전 신청일이 저장돼 있어야** 한다(없으면 403 `PRE_SCHEDULE_REQUIRED`) |
 
-~~멤버에게는 중간 `SCHEDULE_PENDING`를 두지 않는다. 정원 hold는 #35 후속.~~ → **2026-08-19 `#114`로 폐기.** 멤버도 `join` 직후 `SCHEDULE_PENDING`이 되고 `activate`로 `ACTIVE`가 된다. 정원 hold(#35)는 DB 비관적 락으로 대체·삭제됐다.
+~~멤버에게는 중간 `SCHEDULE_PENDING`를 두지 않는다. 정원 hold는 #35 후속.~~ → **2026-08-19 `#114`로 폐기.** 멤버도 `join` 직후 `SCHEDULE_PENDING`이 되고 `activate`로 `ACTIVE`가 된다. 정원 hold(#35)는 DB 비관적 락으로 대체·삭제됐다. → **2026-10-02 `#130`로 낙관적 락으로 재대체.**
 
 ### 모집 현황 숫자
 
@@ -201,7 +201,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 - create/patch: `memberCount` **1~10**
 - 신규 join: 삭제되지 않은 전체 멤버 수 `>= memberCount` → `409 TRIP_MEMBER_FULL`
   (`SCHEDULE_PENDING`도 자리를 차지한다 — 방장은 create 직후부터, 참여자는 `join` 직후부터 1자리 사용)
-- **정원 보장:** `join`이 `trip` 행을 `SELECT ... FOR UPDATE`로 잠근 채 카운트+INSERT를 한 트랜잭션에서 처리 (`#114` — 구 Redis hold(`#35`)는 삭제)
+- **정원 보장:** `join`이 `trip.joined_member_count`를 버전 번호와 함께 1 올린 뒤 멤버를 INSERT한다. 같은 순간에 다른 요청이 그 방을 먼저 고쳤으면 저장이 실패하고, 서버가 새 트랜잭션으로 다시 시도한다 (`#130` — 구 비관적 락(`#114`)·Redis hold(`#35`)는 삭제). 상세: [`trip-join-optimistic-lock.md`](../../specs/trip/trip-join-optimistic-lock.md)
 
 ### C. 방 상태별 join / 수정
 
@@ -240,6 +240,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 | 403 | `TRIP_FORBIDDEN` / `TRIP_ACCESS_DENIED` | 권한·비참여자 |
 | 404 | `TRIP_NOT_FOUND` / `INVITE_CODE_NOT_FOUND` | |
 | 409 | `TRIP_MEMBER_FULL` | 정원 가득 (신규 join) |
+| 409 | `CONCURRENT_MODIFICATION` | 동시 요청이 계속 부딪혀 서버 재시도로도 못 끝냄 — 같은 요청을 다시 보내면 됨 (2026-10-02 **신규**) |
 | 409 | `TRIP_*` | CONFIRMED/EXPIRED 신규 join |
 | 409 | `TRIP_NOT_ONGOING` | 비 ONGOING PATCH |
 
@@ -295,7 +296,7 @@ TripFit에서 “방에 들어간다”는 것은 **로그인 + 이름 완료** 
 ### 시나리오 5 — 정원 마감 레이스 (멤버)
 
 1. 정원 6, 멤버 row가 방장 포함 5개
-2. A·B가 같은 순간 `POST /trips/join` → `trip` 행 락 아래 카운트+INSERT라 **먼저 잡은 쪽만** 성공 (`trip` 행 비관적 락으로 카운트+INSERT 원자화)
+2. A·B가 같은 순간 `POST /trips/join` → 둘 다 `trip.joined_member_count`를 올리려 하지만 버전 번호가 맞는 **먼저 저장한 쪽만** 성공하고, 밀린 쪽은 서버가 다시 시도해 정원이 찼음을 확인한다 (`#130` 낙관적 락)
 3. 나머지 `409 TRIP_MEMBER_FULL`
 4. 마지막 1자리는 `SCHEDULE_PENDING`이 되는 순간부터 점유된다 — 일정 플로우 중 이탈해도 자동 회수하지 않는다. 구 Redis hold(#35)는 `#114`로 폐지
 

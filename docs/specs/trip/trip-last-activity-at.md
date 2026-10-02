@@ -51,8 +51,10 @@
 
 - L1 touch 대상 **public** 유스케이스 메서드에 `@TripActivity` 선언.
 - Spring AOP aspect: 메서드 **정상 종료 후** 해당 trip의 `lastActivityAt`을 `now()`로 갱신.
+- 갱신은 `Trip` 엔티티를 고치지 않고 `TripRepository.touchLastActivity`의 **직접 UPDATE 쿼리**로 한다 (2026-10-02 `#130`). 엔티티로 고치면 `trip.version`이 올라가 같은 순간의 `join`·방 수정이 실패하고, 전체 컬럼 UPDATE가 동시에 커밋된 방 수정을 옛 값으로 되돌린다. 상세: [`trip-join-optimistic-lock.md`](trip-join-optimistic-lock.md) O-6·O-7
 - create는 `@TripActivity` 대신 엔티티 생성 시 초기값 설정 유지 ([#12](https://github.com/Central-MakeUs/TripFit-server/issues/12)).
 - 기존 #12 **수동** `touchLastActivity()` 호출은 AOP 도입 시 **제거**하고 어노테이션으로 통일.
+- `Trip.touchLastActivity()` 엔티티 메서드도 삭제했다 (2026-10-02 `#130`) — 갱신 경로는 aspect의 직접 UPDATE 하나뿐이다.
 
 ### L4 — 적용 범위
 
@@ -82,3 +84,4 @@
 | 2026-07-19 | **L3·L4 확정 · Approved** — `@TripActivity` AOP · `TripRecommendationService` 포함 |
 | 2026-07-21 | L1 — 참여자 내보내기 touch (#20) |
 | 2026-07-24 | L1 — 방 나가기(멤버 자진 탈퇴) touch 추가 (`trip-member-leave.md`, 정책 근거 `#47`) |
+| 2026-10-02 | L3 — 갱신 방식을 엔티티 수정에서 직접 UPDATE 쿼리로 변경, `Trip.touchLastActivity()` 삭제 (`#130`, `trip-join-optimistic-lock.md`) |

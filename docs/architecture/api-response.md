@@ -128,7 +128,7 @@ HTTP `400 Bad Request` + Body:
 | 인증 실패 | 401 Unauthorized | `AUTH_INVALID_TOKEN`, `AUTH_EXPIRED`, `AUTH_INVALID_REFRESH` |
 | 권한 없음 | 403 Forbidden | `AUTH_FORBIDDEN`, `TRIP_FORBIDDEN`, `TRIP_ACCESS_DENIED`, `PROFILE_NAME_REQUIRED`, `SCHEDULE_*`, `PRE_SCHEDULE_REQUIRED` |
 | 리소스 없음 | 404 Not Found | `TRIP_NOT_FOUND`, `INVITE_CODE_NOT_FOUND`, `REGULAR_SCHEDULE_NOT_FOUND`, … |
-| 충돌 (중복·상태 불가) | 409 Conflict | `TRIP_NOT_ONGOING`, `TRIP_ALREADY_CONFIRMED`, `TRIP_MEMBER_FULL`, … |
+| 충돌 (중복·상태 불가) | 409 Conflict | `TRIP_NOT_ONGOING`, `TRIP_ALREADY_CONFIRMED`, `TRIP_MEMBER_FULL`, `CONCURRENT_MODIFICATION`, … |
 | 서버 오류 | 500 Internal Server Error | `INTERNAL_ERROR` |
 
 성공·실패 판단은 **`response.ok`** / HTTP status. Body의 `code`는 **세부 분기**용.
@@ -151,7 +151,8 @@ switch (body.code) {
 ## `code` 네이밍
 
 - `SCREAMING_SNAKE_CASE`
-- 공통: `INVALID_INPUT`, `INTERNAL_ERROR` (`CommonErrorCode`)
+- 공통: `INVALID_INPUT`, `CONCURRENT_MODIFICATION`, `INTERNAL_ERROR` (`CommonErrorCode`)
+- `CONCURRENT_MODIFICATION`(409)은 같은 데이터를 고치는 요청이 같은 순간에 몰려, 서버가 다시 시도하고도 끝내지 못했을 때 나간다. 요청 자체에 문제가 있는 것이 아니므로 클라이언트는 같은 요청을 다시 보내면 된다
 - 도메인: `{리소스}_{상황}` — 예: `TRIP_NOT_FOUND`, `AUTH_EXPIRED`
 - **구현 SSOT:** `{domain}/exception/*ErrorCode` enum. Draft 스펙 전용 코드는 구현 착수 전까지 enum에 넣지 않음.
 

@@ -175,7 +175,7 @@ FK·UNIQUE 제약으로 표현 가능한 무결성은 DB 제약을 우선한다.
 
 ### Isolation — 동시 쓰기 충돌 지점은 스펙에 명시
 
-같은 row를 여러 요청이 동시에 갱신할 수 있는 유스케이스(예: 정원 체크 후 멤버 추가, 멤버 상태 동시 전이)는 lost update 위험을 인지하고 스펙에 동시성 처리 방식을 명시한다 — 낙관적 락(`@Version`) 또는 재조회 후 조건부 갱신 중 하나를 스펙 단계에서 선택한다(현재 저장소에 `@Version` 사용 사례는 아직 없다 — 필요해지면 그때 도입). 기본 격리수준(MySQL InnoDB `REPEATABLE READ`)을 벗어나는 요구가 있으면 그 이유를 스펙에 남긴다.
+같은 row를 여러 요청이 동시에 갱신할 수 있는 유스케이스(예: 정원 체크 후 멤버 추가, 멤버 상태 동시 전이)는 lost update 위험을 인지하고 스펙에 동시성 처리 방식을 명시한다 — 낙관적 락(`@Version`) 또는 재조회 후 조건부 갱신 중 하나를 스펙 단계에서 선택한다(사용 사례: `Trip`의 `@Version` + `@RetryOnVersionConflict` — `docs/specs/trip/trip-join-optimistic-lock.md`). 기본 격리수준(MySQL InnoDB `REPEATABLE READ`)을 벗어나는 요구가 있으면 그 이유를 스펙에 남긴다.
 
 ### Durability — 롤백돼야 하는 것과 커밋 후에만 나가야 하는 것을 분리
 

@@ -1,7 +1,7 @@
 # 여행방 API — 생성·참여·Pin
 
 > implements: BR-TRIP-001, BR-TRIP-008, BR-TRIP-009, BR-TRIP-013, BR-USER-001, BR-USER-002, BR-USER-009, BR-USER-010
-> deferred: ~~정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)~~ (**Superseded** 2026-08-18 `#114` — DB 비관적 락으로 대체, [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)는 이력 문서), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), 여행방 삭제 시 VOC 사유(출시 이후, unconfirm 사유와 별개), **카카오 초대·확정·재촉 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **EXPIRED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)
+> deferred: ~~정원 hold → [#35](https://github.com/Central-MakeUs/TripFit-server/issues/35)~~ (**Superseded** 2026-08-18 `#114` — DB 비관적 락으로 대체 → 2026-10-02 `#130` 낙관적 락으로 재대체([`trip-join-optimistic-lock.md`](trip-join-optimistic-lock.md)), [`trip-join-capacity-hold.md`](trip-join-capacity-hold.md)는 이력 문서), BR-TRIP-010 (recommendation hard DELETE — [`trip-recommendation.md`](trip-recommendation.md)), 여행방 삭제 시 VOC 사유(출시 이후, unconfirm 사유와 별개), **카카오 초대·확정·재촉 공유 → [#19](https://github.com/Central-MakeUs/TripFit-server/issues/19)** [`kakao-invite-share.md`](kakao-invite-share.md), 푸시 알림 → [#21](https://github.com/Central-MakeUs/TripFit-server/issues/21), **`last_activity_at` 전체 갱신·AOP → [#26](https://github.com/Central-MakeUs/TripFit-server/issues/26)** [`trip-last-activity-at.md`](trip-last-activity-at.md), **EXPIRED DB 전환·Pin 자동 해제 스케줄러 → [#27](https://github.com/Central-MakeUs/TripFit-server/issues/27)** [`trip-home-schedulers.md`](trip-home-schedulers.md)
 > related Implemented: 참여자 내보내기 → [#20](https://github.com/Central-MakeUs/TripFit-server/issues/20) [`trip-member-remove.md`](trip-member-remove.md)
 > 상태: **Approved** (D3~D6·D8 확정 — 2026-07-17) · **D1·참여 = #22 확정** (2026-07-21) · **D5 홈 2뷰 amend** (2026-07-19) · **D5 구현 후속 defer #26·#27** (2026-07-19)
 > 선행: [`auth-social-login.md`](../auth/auth-social-login.md), [`user-onboarding.md`](../user/user-onboarding.md), [`schedule-unified.md`](../user-schedule/schedule-unified.md), [`schedule-calendar-resolve.md`](../user-schedule/schedule-calendar-resolve.md) (#17 Implemented), **[#22](https://github.com/Central-MakeUs/TripFit-server/issues/22)** (참여·`is_all_free`)
@@ -376,6 +376,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 | 409 | `TRIP_ALREADY_CONFIRMED` | CONFIRMED trip **신규** join |
 | 409 | `TRIP_EXPIRED` | EXPIRED trip **신규** join · `end_range` 경과 |
 | 409 | `TRIP_MEMBER_FULL` | `joinedMemberCount >= memberCount` **신규** join (D8) |
+| 409 | `CONCURRENT_MODIFICATION` | 여행방을 고치는 요청(join·PATCH·삭제·내보내기·나가기)이 다른 요청과 계속 부딪혀, 서버가 5회 다시 시도하고도 끝내지 못함. 클라이언트는 같은 요청을 다시 보내면 된다 (`#130` · 공통 코드) |
 
 ## 데이터 모델
 
@@ -469,6 +470,7 @@ trip `startRange`~`endRange`(**희망 기간 = 조회 기간**, #37 C2/C3). 멤�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-02 | **Amend (`#130`)** — 정원 보장을 낙관적 락으로 전환하면서 공통 409 `CONCURRENT_MODIFICATION` 추가. 요청·응답 형태는 변경 없음 ([`trip-join-optimistic-lock.md`](trip-join-optimistic-lock.md)) |
 | 2026-07-30 | **Amend** — `PATCH .../pin` 권한 게이트를 `@TripMemberOnly`(당시 ACTIVE+canEnterRoom 요구)에서 `@TripMembershipOnly`(멤버십만 요구)로 완화. **SCHEDULE_PENDING 방장도 Pin 가능** — 홈 목록엔 이미 노출되는 카드인데 정작 그 카드를 못 고정하던 불일치 해소, Pin은 방 안 콘텐츠를 노출하지 않는 개인 설정이라 방 입장 게이트와 무관. 403 사유에서 `SCHEDULE_ACTIVATION_REQUIRED`/`SCHEDULE_ENTRY_REQUIRED` 제거(`TRIP_ACCESS_DENIED`만 남음) |
 | 2026-07-30 | **Amend** — `MemberPreviewResponse`(`TripHomeCardResponse`/`TripDetailResponse` 공용 `membersPreview`)에 `displayName` 추가. 홈 캐러셀·전체 목록에서 참여자 이름·"OOO 외 N명" 표시가 API로 불가능했던 gap 해소. 단, 아바타 미리보기 공간 제약상 `TripMembersResponse`/`MemberScheduleCalendarResponse`(성+이름 전체)와 달리 **성 없이 이름만** 노출 — 동명이인 접미사·닉네임 폴백은 방 단위로 동일 적용 |
 | 2026-07-30 | **Amend** — `TripDetailResponse`에 `confirmedAttendCount`/`confirmedVacationMemberCount`/`confirmedUncertainCount` 추가("일정이 확정됐어요" 화면). `status=CONFIRMED`에서만 값 있음(그 외 null), 방장·참여자 모두 조회 가능. 계산·set/clear 시점은 [`trip-recommendation.md`](trip-recommendation.md)(#13) confirm/unconfirm 플로우 소관 |
