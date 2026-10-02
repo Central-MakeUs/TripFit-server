@@ -1,17 +1,12 @@
 package com.tripfit.tripfit.trip.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.tripfit.tripfit.trip.domain.Trip;
-import com.tripfit.tripfit.trip.domain.TripStatus;
 import com.tripfit.tripfit.trip.repository.TripRepository;
-import com.tripfit.tripfit.user.domain.SocialProvider;
-import com.tripfit.tripfit.user.domain.User;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -20,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class TripActivityAspectTest {
@@ -38,13 +32,9 @@ class TripActivityAspectTest {
 
   private TripActivityAspect aspect;
 
-  private Trip trip;
-
   @BeforeEach
   void setUp() {
     aspect = new TripActivityAspect(tripRepository);
-    trip = sampleTrip();
-    ReflectionTestUtils.setField(trip, "lastActivityAt", LocalDateTime.of(2026, 1, 1, 0, 0));
   }
 
   @Test
@@ -53,32 +43,30 @@ class TripActivityAspectTest {
     when(methodSignature.getMethod())
         .thenReturn(DummyService.class.getMethod("mutate", UUID.class, UUID.class));
     when(joinPoint.getArgs()).thenReturn(new Object[] {TRIP_ID, UUID.randomUUID()});
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
 
     aspect.touchLastActivity(
         joinPoint,
         DummyService.class.getMethod("mutate", UUID.class, UUID.class)
             .getAnnotation(TripActivity.class));
 
-    assertThat(trip.getLastActivityAt()).isAfter(LocalDateTime.of(2026, 1, 1, 0, 0));
-    verify(tripRepository).findByIdAndDeletedAtIsNull(TRIP_ID);
+    verify(tripRepository).touchLastActivity(eq(TRIP_ID), any());
   }
 
-  private static Trip sampleTrip() {
-    User owner = new User("sub", SocialProvider.GOOGLE, "u@example.com", "nick", null);
-    Trip t =
-        new Trip(
-            owner,
-            "제주",
-            LocalDate.now(),
-            LocalDate.now().plusDays(9),
-            3,
-            4,
-            6,
-            "ABC123",
-            TripStatus.ONGOING);
-    t.setId(TRIP_ID);
-    return t;
+  @Test
+  void touchLastActivity_updatesDirectlyWithoutLoadingTheEntity() throws Exception {
+    when(joinPoint.getSignature()).thenReturn(methodSignature);
+    when(methodSignature.getMethod())
+        .thenReturn(DummyService.class.getMethod("mutate", UUID.class, UUID.class));
+    when(joinPoint.getArgs()).thenReturn(new Object[] {TRIP_ID, UUID.randomUUID()});
+
+    aspect.touchLastActivity(
+        joinPoint,
+        DummyService.class.getMethod("mutate", UUID.class, UUID.class)
+            .getAnnotation(TripActivity.class));
+
+    // 엔티티를 불러와 고치면 버전 번호가 올라가 동시 참여를 실패시키므로, 조회 없이 UPDATE만 나가야 한다.
+    verify(tripRepository, never()).findByIdAndDeletedAtIsNull(any());
+    verify(tripRepository, never()).save(any());
   }
 
   static class DummyService {

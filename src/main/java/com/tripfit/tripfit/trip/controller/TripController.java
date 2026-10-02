@@ -174,7 +174,7 @@ public class TripController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING).",
+          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING). 다른 요청과 같은 순간에 겹쳐 완료하지 못한 경우에도 409를 돌려주며, 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -204,6 +204,11 @@ public class TripController {
       @ApiResponse(
           responseCode = "404",
           description = "요청한 여행방을 찾을 수 없거나 이미 삭제된 상태(TRIP_NOT_FOUND)입니다.",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(
+          responseCode = "409",
+          description = "다른 요청과 같은 순간에 겹쳐 완료하지 못했습니다. 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -247,7 +252,7 @@ public class TripController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "여행방 정원이 초과되었거나, 이미 확정 혹은 종료된 방입니다(TRIP_MEMBER_FULL, TRIP_ALREADY_CONFIRMED, TRIP_EXPIRED).",
+          description = "여행방 정원이 초과되었거나(TRIP_MEMBER_FULL), 이미 확정되었거나(TRIP_ALREADY_CONFIRMED), 종료된 방입니다(TRIP_EXPIRED). 다른 요청과 같은 순간에 겹쳐 완료하지 못한 경우에도 409를 돌려주며, 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

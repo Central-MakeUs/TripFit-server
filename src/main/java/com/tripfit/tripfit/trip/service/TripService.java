@@ -1,5 +1,6 @@
 package com.tripfit.tripfit.trip.service;
 
+import com.tripfit.tripfit.common.retry.RetryOnVersionConflict;
 import com.tripfit.tripfit.trip.membership.service.TripMemberQueryService;
 import com.tripfit.tripfit.trip.recommendation.service.TripRecommendationService;
 import com.tripfit.tripfit.trip.recommendation.domain.RecommendationMode;
@@ -24,6 +25,9 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+// 여행방 유스케이스의 입구다. 여행방 행을 고치는 메서드에는 @RetryOnVersionConflict를 붙여, 다른 요청과
+// 같은 순간에 부딪혀 저장에 실패하면 새 트랜잭션으로 다시 실행한다. 트랜잭션은 이 클래스가 호출하는
+// 서비스들이 열기 때문에, 재시도할 때마다 처음부터 다시 읽고 검사한다.
 @RequiredArgsConstructor
 @Service
 
@@ -49,14 +53,17 @@ public class TripService {
     return tripQueryService.getTrip(tripId, userId);
   }
 
+  @RetryOnVersionConflict
   public TripDetailResponse patchTrip(UUID tripId, UUID userId, PatchTripRequest request) {
     return tripCommandService.patchTrip(tripId, userId, request);
   }
 
+  @RetryOnVersionConflict
   public void deleteTrip(UUID tripId, UUID userId) {
     tripCommandService.deleteTrip(tripId, userId);
   }
 
+  @RetryOnVersionConflict
   public TripEntryResponse joinTrip(UUID userId, JoinTripRequest request) {
     return tripCommandService.joinTrip(userId, request);
   }
@@ -77,10 +84,12 @@ public class TripService {
     return tripMemberQueryService.getMemberScheduleCalendar(tripId, userId);
   }
 
+  @RetryOnVersionConflict
   public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
     return tripCommandService.removeMember(tripId, ownerId, targetUserId);
   }
 
+  @RetryOnVersionConflict
   public void leaveTrip(UUID tripId, UUID userId) {
     tripCommandService.leaveTrip(tripId, userId);
   }
@@ -97,6 +106,7 @@ public class TripService {
     }
   }
 
+  @RetryOnVersionConflict
   public RecommendationListResponse generateRecommendations(
       UUID tripId,
       UUID ownerId,
@@ -120,10 +130,12 @@ public class TripService {
     tripRecommendationService.saveFeedback(tripId, ownerId, rank, request);
   }
 
+  @RetryOnVersionConflict
   public TripDetailResponse confirmSchedule(UUID tripId, UUID ownerId, ConfirmTripRequest request) {
     return tripRecommendationService.confirmSchedule(tripId, ownerId, request);
   }
 
+  @RetryOnVersionConflict
   public void unconfirm(UUID tripId, UUID ownerId, UnconfirmTripRequest request) {
     tripRecommendationService.unconfirm(tripId, ownerId, request);
   }

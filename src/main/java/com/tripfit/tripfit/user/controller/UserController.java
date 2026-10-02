@@ -1,6 +1,7 @@
 package com.tripfit.tripfit.user.controller;
 
 import com.tripfit.tripfit.auth.jwt.AuthorizedUser;
+import com.tripfit.tripfit.common.api.ErrorResponse;
 import com.tripfit.tripfit.common.api.SuccessResponse;
 import com.tripfit.tripfit.user.dto.OnboardingNameRequest;
 import com.tripfit.tripfit.user.dto.UpdateProfileRequest;
@@ -8,6 +9,8 @@ import com.tripfit.tripfit.user.dto.UserSummaryResponse;
 import com.tripfit.tripfit.user.service.UserProfileService;
 import com.tripfit.tripfit.user.service.UserWithdrawalService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -103,6 +106,11 @@ public class UserController {
   @Operation(summary = "회원 탈퇴")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "회원 탈퇴 처리가 성공적으로 완료되었습니다. (No Content)"),
+      @ApiResponse(
+          responseCode = "409",
+          description = "다른 요청과 같은 순간에 겹쳐 완료하지 못했습니다. 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class)))
   })
   @DeleteMapping("/me")
   ResponseEntity<Void> withdraw(@AuthorizedUser UUID userId) {

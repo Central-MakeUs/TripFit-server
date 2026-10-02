@@ -138,7 +138,7 @@ public class TripMemberController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING).",
+          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING). 다른 요청과 같은 순간에 겹쳐 완료하지 못한 경우에도 409를 돌려주며, 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -174,6 +174,11 @@ public class TripMemberController {
       @ApiResponse(
           responseCode = "403",
           description = "비참여자이거나 이미 방을 나간 상태이거나, 일정 확인(SCHEDULE_PENDING)을 아직 완료하지 않은 상태(TRIP_ACCESS_DENIED, SCHEDULE_ACTIVATION_REQUIRED)입니다.",
+          content = @Content(
+              schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(
+          responseCode = "409",
+          description = "다른 요청과 같은 순간에 겹쳐 완료하지 못했습니다. 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

@@ -16,6 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,6 +24,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
@@ -32,6 +34,9 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "trip", uniqueConstraints = @UniqueConstraint(columnNames = "invite_code"))
 @Schema(description = "여행방입니다. 방장이 생성, 초대, 일정 확정을 수행할 수 있습니다.")
+// 바뀐 컬럼만 UPDATE한다. 전체 컬럼을 다시 쓰면, 이 요청이 여행방을 읽은 뒤에 다른 요청이 직접 갱신한
+// 최근 활동 시각을 옛 값으로 되돌리게 된다.
+@DynamicUpdate
 public class Trip extends SoftDeleteEntity {
 
   @Schema(
@@ -80,9 +85,19 @@ public class Trip extends SoftDeleteEntity {
   @Column
   private Integer durationNights;
 
-  @Schema(description = "여행방의 전체 참여 정원입니다. (1~10명)", example = "6", minimum = "1", maximum = "10")
+  @Schema(
+      description = "여행방의 전체 참여 정원입니다. (1~10명) 방장이 정한 최대 인원이며, 지금 참여 중인 인원은 joinedMemberCount에 따로 저장합니다.",
+      example = "6",
+      minimum = "1",
+      maximum = "10")
   @Column(name = "member_count", nullable = false)
   private Integer memberCount;
+
+  @Schema(
+      description = "지금 자리를 차지하고 있는 멤버 수입니다. 삭제되지 않은 멤버를 모두 세며, 아직 일정 확인을 마치지 않은 멤버도 포함합니다. 정원(memberCount)과 비교해 새 참여를 받을 수 있는지 판단하는 서버 내부 값이라 API 응답에는 나가지 않습니다.",
+      example = "4")
+  @Column(name = "joined_member_count", nullable = false)
+  private Integer joinedMemberCount;
 
   @Schema(description = "여행방에 참여하기 위한 고유한 초대 코드입니다.", example = "ABC123")
   @Column(nullable = false)
@@ -145,6 +160,13 @@ public class Trip extends SoftDeleteEntity {
   @Column(name = "last_activity_at", nullable = false)
   private LocalDateTime lastActivityAt;
 
+  @Schema(
+      description = "여행방이 수정될 때마다 1씩 올라가는 버전 번호입니다. 두 요청이 같은 여행방을 동시에 고치려 하면 나중에 저장하는 쪽이 실패하도록 해서, 정원을 넘기는 참여나 서로의 수정을 덮어쓰는 일을 막습니다.",
+      example = "3")
+  @Version
+  @Column(nullable = false)
+  private Long version;
+
   public Trip(
       User owner,
       String name,
@@ -162,13 +184,33 @@ public class Trip extends SoftDeleteEntity {
     this.durationNights = durationNights;
     this.durationDays = durationDays;
     this.memberCount = memberCount;
+    // 방을 만든 방장이 곧바로 첫 멤버로 등록되므로 1에서 시작한다.
+    this.joinedMemberCount = 1;
     this.inviteCode = inviteCode;
     this.status = status;
     this.lastActivityAt = LocalDateTime.now();
   }
 
-  public void touchLastActivity() {
-    this.lastActivityAt = LocalDateTime.now();
+  // 자리가 남아 있으면 한 자리를 차지하고 true를 돌려준다. 정원이 이미 찼으면 아무것도 바꾸지 않고
+  // false를 돌려준다. 정원 검사와 인원 증가를 한 메서드에 묶어, 호출하는 쪽이 둘 중 하나를 빠뜨리지 않게 한다.
+  public boolean tryOccupySeat() {
+    if (joinedMemberCount >= memberCount) {
+      return false;
+    }
+    joinedMemberCount++;
+    return true;
+  }
+
+  // 멤버가 방을 나가거나 내보내졌을 때, 그 멤버가 차지하던 자리를 돌려놓는다.
+  public void releaseSeat() {
+    // 방장은 항상 자리를 차지하므로 돌려놓고 난 값이 0이 될 수 없다. 여기에 걸렸다면 참여 인원이 실제
+    // 멤버 수와 이미 어긋난 것이다. 조용히 음수로 내려가면 정원 검사가 계속 느슨해지므로 바로 실패시킨다.
+    if (joinedMemberCount <= 1) {
+      throw new IllegalStateException(
+          "joinedMemberCount is out of sync with members: tripId=" + id + ", count="
+              + joinedMemberCount);
+    }
+    joinedMemberCount--;
   }
 
   public void applyDestination(String destination) {

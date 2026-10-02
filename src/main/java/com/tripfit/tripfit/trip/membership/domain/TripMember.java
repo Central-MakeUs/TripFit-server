@@ -20,6 +20,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
@@ -30,6 +31,10 @@ import org.hibernate.type.SqlTypes;
 
 @Table(name = "trip_member")
 @Schema(description = "여행방 참여자 정보입니다. 여행방과 사용자의 매핑 관계 및 응답 상태를 관리합니다.")
+// 바뀐 컬럼만 UPDATE한다. 전체 컬럼을 다시 쓰면, 일정 확인 완료나 즐겨찾기 변경이 읽어 둔 옛 값으로
+// 삭제 시각까지 덮어써서, 그 사이 내보내거나 나간 멤버를 되살린다. 그러면 여행방의 참여 인원은 이미
+// 줄었는데 멤버는 남아 숫자가 어긋난다.
+@DynamicUpdate
 public class TripMember extends SoftDeleteEntity {
 
   @Schema(

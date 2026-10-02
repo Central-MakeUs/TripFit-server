@@ -28,8 +28,6 @@ public interface TripMemberRepository extends JpaRepository<TripMember, UUID> {
       """)
   List<TripMember> findByTripIdAndDeletedAtIsNull(@Param("tripId") UUID tripId);
 
-  long countByTripIdAndDeletedAtIsNull(UUID tripId);
-
   long countByTripIdAndActivatedAtIsNotNullAndDeletedAtIsNull(UUID tripId);
 
   @Query("""
