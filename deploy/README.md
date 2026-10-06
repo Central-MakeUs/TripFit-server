@@ -122,11 +122,18 @@ curl -fsSI https://api.tripfit.online/api/v1/...   # API 구현 후
 | `certbot` | LE 발급·12h 갱신 시도 |
 | `app` | Spring Boot (GHCR), `127.0.0.1:8080`만 바인딩 |
 
-**cron 갱신** (갱신 시 nginx reload 포함):
+**cron 갱신** (갱신 확인 후 매번 nginx reload — `certbot` 컨테이너가 먼저 갱신해도 반영되도록):
 
 ```bash
-0 3 * * * cd /path/to/TripFit-server/deploy/app && /path/to/TripFit-server/scripts/renew-letsencrypt.sh
+# 최초 1회 — ubuntu 사용자는 /var/log에 파일을 만들 수 없어, 없으면 리다이렉트 단계에서 cron이 매번 실패한다
+sudo touch /var/log/tripfit-certbot-renew.log && sudo chown ubuntu:ubuntu /var/log/tripfit-certbot-renew.log
 ```
+
+```bash
+0 3 * * * cd /home/ubuntu/TripFit-server/deploy/app && /home/ubuntu/TripFit-server/scripts/renew-letsencrypt.sh >> /var/log/tripfit-certbot-renew.log 2>&1
+```
+
+**nginx 설정 반영:** `nginx.conf`는 파일 단위 bind mount라 `git pull`로 바뀌어도 실행 중인 컨테이너는 구 파일을 본다. CI 배포는 새 컨테이너로 `nginx -t` 검증 후 `tripfit-nginx`를 재시작한다. 수동으로 설정을 바꿨다면 reload가 아니라 `docker restart tripfit-nginx`를 쓴다.
 
 ### EC2 A — API (HTTPS 생략, dev만)
 
@@ -156,7 +163,8 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 
 - **스택**: `nginx`(:80/:443) → `grafana`(내부 `127.0.0.1:3000`만 바인딩, 공개 노출 없음), `certbot`(발급·갱신), `loki`(:3100, A/B가 push하는 대상 — 직접 브라우저 조회 대상 아님).
 - Route 53: `grafana.tripfit.online` A → EC2 C Elastic IP. SG는 22/80/443만 공개, 3100은 A/B SG로만 제한.
-- cron 갱신(A와 동일 스크립트, 도메인만 다름): `0 3 * * * DEPLOY_DIR=/home/ubuntu/monitoring CERTBOT_DOMAIN=grafana.tripfit.online /home/ubuntu/scripts/renew-letsencrypt.sh`
+- cron 갱신(A와 동일 스크립트, 도메인만 다름 — 로그 파일 사전 생성도 A와 동일): `0 3 * * * DEPLOY_DIR=/home/ubuntu/monitoring CERTBOT_DOMAIN=grafana.tripfit.online /home/ubuntu/scripts/renew-letsencrypt.sh >> /var/log/tripfit-certbot-renew.log 2>&1`
+- C는 git checkout이 없어 `scripts/renew-letsencrypt.sh`가 바뀌면 `~/scripts/`에 직접 복사해야 한다.
 - **A/B 쪽 최초 1회 필수 작업** — Loki가 뜨기 전에 A·B에서 각각 실행해야 `docker compose up -d`가 `driver: loki`로 성공한다:
   ```bash
   docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions

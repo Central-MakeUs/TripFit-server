@@ -302,7 +302,11 @@ jobs:
             docker compose pull app
             # ec2-deploy-app.sh 와 동일: nginx 443 기동용 TLS material 보장
             ../../scripts/ensure-ssl-certs.sh
+            # nginx.conf는 파일 단위 bind mount라 git checkout으로 파일이 교체돼도 실행 중인 컨테이너는 구 파일을 계속 본다.
+            # 새 컨테이너로 최신 설정을 먼저 검증하고(실패 시 기존 nginx를 그대로 두고 배포 중단), up 이후 재시작해 최신 설정·갱신된 인증서를 반영한다.
+            docker compose run --rm --no-deps --entrypoint nginx nginx -t
             docker compose up -d
+            docker restart tripfit-nginx
             # 배포마다 이전 latest 다이제스트가 dangling 이미지로 남아 디스크를 채우는 사고 재발 방지 — 매 배포 직후 정리
             docker image prune -af
             docker builder prune -af
