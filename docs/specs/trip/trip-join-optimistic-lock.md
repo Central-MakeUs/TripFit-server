@@ -94,7 +94,7 @@
 - [x] `CONCURRENT_MODIFICATION` 추가, 대상 API의 `@ApiResponse` 409 설명에 코드명 기재
 - [x] `REMOVED` 항목 삭제
 - [ ] dev DB 리셋 (배포 시점에 수행)
-- [ ] 커밋에 `Breaking-Change-Reason:` 트레일러 (신규 ErrorCode)
+- [x] 커밋에 `Breaking-Change-Reason:` 트레일러 (신규 ErrorCode)
 
 ### Nice to Have
 
@@ -235,21 +235,19 @@ trip
 - [x] `REMOVED` 항목 실제 삭제 확인
 - [x] OpenAPI에 `CONCURRENT_MODIFICATION` 노출 확인 — `OpenApiSpecExportTest`가 만든 `build/openapi/openapi.json`에서 대상 API 전부 확인. `oasdiff breaking` 0건
 - [x] 멤버를 저장소로 직접 넣는 테스트 준비 코드가 `joined_member_count`와 맞는지 확인 — `RecommendationControllerSwaggerConsistencyTest` 3곳 수정
-- [ ] 같은 PR에서 문서 개정:
+- [x] 같은 PR에서 문서 개정:
   - [x] [`trip-join-schedule-gate.md`](trip-join-schedule-gate.md) J-4
   - [x] [`trip-last-activity-at.md`](trip-last-activity-at.md) 갱신 방식
   - [x] [`trip-room-api.md`](trip-room-api.md) 에러 표
   - [x] [`api-response.md`](../../architecture/api-response.md) · [`package-layout.md`](../../architecture/package-layout.md)
   - [x] [`trip-create-join-guide.md`](../../product/flows/trip-create-join-guide.md) 정원 보장 문구
   - [x] [`spring-boot-java.md`](../../../.claude/rules/spring-boot-java.md) Isolation 절
-  - [ ] [`erd.md`](../../architecture/erd.md) — `trip`에 `joined_member_count` · `version` 추가
-  - [ ] [`user-account-withdrawal.md`](../user/user-account-withdrawal.md) — DB 정리 단계의 버전 충돌 재시도
-  - [ ] [`010-redis-infra.md`](../../decisions/010-redis-infra.md) — "DB 비관적 락으로 대체" 언급에 낙관적 락 재대체 추가
+  - [x] [`erd.md`](../../architecture/erd.md) — `trip`에 `joined_member_count` · `version` 추가
+  - [x] [`user-account-withdrawal.md`](../user/user-account-withdrawal.md) — DB 정리 단계의 버전 충돌 재시도
+  - [x] [`010-redis-infra.md`](../../decisions/010-redis-infra.md) — "DB 비관적 락으로 대체" 언급에 낙관적 락 재대체 추가
 
-- [ ] 커밋에 `Breaking-Change-Reason:` 트레일러
+- [x] 커밋에 `Breaking-Change-Reason:` 트레일러
 - [ ] dev DB 리셋 (배포 시점)
-
-`erd.md` · `user-account-withdrawal.md` · `010-redis-infra.md`는 구현 시점에 커밋되지 않은 다른 수정이 들어 있던 파일이라 손대지 않았다 (2026-10-02 사용자 지시). 그 수정이 정리된 뒤 개정한다.
 
 ## 리스크·미결정
 
@@ -262,6 +260,7 @@ trip
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-08 | **남은 문서 3곳 개정** — `erd.md`(`trip.joined_member_count`·`version`), `user-account-withdrawal.md`(DB 정리 단계 재시도·409), `010-redis-infra.md`(비관적 락이 낙관적 락으로 다시 대체됨). 같은 파일의 다른 수정이 먼저 커밋돼 개정이 가능해졌다. 남은 일은 dev DB 리셋 |
 | 2026-10-02 | **구현 리뷰 반영** — O-14(`TripMember` `@DynamicUpdate`)·O-15(멤버 행 → `trip` 행 잠금 순서, 방 삭제 포함)·O-16(`releaseSeat` 하한 검사) 추가, 9명 동시 `join` 시나리오를 "전원 성공"에서 "데드락·정원 초과 없음"으로 정정하고 보장 가능한 6명 시나리오 추가. 전체 542개 통과 |
 | 2026-10-02 | **구현** — 코드·테스트 완료(전체 529개 통과). O-3 예외 범위와 O-4 설정값을 구현에 맞춰 구체화, 재시도 소진 예외 타입 확정. 문서 3곳(`erd.md` 등)과 dev DB 리셋은 미완 |
 | 2026-10-02 | **Approved** — 사용자 승인, 이슈 `#130` 생성 (`출시 이후` · `priority: could`) |

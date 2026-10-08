@@ -43,6 +43,7 @@
   - [x] `User` row **soft delete**(`deleted_at` set) + 개인정보 스크럽: `email`·`firstName`·`lastName`·`nickname`·`profileImageUrl` → `null`, `isGoogleCalendarConnected` → `false`
   - [x] **연차·휴일 정보 4개 값도 가입 직후 기본값으로 초기화**(2026-08-19 추가 — `User.resetVacationPolicy()`): `maxVacationDays=2`·`vacationApplyPeriod=null`·`halfVacationAvailable=false`·`holidayRest=true`. PII라서가 아니라, **`vacationApplyPeriod`(사전 신청일)가 사전 일정 입력 완료 마커**라서다 — 남겨두면 재가입한 사용자가 곧바로 「갱신 입력」으로 판정돼 입력 플로우를 건너뛴다([`../user-schedule/pre-schedule-entry-flow.md`](../user-schedule/pre-schedule-entry-flow.md))
   - [x] `socialId`·`provider`·`id`는 그대로 유지 — FK 무결성(다른 사용자의 Trip/TripMember 참조) 및 재로그인 차단 판별에 필요
+- [x] **DB 정리 단계(`finalizeWithdrawal`)는 버전 충돌 시 새 트랜잭션으로 재시도**(2026-10-08 추가, [`trip-join-optimistic-lock.md`](../trip/trip-join-optimistic-lock.md)) — 이 단계는 참여 중인 여러 여행방의 `trip` 행(`joined_member_count` -1·방 삭제)을 한 트랜잭션에서 고친다. 그중 한 방에 같은 순간 `join`이 들어오면 `@Version` 충돌로 전체가 롤백되는데, 외부 provider revoke는 이미 끝난 뒤라 그대로 실패하면 계정이 어중간한 상태로 남는다. 그래서 `UserWithdrawalService`가 `VersionConflictRetryExecutor`로 감싸 최대 5회(50~150ms 대기) 다시 시도하고, 다 쓰면 409 `CONCURRENT_MODIFICATION`을 돌려준다. provider revoke는 재시도 대상이 아니다
 - [x] `AuthService` 로그인 흐름: `findByProviderAndSocialId`로 찾은 `User`가 이미 soft-deleted면 그대로 **부활**시켜 로그인 진행 — `deletedAt=null`로 초기화 후 `updateFromProfile`로 email·nickname·profileImageUrl을 소셜 프로필값으로 갱신. `firstName`/`lastName`/`isGoogleCalendarConnected`·**연차·휴일 정보 4개 값**은 탈퇴 시 초기화된 채로 유지되어 재로그인 후 온보딩·재연동·**사전 일정 최초 입력**이 필요함(신규 가입과 동일한 경험)
 - [x] `DevAuthService`(dev 전용 테스트 로그인)도 동일하게 부활 처리 — 프로덕션 로그인과 동작 일치
 - [x] 성공 시 `204 No Content`
@@ -118,7 +119,11 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 ### 에러
 
-해당 없음 — soft-deleted 계정으로 재로그인해도 차단하지 않고 그대로 부활(재가입) 처리한다.
+| HTTP | code | 언제 |
+|------|------|------|
+| 409 | `CONCURRENT_MODIFICATION` | DB 정리 단계가 다른 요청(주로 대상 방의 `join`)과 겹쳐 재시도 5회를 다 쓴 경우. 같은 요청을 다시 보내면 된다 — 2026-10-08 추가, [`trip-join-optimistic-lock.md`](../trip/trip-join-optimistic-lock.md) O-9 |
+
+soft-deleted 계정으로 재로그인해도 차단하지 않고 그대로 부활(재가입) 처리한다.
 
 > 이전 초안에 있던 `USER_HAS_OWNED_TRIPS`/`USER_HAS_JOINED_TRIPS`(409 차단 에러)는 **폐기** — 차단 대신 자동 cascade로 정책이 바뀌어 더 이상 발생하지 않음. `AUTH_WITHDRAWN_ACCOUNT`(401)도 같은 이유로 **폐기**(2026-07-27, 재가입 정책 확정) — `AuthErrorCode`·`AuthService`·`DevAuthService`에서 제거.
 
@@ -147,7 +152,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 ## 데이터 모델
 
 - ERD 참조: `docs/architecture/erd.md` — 기존 cascade·soft delete 범위는 스키마 컬럼 변경 없음. `#64` Apple 부분은 **신규 테이블 1개**(`apple_credential`) 추가 완료, Google 로그인 부분은 **신규 테이블 1개**(`google_login_credential`, [`google-login-revoke.md`](../auth/google-login-revoke.md)) 추가(아래)
-- 탈퇴 API(`DELETE /api/v1/users/me`) 자체엔 신규 에러 코드 없음(`AUTH_WITHDRAWN_ACCOUNT`는 재가입 정책 확정으로 폐기, provider revoke는 전부 best-effort). 단 로그인 API(`POST /api/v1/auth/login`)에는 `AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`/`AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400) 신규 추가 — 위 API 절 참고
+- 탈퇴 API(`DELETE /api/v1/users/me`) 전용 에러 코드는 없음(`AUTH_WITHDRAWN_ACCOUNT`는 재가입 정책 확정으로 폐기, provider revoke는 전부 best-effort). 공통 에러 `CONCURRENT_MODIFICATION`(409)만 위 에러 절 조건에서 발생한다(2026-10-08). 단 로그인 API(`POST /api/v1/auth/login`)에는 `AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`/`AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400) 신규 추가 — 위 API 절 참고
 - hard delete 대상 테이블: `personal_schedule`, `regular_schedule`, `google_calendar_credential`, `google_calendar_busy_day`, `refresh_token`, `apple_credential`, `google_login_credential`(모두 `user_id` 단독 소유, 타 사용자 참조 없음)
 - soft delete + 스크럽 대상: `users` (row 유지, PII 컬럼 null + 연차·휴일 정보 4개 컬럼 기본값 복귀 — 2026-08-19)
 - cascade 대상: 호출자가 MEMBER인 `trip_member` row(soft delete, [`trip-member-leave.md`](../trip/trip-member-leave.md) 재사용) · 호출자가 OWNER인 `trip` row(soft delete, `deleteTrip()` 재사용 — 해당 방의 다른 멤버 `trip_member` row도 함께 soft delete됨)
@@ -183,6 +188,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 - [x] 방장으로 있는 방이 여러 개(상태 혼합) → 전부 자동 삭제 후 탈퇴 성공
 - [x] 멤버로 있는 방과 방장인 방이 동시에 있음 → 멤버인 방은 나가기, 방장인 방은 삭제, 둘 다 처리 후 탈퇴 성공(각 cascade facade 메서드 호출 검증)
+- [x] 탈퇴 도중 대상 방에 `join`이 동시에 들어옴 → 버전 충돌 후 재시도로 탈퇴 완료, `joined_member_count`가 실제 멤버 수와 일치 — `TripSeatOptimisticLockIntegrationTest#withdrawalRacingWithJoins_completesAndKeepsCountConsistent`, `TripInterleavedRequestIntegrationTest#withdrawal_whenVersionConflictHitsOnce_retriesInNewTransactionAndCompletes`
 - [x] **(`#64`)** Google/Kakao/Apple revoke 호출이 provider 쪽 오류(4xx·네트워크 실패)로 예외를 던져도 **탈퇴 자체는 성공** — Kakao(`KakaoUnlinkClientTest`), Apple(`AppleOAuthClientTest#revokeRefreshToken_providerFailure_doesNotThrow`, `AppleCredentialServiceTest#revokeAndDeleteIfPresent_whenDecryptThrows_doesNotThrowAndStillDeletes`)는 클라이언트/서비스 레벨에서 삼킴. Google은 기존 `GoogleCalendarOAuthClient.revokeRefreshToken()`의 best-effort 패턴 재사용 + `UserWithdrawalService.revokeGoogleCalendarIfConnected()`에 복호화 실패까지 흡수하는 try/catch 보강(2026-07-31, 기존 `catch(Exception ignored)`에 로그가 없던 gap도 함께 수정)
 - [x] **(`#64`, B안 강제)** Apple 로그인 시 `authorizationCode`를 안 보낸 경우(구버전 클라이언트 등) → 소셜 토큰 검증 전 즉시 `AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED`(400)로 로그인 자체가 실패 — `AuthServiceTest#login_whenAppleWithoutAuthorizationCode_throwsAuthorizationCodeRequired`·`#login_whenAppleWithBlankAuthorizationCode_throwsAuthorizationCodeRequired`·`AuthControllerTest#login_appleWithoutAuthorizationCode_returns400`. `AppleCredentialService.saveIfAuthorizationCodePresent()`의 blank-guard(`AppleCredentialServiceTest#saveIfAuthorizationCodePresent_whenCodeBlank_doesNothing`)는 이제 login() 경로에선 도달 불가능한 방어 코드로 남지만, public 서비스 메서드의 defense-in-depth로 유지
 - [x] **(`#64` 재발견, 처음부터 강제)** Google 로그인 시 `authorizationCode`를 안 보낸 경우 → 소셜 토큰 검증 전 즉시 `AUTH_GOOGLE_AUTHORIZATION_CODE_REQUIRED`(400)로 로그인 자체가 실패 — `AuthServiceTest#login_whenGoogleWithoutAuthorizationCode_throwsAuthorizationCodeRequired`·`#login_whenGoogleWithBlankAuthorizationCode_throwsAuthorizationCodeRequired`
@@ -230,6 +236,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-08 | `#130` 낙관적 락 전환 반영 — DB 정리 단계(`finalizeWithdrawal`)의 버전 충돌 재시도를 Must Have에, 재시도 소진 시 409 `CONCURRENT_MODIFICATION`을 에러 절에, 동시 `join` 시나리오를 엣지 절에 추가. 상세: [`trip-join-optimistic-lock.md`](../trip/trip-join-optimistic-lock.md) |
 | 2026-07-31 | `#64` 재오픈 — Apple `APPLE_CLIENT_ID` 단일값을 `APPLE_BUNDLE_ID`(iOS 네이티브)/`APPLE_SERVICE_ID`(모바일 브라우저)로 이원화. `apple_credential`에 `apple_client_id` 컬럼 추가, 로그인 시 매칭된 값을 저장해 탈퇴 revoke에 재사용. 상세: [`apple-oauth-multi-audience.md`](../auth/apple-oauth-multi-audience.md) |
 | 2026-07-31 | `#64` Apple authorizationCode 누락 처리를 best-effort(조용히 skip)에서 **강제(400 거부, B안)** 로 amend — 신규 `AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED` 추가, `AuthService.login()`이 provider==APPLE인데 authorizationCode 없으면 소셜 토큰 검증 전 즉시 거부. `LoginRequest`·`AuthController` Swagger(`@Schema`·`@Operation`·`@ApiResponses`) 갱신. 조건부 필수화라 `Breaking-Change-Reason` 트레일러 필요 — **프론트 배포 순서 조율 필수** |
 | 2026-07-31 | `#64` Apple Implemented(코드) — `authorizationCode`를 `AuthService.login()`이 소비하도록 시그니처 변경(`AuthController`도 동일 전달). 신규 `auth/domain/AppleCredential`(최소 구조, user당 1행) · `auth/repository/AppleCredentialRepository` · `auth/oauth/AppleOAuthClient`(ES256 client_secret JWT 서명 — nimbus-jose-jwt, token exchange·revoke, 둘 다 호출마다 신규 JWT 발급) · `auth/service/AppleCredentialService`(로그인 시 저장 best-effort, 탈퇴 시 revoke+delete best-effort). `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY` env 전체 배선(.env.example 2곳·ci-cd.yml·docker-compose.yml·application.yml/OAuthProperties). `docs/architecture/erd.md`에 `apple_credential` 테이블 반영. `UserWithdrawalService.revokeGoogleCalendarIfConnected()`에도 복호화 실패 흡수 try/catch 보강. 세부 정책 3건(credential 컬럼 범위·token exchange 실패 시 로그인 처리·재로그인 갱신 정책) 사용자 위임으로 확정. 남은 것은 프론트 `authorizationCode` 전송 공지·실계정 수동 검증(코드 밖) |
