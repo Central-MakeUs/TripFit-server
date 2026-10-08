@@ -4,7 +4,7 @@
 - **날짜:** 2026-08-08
 - **관련:** [`004-auth-token-rotation.md`](004-auth-token-rotation.md), [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md), Issue **#4**
 
-## ⚠️ 2026-09-15 amend — Redis 용도 변경 (블랙리스트 폐기)
+## ⚠️ 2026-08-19 amend — Redis 용도 변경 (블랙리스트 폐기)
 
 **"EC2 D를 Redis 전용으로 둔다"는 결정 자체는 유효하다.** 다만 아래 본문이 도입 근거로 든 용도(access token `jti` 블랙리스트)는 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)로 **폐기**됐다 — access token은 이제 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
 

@@ -258,11 +258,11 @@ trip ||--o{ notification_history : relates_to
 
 **연차·휴일 정보 4개 컬럼(`#52`, 2026-08-16):** 사람 1명에게 붙는 값이라 `regular_schedule`(user당 N행)에서 `users`(user당 1행)로 이동. 정기 일정 CRUD와 분리된 전용 `GET`/`PATCH /users/schedule/vacation-policy`로 조회·수정. 상세: [`vacation-policy-user-migration.md`](../specs/user-schedule/vacation-policy-user-migration.md).
 
-### `refresh_token` — MySQL 테이블 아님 (Redis 이관, 2026-09-15)
+### `refresh_token` — MySQL 테이블 아님 (Redis 이관, 2026-08-19)
 
 RTR(rotate·reuse detection) refresh token은 더 이상 MySQL 테이블이 아니라 **Redis 키**로 저장한다 — 이 ERD(RDB 스키마) 대상에서 제외. 키 설계·rotate 흐름은 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)가 SSOT, 이전 MySQL 기반 설계는 [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md)·[`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)에 이력으로 남아 있다.
 
-**Redis (별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)):** 현재 저장하는 값은 아래 2종이다. ~~access token `jti` 블랙리스트 `auth:bl:{jti}`~~는 **폐기**(2026-09-15, [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)) — access token은 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
+**Redis (별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)):** 현재 저장하는 값은 아래 2종이다. ~~access token `jti` 블랙리스트 `auth:bl:{jti}`~~는 **폐기**(2026-08-19, [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)) — access token은 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
 
 | 키 | 용도 | TTL |
 |----|------|-----|

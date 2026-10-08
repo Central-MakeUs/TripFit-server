@@ -46,7 +46,7 @@ React 앱(최종 Play·App Store)에서 Google / Kakao / Apple 로그인 후 Tri
 
 ## MVP 출시 vs 출시 이후
 
-> **2026-09-15 갱신:** 아래 "출시 이후" 열은 이미 **구현 완료**됐고, 그 과정에서 설계가 한 번 뒤집혔다 — Redis는 access JWT 블랙리스트가 아니라 **refresh token 저장소**가 됐고(HttpOnly 쿠키 전달), access는 블랙리스트 없이 TTL 15분으로만 만료된다. 현행 SSOT: [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md). 이 표는 당시 계획 비교 기록으로 남긴다.
+> **2026-08-19 갱신:** 아래 "출시 이후" 열은 이미 **구현 완료**됐고, 그 과정에서 설계가 한 번 뒤집혔다 — Redis는 access JWT 블랙리스트가 아니라 **refresh token 저장소**가 됐고(HttpOnly 쿠키 전달), access는 블랙리스트 없이 TTL 15분으로만 만료된다. 현행 SSOT: [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md). 이 표는 당시 계획 비교 기록으로 남긴다.
 
 | | MVP 출시 (본 스펙) | 출시 이후 (확정, 별도 스펙) |
 |--|-------------------|---------------------------|
@@ -200,7 +200,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 ### Out of Scope (MVP 출시 — 출시 이후·별도 스펙)
 
 - **Refresh Token Rotation (RTR)** — 출시 이후 확정 [`004`](../../decisions/004-auth-token-rotation.md), [`auth-token-rotation.md`](auth-token-rotation.md)
-- **Redis** — 이후 **refresh token 저장소로 구현 완료**(2026-09-15). access 블랙리스트/화이트리스트는 도입하지 않기로 종결 — [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md)
+- **Redis** — 이후 **refresh token 저장소로 구현 완료**(2026-08-19). access 블랙리스트/화이트리스트는 도입하지 않기로 종결 — [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md)
 - 자체 이메일/비밀번호 회원가입
 - 계정 연결 — BR-USER-003 (Kakao + Google → 하나의 user)
 - `user_identity` 테이블 분리
@@ -576,7 +576,7 @@ com.tripfit.tripfit
 | profileImageUrl 저장 | **확정 (MVP 출시 A안)** | provider URL passthrough — [`006`](../../decisions/006-profile-image-url-storage.md) |
 | profileImageUrl S3 미러 | **출시 이후 예정 (B안)** | [`user-profile-image-s3-mirror.md`](../user/user-profile-image-s3-mirror.md), Issue #9 |
 | Refresh token rotation (RTR) | **출시 이후 확정** | [`004`](../../decisions/004-auth-token-rotation.md) — MVP 출시 Out |
-| Redis | **Implemented (2026-09-15)** | refresh token 저장소 + 공휴일 캐시. access 블랙리스트는 **폐기** — [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md) |
+| Redis | **Implemented (2026-08-19)** | refresh token 저장소 + 공휴일 캐시. access 블랙리스트는 **폐기** — [`auth-refresh-redis-cookie.md`](auth-refresh-redis-cookie.md) |
 | JWT 서명 알고리즘 HS256 vs RS256 | `[미정]` | 단일 서버 MVP는 HS256으로 시작 가능 |
 | Google Calendar OAuth API | **Implemented** | [#44](https://github.com/Central-MakeUs/TripFit-server/issues/44) [`google-calendar-oauth.md`](../user/google-calendar-oauth.md) |
 
