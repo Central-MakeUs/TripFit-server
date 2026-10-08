@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
+import com.tripfit.tripfit.common.retry.VersionConflictRetryExecutor;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
@@ -52,7 +53,8 @@ class UserWithdrawalServiceTest {
             kakaoUnlinkClient,
             appleCredentialService,
             googleLoginCredentialService,
-            persistenceService);
+            persistenceService,
+            new VersionConflictRetryExecutor());
   }
 
   @Test

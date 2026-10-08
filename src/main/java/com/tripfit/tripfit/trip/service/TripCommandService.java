@@ -183,21 +183,26 @@ class TripCommandService {
     return support.toDetail(trip, membership);
   }
 
+  // 여행방과 그 방의 멤버를 모두 삭제 표시한다.
+  // 멤버 행을 먼저 DB에 보내고 여행방 행은 그다음에 고친다. 나가기·내보내기·일정 확인 완료가 모두
+  // 멤버 행을 먼저 잠그고 여행방 행을 나중에 잠그므로, 삭제만 순서가 반대면 겹쳤을 때 데드락이 난다.
   @Transactional
   public void deleteTrip(UUID tripId, UUID userId) {
     Trip trip = support.requireOwnedTrip(tripId, userId);
-    trip.markDeleted();
     for (TripMember member : tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId)) {
       member.markDeleted();
     }
+    tripMemberRepository.flush();
+    trip.markDeleted();
   }
 
-  // 초대 코드를 이용해 여행방에 참여합니다.
-  // 잠금 조회(Pessimistic Lock)를 통해 동시 인원 초과를 방지합니다.
+  // 초대 코드로 여행방에 참여한다. 이미 멤버라면 새로 추가하지 않고 지금 상태를 그대로 돌려주므로
+  // 여러 번 호출해도 안전하다. 동시에 여러 명이 들어와도 정원을 넘기지 않도록, 새 멤버 추가는 여행방의
+  // 버전 번호를 확인하면서 처리한다.
   @Transactional
   public TripEntryResponse joinTrip(UUID userId, JoinTripRequest request) {
 
-    Trip trip = findLockedTripByInviteCode(request);
+    Trip trip = findTripByInviteCode(request);
     User user = support.findUser(userId);
 
     support.requireProfileNameComplete(user);
@@ -216,10 +221,10 @@ class TripCommandService {
     return tripJoinService.joinAsNewMember(trip, user);
   }
 
-  private Trip findLockedTripByInviteCode(JoinTripRequest request) {
+  private Trip findTripByInviteCode(JoinTripRequest request) {
     String inviteCode = request.inviteCode().trim().toUpperCase();
     return tripRepository
-        .findByInviteCodeForUpdate(inviteCode)
+        .findByInviteCodeAndDeletedAtIsNull(inviteCode)
         .orElseThrow(() -> new TripFitException(TripErrorCode.INVITE_CODE_NOT_FOUND));
   }
 
@@ -234,7 +239,7 @@ class TripCommandService {
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
-    support.requireOwnedOngoingTrip(tripId, ownerId);
+    Trip trip = support.requireOwnedOngoingTrip(tripId, ownerId);
     TripMember target =
         tripMemberRepository
             .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, targetUserId)
@@ -242,18 +247,28 @@ class TripCommandService {
     if (target.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.CANNOT_REMOVE_OWNER);
     }
-    target.markDeleted();
+    vacateSeat(trip, target);
     return tripMemberQueryService.listMembers(tripId, ownerId);
   }
 
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public void leaveTrip(UUID tripId, UUID callerId) {
-    support.requireActiveTrip(tripId);
+    Trip trip = support.requireActiveTrip(tripId);
     TripMember membership = support.requireMembership(tripId, callerId);
     if (membership.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);
     }
-    membership.markDeleted();
+    vacateSeat(trip, membership);
+  }
+
+  // 멤버를 삭제 표시하고, 그 멤버가 차지하던 자리를 여행방에 돌려놓는다.
+  // 멤버 행을 먼저 DB에 보내고 여행방 행은 그다음에 고친다. 이 클래스에서 기존 멤버 행과 여행방 행을
+  // 함께 고치는 유스케이스(일정 확인 완료, 방 삭제)는 모두 이 순서를 따른다. 순서가 엇갈리면 두 요청이
+  // 겹쳤을 때 서로의 잠금을 기다리다 데드락에 빠진다.
+  private void vacateSeat(Trip trip, TripMember member) {
+    member.markDeleted();
+    tripMemberRepository.flush();
+    trip.releaseSeat();
   }
 }

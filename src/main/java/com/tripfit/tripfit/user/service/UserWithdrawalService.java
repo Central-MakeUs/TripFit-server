@@ -3,6 +3,7 @@ package com.tripfit.tripfit.user.service;
 import lombok.RequiredArgsConstructor;
 import com.tripfit.tripfit.auth.service.AppleCredentialService;
 import com.tripfit.tripfit.auth.service.GoogleLoginCredentialService;
+import com.tripfit.tripfit.common.retry.VersionConflictRetryExecutor;
 import com.tripfit.tripfit.user.client.KakaoUnlinkClient;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
@@ -31,6 +32,8 @@ public class UserWithdrawalService {
 
   private final UserWithdrawalPersistenceService persistenceService;
 
+  private final VersionConflictRetryExecutor versionConflictRetryExecutor;
+
   // 회원 탈퇴 처리를 수행합니다.
   // 외부 연동(Google Calendar, Kakao 등)을 먼저 해제한 뒤, 내부 DB의 관련 데이터를 삭제/익명화합니다.
   public void withdraw(UUID userId) {
@@ -49,7 +52,10 @@ public class UserWithdrawalService {
     appleCredentialService.revokeAndDeleteIfPresent(userId);
 
     // 4. 내부 DB 연관 데이터 삭제 및 개인정보 마스킹(Soft Delete)
-    persistenceService.finalizeWithdrawal(userId);
+    // 이 단계는 참여 중인 여러 여행방을 한 트랜잭션에서 고친다. 그중 한 방에서 누군가 같은 순간에 참여하면
+    // 전체가 취소되는데, 외부 연동 해제는 이미 끝난 뒤라 그대로 실패하면 계정이 어중간한 상태로 남는다.
+    // 그래서 버전 충돌로 실패한 경우에는 새 트랜잭션으로 다시 시도한다.
+    versionConflictRetryExecutor.run(() -> persistenceService.finalizeWithdrawal(userId));
   }
 
   private void revokeGoogleCalendarIfConnected(UUID userId) {

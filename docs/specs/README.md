@@ -37,7 +37,7 @@
 | [`apple-oauth-multi-audience.md`](auth/apple-oauth-multi-audience.md) | MVP 출시 | Implemented (`#64` amend) | Apple 로그인 Bundle ID(네이티브)/Services ID(웹) 이원화 `aud` 검증 | auth-social-login |
 | [`google-login-revoke.md`](auth/google-login-revoke.md) | MVP 출시 | **Implemented** (`#64` 후속, Closed) · 구 Release Gate | Google 로그인 시 authorization code 확보·저장 → 탈퇴 시 revoke | auth-social-login · user-account-withdrawal |
 | [`auth-error-code-granularity.md`](auth/auth-error-code-granularity.md) | 무관 | **Implemented** (#57, Closed) | 소셜 로그인 토큰 검증 실패 세분화 — `AUTH_SOCIAL_TOKEN_EXPIRED`/`INVALID`/`PROVIDER_UNAVAILABLE` | auth-social-login |
-| [`auth-token-rotation.md`](auth/auth-token-rotation.md) | 출시 이후 | **Superseded** (2026-09-15, `#4` Closed) — 전제 2개(refresh MySQL SSOT · access Blacklist)가 `auth-refresh-redis-cookie`로 뒤집힘. RTR 개념 설명 이력으로만 유지 | RTR (구 설계: MySQL + Redis Blacklist) | auth-social-login · decision 004·010 |
+| [`auth-token-rotation.md`](auth/auth-token-rotation.md) | 출시 이후 | **Superseded** (2026-08-19, `#4` Closed) — 전제 2개(refresh MySQL SSOT · access Blacklist)가 `auth-refresh-redis-cookie`로 뒤집힘. RTR 개념 설명 이력으로만 유지 | RTR (구 설계: MySQL + Redis Blacklist) | auth-social-login · decision 004·010 |
 | [`auth-refresh-redis-cookie.md`](auth/auth-refresh-redis-cookie.md) | 무관 | **Implemented** (`#2` Closed, PR #121 — 2026-08-19) | Refresh token Redis 이관 + HttpOnly 쿠키 전달 — auth-token-rotation의 전제(MySQL SSOT·Access Blacklist)를 뒤집는 후속 개편 | auth-token-rotation |
 | [`auth-apple-server-notifications.md`](auth/auth-apple-server-notifications.md) | 출시 이후 | Approved | Apple S2S webhook (스토어 제출 전) | auth-social-login |
 | [`dev-mock-login.md`](auth/dev-mock-login.md) | 도구 | **Removed** (2026-08-15) | `local`/`dev` 전용 mock 로그인, 프론트 Swagger 테스트용 — 더 이상 필요 없어 삭제 | auth-social-login |
@@ -90,6 +90,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`trip-recommendation-scoring-source.md`](trip/trip-recommendation-scoring-source.md) | MVP 출시 | 확정 (기획자 승인) | 추천 스코어링 원본 자료 — `trip-recommendation-algorithm`이 구현하는 패널티 구간표·가중치·동점 기준의 원본 출처(참고 자료, SSOT 아님) | trip-recommendation-algorithm |
 | [`trip-join-capacity-hold.md`](trip/trip-join-capacity-hold.md) | 출시 이후 | **Superseded** (2026-08-19, `#114` — hold 완전 폐지·DB 비관적 락으로 대체) | join 정원 hold/TTL — 이력 문서 | trip-join-schedule-gate |
 | [`trip-join-schedule-gate.md`](trip/trip-join-schedule-gate.md) | MVP 출시 | **Implemented** (2026-08-19, `#113`+`#114`) · **BR-USER-006·007 개정 / 011 삭제 포함** | 참여자 `join`을 `SCHEDULE_PENDING`으로 앞당겨 방 입장 일정 확인을 서버가 강제 · hold→DB 비관적 락 대체 · 전역 입장 게이트(`is_all_free`) 삭제 | #22 · #39 · #110 |
+| [`trip-join-optimistic-lock.md`](trip/trip-join-optimistic-lock.md) | 출시 이후 | **Approved** (2026-10-02, `#130`) · **could** | join 정원 보장을 DB 비관적 락에서 낙관적 락(`trip.joined_member_count` + `@Version` + 재시도)으로 전환 · 활동 시각 갱신 방식 변경 · 공통 409 `CONCURRENT_MODIFICATION` | trip-join-schedule-gate · trip-last-activity-at |
 | [`package-structure-refactor.md`](trip/package-structure-refactor.md) | 출시 이후 | **Implemented** (`#100` Closed, PR #101) · **2026-08-26 포트/어댑터 부분 폐기**(구현체가 항상 1개라 concrete 직접 주입으로 회귀) — 현재 구조 SSOT는 [`audits/trip/refactor-log.md`](../audits/trip/refactor-log.md) | trip 도메인 패키지 재설계 — 이력 문서 | decision 003 |
 | [`kakao-invite-share.md`](trip/kakao-invite-share.md) | MVP 출시 | **Approved** (#19) | 카카오·링크 공유 A/B/C · create에 inviteCode 없음 · 신규 API 없음 | trip-room-api D3 · #12 |
 | [`trip-thumbnail-image.md`](trip/trip-thumbnail-image.md) | 미정 (#62) | Draft | 여행방 확정 기간을 베이스 이미지에 합성해 카카오 공유용 동적 썸네일 자동 생성 · S3 등 오브젝트 스토리지 신규 구축 필요 | kakao-invite-share (#19) |
@@ -150,6 +151,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
 | **#125** | terraform-iac-migration (Draft — 스펙 승인 대기) | Open · **출시 이후** · `priority: could` |
 | **#126** | add-prometheus (Draft) | Open |
+| **#130** | trip-join-optimistic-lock (Approved) | Open · **출시 이후** · `priority: could` |
 
 ## 완료 후
 

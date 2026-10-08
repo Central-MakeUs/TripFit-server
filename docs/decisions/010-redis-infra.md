@@ -4,7 +4,7 @@
 - **날짜:** 2026-08-08
 - **관련:** [`004-auth-token-rotation.md`](004-auth-token-rotation.md), [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md), Issue **#4**
 
-## ⚠️ 2026-09-15 amend — Redis 용도 변경 (블랙리스트 폐기)
+## ⚠️ 2026-08-19 amend — Redis 용도 변경 (블랙리스트 폐기)
 
 **"EC2 D를 Redis 전용으로 둔다"는 결정 자체는 유효하다.** 다만 아래 본문이 도입 근거로 든 용도(access token `jti` 블랙리스트)는 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)로 **폐기**됐다 — access token은 이제 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
 
@@ -19,7 +19,7 @@
 
 > 아래는 2026-08-08 결정 당시의 기록이다. 용도 서술은 위 amend로 대체됐다.
 
-`#4`(RTR + 액세스 토큰 즉시 무효화)를 시작으로 이 저장소에 처음 Redis가 필요해졌다. Redis가 쓰이는 용도(로그아웃 시 access token jti 블랙리스트 — `#35` 정원 hold도 한때 후보였으나 2026-08-19 `#114`로 DB 비관적 락으로 대체·삭제됨)는 전부 "App 인스턴스가 여러 대로 늘어나도 공유돼야 하는 상태"라, App 프로세스 안에 내장하면 App을 수평 확장하는 순간 각 인스턴스가 자기 것만 보게 돼 목적이 무너진다. 어디에·어떻게 올릴지 결정이 필요했다.
+`#4`(RTR + 액세스 토큰 즉시 무효화)를 시작으로 이 저장소에 처음 Redis가 필요해졌다. Redis가 쓰이는 용도(로그아웃 시 access token jti 블랙리스트 — `#35` 정원 hold도 한때 후보였으나 2026-08-19 `#114`로 DB 비관적 락으로 대체·삭제됨. 이 비관적 락은 다시 `#130`에서 낙관적 락으로 바뀌었다 — [`trip-join-optimistic-lock.md`](../specs/trip/trip-join-optimistic-lock.md))는 전부 "App 인스턴스가 여러 대로 늘어나도 공유돼야 하는 상태"라, App 프로세스 안에 내장하면 App을 수평 확장하는 순간 각 인스턴스가 자기 것만 보게 돼 목적이 무너진다. 어디에·어떻게 올릴지 결정이 필요했다.
 
 ## 결정
 

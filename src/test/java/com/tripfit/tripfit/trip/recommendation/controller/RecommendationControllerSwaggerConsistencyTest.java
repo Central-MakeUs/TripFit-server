@@ -193,6 +193,9 @@ class RecommendationControllerSwaggerConsistencyTest {
     tripMemberRepository.save(
         new TripMember(
             trip, owner, TripMemberRole.OWNER, TripMemberStatus.ACTIVE, LocalDateTime.now()));
+    // 참여자를 저장소로 직접 넣으므로, 여행방의 참여 인원도 실제 멤버 수와 맞춰 둔다.
+    trip.tryOccupySeat();
+    trip = tripRepository.save(trip);
     tripMemberRepository.save(
         new TripMember(
             trip, participant, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
@@ -232,6 +235,9 @@ class RecommendationControllerSwaggerConsistencyTest {
     tripMemberRepository.save(
         new TripMember(
             trip, owner, TripMemberRole.OWNER, TripMemberStatus.ACTIVE, LocalDateTime.now()));
+    // 참여자를 저장소로 직접 넣으므로, 여행방의 참여 인원도 실제 멤버 수와 맞춰 둔다.
+    trip.tryOccupySeat();
+    trip = tripRepository.save(trip);
     tripMemberRepository.save(
         new TripMember(
             trip, participant, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,
@@ -289,6 +295,9 @@ class RecommendationControllerSwaggerConsistencyTest {
     tripMemberRepository.save(
         new TripMember(
             trip, owner, TripMemberRole.OWNER, TripMemberStatus.ACTIVE, LocalDateTime.now()));
+    // 참여자를 저장소로 직접 넣으므로, 여행방의 참여 인원도 실제 멤버 수와 맞춰 둔다.
+    trip.tryOccupySeat();
+    trip = tripRepository.save(trip);
     tripMemberRepository.save(
         new TripMember(
             trip, participant, TripMemberRole.MEMBER, TripMemberStatus.ACTIVE,

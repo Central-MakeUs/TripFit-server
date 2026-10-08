@@ -6,6 +6,7 @@ import com.tripfit.tripfit.common.logging.PiiMasker;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
@@ -47,6 +48,17 @@ public class GlobalExceptionHandler {
   ResponseEntity<ErrorResponse> handleClientInputError(Exception exception) {
     ErrorCode errorCode = CommonErrorCode.INVALID_INPUT;
     return ResponseEntity.badRequest()
+        .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
+  }
+
+  // 다른 요청이 같은 데이터를 먼저 고쳐서 저장에 실패한 경우다. 재시도를 거는 유스케이스라면 여러 번
+  // 다시 시도하고도 끝내지 못했을 때 여기까지 올라온다. 서버 오류가 아니라 같은 순간에 요청이 몰린
+  // 상황이므로 500 대신 409로 답해, 클라이언트가 다시 시도하면 된다는 것을 알린다.
+  @ExceptionHandler(OptimisticLockingFailureException.class)
+  ResponseEntity<ErrorResponse> handleVersionConflict(OptimisticLockingFailureException exception) {
+    log.warn("Version conflict remained after retries: {}", exception.getMessage());
+    ErrorCode errorCode = CommonErrorCode.CONCURRENT_MODIFICATION;
+    return ResponseEntity.status(errorCode.getHttpStatus())
         .body(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
   }
 

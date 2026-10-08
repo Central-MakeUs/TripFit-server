@@ -72,7 +72,7 @@ public class RecommendationController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING).",
+          description = "현재 조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING). 다른 요청과 같은 순간에 겹쳐 완료하지 못한 경우에도 409를 돌려주며, 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -222,7 +222,7 @@ public class RecommendationController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING). 이미 확정된 상태라면 확정 취소 후 재시도해야 합니다.",
+          description = "조율 중(ONGOING)인 여행방이 아닙니다(TRIP_NOT_ONGOING). 이미 확정된 상태라면 확정 취소 후 재시도해야 합니다. 다른 요청과 같은 순간에 겹쳐 완료하지 못한 경우에도 409를 돌려주며, 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })
@@ -264,7 +264,7 @@ public class RecommendationController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "409",
-          description = "아직 확정되지 않은 여행방입니다(TRIP_NOT_CONFIRMED).",
+          description = "아직 확정되지 않은 여행방입니다(TRIP_NOT_CONFIRMED). 다른 요청과 같은 순간에 겹쳐 완료하지 못한 경우에도 409를 돌려주며, 잠시 뒤 같은 요청을 다시 보내면 됩니다(CONCURRENT_MODIFICATION).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

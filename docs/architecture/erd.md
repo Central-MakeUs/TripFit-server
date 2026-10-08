@@ -129,6 +129,7 @@ trip ||--o{ notification_history : relates_to
         int duration_days "여행 일수"
         int duration_nights "여행 박수"
         int member_count "모집 인원"
+        int joined_member_count "참여 중인 인원"
         string invite_code "초대 코드 UNIQUE"
         string status "ONGOING CONFIRMED EXPIRED"
         string last_recommendation_mode "최근 추천 모드"
@@ -140,6 +141,7 @@ trip ||--o{ notification_history : relates_to
         int confirmed_vacation_member_count "확정 시점 연차 필요 인원수"
         int confirmed_uncertain_count "확정 시점 불확실 인원수"
         datetime last_activity_at "마지막 활동"
+        bigint version "낙관적 락 버전"
         datetime created_at "생성일"
         datetime updated_at "수정일"
         datetime deleted_at "삭제일"
@@ -258,11 +260,11 @@ trip ||--o{ notification_history : relates_to
 
 **연차·휴일 정보 4개 컬럼(`#52`, 2026-08-16):** 사람 1명에게 붙는 값이라 `regular_schedule`(user당 N행)에서 `users`(user당 1행)로 이동. 정기 일정 CRUD와 분리된 전용 `GET`/`PATCH /users/schedule/vacation-policy`로 조회·수정. 상세: [`vacation-policy-user-migration.md`](../specs/user-schedule/vacation-policy-user-migration.md).
 
-### `refresh_token` — MySQL 테이블 아님 (Redis 이관, 2026-09-15)
+### `refresh_token` — MySQL 테이블 아님 (Redis 이관, 2026-08-19)
 
 RTR(rotate·reuse detection) refresh token은 더 이상 MySQL 테이블이 아니라 **Redis 키**로 저장한다 — 이 ERD(RDB 스키마) 대상에서 제외. 키 설계·rotate 흐름은 [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)가 SSOT, 이전 MySQL 기반 설계는 [`004-auth-token-rotation.md`](../decisions/004-auth-token-rotation.md)·[`auth-token-rotation.md`](../specs/auth/auth-token-rotation.md)에 이력으로 남아 있다.
 
-**Redis (별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)):** 현재 저장하는 값은 아래 2종이다. ~~access token `jti` 블랙리스트 `auth:bl:{jti}`~~는 **폐기**(2026-09-15, [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)) — access token은 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
+**Redis (별도 EC2 D — [`010-redis-infra.md`](../decisions/010-redis-infra.md)):** 현재 저장하는 값은 아래 2종이다. ~~access token `jti` 블랙리스트 `auth:bl:{jti}`~~는 **폐기**(2026-08-19, [`auth-refresh-redis-cookie.md`](../specs/auth/auth-refresh-redis-cookie.md)) — access token은 블랙리스트 없이 자체 TTL(15분)로만 만료된다.
 
 | 키 | 용도 | TTL |
 |----|------|-----|
@@ -393,6 +395,7 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | duration_days | int | Y | | m일. null = 일정 미정. `duration_nights`와 쌍으로 저장 |
 | duration_nights | int | Y | | n박. null = 일정 미정. 요청 시 `durationNights`+`durationDays` 검증 후 **둘 다 컬럼에 저장**(파생 아님) |
 | member_count | int | N | | **1~10** (BR-TRIP-001) |
+| joined_member_count | int | N | | 지금 자리를 차지한 멤버 수(삭제되지 않은 `trip_member` 행 수, `SCHEDULE_PENDING` 포함). 생성 시 1(방장), `join` +1, 나가기·내보내기 -1. `member_count`와 비교해 정원을 지킨다. API 미노출 ([`trip-join-optimistic-lock.md`](../specs/trip/trip-join-optimistic-lock.md)) |
 | invite_code | varchar | N | | UNIQUE |
 | status | varchar | N | | `ONGOING`, `CONFIRMED`, `EXPIRED`(기간 만료·종료) — 구 `CANCELED`는 삭제, 구 `TERMINATED`는 `EXPIRED`로 리네임(#48) |
 | last_recommendation_mode | varchar | Y | | BASIC, ALL_ATTEND, SAVE_VACATION, CERTAIN |
@@ -403,7 +406,8 @@ User당 **1행**. 탈퇴 시 `https://oauth2.googleapis.com/revoke` 호출 용�
 | confirmed_attend_count | int | Y | | 확정 시점 참석 인원수(전체+부분참석), 1회 계산 후 고정. unconfirm 시 null |
 | confirmed_vacation_member_count | int | Y | | 확정 시점 연차 필요 인원수. unconfirm 시 null |
 | confirmed_uncertain_count | int | Y | | 확정 시점 불확실 일정 인원수. unconfirm 시 null |
-| last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·**confirm**·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip/trip-room-api.md) D5 · #39) |
+| last_activity_at | timestamptz | N | | 홈 정렬용 최근 활동. 생성·join·patch·**confirm**·추천·확정 시 갱신 ([`trip-room-api.md`](../specs/trip/trip-room-api.md) D5 · #39). 직접 UPDATE 쿼리로 갱신해 `version`을 올리지 않는다 |
+| version | bigint | N | | 낙관적 락(`@Version`). `trip` 행을 엔티티로 고칠 때마다 +1, 충돌하면 새 트랜잭션으로 최대 5회 재시도 후 409 `CONCURRENT_MODIFICATION` ([`trip-join-optimistic-lock.md`](../specs/trip/trip-join-optimistic-lock.md)) |
 | created_at | timestamptz | N | | |
 | updated_at | timestamptz | N | | |
 | deleted_at | timestamptz | Y | | Soft delete |

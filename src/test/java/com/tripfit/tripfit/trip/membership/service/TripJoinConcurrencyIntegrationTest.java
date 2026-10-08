@@ -78,7 +78,7 @@ class TripJoinConcurrencyIntegrationTest {
       pool.shutdownNow();
     }
 
-    long members = tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId());
+    long members = tripMemberRepository.findByTripIdAndDeletedAtIsNull(trip.getId()).size();
 
     assertThat(members).isEqualTo(MEMBER_COUNT);
     assertThat(joined.get()).isEqualTo(MEMBER_COUNT - 1);
@@ -98,7 +98,8 @@ class TripJoinConcurrencyIntegrationTest {
             .orElseThrow();
     assertThat(pending.getStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
     assertThat(pending.getDeletedAt()).isNull();
-    assertThat(tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId())).isEqualTo(2);
+    assertThat(tripMemberRepository.findByTripIdAndDeletedAtIsNull(trip.getId()).size())
+        .isEqualTo(2);
   }
 
   private Callable<Void> joinTask(

@@ -86,7 +86,8 @@ class TripLeaveGateIntegrationTest {
             .orElseThrow();
     assertThat(membership.getStatus()).isEqualTo(TripMemberStatus.SCHEDULE_PENDING);
     assertThat(membership.getDeletedAt()).isNull();
-    assertThat(tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId())).isEqualTo(2);
+    assertThat(tripMemberRepository.findByTripIdAndDeletedAtIsNull(trip.getId()).size())
+        .isEqualTo(2);
   }
 
   @Test
@@ -109,7 +110,8 @@ class TripLeaveGateIntegrationTest {
             trip.getId(),
             member.getId()))
         .isEmpty();
-    assertThat(tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId())).isEqualTo(1);
+    assertThat(tripMemberRepository.findByTripIdAndDeletedAtIsNull(trip.getId()).size())
+        .isEqualTo(1);
   }
 
   @Test
@@ -138,7 +140,8 @@ class TripLeaveGateIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.myMemberStatus").value("SCHEDULE_PENDING"));
 
-    assertThat(tripMemberRepository.countByTripIdAndDeletedAtIsNull(trip.getId())).isEqualTo(2);
+    assertThat(tripMemberRepository.findByTripIdAndDeletedAtIsNull(trip.getId()).size())
+        .isEqualTo(2);
   }
 
   private org.springframework.test.web.servlet.ResultActions join(Trip trip, String token)

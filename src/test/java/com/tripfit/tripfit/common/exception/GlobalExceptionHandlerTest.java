@@ -17,6 +17,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
@@ -63,6 +64,17 @@ class GlobalExceptionHandlerTest {
     ResponseEntity<ErrorResponse> response = handler.handleTripFitException(exception);
 
     assertThat(response.getBody().message()).isEqualTo("커스텀 메시지");
+  }
+
+  @Test
+  void handleVersionConflict_returnsConflictSoClientCanRetry() {
+    ObjectOptimisticLockingFailureException exception =
+        new ObjectOptimisticLockingFailureException(Object.class, "id");
+
+    ResponseEntity<ErrorResponse> response = handler.handleVersionConflict(exception);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(response.getBody().code()).isEqualTo("CONCURRENT_MODIFICATION");
   }
 
   @Test
