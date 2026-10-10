@@ -179,7 +179,22 @@ FK·UNIQUE 제약으로 표현 가능한 무결성은 DB 제약을 우선한다.
 
 ### Durability — 롤백돼야 하는 것과 커밋 후에만 나가야 하는 것을 분리
 
-트랜잭션이 롤백되면 그 안에서 준비한 부수 효과(알림 발행 등)도 함께 취소돼야 자연스러운데, 실제 발송처럼 **커밋 이후에만** 실행돼야 하는 부수 효과를 트랜잭션 내부에서 직접 호출하면 롤백된 트랜잭션의 알림이 이미 나가버리는 사고로 이어진다. 이런 부수 효과는 `@TransactionalEventListener(phase = AFTER_COMMIT)`로 분리한다 — `NotificationEventListener`(여행방·리마인드 이벤트를 트랜잭션 커밋 후 받아 FCM 발송·이력 저장)가 이미 이 패턴을 쓰고 있다.
+트랜잭션이 롤백되면 그 안에서 준비한 부수 효과(알림 발행 등)도 함께 취소돼야 자연스러운데, 실제 발송처럼 **커밋 이후에만** 실행돼야 하는 부수 효과를 트랜잭션 내부에서 직접 호출하면 롤백된 트랜잭션의 알림이 이미 나가버리는 사고로 이어진다.
+
+- **커밋 후에만 나가야 하는 외부 호출**은 `@TransactionalEventListener(phase = AFTER_COMMIT)` 리스너나 `afterCommit` 콜백에서 실행한다.
+- **원래 작업과 함께 저장·취소돼야 하는 DB 기록**은 `@TransactionalEventListener(phase = BEFORE_COMMIT)`로 원래 트랜잭션에 넣는다. 이때 INSERT 전에 Repository `flush()`를 먼저 호출한다. 외래키가 있는 INSERT가 부모 행 UPDATE보다 먼저 나가면 동시 요청끼리 데드락이 난다(`NotificationLockOrderIntegrationTest`).
+
+사례: `NotificationEventListener`는 알림 이력을 `BEFORE_COMMIT`으로 저장한다. FCM 발송은 `afterCommit` 콜백에서 전용 실행기(`notificationPushExecutor`)에 넘긴다.
+
+### 비동기 작업 — 용도별 실행기에 직접 제출
+
+`@Async`를 쓰지 않고, 용도별 실행기 빈(`ThreadPoolTaskExecutor`)에 직접 제출한다.
+
+- `@EnableAsync`가 없어 `@Async`는 호출 스레드에서 그대로 실행된다. `ArchitectureTest`가 사용을 막는다.
+- 실행기 빈을 정의하면 Spring Boot 기본 비동기 풀(`applicationTaskExecutor`)도 만들어지지 않는다.
+- 외부 API를 기다리는 작업은 스레드 수·대기열에 상한을 둔 전용 실행기를 쓰고, 거절(`TaskRejectedException`)을 제출한 쪽에서 처리한다.
+
+근거: [`external-api-bulkhead.md`](../../docs/specs/cross-cutting/external-api-bulkhead.md)
 
 ## Style
 

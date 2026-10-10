@@ -43,9 +43,9 @@ Google로 로그인한 유저가 탈퇴하면 TripFit 내부 데이터 삭제와
   - 교환: `POST https://oauth2.googleapis.com/token` — refresh_token이 응답에 없어도 예외를 던지지 않고 정상 처리(재로그인은 Google이 최초 1회만 refresh_token을 내려주므로 이게 정상 케이스)
   - revoke: `POST https://oauth2.googleapis.com/revoke?token=...` — client_id/secret 불필요(Google revoke 엔드포인트는 토큰만 요구, Apple과 다름)
 - [x] 신규 `auth/service/GoogleLoginCredentialService` — `AppleCredentialService`와 동일 구조
-  - `saveIfAuthorizationCodePresent(User user, String authorizationCode)`: 교환 시도 → refresh_token이 있으면 credential upsert(없으면 skip, 기존 값 유지) → 실패해도 로그인 흐름은 계속 진행(best-effort, try/catch)
+  - `saveIfAuthorizationCodePresent(User user, String authorizationCode)`: 교환 시도 → refresh_token이 있으면 credential upsert(없으면 skip, 기존 값 유지) → 실패해도 로그인 흐름은 계속 진행(best-effort, try/catch) **(2026-10-11 이후: 로그인 응답 뒤 `LoginCredentialExchangeDispatcher`가 사용자 ID로 호출 — `#134`)**
   - `revokeAndDeleteIfPresent(UUID userId)`: credential 있으면 복호화한 refresh token으로 revoke 호출(best-effort) 후 **항상** row 삭제
-- [x] `AuthService.login()` — GOOGLE 분기 추가: authorizationCode 없으면 400 즉시 거부 → 검증 통과 후 `googleLoginCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode)` 호출(APPLE 분기와 나란히)
+- [x] `AuthService.login()` — GOOGLE 분기 추가: authorizationCode 없으면 400 즉시 거부 → 검증 통과 후 `googleLoginCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode)` 호출(APPLE 분기와 나란히) **(2026-10-11 이후: 로그인 응답 뒤 `LoginCredentialExchangeDispatcher`가 사용자 ID로 호출 — `#134`)**
 - [x] `UserWithdrawalService.withdraw()` — `revokeGoogleCalendarIfConnected(userId)`와 나란히 `googleLoginCredentialService.revokeAndDeleteIfPresent(userId)` 호출 추가
 - [x] 신규 Repository `GoogleLoginCredentialRepository`(`findByUser_Id`, `deleteByUser_Id`) — 신규 네이티브 쿼리 없이 derived method만
 - [x] `docs/architecture/erd.md`에 `google_login_credential` 테이블 반영
@@ -207,6 +207,7 @@ google_login_credential (신규)
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-11 | `#134` — 인가 코드 교환을 로그인 응답 뒤 전용 실행기(`socialCredentialExchangeExecutor`)로 옮김. `saveIfAuthorizationCodePresent`는 `User` 대신 사용자 ID를 받고, 저장 전에 사용자 행을 잠가 탈퇴 여부를 확인한다(탈퇴했으면 저장하지 않고 받은 토큰을 즉시 revoke). 대기열이 가득 차면 교환을 건너뛴다(교환 실패와 같은 정책). 위 Must Have의 메서드 시그니처·`AuthService` 호출 서술은 당시 기록이다. 상세: [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md) |
 | 2026-07-31 | 초안 (Draft) — `#64` 재발견 gap 대응 |
 | 2026-07-31 | 구현 완료(Implemented) — Apple 패턴 재사용, `./gradlew build` 통과 |
 | 2026-07-31 | **정정** — FE 확인 결과 네이티브 SDK(`@react-native-google-signin/google-signin` 등)가 이미 구현돼 있었음. client_id 이원화 리스크 해소, FE 변경 요건을 네이티브(`offlineAccess`+`serverAuthCode`)/브라우저(hybrid flow) 두 경로로 재작성. `google-login-native-sdk-decision.md`(#77) Resolved 처리 |

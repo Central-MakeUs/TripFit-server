@@ -3,7 +3,7 @@ package com.tripfit.tripfit.notification.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,12 +36,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationEventListenerTest {
@@ -64,7 +68,7 @@ class NotificationEventListenerTest {
   private UserDeviceTokenRepository userDeviceTokenRepository;
 
   @Mock
-  private FcmService fcmService;
+  private NotificationPushDispatcher notificationPushDispatcher;
 
   private NotificationEventListener listener;
 
@@ -81,7 +85,9 @@ class NotificationEventListenerTest {
             userRepository,
             notificationHistoryRepository,
             userDeviceTokenRepository,
-            fcmService);
+            notificationPushDispatcher);
+    // 리스너는 커밋 직전에 실행되며 커밋 후 콜백을 등록하므로, 트랜잭션 동기화가 켜진 상태를 흉내 낸다.
+    TransactionSynchronizationManager.initSynchronization();
     owner = user("owner-sub", "홍", "길동");
     trip =
         new Trip(
@@ -95,6 +101,11 @@ class NotificationEventListenerTest {
             "ABCD12",
             TripStatus.ONGOING);
     trip.setId(TRIP_ID);
+  }
+
+  @AfterEach
+  void tearDown() {
+    TransactionSynchronizationManager.clearSynchronization();
   }
 
   @Test
@@ -111,20 +122,36 @@ class NotificationEventListenerTest {
     listener.onTripJoinCompleted(new TripJoinCompletedEvent(TRIP_ID, joinedMember.getId()));
 
     ArgumentCaptor<List<NotificationHistory>> captor = ArgumentCaptor.forClass(List.class);
-    verify(notificationHistoryRepository).saveAll(captor.capture());
+    InOrder order = inOrder(notificationHistoryRepository);
+    order.verify(notificationHistoryRepository).flush();
+    order.verify(notificationHistoryRepository).saveAll(captor.capture());
     assertThat(captor.getValue()).hasSize(1);
     assertThat(captor.getValue().get(0).getUser()).isEqualTo(owner);
     assertThat(captor.getValue().get(0).getBody()).contains("김철수님이 여행방에 참여했어요");
+    verify(notificationPushDispatcher, never()).submit(any());
+
+    TransactionSynchronizationManager.getSynchronizations()
+        .forEach(TransactionSynchronization::afterCommit);
 
     Map<String, UUID> expectedHistoryIdByToken = new HashMap<>();
     expectedHistoryIdByToken.put("token-1", null);
-    verify(fcmService)
-        .sendMulticast(
-            eq(expectedHistoryIdByToken),
-            any(),
-            any(),
-            eq(LandingType.TRAVEL_ROOM_DETAIL),
-            eq(TRIP_ID));
+    ArgumentCaptor<NotificationPush> pushCaptor = ArgumentCaptor.forClass(NotificationPush.class);
+    verify(notificationPushDispatcher).submit(pushCaptor.capture());
+    assertThat(pushCaptor.getValue().historyIdByToken()).isEqualTo(expectedHistoryIdByToken);
+    assertThat(pushCaptor.getValue().landingType()).isEqualTo(LandingType.TRAVEL_ROOM_DETAIL);
+    assertThat(pushCaptor.getValue().tripId()).isEqualTo(TRIP_ID);
+  }
+
+  @Test
+  void onTripJoinCompleted_recipientHasNoDeviceToken_savesHistoryWithoutPush() {
+    User joinedMember = user("member-sub", "김", "철수");
+    when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(userRepository.findById(joinedMember.getId())).thenReturn(Optional.of(joinedMember));
+
+    listener.onTripJoinCompleted(new TripJoinCompletedEvent(TRIP_ID, joinedMember.getId()));
+
+    verify(notificationHistoryRepository).saveAll(anyList());
+    assertThat(TransactionSynchronizationManager.getSynchronizations()).isEmpty();
   }
 
   @Test
@@ -137,7 +164,7 @@ class NotificationEventListenerTest {
     listener.onTripJoinCompleted(new TripJoinCompletedEvent(TRIP_ID, joinedMember.getId()));
 
     verify(notificationHistoryRepository, never()).saveAll(any());
-    verify(fcmService, never()).sendMulticast(any(), any(), any(), any(), any());
+    assertThat(TransactionSynchronizationManager.getSynchronizations()).isEmpty();
   }
 
   @Test

@@ -1,0 +1,46 @@
+# 부하 테스트 전용 인프라 — 실행 방법은 README.md
+# 로컬 개발용 docker-compose.yml(MySQL 3306)과 겹치지 않게 포트를 따로 쓴다.
+name: tripfit-loadtest
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: loadtest
+      MYSQL_DATABASE: tripfit_loadtest
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ploadtest"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6380:6379"
+
+  # 카카오 user/me와 Google 토큰 엔드포인트를 흉내 낸다. 지연은 wiremock/mappings의 fixedDelayMilliseconds.
+  # 지연 응답이 WireMock 스레드를 붙잡지 않도록 비동기 응답을 켠다.
+  wiremock:
+    image: wiremock/wiremock:3.9.1
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./wiremock:/home/wiremock
+    command:
+      - --global-response-templating
+      - --async-response-enabled=true
+      - --async-response-threads=200
+      - --container-threads=500
+      - --disable-request-logging
+
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["k6"]
+    volumes:
+      - ./:/loadtest
+    environment:
+      BASE_URL: http://host.docker.internal:18080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

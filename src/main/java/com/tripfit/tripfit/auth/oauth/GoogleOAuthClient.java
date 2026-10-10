@@ -22,8 +22,6 @@ public class GoogleOAuthClient {
 
   private static final Logger log = LoggerFactory.getLogger(GoogleOAuthClient.class);
 
-  private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
-
   private static final String REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 
   private final RestClient restClient;
@@ -50,7 +48,7 @@ public class GoogleOAuthClient {
     JsonNode response =
         restClient
             .post()
-            .uri(TOKEN_URL)
+            .uri(oAuthProperties.getGoogleTokenUrl())
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .body(form)
             .retrieve()

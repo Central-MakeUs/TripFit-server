@@ -17,7 +17,7 @@ com.tripfit.tripfit
 ├── TripfitApplication.java
 ├── common/
 │   ├── api/                        # SuccessResponse, ErrorResponse, FieldError
-│   ├── config/                     # JpaConfig, SchedulingConfig
+│   ├── config/                     # JpaConfig, SchedulingConfig, ResilienceConfig
 │   ├── domain/                     # BaseTimeEntity, SoftDeleteEntity
 │   ├── exception/                  # ErrorCode, CommonErrorCode, TripFitException, GlobalExceptionHandler
 │   ├── logging/                    # PiiMasker, SocialIntegrationLog, SocialLogContext, SocialIntegrationAction
@@ -25,11 +25,12 @@ com.tripfit.tripfit
 ├── auth/
 │   ├── controller/                 # AuthController
 │   ├── dto/                        # LoginRequest, LoginResponse, ...
-│   ├── service/                    # AuthService, RefreshTokenService, AuthLoginPersistenceService 등
+│   ├── service/                    # AuthService, RefreshTokenService, AuthLoginPersistenceService, LoginCredentialExchangeDispatcher 등
 │   ├── domain/                     # RefreshToken
 │   ├── repository/                 # RefreshTokenRepository
 │   ├── jwt/                        # JwtService, Filter, AuthorizedUser, JwtProperties
-│   ├── oauth/                      # SocialTokenVerifier*, OAuthProperties
+│   ├── config/                     # AuthCookieProperties, OpenApiConfig, SocialCredentialExecutorConfig
+│   ├── oauth/                      # SocialTokenVerifier*, KakaoUserInfoClient, OAuthProperties
 │   ├── security/                   # SecurityConfig, AppConfig
 │   └── exception/                  # AuthErrorCode
 ├── user/
@@ -53,8 +54,9 @@ com.tripfit.tripfit
 │   └── schedule/                   # feature: 여행방 내 스케줄 합산/스냅샷
 │       └── dto|domain|service|repository
 └── notification/
-    ├── controller|dto|domain|exception|config
-    ├── service|repository|event    # NotificationEventListener 등
+    ├── controller|dto|domain|exception
+    ├── service|repository|event    # NotificationEventListener, NotificationPushDispatcher, FcmService 등
+    ├── config/                     # FirebaseConfig, NotificationExecutorConfig
     └── scheduler/                  # ScheduleReminderBatch 등
 ```
 
@@ -63,10 +65,10 @@ com.tripfit.tripfit
 | 도메인 | 패키지 경로 | 주요 포함 서브패키지 | 설명 |
 |---|---|---|---|
 | **common** | `com.tripfit.tripfit.common` | `api`, `config`, `domain`, `exception`, `logging`, `security` | 전 도메인 공유 envelope, 설정, 베이스 엔티티, 예외 처리, 로깅 마스킹, 암복호화 |
-| **auth** | `com.tripfit.tripfit.auth` | `controller`, `dto`, `service`, `domain`, `repository`, `jwt`, `oauth`, `security`, `exception` | 소셜 로그인 검증(Kakao/Google/Apple), JWT 발급/검증, Spring Security 설정 |
+| **auth** | `com.tripfit.tripfit.auth` | `controller`, `dto`, `service`, `domain`, `repository`, `jwt`, `oauth`, `security`, `config`, `exception` | 소셜 로그인 검증(Kakao/Google/Apple), JWT 발급/검증, Spring Security 설정 |
 | **user** | `com.tripfit.tripfit.user` | 기본 레이어 + `googlecalendar/`, `schedule/` | 사용자 프로필, 온보딩, 구글 캘린더 연동, 정기/개별 일정 관리 |
 | **trip** | `com.tripfit.tripfit.trip` | 기본 레이어 + `membership/`, `recommendation/`, `schedule/`, `event/` | 여행방 생성/참여, 일정 조율, 추천 알고리즘, 스냅샷 동결, 만료 스케줄러 |
-| **notification** | `com.tripfit.tripfit.notification` | `controller`, `dto`, `domain`, `service`, `repository`, `event`, `scheduler`, `exception`, `config` | FCM 디바이스 토큰 관리, 비동기 트랜잭션 알림 이벤트 리스너, 리마인드 배치 |
+| **notification** | `com.tripfit.tripfit.notification` | `controller`, `dto`, `domain`, `service`, `repository`, `event`, `scheduler`, `exception`, `config` | FCM 디바이스 토큰 관리, 커밋 직전 알림 이력 저장·커밋 후 전용 실행기로 FCM 발송, 리마인드 배치 |
 
 ## 패키지 배치 원칙
 

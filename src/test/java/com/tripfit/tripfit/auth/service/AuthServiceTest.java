@@ -57,10 +57,8 @@ class AuthServiceTest {
   private SocialTokenVerifier socialTokenVerifier;
 
   @Mock
-  private AppleCredentialService appleCredentialService;
+  private LoginCredentialExchangeDispatcher loginCredentialExchangeDispatcher;
 
-  @Mock
-  private GoogleLoginCredentialService googleLoginCredentialService;
 
   @InjectMocks
   private AuthService authService;
@@ -143,7 +141,10 @@ class AuthServiceTest {
         .extracting(exception -> ((TripFitException) exception).getErrorCode())
         .isEqualTo(AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED);
 
-    verifyNoInteractions(verifierRegistry, authLoginPersistenceService, appleCredentialService);
+    verifyNoInteractions(
+        verifierRegistry,
+        authLoginPersistenceService,
+        loginCredentialExchangeDispatcher);
   }
 
   @Test
@@ -173,15 +174,12 @@ class AuthServiceTest {
 
     authService.login(SocialProvider.APPLE, "id-token", "auth-code", null);
 
-    verify(appleCredentialService)
-        .saveIfAuthorizationCodePresent(
-            eq(user),
-            eq("auth-code"),
-            eq("com.tripfit.service"));
+    verify(loginCredentialExchangeDispatcher)
+        .submitApple(eq(USER_ID), eq("auth-code"), eq("com.tripfit.service"));
   }
 
   @Test
-  void login_whenNotApple_neverCallsAppleCredentialService() {
+  void login_whenNotApple_neverSubmitsAppleExchange() {
     User user = persistedUser(oAuthProfile);
     when(verifierRegistry.getVerifier(SocialProvider.GOOGLE)).thenReturn(socialTokenVerifier);
     when(socialTokenVerifier.verify("id-token")).thenReturn(oAuthProfile);
@@ -191,8 +189,7 @@ class AuthServiceTest {
 
     authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
-    verify(appleCredentialService, never())
-        .saveIfAuthorizationCodePresent(any(), any(), any());
+    verify(loginCredentialExchangeDispatcher, never()).submitApple(any(), any(), any());
   }
 
   @Test
@@ -205,7 +202,7 @@ class AuthServiceTest {
     verifyNoInteractions(
         verifierRegistry,
         authLoginPersistenceService,
-        googleLoginCredentialService);
+        loginCredentialExchangeDispatcher);
   }
 
   @Test
@@ -227,8 +224,8 @@ class AuthServiceTest {
 
     authService.login(SocialProvider.GOOGLE, "id-token", "google-auth-code", null);
 
-    verify(googleLoginCredentialService)
-        .saveIfAuthorizationCodePresent(eq(user), eq("google-auth-code"), isNull());
+    verify(loginCredentialExchangeDispatcher)
+        .submitGoogle(eq(USER_ID), eq("google-auth-code"), isNull());
   }
 
   @Test
@@ -246,9 +243,9 @@ class AuthServiceTest {
         "google-auth-code",
         "https://tripfit.online/auth/google/callback");
 
-    verify(googleLoginCredentialService)
-        .saveIfAuthorizationCodePresent(
-            eq(user),
+    verify(loginCredentialExchangeDispatcher)
+        .submitGoogle(
+            eq(USER_ID),
             eq("google-auth-code"),
             eq("https://tripfit.online/auth/google/callback"));
   }

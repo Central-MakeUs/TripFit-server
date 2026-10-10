@@ -1,0 +1,66 @@
+# 부하 테스트 전용 프로필 — ./gradlew bootTestRun 으로만 쓴다 (loadtest/README.md)
+# DB·Redis·WireMock은 loadtest/docker-compose.yml이 띄운다. 운영과 같게 Hikari 10개, Tomcat 200개 기본값을 그대로 둔다.
+server:
+  # 로컬 개발 서버(8080)와 함께 띄울 수 있게 포트를 따로 쓴다
+  port: 18080
+
+spring:
+  main:
+    banner-mode: off
+  datasource:
+    url: jdbc:mysql://localhost:3307/tripfit_loadtest?createDatabaseIfNotExist=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: loadtest
+  jpa:
+    hibernate:
+      ddl-auto: create
+  data:
+    redis:
+      host: localhost
+      port: 6380
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+
+logging:
+  level:
+    root: WARN
+    com.tripfit.tripfit.loadtest: INFO
+    # ddl-auto create가 첫 기동 때 없는 테이블을 지우려다 남기는 경고를 숨긴다
+    org.hibernate.tool.schema: ERROR
+
+tripfit:
+  jwt:
+    secret: loadtest-jwt-secret-key-at-least-32-characters
+    access-expiration-seconds: 86400
+    refresh-expiration-days: 30
+  auth:
+    cookie:
+      domain: localhost
+      secure: false
+  oauth:
+    google-client-id: loadtest-google-client-id
+    google-client-secret: loadtest-google-client-secret
+    google-calendar-client-id: loadtest-google-calendar-client-id
+    google-calendar-client-secret: loadtest-google-calendar-client-secret
+    apple-bundle-id: loadtest-apple-bundle-id
+    apple-team-id: loadtest-apple-team-id
+    apple-key-id: loadtest-apple-key-id
+    apple-private-key: loadtest-apple-private-key
+    kakao-admin-key: loadtest-kakao-admin-key
+    kakao-user-me-url: http://localhost:8089/kakao/v2/user/me
+    google-token-url: http://localhost:8089/google/token
+  security:
+    token-aes-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+loadtest:
+  fcm:
+    # FCM 대역의 응답 지연. S1(FCM 정지)은 LOADTEST_FCM_DELAY_MS=120000으로 띄운다
+    delay-ms: ${LOADTEST_FCM_DELAY_MS:100}
+  seed:
+    trips: 20
+    members-per-trip: 9
+    output: loadtest/data/seed.json

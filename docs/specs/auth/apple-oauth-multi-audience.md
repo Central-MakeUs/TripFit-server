@@ -113,4 +113,5 @@ apple_credential
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-11 | `#134` — Apple 인가 코드 교환이 로그인 응답 뒤 전용 실행기에서 실행된다. 매칭된 `client_id`를 교환·저장·revoke에 쓰는 규칙은 그대로이고, 교환 중 탈퇴한 사용자에게는 저장하지 않고 즉시 revoke한다. 상세: [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md) |
 | 2026-07-31 | 초안 — `#64` 재오픈 amend, `auth-social-login.md`의 `[미정]`(Apple aud) 확정 반영 |
