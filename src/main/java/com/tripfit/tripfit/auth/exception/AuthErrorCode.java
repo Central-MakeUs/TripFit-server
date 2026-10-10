@@ -21,7 +21,8 @@ public enum AuthErrorCode implements ErrorCode {
   @Schema(description = "소셜 로그인 토큰이 유효하지 않습니다. (만료 외 서명, audience, 형식 오류 등)")
   AUTH_SOCIAL_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_SOCIAL_TOKEN_INVALID", "유효하지 않은 소셜 로그인 토큰입니다."),
 
-  @Schema(description = "소셜 제공자 API에 접근할 수 없습니다. (네트워크 문제, 타임아웃, 제공자 측 장애 등)")
+  @Schema(
+      description = "소셜 제공자 API에 접근할 수 없습니다. (네트워크 문제, 타임아웃, 제공자 측 장애, 제공자 응답이 느려 처리 중인 로그인이 많을 때 등)")
   AUTH_SOCIAL_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_SOCIAL_PROVIDER_UNAVAILABLE", "소셜 로그인 서버에 일시적으로 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."),
 
   @Schema(description = "리프레시 토큰이 없거나 만료되었거나 이미 폐기되었습니다.")

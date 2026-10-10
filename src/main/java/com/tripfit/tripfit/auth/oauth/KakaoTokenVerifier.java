@@ -6,16 +6,10 @@ import com.tripfit.tripfit.common.logging.SocialIntegrationAction;
 import com.tripfit.tripfit.common.logging.SocialIntegrationLog;
 import com.tripfit.tripfit.common.logging.SocialLogContext;
 import com.tripfit.tripfit.user.domain.SocialProvider;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.resilience.InvocationRejectedException;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.JsonNode;
 
@@ -24,13 +18,10 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
 
   private static final Logger log = LoggerFactory.getLogger(KakaoTokenVerifier.class);
 
-  private final RestClient restClient;
+  private final KakaoUserInfoClient kakaoUserInfoClient;
 
-  private final OAuthProperties oAuthProperties;
-
-  public KakaoTokenVerifier(RestClient restClient, OAuthProperties oAuthProperties) {
-    this.restClient = restClient;
-    this.oAuthProperties = oAuthProperties;
+  public KakaoTokenVerifier(KakaoUserInfoClient kakaoUserInfoClient) {
+    this.kakaoUserInfoClient = kakaoUserInfoClient;
   }
 
   @Override
@@ -42,31 +33,7 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
   public OAuthProfile verify(String token) {
     try {
 
-      JsonNode response =
-          restClient
-              .get()
-              .uri(oAuthProperties.getKakaoUserMeUrl())
-              .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-              .retrieve()
-              .onStatus(
-                  HttpStatusCode::isError,
-                  (request, clientResponse) -> {
-
-                    String body = readBodySafely(clientResponse);
-                    SocialIntegrationLog.warn(
-                        log,
-                        SocialLogContext.of(
-                            SocialProvider.KAKAO,
-                            SocialIntegrationAction.LOGIN_USERINFO_FETCH)
-                            .withHttpStatus(clientResponse.getStatusCode().value())
-                            .withProviderError(null, body),
-                        "Kakao user/me verification failed");
-                    throw new TripFitException(
-                        SocialErrorMessages.containsExpired(body)
-                            ? AuthErrorCode.AUTH_SOCIAL_TOKEN_EXPIRED
-                            : AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
-                  })
-              .body(JsonNode.class);
+      JsonNode response = kakaoUserInfoClient.fetchUserMe(token);
 
       if (response == null || !response.has("id")) {
         throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
@@ -95,6 +62,14 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
     } catch (TripFitException exception) {
 
       throw exception;
+    } catch (InvocationRejectedException exception) {
+      // 카카오 동시 호출이 상한에 걸린 경우다. 카카오가 느려 호출이 쌓인 상황이라 연결 실패와 같은 503으로 안내한다.
+      SocialIntegrationLog.warn(
+          log,
+          SocialLogContext.of(SocialProvider.KAKAO, SocialIntegrationAction.LOGIN_USERINFO_FETCH),
+          "Kakao user/me concurrency limit reached",
+          exception);
+      throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_PROVIDER_UNAVAILABLE);
     } catch (RestClientException exception) {
 
       SocialIntegrationLog.warn(
@@ -113,13 +88,4 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
       throw new TripFitException(AuthErrorCode.AUTH_SOCIAL_TOKEN_INVALID);
     }
   }
-
-  private String readBodySafely(ClientHttpResponse clientResponse) {
-    try {
-      return StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
-    } catch (IOException exception) {
-      return "<unreadable>";
-    }
-  }
-
 }

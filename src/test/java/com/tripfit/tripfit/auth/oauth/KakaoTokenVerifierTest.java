@@ -23,7 +23,7 @@ class KakaoTokenVerifierTest {
 
     RestClient.Builder builder = RestClient.builder();
     serverHolder[0] = MockRestServiceServer.bindTo(builder).build();
-    return new KakaoTokenVerifier(builder.build(), new OAuthProperties());
+    return new KakaoTokenVerifier(new KakaoUserInfoClient(builder.build(), new OAuthProperties()));
   }
 
   @Test
