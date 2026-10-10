@@ -23,13 +23,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+// 여행방·리마인드 이벤트를 받아 알림을 만든다. 알림 이력은 이벤트를 발행한 트랜잭션이 커밋되기 직전에 같은 트랜잭션으로 저장하고,
+// FCM 발송은 커밋된 뒤 전용 작업자에게 넘긴다. 그래서 원래 작업과 알림 이력은 함께 저장되거나 함께 취소되고,
+// FCM이 멈춰도 원래 트랜잭션이나 DB 커넥션이 그 응답을 기다리지 않는다.
 @Component
 public class NotificationEventListener {
 
@@ -43,7 +45,7 @@ public class NotificationEventListener {
 
   private final UserDeviceTokenRepository userDeviceTokenRepository;
 
-  private final FcmService fcmService;
+  private final NotificationPushDispatcher notificationPushDispatcher;
 
   public NotificationEventListener(
       TripRepository tripRepository,
@@ -51,18 +53,16 @@ public class NotificationEventListener {
       UserRepository userRepository,
       NotificationHistoryRepository notificationHistoryRepository,
       UserDeviceTokenRepository userDeviceTokenRepository,
-      FcmService fcmService) {
+      NotificationPushDispatcher notificationPushDispatcher) {
     this.tripRepository = tripRepository;
     this.tripMemberRepository = tripMemberRepository;
     this.userRepository = userRepository;
     this.notificationHistoryRepository = notificationHistoryRepository;
     this.userDeviceTokenRepository = userDeviceTokenRepository;
-    this.fcmService = fcmService;
+    this.notificationPushDispatcher = notificationPushDispatcher;
   }
 
-  @Async
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
   public void onTripJoinCompleted(TripJoinCompletedEvent event) {
     Trip trip = requireTrip(event.tripId());
     User joinedMember =
@@ -81,9 +81,7 @@ public class NotificationEventListener {
         LandingType.TRAVEL_ROOM_DETAIL);
   }
 
-  @Async
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
   public void onAllMembersSubmitted(AllMembersSubmittedEvent event) {
     Trip trip = requireTrip(event.tripId());
     dispatch(
@@ -95,9 +93,7 @@ public class NotificationEventListener {
         LandingType.TRAVEL_ROOM_DETAIL);
   }
 
-  @Async
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
   public void onTripInfoChanged(TripInfoChangedEvent event) {
     Trip trip = requireTrip(event.tripId());
     dispatch(
@@ -109,9 +105,7 @@ public class NotificationEventListener {
         LandingType.TRAVEL_ROOM_DETAIL);
   }
 
-  @Async
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
   public void onTripConfirmed(TripConfirmedEvent event) {
     Trip trip = requireTrip(event.tripId());
     dispatch(
@@ -123,9 +117,7 @@ public class NotificationEventListener {
         LandingType.TRAVEL_ROOM_DETAIL);
   }
 
-  @Async
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
   public void onTripConfirmCanceled(TripConfirmCanceledEvent event) {
     Trip trip = requireTrip(event.tripId());
     dispatch(
@@ -137,9 +129,7 @@ public class NotificationEventListener {
         LandingType.TRAVEL_ROOM_DETAIL);
   }
 
-  @Async
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
   public void onScheduleReminder(ScheduleReminderEvent event) {
     List<User> recipients = userRepository.findAllById(event.userIds());
     String body = event.month() + "월 일정을 업데이트해보세요. 더 정확한 여행 일정을 추천받을 수 있어요.";
@@ -177,6 +167,12 @@ public class NotificationEventListener {
     if (eligible.isEmpty()) {
       return;
     }
+    // 1. 이 트랜잭션에 쌓인 변경(여행방 UPDATE 등)을 먼저 DB로 보낸다. 그대로 두면 커밋 시점의 flush가 알림 이력
+    // INSERT를 UPDATE보다 먼저 보내는데, INSERT는 외래키 때문에 여행방 행에 공유 잠금을 걸어서 같은 방에 동시에
+    // 들어온 두 요청이 서로의 UPDATE를 기다리는 데드락이 된다. Repository를 거쳐야 버전 충돌이 Spring 예외로 바뀐다.
+    notificationHistoryRepository.flush();
+
+    // 2. 알림 이력을 저장하고 수신 기기 토큰을 모은다.
     LocalDateTime sentAt = LocalDateTime.now();
     List<NotificationHistory> histories =
         eligible.stream()
@@ -195,7 +191,20 @@ public class NotificationEventListener {
         .findUserIdAndTokenByUserIdIn(userIds)) {
       historyIdByToken.put(view.getToken(), historyIdByUserId.get(view.getUserId()));
     }
+    if (historyIdByToken.isEmpty()) {
+      return;
+    }
+
+    // 3. 커밋된 뒤에만 발송한다. 롤백되면 이 콜백은 실행되지 않는다.
     UUID tripId = trip != null ? trip.getId() : null;
-    fcmService.sendMulticast(historyIdByToken, title, body, landingType, tripId);
+    NotificationPush push =
+        new NotificationPush(type, historyIdByToken, title, body, landingType, tripId);
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            notificationPushDispatcher.submit(push);
+          }
+        });
   }
 }

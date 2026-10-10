@@ -2,6 +2,7 @@ package com.tripfit.tripfit.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 
@@ -18,6 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -129,5 +131,12 @@ class ArchitectureTest {
                             JavaClass.Predicates.assignableTo(
                                 SocialProvider.class))));
     rule.check(classes);
+  }
+
+  // @EnableAsync가 없으므로 @Async를 붙여도 호출한 스레드에서 그대로 실행된다. 비동기 작업은 실행기 빈에 직접 제출한다.
+  @Test
+  void asyncAnnotationIsNotUsed() {
+    methods().should().notBeAnnotatedWith(Async.class).check(classes);
+    noClasses().should().beAnnotatedWith(Async.class).check(classes);
   }
 }
