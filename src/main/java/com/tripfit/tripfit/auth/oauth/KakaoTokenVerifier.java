@@ -24,12 +24,13 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
 
   private static final Logger log = LoggerFactory.getLogger(KakaoTokenVerifier.class);
 
-  private static final String KAKAO_USER_ME_URL = "https://kapi.kakao.com/v2/user/me";
-
   private final RestClient restClient;
 
-  public KakaoTokenVerifier(RestClient restClient) {
+  private final OAuthProperties oAuthProperties;
+
+  public KakaoTokenVerifier(RestClient restClient, OAuthProperties oAuthProperties) {
     this.restClient = restClient;
+    this.oAuthProperties = oAuthProperties;
   }
 
   @Override
@@ -44,7 +45,7 @@ public class KakaoTokenVerifier implements SocialTokenVerifier {
       JsonNode response =
           restClient
               .get()
-              .uri(KAKAO_USER_ME_URL)
+              .uri(oAuthProperties.getKakaoUserMeUrl())
               .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
               .retrieve()
               .onStatus(
