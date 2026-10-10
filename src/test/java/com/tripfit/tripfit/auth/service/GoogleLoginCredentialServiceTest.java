@@ -38,38 +38,50 @@ class GoogleLoginCredentialServiceTest {
 
   @Test
   void saveIfAuthorizationCodePresent_whenCodeBlank_doesNothing() {
-    User user = user();
-
-    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "  ", null);
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(USER_ID, "  ", null);
 
     verify(googleOAuthClient, never()).exchangeAuthorizationCodeForRefreshToken(any(), any());
-    verify(persistenceService, never()).save(any(), any());
+    verify(persistenceService, never()).saveForActiveUser(any(), any());
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenRefreshTokenPresent_savesEncryptedCredential() {
-    User user = user();
     when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", null))
         .thenReturn("plain-refresh");
     when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
+    when(persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh")).thenReturn(true);
 
-    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "auth-code", null);
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(USER_ID, "auth-code", null);
 
-    verify(persistenceService).save(user, "encrypted-refresh");
+    verify(persistenceService).saveForActiveUser(USER_ID, "encrypted-refresh");
+    verify(googleOAuthClient, never()).revokeRefreshToken(any());
+  }
+
+  // 교환이 끝나기 전에 탈퇴한 사용자에게는 저장하지 않고, 받은 토큰으로 Google 연결을 바로 끊는다.
+  @Test
+  void saveIfAuthorizationCodePresent_whenUserWithdrewDuringExchange_revokesIssuedToken() {
+    when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", null))
+        .thenReturn("plain-refresh");
+    when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
+    when(persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh")).thenReturn(false);
+
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(USER_ID, "auth-code", null);
+
+    verify(googleOAuthClient).revokeRefreshToken("plain-refresh");
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenRedirectUriPresent_passesItToClient() {
-    User user = user();
     when(
         googleOAuthClient.exchangeAuthorizationCodeForRefreshToken(
             "auth-code",
             "https://tripfit.online/auth/google/callback"))
         .thenReturn("plain-refresh");
     when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
+    when(persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh")).thenReturn(true);
 
     googleLoginCredentialService.saveIfAuthorizationCodePresent(
-        user,
+        USER_ID,
         "auth-code",
         "https://tripfit.online/auth/google/callback");
 
@@ -81,26 +93,25 @@ class GoogleLoginCredentialServiceTest {
 
   @Test
   void saveIfAuthorizationCodePresent_whenRefreshTokenAbsent_skipsSave() {
-    User user = user();
     when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", null))
         .thenReturn(null);
 
-    googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "auth-code", null);
+    googleLoginCredentialService.saveIfAuthorizationCodePresent(USER_ID, "auth-code", null);
 
-    verify(persistenceService, never()).save(any(), any());
+    verify(persistenceService, never()).saveForActiveUser(any(), any());
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenExchangeFails_doesNotThrowAndSkipsSave() {
-    User user = user();
     when(googleOAuthClient.exchangeAuthorizationCodeForRefreshToken("bad-code", null))
         .thenThrow(new IllegalStateException("Google token endpoint error"));
 
     assertThatCode(
-        () -> googleLoginCredentialService.saveIfAuthorizationCodePresent(user, "bad-code", null))
+        () -> googleLoginCredentialService
+            .saveIfAuthorizationCodePresent(USER_ID, "bad-code", null))
         .doesNotThrowAnyException();
 
-    verify(persistenceService, never()).save(any(), any());
+    verify(persistenceService, never()).saveForActiveUser(any(), any());
   }
 
   @Test

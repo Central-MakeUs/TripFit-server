@@ -38,40 +38,53 @@ class AppleCredentialServiceTest {
 
   @Test
   void saveIfAuthorizationCodePresent_whenCodeBlank_doesNothing() {
-    User user = user();
-
-    appleCredentialService.saveIfAuthorizationCodePresent(user, "  ", "com.tripfit.app");
+    appleCredentialService.saveIfAuthorizationCodePresent(USER_ID, "  ", "com.tripfit.app");
 
     verify(appleOAuthClient, never()).exchangeAuthorizationCodeForRefreshToken(any(), any());
-    verify(persistenceService, never()).save(any(), any(), any());
+    verify(persistenceService, never()).saveForActiveUser(any(), any(), any());
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenExchangeSucceeds_savesEncryptedCredential() {
-    User user = user();
     when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", "com.tripfit.app"))
         .thenReturn("plain-refresh");
     when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
+    when(persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh", "com.tripfit.app"))
+        .thenReturn(true);
 
-    appleCredentialService.saveIfAuthorizationCodePresent(user, "auth-code", "com.tripfit.app");
+    appleCredentialService.saveIfAuthorizationCodePresent(USER_ID, "auth-code", "com.tripfit.app");
 
-    verify(persistenceService).save(user, "encrypted-refresh", "com.tripfit.app");
+    verify(persistenceService).saveForActiveUser(USER_ID, "encrypted-refresh", "com.tripfit.app");
+    verify(appleOAuthClient, never()).revokeRefreshToken(any(), any());
+  }
+
+  // 교환이 끝나기 전에 탈퇴한 사용자에게는 저장하지 않고, 받은 토큰으로 Apple 연결을 바로 끊는다.
+  @Test
+  void saveIfAuthorizationCodePresent_whenUserWithdrewDuringExchange_revokesIssuedToken() {
+    when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("auth-code", "com.tripfit.app"))
+        .thenReturn("plain-refresh");
+    when(tokenCrypto.encrypt("plain-refresh")).thenReturn("encrypted-refresh");
+    when(persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh", "com.tripfit.app"))
+        .thenReturn(false);
+
+    appleCredentialService.saveIfAuthorizationCodePresent(USER_ID, "auth-code", "com.tripfit.app");
+
+    verify(appleOAuthClient).revokeRefreshToken("plain-refresh", "com.tripfit.app");
   }
 
   @Test
   void saveIfAuthorizationCodePresent_whenExchangeFails_doesNotThrowAndSkipsSave() {
-    User user = user();
     when(appleOAuthClient.exchangeAuthorizationCodeForRefreshToken("bad-code", "com.tripfit.app"))
         .thenThrow(new IllegalStateException("Apple token endpoint error"));
 
     assertThatCode(
         () -> appleCredentialService.saveIfAuthorizationCodePresent(
-            user,
+            USER_ID,
             "bad-code",
             "com.tripfit.app"))
         .doesNotThrowAnyException();
 
-    verify(persistenceService, never()).save(any(), any(), any());
+    verify(persistenceService, never()).saveForActiveUser(any(), any(), any());
   }
 
   @Test
