@@ -63,7 +63,7 @@ H1 바로 아래 **결정 한 줄**을 먼저 둔다(2026-09-03 추가) — 결�
 | [`006-profile-image-url-storage.md`](006-profile-image-url-storage.md) | 프로필 이미지 URL 저장 |
 | [`007-user-profile-onboarding.md`](007-user-profile-onboarding.md) | 온보딩·이름 |
 | [`008-trip-authorization-guard.md`](008-trip-authorization-guard.md) | `@TripMemberOnly` / `@TripOwnerOnly` |
-| [`009-observability-logging.md`](009-observability-logging.md) | 로깅·모니터링 인프라 (Loki + Grafana) |
+| [`009-observability-logging.md`](009-observability-logging.md) | 로깅·모니터링 인프라 (Loki + Grafana). 수치 수집·임계점 감시·AI 원인 리포트는 후속 `#126`(EC2 E) — [`add-prometheus.md`](../specs/cross-cutting/add-prometheus.md) |
 | [`010-redis-infra.md`](010-redis-infra.md) | Redis 인프라 (EC2 D) — 배치 결정 유효, **용도는 refresh token·공휴일 캐시로 변경**(2026-09-15 amend) |
 | [`011-holiday-data-source.md`](011-holiday-data-source.md) | 공휴일 데이터 소스 (공공데이터포털 특일정보 API) |
 

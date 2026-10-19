@@ -13,7 +13,7 @@
 | **주요 기능**        | 여행 일정 조율 및 최적의 날짜 추천                                                                                                                                                                   |
 | **Swagger UI**       | [Swagger 문서 바로가기](https://api.tripfit.online/swagger-ui.html)                                                                                                                          |
 | **OpenAPI 스냅샷**   | [`docs/api/openapi.json`](docs/api/openapi.json)                                                                                                                                       |
-| **모니터링**         | [Grafana 대시보드](https://grafana.tripfit.online)                                                                                                                                         |
+| **모니터링**         | [Grafana 대시보드](https://grafana.tripfit.online) — 로그(Loki)·수치(Prometheus)를 한 화면에서 조회. Prometheus는 외부 비공개라 Grafana **Explore**에서 봅니다                                                    |
 | **프론트엔드 (Web)** | [https://tripfit.online](https://tripfit.online)                                                                                                                                       |
 | **App Store (iOS)**  | [ App Store 링크](https://apps.apple.com/kr/app/tripfit-%ED%95%A8%EA%BB%98-%EA%B0%80%EB%8A%94-%EC%97%AC%ED%96%89-%EC%89%AC%EC%9A%B4-%EC%9D%BC%EC%A0%95-%EC%A1%B0%EC%9C%A8/id6791188870) |
 | **Google Play**      | [▶︎ Google Play 링크](https://play.google.com/store/apps/details?id=com.tripfit.app&pcampaignid=web_share)                                                                               |
@@ -24,6 +24,7 @@
 - **그룹 일정 조율** — 참여자별 오전/오후/저녁 일정을 종합하여 그룹 전체의 가능한 시간대를 교차 검증하고 시각화 데이터를 제공합니다.
 - **소셜 로그인 3종 통합** — 카카오·구글·애플 로그인과 Provider별 토큰 검증 방식을 통합하고, 회원 탈퇴 시 Revoke 정책을 일관되게 처리합니다.
 - **알림 스케줄러** — FCM(Firebase Cloud Messaging) 연동 및 배치 스케줄러를 통해 일정 리마인더를 발송합니다.
+- **장애 알림 AI 원인 리포트** (`#126`, 배포 준비 중) — 앱·DB의 CPU·메모리·DB 커넥션 대기가 임계점을 넘으면, 수치·로그·관련 코드를 모아 개인정보를 가린 뒤 Gemini로 원인을 분석해 Discord로 보냅니다. 상세: [`incident-ai-report.md`](docs/specs/cross-cutting/incident-ai-report.md)
 
 ## 기술 스택
 
@@ -31,7 +32,7 @@
 - **Database:** MySQL 8.0 · Flyway · Testcontainers
 - **Infrastructure:** Docker · GHCR · AWS EC2 · Nginx
 - **Testing / Quality:** JUnit 5 · ArchUnit · oasdiff
-- **Observability:** Prometheus · Grafana · Loki
+- **Observability:** Prometheus · Grafana · Loki · node_exporter · Gemini API (AI 원인 리포트)
 - **AI Engineering:** Claude Code · Skills · Hooks · Subagents
 
 ## 아키텍처

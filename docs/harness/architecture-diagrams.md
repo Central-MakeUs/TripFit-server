@@ -12,7 +12,9 @@
 
 ### 1. 배포 아키텍처 (Deployment Architecture)
 
-> **"실제 서비스되는 인프라 구조입니다. GitHub Actions 기반의 CI/CD를 통해 Vercel(프론트엔드)과 AWS EC2(백엔드)로 계약 검증을 통과하여 배포되며, Prometheus/Grafana로 모니터링됩니다."**
+> **"실제 서비스되는 인프라 구조입니다. GitHub Actions 기반의 CI/CD를 통해 Vercel(프론트엔드)과 AWS EC2(백엔드)로 계약 검증을 통과하여 배포됩니다. 로그는 Loki, 수치는 Prometheus로 모으고, Grafana가 임계점을 넘었다고 판단하면 AI 원인 리포터가 원인을 분석해 Discord로 알립니다."**
+>
+> 2026-10-20 갱신 — 그 전 판은 Prometheus를 EC2 C에 그렸지만, 실제로 C에는 Loki+Grafana만 있었고 Prometheus는 `#126`에서 EC2 E에 처음 생겼다. `docs/images/architecture.png`는 아직 옛 그림이라 Eraser에서 다시 내보내야 한다.
 
 ```eraser
 typeface clean
@@ -44,11 +46,18 @@ ec2_a [label: "EC2 A (App Server)", icon: aws-ec2, color: orange] {
   spring_boot [label: "Spring Boot", icon: spring, color: green]
 }
 
-// 4. Monitoring (EC2 C)
+// 4. Monitoring (EC2 C) — 로그 + 대시보드 + 임계점 감시
 monitoring [label: "EC2 C (Monitoring)", color: purple] {
-  prometheus [label: "Prometheus", icon: prometheus, color: orange]
+  loki [label: "Loki", icon: grafana, color: orange]
   grafana [label: "Grafana", icon: grafana, color: orange]
 }
+
+// 5. Metrics (EC2 E) — 수치 수집 + AI 원인 리포터 (#126)
+metrics [label: "EC2 E (Metrics)", color: purple] {
+  prometheus [label: "Prometheus", icon: prometheus, color: orange]
+  reporter [label: "AI Incident Reporter", icon: java, color: green]
+}
+gemini [label: "Gemini API", icon: google, color: blue]
 
 // ============================================================
 // Flow
@@ -71,10 +80,17 @@ spring_boot > redis: ":6379"
 spring_boot > mysql: ":3306"
 
 // Monitoring Flow
+ec2_a --> loki: "Logs"
+ec2_b --> loki: "Logs"
 ec2_a --> prometheus: "Metrics"
 ec2_b --> prometheus: "Metrics"
-ec2_d --> prometheus: "Metrics"
+loki > grafana
 prometheus > grafana
+grafana > reporter: "Threshold\nexceeded"
+reporter --> prometheus: "Query"
+reporter --> loki: "Query"
+reporter > gemini: "Masked context"
+reporter > discord: "AI Report"
 ```
 
 ### 2. AI-Native Engineering Workflow (End-to-End Control Loop)
