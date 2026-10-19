@@ -1,0 +1,38 @@
+# EC2 E — 운영 Prometheus 수집 설정(템플릿).
+# Prometheus는 설정 파일 안의 환경 변수를 치환하지 않으므로, docker-compose.yml이 기동할 때
+# ${APP_HOST}·${DB_HOST}를 .env 값으로 바꿔 /tmp/prometheus.yml을 만든 뒤 띄운다.
+# 스펙: docs/specs/cross-cutting/add-prometheus.md
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    env: prod
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # 앱 수치 — EC2 A nginx가 /actuator/prometheus를 EC2 E private IP에만 연다.
+  - job_name: tripfit-app
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["${APP_HOST}:80"]
+
+  # EC2 A 호스트 수치
+  - job_name: node-app
+    static_configs:
+      - targets: ["${APP_HOST}:9100"]
+
+  # EC2 B 호스트 수치 — B에는 MySQL만 있어 호스트 수치가 곧 DB 수치다.
+  - job_name: node-db
+    static_configs:
+      - targets: ["${DB_HOST}:9100"]
+
+  # AI 원인 리포터 생존 감시("리포터 중단" 감시 규칙이 up 값을 본다)
+  - job_name: incident-reporter
+    static_configs:
+      - targets: ["incident-reporter:9095"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

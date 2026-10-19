@@ -1,0 +1,87 @@
+# =============================================================================
+# EC2 E — 수치 수집(Prometheus) + AI 원인 리포터
+# =============================================================================
+# 스펙: docs/specs/cross-cutting/add-prometheus.md · incident-ai-report.md (Issue #126)
+# ① Prometheus가 A·B의 수치를 모으고, C의 Grafana 감시 규칙이 임계점을 넘었다고 판단하면
+# ③ 리포터(/alerts)를 부른다. 리포터는 수치·로그·코드를 모아 Gemini로 분석해 Discord로 보낸다.
+#
+# 배포: .github/workflows/deploy-observability.yml의 deploy-metrics 작업이 GitHub Secrets 값을 환경 변수로 넣어 띄운다.
+# 서버의 .env는 만들거나 고치지 않는다(.claude/rules/deployment.md). 값 목록은 .env.example.
+# 9090·9095는 보안 그룹에서 C만, 앱·node_exporter 수집은 E에서 A·B로 나간다(인터넷 노출 없음).
+# =============================================================================
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: tripfit-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    environment:
+      APP_HOST: ${APP_HOST:?APP_HOST is required}
+      DB_HOST: ${DB_HOST:?DB_HOST is required}
+    volumes:
+      - ./prometheus/prometheus.yml.tmpl:/etc/prometheus/prometheus.yml.tmpl:ro
+      - ./prometheus/rules/tripfit.prod.yml:/etc/prometheus/rules/tripfit.yml:ro
+      - prometheus_data:/prometheus
+    # Prometheus는 설정 파일의 환경 변수를 치환하지 않아, 기동할 때 템플릿을 채운 사본을 만든다.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        sed -e "s/\$${APP_HOST}/$${APP_HOST}/g" -e "s/\$${DB_HOST}/$${DB_HOST}/g"
+        /etc/prometheus/prometheus.yml.tmpl > /tmp/prometheus.yml &&
+        exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus
+        --storage.tsdb.retention.time=15d --storage.tsdb.retention.size=2GB
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  incident-reporter:
+    # CI(deploy-metrics)가 만들어 GHCR에 올린 이미지다. E에서는 빌드하지 않는다.
+    image: ${REPORTER_IMAGE:?REPORTER_IMAGE is required}
+    container_name: tripfit-incident-reporter
+    restart: unless-stopped
+    # 재배포 때 진행 중인 분석(최대 60초)과 전송을 끝내고 내려가도록, 종료 신호 뒤 기다리는 시간을 늘린다(Docker 기본 10초).
+    stop_grace_period: 90s
+    ports:
+      - "9095:9095"
+    environment:
+      ENVIRONMENT_NAME: prod
+      REPORTER_TOKEN: ${REPORTER_TOKEN:?REPORTER_TOKEN is required}
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://${LOKI_HOST:-172.31.38.217}:3100
+      GRAFANA_URL: https://grafana.tripfit.online
+      SOURCE_ROOT: /source/TripFit-server
+      SOURCE_REPO_URL: https://github.com/Central-MakeUs/TripFit-server.git
+      LLM_PROVIDER: gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
+      GEMINI_MODEL: ${GEMINI_MODEL:?GEMINI_MODEL is required}
+      # 기본 모델이 과부하(503)·한도 초과(429)면 이 모델로 한 번 더 묻는다
+      GEMINI_FALLBACK_MODEL: gemini-3.5-flash-lite
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:?DISCORD_WEBHOOK_URL is required}
+    volumes:
+      # 리포터 전용 저장소 사본. 처음 분석할 때 받아 오고, 이후 분석마다 git pull로 main에 맞춘다.
+      - reporter_source:/source
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  prometheus_data:
+  reporter_source:

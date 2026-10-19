@@ -1,0 +1,44 @@
+# 운영 기록 규칙 — Grafana 감시 규칙이 보는 수치 이름과 임계점을 정한다.
+# 수치 이름은 로컬(loadtest/observability/)과 같고, 원천만 다르다.
+# 임계점을 여기 두는 이유: Grafana는 감시 규칙 계산식(data.model)을 환경 변수로 치환하지 않아서,
+# 환경마다 다른 임계점은 환경별 Prometheus 파일에 숫자로 두고 Grafana는 "수치 > 임계점" 비교만 한다.
+# 기준값 SSOT: docs/specs/cross-cutting/add-prometheus.md "감시 규칙" 표
+groups:
+  - name: tripfit-usage
+    rules:
+      - record: tripfit:app_cpu_usage:ratio
+        expr: max by (instance) (process_cpu_usage{job="tripfit-app"})
+
+      # G1의 Eden·Survivor처럼 상한이 없는(-1) 영역은 분모에서 빼고, 전체 사용량을 힙 상한으로 나눈다.
+      - record: tripfit:app_heap_usage:ratio
+        expr: |
+          sum by (instance) (jvm_memory_used_bytes{job="tripfit-app", area="heap"})
+            / sum by (instance) (jvm_memory_max_bytes{job="tripfit-app", area="heap"} > 0)
+
+      - record: tripfit:db_cpu_usage:ratio
+        expr: 1 - avg by (instance) (rate(node_cpu_seconds_total{job="node-db", mode="idle"}[2m]))
+
+      - record: tripfit:db_memory_usage:ratio
+        expr: 1 - node_memory_MemAvailable_bytes{job="node-db"} / node_memory_MemTotal_bytes{job="node-db"}
+
+      - record: tripfit:db_pool_pending
+        expr: sum by (instance) (hikaricp_connections_pending{job="tripfit-app"})
+
+  # 운영 첫 1주 관찰 기간 값이다. 1주 뒤 사용자가 서버별 값을 정하면 이 숫자만 바꾼다.
+  - name: tripfit-thresholds
+    rules:
+      - record: tripfit:threshold
+        expr: vector(0.9)
+        labels: {rule: app_cpu}
+      - record: tripfit:threshold
+        expr: vector(0.9)
+        labels: {rule: app_memory}
+      - record: tripfit:threshold
+        expr: vector(0.9)
+        labels: {rule: db_cpu}
+      - record: tripfit:threshold
+        expr: vector(0.9)
+        labels: {rule: db_memory}
+      - record: tripfit:threshold
+        expr: vector(0)
+        labels: {rule: db_pool}

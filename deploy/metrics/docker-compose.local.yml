@@ -1,0 +1,74 @@
+# =============================================================================
+# 배포 전 로컬 점검 — Prometheus · Loki · Grafana · AI 원인 리포터 (부하 없음)
+# =============================================================================
+# 스펙: docs/specs/cross-cutting/incident-ai-report.md "배포 전 로컬 점검"
+# 운영과 같은 Grafana 감시 규칙 파일·리포터 이미지를 쓰고, 앱·DB 대신 가짜 알림을 리포터에 보내 점검한다.
+#
+#   cp local/.env.example local/.env   # 값 채우기
+#   docker compose -f docker-compose.local.yml --env-file local/.env up -d --build
+#   ./local/send-fake-alert.sh firing   # 가짜 발생 알림
+# =============================================================================
+name: tripfit-metrics-local
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "127.0.0.1:19090:9090"
+    volumes:
+      - ./local/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+      - ./local/tripfit.local.yml:/etc/prometheus/rules/tripfit.yml:ro
+
+  loki:
+    image: grafana/loki:2.9.4
+    ports:
+      - "127.0.0.1:13100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+  grafana:
+    image: grafana/grafana-oss:10.4.2
+    ports:
+      - "127.0.0.1:13000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: local-smoke
+      GF_FEATURE_TOGGLES_ENABLE: alertingSimplifiedRouting
+      PROMETHEUS_URL: http://prometheus:9090
+      REPORTER_URL: http://incident-reporter:9095/alerts
+      REPORTER_TOKEN: ${REPORTER_TOKEN:?REPORTER_TOKEN is required}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:?DISCORD_WEBHOOK_URL is required}
+      ENVIRONMENT_NAME: local
+      WATCH_INTERVAL: 30s
+      WATCH_FOR_USAGE: 1m
+      WATCH_FOR_POOL: 1m
+    volumes:
+      - ../monitoring/grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../monitoring/grafana-provisioning/alerting/tripfit-watch.yaml:/etc/grafana/provisioning/alerting/tripfit-watch.yaml:ro
+      - ./local/grafana-alerting/local-contact-points.yaml:/etc/grafana/provisioning/alerting/local-contact-points.yaml:ro
+
+  incident-reporter:
+    build:
+      context: ../..
+      dockerfile: incident-reporter/Dockerfile
+    image: tripfit-incident-reporter:local
+    stop_grace_period: 90s
+    ports:
+      - "127.0.0.1:19095:9095"
+    environment:
+      ENVIRONMENT_NAME: local
+      REPORTER_TOKEN: ${REPORTER_TOKEN}
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+      GRAFANA_URL: http://localhost:13000
+      SOURCE_ROOT: /source/TripFit-server
+      GIT_PULL_ENABLED: "false"
+      LLM_PROVIDER: gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
+      GEMINI_MODEL: ${GEMINI_MODEL:?GEMINI_MODEL is required}
+      # 기본 모델이 과부하(503)·한도 초과(429)면 이 모델로 한 번 더 묻는다
+      GEMINI_FALLBACK_MODEL: gemini-3.5-flash-lite
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
+      # 개인정보 가리기 점검용 — Gemini로 나가는 프롬프트를 컨테이너 로그에 남긴다(로컬 전용)
+      DEBUG_LOG_PROMPT: "true"
+    volumes:
+      # 로컬 저장소를 읽기 전용으로 붙인다. 점검에서는 git pull을 하지 않는다.
+      - ../..:/source/TripFit-server:ro

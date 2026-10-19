@@ -1,0 +1,12 @@
+# 배포 전 로컬 점검 전용. 운영 Grafana에는 tripfit-discord-alerts가 API로 이미 있어서 이 파일을 올리지 않는다.
+# "리포터 중단" 감시 규칙이 이 이름의 연락처로 Discord에 직접 보낸다.
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: tripfit-discord-alerts
+    receivers:
+      - uid: local-tripfit-discord-alerts
+        type: discord
+        settings:
+          url: $DISCORD_WEBHOOK_URL
+          use_discord_username: false
