@@ -1,0 +1,264 @@
+# =============================================================================
+# Grafana 감시 규칙 — #126 임계점 감시 (로컬·운영 공통 파일)
+# =============================================================================
+# 스펙: docs/specs/cross-cutting/add-prometheus.md "감시 규칙" 표가 SSOT.
+# - 임계점 규칙 5개는 Discord로 직접 보내지 않고 AI 원인 리포터(incident-reporter)를 부른다.
+# - 6번째 "리포터 중단"만 기존 Discord 연락처(tripfit-discord-alerts)로 직접 보낸다.
+#   tripfit-discord-alerts는 운영 Grafana에 API로 만들어 둔 연락처라 이 파일에 정의하지 않는다
+#   (로컬은 deploy/metrics/local/grafana-alerting/에서 같은 이름으로 만든다).
+# - 규칙별 연락처 지정(notification_settings)은 Grafana 10.4에서 기능 스위치
+#   GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting 이 켜져 있어야 동작한다(2026-10-19 10.4.2로 확인).
+#   이 방식은 기존 알림 경로(policy tree)를 덮어쓰지 않아 기존 에러 로그 알림 4개에 영향이 없다.
+# - Grafana는 계산식(data.model)을 환경 변수로 치환하지 않는다. 그래서 임계점은 환경별 Prometheus
+#   기록 규칙(tripfit:threshold)에 두고, 여기서는 "수치 > 임계점" 비교만 한다.
+#   지속 시간·평가 주기·환경 이름은 환경 변수로 받는다.
+# - 앱·DB가 꺼져 수치가 사라지면 지속 시간 뒤 "수치 없음" 발생으로 리포터를 부른다(noDataState: Alerting).
+#   지속 시간이 배포 시간(약 2분)보다 길어서 배포 중에는 울리지 않는다.
+# =============================================================================
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: incident-reporter
+    receivers:
+      - uid: incident-reporter
+        type: webhook
+        disableResolveMessage: false
+        settings:
+          url: $REPORTER_URL
+          httpMethod: POST
+          authorization_scheme: Bearer
+          authorization_credentials: $REPORTER_TOKEN
+          maxAlerts: 10
+
+groups:
+  - orgId: 1
+    name: 임계점 감시
+    folder: TripFit 수치 감시
+    interval: $WATCH_INTERVAL
+    rules:
+      - uid: tripfit-app-cpu
+        title: 앱 CPU
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: A
+              expr: 'tripfit:app_cpu_usage:ratio'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: B
+              expr: 'sum(tripfit:threshold{rule="app_cpu"})'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: '$A > $B'
+        for: $WATCH_FOR_USAGE
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          env: $ENVIRONMENT_NAME
+          resource: cpu
+          target: app
+        annotations:
+          summary: 앱 프로세스 CPU 사용률이 임계점을 넘었습니다.
+        notification_settings:
+          receiver: incident-reporter
+      - uid: tripfit-app-memory
+        title: 앱 메모리
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: A
+              expr: 'tripfit:app_heap_usage:ratio'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: B
+              expr: 'sum(tripfit:threshold{rule="app_memory"})'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: '$A > $B'
+        for: $WATCH_FOR_USAGE
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          env: $ENVIRONMENT_NAME
+          resource: memory
+          target: app
+        annotations:
+          summary: 앱 JVM 힙 사용률이 임계점을 넘었습니다.
+        notification_settings:
+          receiver: incident-reporter
+      - uid: tripfit-db-cpu
+        title: DB CPU
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: A
+              expr: 'tripfit:db_cpu_usage:ratio'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: B
+              expr: 'sum(tripfit:threshold{rule="db_cpu"})'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: '$A > $B'
+        for: $WATCH_FOR_USAGE
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          env: $ENVIRONMENT_NAME
+          resource: cpu
+          target: db
+        annotations:
+          summary: DB 서버 CPU 사용률이 임계점을 넘었습니다.
+        notification_settings:
+          receiver: incident-reporter
+      - uid: tripfit-db-memory
+        title: DB 메모리
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: A
+              expr: 'tripfit:db_memory_usage:ratio'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: B
+              expr: 'sum(tripfit:threshold{rule="db_memory"})'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: '$A > $B'
+        for: $WATCH_FOR_USAGE
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          env: $ENVIRONMENT_NAME
+          resource: memory
+          target: db
+        annotations:
+          summary: DB 서버 메모리 사용률이 임계점을 넘었습니다.
+        notification_settings:
+          receiver: incident-reporter
+      - uid: tripfit-db-pool
+        title: DB 커넥션 풀 대기
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: A
+              expr: 'tripfit:db_pool_pending'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: B
+              expr: 'sum(tripfit:threshold{rule="db_pool"})'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: '$A > $B'
+        for: $WATCH_FOR_POOL
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          env: $ENVIRONMENT_NAME
+          resource: db_pool
+          target: db
+        annotations:
+          summary: DB 커넥션을 기다리는 요청이 생겼습니다.
+        notification_settings:
+          receiver: incident-reporter
+      - uid: tripfit-reporter-down
+        title: 리포터 중단
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: tripfit-prometheus
+            model:
+              refId: A
+              expr: 'up{job="incident-reporter"}'
+              instant: true
+              intervalMs: 15000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: '$A < 1'
+        for: 2m
+        noDataState: Alerting
+        execErrState: Alerting
+        labels:
+          env: $ENVIRONMENT_NAME
+          resource: reporter
+          target: reporter
+        annotations:
+          summary: AI 원인 리포터가 2분 넘게 응답하지 않습니다. 임계점 리포트가 Discord로 오지 않을 수 있습니다.
+        notification_settings:
+          receiver: tripfit-discord-alerts
