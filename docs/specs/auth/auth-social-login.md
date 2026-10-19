@@ -228,7 +228,7 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 | 401 | `AUTH_INVALID_TOKEN` | 액세스 JWT(서버 발급) 무효 — 소셜 토큰 검증과 무관, `POST /auth/login` 자체는 발생시키지 않음 |
 | 401 | `AUTH_SOCIAL_TOKEN_EXPIRED` | 소셜 provider가 토큰 만료로 응답 — `POST /auth/login` 전용, 재로그인으로 해결 |
 | 401 | `AUTH_SOCIAL_TOKEN_INVALID` | 만료 외 소셜 토큰 무효(서명·audience·형식 오류 등) — `POST /auth/login` 전용, 기본값(catch-all) |
-| 503 | `AUTH_SOCIAL_PROVIDER_UNAVAILABLE` | 소셜 provider API 접근 실패(네트워크·타임아웃) — `POST /auth/login` 전용, 토큰 문제 아님, 재시도 유도 |
+| 503 | `AUTH_SOCIAL_PROVIDER_UNAVAILABLE` | 소셜 provider API 접근 실패(네트워크·타임아웃), 또는 카카오 동시 검증 상한(20) 초과 — `POST /auth/login` 전용, 토큰 문제 아님, 재시도 유도 |
 | 401 | `AUTH_EXPIRED` | access JWT 만료 |
 | 401 | `AUTH_INVALID_REFRESH` | refresh token 없음·만료·폐기 |
 | 403 | `AUTH_FORBIDDEN` | 인증됐으나 권한 없음 (향후 RBAC) |
@@ -272,6 +272,8 @@ Access JWT (2h) + Refresh Token (30d, DB) 발급
 **authorizationCode (APPLE·GOOGLE 필수)**
 
 두 provider 모두 로그인마다(최초·재로그인 모두) authorization code를 새로 받아 보내야 한다. 탈퇴 시 provider 쪽 연결 해제(revoke)에 쓸 refresh token을 매번 교환·갱신하기 위함 — 상세: [`user-account-withdrawal.md`](../user/user-account-withdrawal.md), [`google-login-revoke.md`](google-login-revoke.md). GOOGLE은 provider 특성상 재로그인 시 refresh_token이 응답에 없을 수 있어 credential이 갱신되지 않을 수 있다(정상 동작, 최초 동의 때만 발급).
+
+교환은 로그인 응답을 보낸 뒤 전용 실행기가 처리하므로, 토큰 서버가 느려도 로그인 응답 시간에는 영향이 없다(2026-10-11 — [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md)).
 
 **redirectUri (GOOGLE 브라우저 로그인 필수)**
 
@@ -593,6 +595,7 @@ com.tripfit.tripfit
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-11 | `#134` — Apple·Google 인가 코드 교환을 로그인 응답 뒤 전용 실행기로 옮김(로그인은 토큰 서버를 기다리지 않음). 카카오 `user/me` 동시 호출이 20개를 넘으면 기존 503 `AUTH_SOCIAL_PROVIDER_UNAVAILABLE`로 즉시 거절. API 계약 변경 없음. 상세: [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md) |
 | 2026-06-30 | 초안 (안 B 채택) |
 | 2026-06-30 | DB 변경 허용 정책 추가, Approved, decisions `001` 연결 |
 | 2026-07-06 | 하이브리드 앱·스토어 심사 주의사항·단일 login 엔드포인트·프론트 합의 체크리스트 추가 |

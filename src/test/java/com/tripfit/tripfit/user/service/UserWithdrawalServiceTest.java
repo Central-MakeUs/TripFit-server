@@ -2,7 +2,9 @@ package com.tripfit.tripfit.user.service;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +17,7 @@ import com.tripfit.tripfit.user.googlecalendar.service.GoogleCalendarService;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -118,7 +121,7 @@ class UserWithdrawalServiceTest {
     userWithdrawalService.withdraw(USER_ID);
 
     verify(googleCalendarService).revokeIfConnected(USER_ID);
-    verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
+    verify(appleCredentialService, times(2)).revokeAndDeleteIfPresent(USER_ID);
   }
 
   @Test
@@ -131,24 +134,22 @@ class UserWithdrawalServiceTest {
     verify(kakaoUnlinkClient, never()).unlink(any());
   }
 
+  // 로그인 credential은 DB 정리 전에 한 번, 정리가 커밋된 뒤 한 번 더 확인한다. 두 번째 확인은 로그인 직후 탈퇴해
+  // 백그라운드 인가 코드 교환이 첫 확인보다 늦게 저장한 credential을 잡는다.
   @Test
-  void withdraw_callsAppleCredentialRevokeAndDelete() {
+  void withdraw_revokesLoginCredentialsBeforeAndAfterFinalizing() {
     User user = user();
     when(userLookupService.requireUser(USER_ID)).thenReturn(user);
 
     userWithdrawalService.withdraw(USER_ID);
 
-    verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
-  }
-
-  @Test
-  void withdraw_callsGoogleLoginCredentialRevokeAndDelete() {
-    User user = user();
-    when(userLookupService.requireUser(USER_ID)).thenReturn(user);
-
-    userWithdrawalService.withdraw(USER_ID);
-
-    verify(googleLoginCredentialService).revokeAndDeleteIfPresent(USER_ID);
+    InOrder order =
+        inOrder(googleLoginCredentialService, appleCredentialService, persistenceService);
+    order.verify(googleLoginCredentialService).revokeAndDeleteIfPresent(USER_ID);
+    order.verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
+    order.verify(persistenceService).finalizeWithdrawal(USER_ID);
+    order.verify(googleLoginCredentialService).revokeAndDeleteIfPresent(USER_ID);
+    order.verify(appleCredentialService).revokeAndDeleteIfPresent(USER_ID);
   }
 
   @Test

@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/kakao/v2/user/me",
+    "headers": { "Authorization": { "matches": "Bearer slow-.*" } }
+  },
+  "response": {
+    "status": 200,
+    "fixedDelayMilliseconds": 4000,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"id\":\"{{request.headers.Authorization}}\",\"kakao_account\":{\"email\":\"kakao@loadtest.local\",\"profile\":{\"nickname\":\"부하\"}}}"
+  }
+}

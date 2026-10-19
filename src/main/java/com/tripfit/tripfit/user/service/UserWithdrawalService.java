@@ -50,6 +50,11 @@ public class UserWithdrawalService {
 
     // 4. 내부 DB 연관 데이터 삭제 및 개인정보 마스킹(Soft Delete)
     persistenceService.finalizeWithdrawal(userId);
+
+    // 5. 로그인 직후 탈퇴하면, 백그라운드 인가 코드 교환이 위 1·3단계보다 늦게 끝나 credential을 저장했을 수 있다.
+    // 교환 결과는 탈퇴한 사용자에게 저장하지 않으므로, 탈퇴가 커밋된 뒤 한 번 더 확인하면 남는 credential이 없다.
+    googleLoginCredentialService.revokeAndDeleteIfPresent(userId);
+    appleCredentialService.revokeAndDeleteIfPresent(userId);
   }
 
   private void revokeGoogleCalendarIfConnected(UUID userId) {

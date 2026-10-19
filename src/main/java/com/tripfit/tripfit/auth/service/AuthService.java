@@ -34,9 +34,8 @@ public class AuthService {
 
   private final UserLookupService userLookupService;
 
-  private final AppleCredentialService appleCredentialService;
 
-  private final GoogleLoginCredentialService googleLoginCredentialService;
+  private final LoginCredentialExchangeDispatcher loginCredentialExchangeDispatcher;
 
   // 소셜 로그인 제공자(Apple/Google)와 토큰을 받아 인증을 처리하고,
   // 내부 User 엔티티 생성/조회 후 Access/Refresh Token을 발급합니다.
@@ -62,18 +61,15 @@ public class AuthService {
     AuthLoginPersistenceService.Result result = authLoginPersistenceService.persist(profile);
     User user = result.user();
 
-    // 3. Apple, Google 로그인 시 제공된 인가 코드(Authorization Code)가 있다면
-    // 백그라운드 작업(캘린더 연동 등)을 위해 Credential을 안전하게 저장합니다.
+    // 3. Apple, Google 로그인 시 받은 인가 코드는 refresh token으로 바꿔 저장해 두었다가 탈퇴 때 연결 해제에 씁니다.
+    // 로그인 자체에는 필요 없는 값이라 전용 작업자에게 넘기고, 토큰 서버 응답을 기다리지 않고 바로 응답합니다.
     if (provider == SocialProvider.APPLE) {
-      appleCredentialService.saveIfAuthorizationCodePresent(
-          user,
+      loginCredentialExchangeDispatcher.submitApple(
+          user.getId(),
           authorizationCode,
           profile.appleMatchedClientId());
     } else if (provider == SocialProvider.GOOGLE) {
-      googleLoginCredentialService.saveIfAuthorizationCodePresent(
-          user,
-          authorizationCode,
-          redirectUri);
+      loginCredentialExchangeDispatcher.submitGoogle(user.getId(), authorizationCode, redirectUri);
     }
 
     // 4. 서비스 자체 AccessToken(JWT)을 발급하여 로그인 응답 객체를 반환합니다.

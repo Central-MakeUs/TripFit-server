@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/google/token"
+  },
+  "response": {
+    "status": 200,
+    "fixedDelayMilliseconds": 4000,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"access_token\":\"loadtest-access\",\"refresh_token\":\"loadtest-refresh-{{randomValue length=12 type='ALPHANUMERIC'}}\",\"expires_in\":3600,\"token_type\":\"Bearer\"}"
+  }
+}

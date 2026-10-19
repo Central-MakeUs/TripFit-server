@@ -54,7 +54,7 @@
 |------|------|------|-----------|
 | 401 | `AUTH_SOCIAL_TOKEN_EXPIRED` | 소셜 provider가 "토큰 만료"로 명시 응답 | Kakao: 응답 바디 `msg`에 `expired` 포함(대소문자 무시) · Google/Apple: nimbus `BadJWTException` 메시지가 `"Expired JWT"`(9.47 바이트코드로 확인한 리터럴) |
 | 401 | `AUTH_SOCIAL_TOKEN_INVALID` | 그 외 무효 — 서명 불일치, audience 불일치, subject/`id` 없음, 파싱 실패, 카카오 만료 외 4xx 등. **기본값(catch-all)** | 나머지 `BadJOSEException`/`ParseException`/Kakao 4xx 전부 |
-| 503 | `AUTH_SOCIAL_PROVIDER_UNAVAILABLE` | 토큰 자체가 아니라 provider API 접근 실패 — 타임아웃·연결 실패·JWK 조회 실패·provider 5xx | Kakao: `RestClientException`(HTTP 응답 자체를 못 받음) · Google/Apple: JWK 조회 중 `IOException`/`JOSEException` |
+| 503 | `AUTH_SOCIAL_PROVIDER_UNAVAILABLE` | 토큰 자체가 아니라 provider API 접근 실패 — 타임아웃·연결 실패·JWK 조회 실패·provider 5xx, 카카오 동시 검증 상한 초과(2026-10-11, [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md)) | Kakao: `RestClientException`(HTTP 응답 자체를 못 받음), `InvocationRejectedException`(동시 호출 상한) · Google/Apple: JWK 조회 중 `IOException`/`JOSEException` |
 | 500 (신규 코드 없음) | 기존 `CommonErrorCode.INTERNAL_ERROR` 재사용 | Google/Apple client id 서버 미설정 | 기존 설정 누락 체크 로직 그대로, throw만 `CommonErrorCode.INTERNAL_ERROR`로 교체 |
 
 `AUTH_INVALID_TOKEN`은 값 유지, `@Schema` 설명만 "액세스 JWT(서버 발급) 무효"로 좁힘.

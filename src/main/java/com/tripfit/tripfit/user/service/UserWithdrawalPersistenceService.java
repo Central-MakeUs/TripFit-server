@@ -43,6 +43,11 @@ public class UserWithdrawalPersistenceService {
     // 1. 참여 중인 모든 여행방에서 나가기 처리(방장인 경우 방 삭제)
     tripService.leaveAllActiveTripsAsMember(userId);
     tripService.deleteAllOwnedActiveTrips(userId);
+    // 여행방·멤버 변경을 사용자 행보다 먼저 DB로 보낸다. 그대로 두면 커밋 시점에 맨 먼저 불러온 사용자 행의 UPDATE가
+    // 여행방 UPDATE보다 먼저 나간다. 같은 방에서 알림 이력을 저장하는 요청은 여행방 행을 잠근 뒤 수신자 사용자 행에
+    // 공유 잠금을 걸므로, 반대 순서로 잠그면 데드락이 될 수 있다. 어느 Repository로 불러도 영속성 컨텍스트 전체가
+    // flush되며, Repository를 거쳐야 버전 충돌이 Spring 예외로 바뀌어 재시도된다.
+    personalScheduleRepository.flush();
 
     // 2. 개인 일정, 정기 일정, 구글 캘린더 관련 메타데이터 및 인증 토큰 삭제
     personalScheduleRepository.deleteByUserId(userId);

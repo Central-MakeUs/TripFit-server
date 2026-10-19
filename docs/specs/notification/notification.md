@@ -50,7 +50,7 @@
 - [x] `GET /api/v1/notifications` — 알림센터 목록(JWT, 최근 7일, 최신순) (D5·D9)
 - [x] `PATCH /api/v1/notifications/{id}/read` — 읽음 처리 (D5)
 - [x] **`user-my-page.md` amend 반영** — `PATCH /users/profile`에 `notificationEnabled` 추가 + partial update 전환은 **이 스펙이 아니라 `user-my-page.md`의 Must Have**로 구현 (D8, 중복 정의 금지)
-- [x] 이벤트 발행 + `@Async` `@TransactionalEventListener(phase = AFTER_COMMIT)` 리스너로 트랜잭션 커밋 후 발송
+- [x] 이벤트 발행 + `@TransactionalEventListener(phase = BEFORE_COMMIT)` 리스너가 알림 이력을 원래 트랜잭션에 저장하고, FCM 발송은 커밋 후 전용 실행기(`notificationPushExecutor`)가 트랜잭션 밖에서 처리 (2026-10-11 변경 — 구 `@Async` + `AFTER_COMMIT` 구조 대체, [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md))
 - [x] BR-NOTI-001 — `TripCommandService.joinTrip` 커밋 후 방장(`notification_enabled=true`)에게 발송
 - [x] BR-NOTI-002 — 같은 join 흐름에서 **정원 도달**(D11) 판정 후 방장(게이트 적용)에게 발송
 - [x] BR-NOTI-003 — `TripCommandService.patchTrip` 커밋 후, **실제 값이 바뀐 경우만**(D12) 참여자(방장 제외, 게이트 적용)에게 발송
@@ -171,7 +171,7 @@ com.tripfit.tripfit.notification
 - [ ] 무효 토큰(`UNREGISTERED`)으로 단일 발송 실패 → `user_device_token`에서 즉시 삭제
 - [ ] 멀티캐스트 중 일부 토큰 무효 → 해당 토큰만 일괄 삭제, 나머지는 정상 발송
 - [ ] 수신 대상에 등록된 토큰이 0개 → 발송 skip(에러 아님)
-- [ ] 트랜잭션 롤백 시 알림 미발송 (`AFTER_COMMIT` 보장 확인)
+- [x] 트랜잭션 롤백 시 알림 이력·푸시 모두 없음 (`NotificationDispatchIntegrationTest`)
 - [x] `POST /api/v1/trips/{tripId}/recommendations/unconfirm` 호출 시 NOTI-009가 참여자(방장 제외)에게 발송되는지 확인
 - [ ] 8일 전 알림은 `GET /api/v1/notifications` 결과에서 제외
 
@@ -197,6 +197,7 @@ com.tripfit.tripfit.notification
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-11 | `#134` 외부 API 장애 격리 반영 — 알림 이력을 이벤트를 발행한 트랜잭션의 커밋 직전에 저장하고, FCM 발송은 커밋 후 전용 실행기(스레드 4개·대기열 200)가 트랜잭션 밖에서 처리. 대기열이 가득 차면 푸시만 건너뛴다(이력은 남음). Firebase 연결·응답 타임아웃(3초·5초)과 배치당 대기 상한(30초) 추가. 정기 리마인드는 500명 단위 쓰기 트랜잭션. 알림 실패 재시도 `[미정]`은 그대로. 상세: [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md) |
 | 2026-08-08 | FCM `data` payload에 `id`(알림 이력 ID) 추가 — 프론트 요청(푸시 탭 시 목록 재조회 없이 `PATCH .../{id}/read` 바로 호출). `landingType`/`tripId`와 함께 `GET /api/v1/notifications` 응답 필드명과 동일하게 유지. `FcmService.sendMulticast`가 토큰 목록 대신 토큰별 알림 이력 id 매핑(`Map<String, UUID>`)을 받도록 변경 |
 | 2026-07-31 | `GET /api/v1/notifications` 응답에 `roomName`(관련 여행방 이름, `tripId`와 동일하게 nullable) 필드 추가 — 프론트 요청(알림 카드에 방 이름 표시). `NotificationHistory.trip` 연관관계로 파생, DB 컬럼 추가 없음 |
 | 2026-07-31 | 문서 드리프트 정정 — `#13`(추천·확정·취소)이 이미 Closed·구현 완료 상태인데 본 문서가 "미구현/Draft"로 stale하게 남아 있었음. BR-NOTI-009는 `TripRecommendationService.unconfirm`에서 이미 `TripConfirmCanceledEvent`를 발행 중(리스너·테스트 존재 확인) — Must Have·완료 기준·리스크 표 전부 완료로 수정 |

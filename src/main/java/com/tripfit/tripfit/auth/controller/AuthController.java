@@ -95,7 +95,7 @@ public class AuthController {
               schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(
           responseCode = "503",
-          description = "네트워크 문제나 타임아웃 등으로 인해 소셜 제공자 API에 접근할 수 없습니다(AUTH_SOCIAL_PROVIDER_UNAVAILABLE).",
+          description = "네트워크 문제나 타임아웃 등으로 소셜 제공자 API에 접근할 수 없거나, 제공자 응답이 느려 처리 중인 로그인이 많을 때입니다. 잠시 뒤 다시 시도하면 됩니다(AUTH_SOCIAL_PROVIDER_UNAVAILABLE).",
           content = @Content(
               schema = @Schema(implementation = ErrorResponse.class)))
   })

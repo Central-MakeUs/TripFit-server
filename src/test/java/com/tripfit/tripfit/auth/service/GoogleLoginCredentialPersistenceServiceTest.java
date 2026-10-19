@@ -7,6 +7,7 @@ import com.tripfit.tripfit.auth.domain.GoogleLoginCredential;
 import com.tripfit.tripfit.auth.repository.GoogleLoginCredentialRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -24,15 +25,19 @@ class GoogleLoginCredentialPersistenceServiceTest {
   @Mock
   private GoogleLoginCredentialRepository googleLoginCredentialRepository;
 
+  @Mock
+  private UserLookupService userLookupService;
+
   @InjectMocks
   private GoogleLoginCredentialPersistenceService persistenceService;
 
   @Test
   void save_whenNewUser_createsCredential() {
     User user = user();
+    when(userLookupService.findActiveUserForUpdate(USER_ID)).thenReturn(Optional.of(user));
     when(googleLoginCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
 
-    persistenceService.save(user, "encrypted-refresh");
+    assertThat(persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh")).isTrue();
 
     org.mockito.Mockito.verify(googleLoginCredentialRepository)
         .save(
@@ -43,11 +48,12 @@ class GoogleLoginCredentialPersistenceServiceTest {
   @Test
   void save_whenExistingCredential_overwritesRefreshToken() {
     User user = user();
+    when(userLookupService.findActiveUserForUpdate(USER_ID)).thenReturn(Optional.of(user));
     GoogleLoginCredential existing = GoogleLoginCredential.create(user, "old-ciphertext");
     when(googleLoginCredentialRepository.findByUser_Id(USER_ID))
         .thenReturn(Optional.of(existing));
 
-    persistenceService.save(user, "new-ciphertext");
+    assertThat(persistenceService.saveForActiveUser(USER_ID, "new-ciphertext")).isTrue();
 
     org.mockito.Mockito.verify(googleLoginCredentialRepository).save(existing);
     assertThat(existing.getRefreshTokenCiphertext()).isEqualTo("new-ciphertext");
@@ -70,6 +76,17 @@ class GoogleLoginCredentialPersistenceServiceTest {
     persistenceService.deleteByUserId(USER_ID);
 
     org.mockito.Mockito.verify(googleLoginCredentialRepository).deleteByUser_Id(USER_ID);
+  }
+
+  // 탈퇴한(또는 없는) 사용자에게는 저장하지 않고 false를 돌려준다.
+  @Test
+  void saveForActiveUser_whenUserWithdrawn_skipsSaveAndReturnsFalse() {
+    when(userLookupService.findActiveUserForUpdate(USER_ID)).thenReturn(Optional.empty());
+
+    assertThat(persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh")).isFalse();
+
+    org.mockito.Mockito.verify(googleLoginCredentialRepository, org.mockito.Mockito.never())
+        .save(ArgumentMatchers.any());
   }
 
   private static User user() {

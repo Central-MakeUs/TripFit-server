@@ -69,7 +69,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 **Apple — 신규 인프라(가장 큼, 2026-07-31 Implemented)**
 
 - [x] `LoginRequest.authorizationCode` 필드는 **이미 존재**(`cb5a23f`, optional·nullable, APPLE 전용) — `AuthService.login(provider, token, authorizationCode)`가 세 번째 파라미터로 받아 실제 소비하도록 변경(`AuthController`도 동일하게 전달). 신규 필드 추가 아님, 기존 필드 배선
-- [x] `AuthService.login()`에서 `provider == APPLE`이면 `AppleCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode, clientId)` 호출 — 내부에서 Apple token 엔드포인트(`https://appleid.apple.com/auth/token`)로 `authorizationCode` → refresh token 교환(`AppleOAuthClient`)
+- [x] `AuthService.login()`에서 `provider == APPLE`이면 `AppleCredentialService.saveIfAuthorizationCodePresent(user, authorizationCode, clientId)` 호출 — 내부에서 Apple token 엔드포인트(`https://appleid.apple.com/auth/token`)로 `authorizationCode` → refresh token 교환(`AppleOAuthClient`) **(2026-10-11 이후: 로그인 응답 뒤 `LoginCredentialExchangeDispatcher`가 사용자 ID로 호출 — `#134`)**
 - [x] `.p8`+`APPLE_TEAM_ID`+`APPLE_KEY_ID`로 서명한 client_secret JWT 생성(`AppleOAuthClient.buildClientSecretJwt()`, ES256, nimbus-jose-jwt, 호출마다 새로 발급·캐싱 없음)
 - [x] 신규 엔티티 `AppleCredential`(`auth/domain/`) — `GoogleCalendarCredential`과 동일 패턴이되 **탈퇴 시 1회 revoke만 필요**해 access token 캐시·동기화 필드는 제외한 최소 구조. refresh token은 `SocialTokenCrypto` 재사용해 AES-256-GCM 암호화 저장(신규 AES 키 없음)
 - [x] `UserWithdrawalService.withdraw()`에서 `AppleCredentialService.revokeAndDeleteIfPresent(userId)` 호출 — credential 존재 시 저장된 refresh token으로 `https://appleid.apple.com/auth/revoke` 호출(best-effort) 후 credential row 삭제(존재 여부 무관 항상 delete 시도)
@@ -83,6 +83,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 - **token exchange 실패 시 로그인 처리:** `authorizationCode`는 있는데 Apple 서버 token 교환 자체가 실패(네트워크 오류·invalid code 등)해도 **로그인은 그대로 성공**시키고 credential 저장만 스킵(`AppleCredentialService`가 try/catch로 흡수) — Apple 인프라 장애가 TripFit 로그인 성공률에 영향을 주지 않도록 best-effort 가드레일과 동일한 원칙 적용
 - **재로그인 시 refresh token 갱신:** 재로그인마다 새로 오는 `authorizationCode`로 **매번 최신 값으로 덮어씀**(스킵하지 않음) — 사용자가 Apple ID 설정에서 수동으로 TripFit 연결을 해제한 뒤에도 저장된 refresh token이 stale하게 남아 탈퇴 시 revoke가 조용히 실패하는 상황을 최소화(심사 시 "삭제 시 실제로 revoke가 되는지"가 핵심이므로 최신성을 우선)
 - **authorizationCode 누락 시 처리(B안, 2026-07-31 amend):** 최초엔 "없으면 조용히 skip"(best-effort)으로 구현했다가, 프론트 미배포·회귀를 아무도 못 알아챌 위험 때문에 **로그인 자체를 400으로 거부**하도록 강제 전환. 근거: 심사 통과 그 순간만이 아니라 **서비스 운영 내내** 지켜야 하는 요건이라, 로그 모니터링에 의존하기보다 프론트가 안 보내는 순간 즉시(자체 QA에서부터) 드러나는 쪽이 소규모 팀에 더 안전하다고 판단. **트레이드오프:** 프론트 배포 전에 이 변경이 먼저 나가면 Apple 로그인 전체가 막힘 — 배포 순서 조율 필수
+- [x] **(2026-10-11, `#134`)** DB 정리(`finalizeWithdrawal`)가 끝난 뒤 Apple·Google 로그인 credential을 한 번 더 revoke·삭제한다. 로그인 직후 탈퇴하면 백그라운드 인가 코드 교환이 첫 revoke 단계보다 늦게 저장을 마칠 수 있기 때문이다. 교환 저장은 사용자 행을 잠가 탈퇴 여부를 확인하므로, 탈퇴 커밋 뒤의 재확인으로 남는 credential이 없다. 또 DB 정리는 여행방 정리 뒤 사용자 행을 고치기 전에 flush해, 여행방 행을 사용자 행보다 먼저 잠근다(알림 이력 저장과 같은 순서) — [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md)
 
 ### 구현 가드레일 (프로덕션 인시던트 재발 방지 — `#64` 전용)
 
@@ -230,6 +231,7 @@ Provider별로 선행 조건이 달라 **순차 완료 가능**하도록 분리�
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-11 | `#134` — 탈퇴 마지막 단계에 Apple·Google 로그인 credential 재확인(revoke·삭제) 추가. 로그인 시 인가 코드 교환이 백그라운드로 옮겨져, 로그인 직후 탈퇴하면 교환이 첫 revoke 단계보다 늦게 끝날 수 있다. 위 `AuthService.login()` 호출 서술은 당시 기록이다. 상세: [`external-api-bulkhead.md`](../cross-cutting/external-api-bulkhead.md) |
 | 2026-07-31 | `#64` 재오픈 — Apple `APPLE_CLIENT_ID` 단일값을 `APPLE_BUNDLE_ID`(iOS 네이티브)/`APPLE_SERVICE_ID`(모바일 브라우저)로 이원화. `apple_credential`에 `apple_client_id` 컬럼 추가, 로그인 시 매칭된 값을 저장해 탈퇴 revoke에 재사용. 상세: [`apple-oauth-multi-audience.md`](../auth/apple-oauth-multi-audience.md) |
 | 2026-07-31 | `#64` Apple authorizationCode 누락 처리를 best-effort(조용히 skip)에서 **강제(400 거부, B안)** 로 amend — 신규 `AuthErrorCode.AUTH_APPLE_AUTHORIZATION_CODE_REQUIRED` 추가, `AuthService.login()`이 provider==APPLE인데 authorizationCode 없으면 소셜 토큰 검증 전 즉시 거부. `LoginRequest`·`AuthController` Swagger(`@Schema`·`@Operation`·`@ApiResponses`) 갱신. 조건부 필수화라 `Breaking-Change-Reason` 트레일러 필요 — **프론트 배포 순서 조율 필수** |
 | 2026-07-31 | `#64` Apple Implemented(코드) — `authorizationCode`를 `AuthService.login()`이 소비하도록 시그니처 변경(`AuthController`도 동일 전달). 신규 `auth/domain/AppleCredential`(최소 구조, user당 1행) · `auth/repository/AppleCredentialRepository` · `auth/oauth/AppleOAuthClient`(ES256 client_secret JWT 서명 — nimbus-jose-jwt, token exchange·revoke, 둘 다 호출마다 신규 JWT 발급) · `auth/service/AppleCredentialService`(로그인 시 저장 best-effort, 탈퇴 시 revoke+delete best-effort). `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY` env 전체 배선(.env.example 2곳·ci-cd.yml·docker-compose.yml·application.yml/OAuthProperties). `docs/architecture/erd.md`에 `apple_credential` 테이블 반영. `UserWithdrawalService.revokeGoogleCalendarIfConnected()`에도 복호화 실패 흡수 try/catch 보강. 세부 정책 3건(credential 컬럼 범위·token exchange 실패 시 로그인 처리·재로그인 갱신 정책) 사용자 위임으로 확정. 남은 것은 프론트 `authorizationCode` 전송 공지·실계정 수동 검증(코드 밖) |

@@ -7,6 +7,7 @@ import com.tripfit.tripfit.auth.domain.AppleCredential;
 import com.tripfit.tripfit.auth.repository.AppleCredentialRepository;
 import com.tripfit.tripfit.user.domain.SocialProvider;
 import com.tripfit.tripfit.user.domain.User;
+import com.tripfit.tripfit.user.service.UserLookupService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -24,15 +25,21 @@ class AppleCredentialPersistenceServiceTest {
   @Mock
   private AppleCredentialRepository appleCredentialRepository;
 
+  @Mock
+  private UserLookupService userLookupService;
+
   @InjectMocks
   private AppleCredentialPersistenceService persistenceService;
 
   @Test
   void save_whenNewUser_createsCredential() {
     User user = user();
+    when(userLookupService.findActiveUserForUpdate(USER_ID)).thenReturn(Optional.of(user));
     when(appleCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.empty());
 
-    persistenceService.save(user, "encrypted-refresh", "com.tripfit.app");
+    assertThat(
+        persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh", "com.tripfit.app"))
+        .isTrue();
 
     org.mockito.Mockito.verify(appleCredentialRepository)
         .save(
@@ -44,10 +51,13 @@ class AppleCredentialPersistenceServiceTest {
   @Test
   void save_whenExistingCredential_overwritesRefreshTokenAndClientId() {
     User user = user();
+    when(userLookupService.findActiveUserForUpdate(USER_ID)).thenReturn(Optional.of(user));
     AppleCredential existing = AppleCredential.create(user, "old-ciphertext", "com.tripfit.app");
     when(appleCredentialRepository.findByUser_Id(USER_ID)).thenReturn(Optional.of(existing));
 
-    persistenceService.save(user, "new-ciphertext", "com.tripfit.service");
+    assertThat(
+        persistenceService.saveForActiveUser(USER_ID, "new-ciphertext", "com.tripfit.service"))
+        .isTrue();
 
     org.mockito.Mockito.verify(appleCredentialRepository).save(existing);
     assertThat(existing.getRefreshTokenCiphertext()).isEqualTo("new-ciphertext");
@@ -70,6 +80,19 @@ class AppleCredentialPersistenceServiceTest {
     persistenceService.deleteByUserId(USER_ID);
 
     org.mockito.Mockito.verify(appleCredentialRepository).deleteByUser_Id(USER_ID);
+  }
+
+  // 탈퇴한(또는 없는) 사용자에게는 저장하지 않고 false를 돌려준다.
+  @Test
+  void saveForActiveUser_whenUserWithdrawn_skipsSaveAndReturnsFalse() {
+    when(userLookupService.findActiveUserForUpdate(USER_ID)).thenReturn(Optional.empty());
+
+    assertThat(
+        persistenceService.saveForActiveUser(USER_ID, "encrypted-refresh", "com.tripfit.app"))
+        .isFalse();
+
+    org.mockito.Mockito.verify(appleCredentialRepository, org.mockito.Mockito.never())
+        .save(ArgumentMatchers.any());
   }
 
   private static User user() {
