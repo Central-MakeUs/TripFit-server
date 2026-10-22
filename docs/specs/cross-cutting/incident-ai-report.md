@@ -112,8 +112,8 @@
 
 - [ ] 배포 전 로컬 점검 — `deploy/metrics/docker-compose.local.yml`(정의: [`add-prometheus.md`](add-prometheus.md) Must Have "배포 전 로컬 점검 환경")로 리포터·Prometheus·Grafana를 띄우고, 리포터에 가짜 Alertmanager 본문을 보내 아래 "배포 전 로컬 점검" 시나리오를 확인한다. 부하는 걸지 않는다
 - [ ] `incident-reporter/Dockerfile` — JVM 힙 상한을 두어 t3.micro에서 Prometheus와 함께 돌게 한다 (값은 서버 E 배포 후 실측해 확정)
-- [ ] 서버 E에 배포하고, 감시 규칙의 연락처를 리포터 웹훅으로 연결한다
-- [ ] 배포 직후 아래 "운영 (PR 1 · 배포 직후)" 시나리오를 확인한다
+- [x] 서버 E에 배포하고, 감시 규칙의 연락처를 리포터 웹훅으로 연결한다
+- [x] 배포 직후 아래 "운영 (PR 1 · 배포 직후)" 시나리오를 확인한다
 
 **부하 검증 (PR 2 · `#134` 머지 후)**
 
@@ -189,8 +189,8 @@
 
 이 절이 "Grafana → 리포터 → Discord 경로 확인"의 SSOT다.
 
-- [ ] 감시 규칙 연락처(리포터 웹훅)의 테스트 전송 → `[prod]` 제목 메시지가 Discord 기존 채널에 도착
-- [ ] 리포터를 잠시 멈추면 → `리포터 중단` 알림이 도착하고, 다시 켜면 정상으로 돌아온다
+- [x] 감시 규칙 연락처(리포터 웹훅)의 테스트 전송 → `[prod]` 제목 메시지가 Discord 기존 채널에 도착
+- [x] 리포터를 잠시 멈추면 → `리포터 중단` 알림이 도착하고, 다시 켜면 정상으로 돌아온다
 
 ### 부하 검증 (PR 2)
 
@@ -245,6 +245,7 @@
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-22 | PR 1 운영 배포(PR #136) — 서버 E 배포와 "운영 (PR 1 · 배포 직후)" 시나리오 2개 확인(Grafana 테스트 전송 → `[prod]` 리포트 도착, 리포터 중단 → 알림 발생·해제 도착) |
 | 2026-10-19 | 실제 Gemini 점검 후 결정 반영(사용자 승인) — 503·429면 예비 모델로 한 번 더, 가리기 규칙 3종 추가(쿠키·전화번호·긴 토큰)와 "빠진 자료"에도 적용, 의심 코드 위치를 `src/main/java`로 제한, Discord 429는 `Retry-After`(최대 10초)를 따름, 모델 `gemini-3.6-flash`(기본)·`gemini-3.5-flash-lite`(예비) 확정 |
 | 2026-10-19 | 운영 비밀값을 GitHub Secrets로 관리(사용자 승인) — env 표 운영 열 갱신. Secrets 목록은 `add-prometheus.md` "GitHub Secrets" 표 |
 | 2026-10-19 | PR 1 구현 중 결정 반영(사용자 승인) — env 표에 `SOURCE_REPO_URL`·`GIT_PULL_ENABLED`·`LOKI_QUERY`·`DEBUG_LOG_PROMPT` 추가, p95를 응답 시간 구간 5개로 계산, Grafana 웹훅 형식·토큰 헤더 확인 결과 기록 |
