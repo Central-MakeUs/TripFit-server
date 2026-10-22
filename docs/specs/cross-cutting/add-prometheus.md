@@ -259,13 +259,13 @@ Grafana에서는 "알림 규칙(alert rule)"이라고 부른다. 각 규칙은 "
 
 ### PR 1 — 운영 (부하 없음)
 
-- [ ] E Prometheus의 Targets 화면에서 앱·A·B·리포터가 모두 `UP`
-- [ ] 운영 Grafana에서 기록 규칙 5개의 값이 나오고, 감시 규칙 6개가 평소에는 정상(`Normal`)이다
-- [ ] Grafana → AI 원인 리포터 → Discord 경로 확인 — 항목은 [`incident-ai-report.md`](incident-ai-report.md) "운영 (PR 1 · 배포 직후)"
-- [ ] 운영의 CPU·메모리 규칙 4개가 "감시 규칙" 표의 "운영 첫 1주" 값으로 배포된다
-- [ ] 인터넷에서 `https://api.tripfit.online/actuator/prometheus` → 404 또는 403
-- [ ] `/actuator/env`·`/actuator/heapdump`는 E에서도 접근되지 않는다
-- [ ] 인터넷에서 A·B의 9100, E의 9090·9095에 접속되지 않는다
+- [x] E Prometheus의 Targets 화면에서 앱·A·B·리포터가 모두 `UP`
+- [x] 운영 Grafana에서 기록 규칙 5개의 값이 나오고, 감시 규칙 6개가 평소에는 정상(`Normal`)이다
+- [x] Grafana → AI 원인 리포터 → Discord 경로 확인 — 항목은 [`incident-ai-report.md`](incident-ai-report.md) "운영 (PR 1 · 배포 직후)"
+- [x] 운영의 CPU·메모리 규칙 4개가 "감시 규칙" 표의 "운영 첫 1주" 값으로 배포된다
+- [x] 인터넷에서 `https://api.tripfit.online/actuator/prometheus` → 404 또는 403
+- [x] `/actuator/env`·`/actuator/heapdump`는 E에서도 접근되지 않는다
+- [x] 인터넷에서 A·B의 9100, E의 9090·9095에 접속되지 않는다
 - [ ] Prometheus가 멈춰도 앱은 정상 동작한다
 
 ### PR 2 — 로컬 부하 검증
@@ -279,10 +279,10 @@ Grafana에서는 "알림 규칙(alert rule)"이라고 부른다. 각 규칙은 "
 - [ ] Must Have의 "앱"·"운영 인프라"·"Grafana 감시 규칙"·"배포 전 로컬 점검 환경" 전 항목 반영
 - [ ] `./gradlew test` 통과, `./gradlew build` 성공
 - [ ] 검증 시나리오 "PR 1" 전부 확인
-- [ ] 배포 후 A·E 메모리 사용량 기록 (아래 리스크)
+- [x] 배포 후 A·E 메모리 사용량 기록 (아래 리스크)
 - [ ] `deploy/README.md`·`deploy/environment-reference.md`·`deploy/ec2-split-deployment.md`에 E·포트·env·SG 반영
-- [ ] `docs/decisions/009-observability-logging.md` 후속 작업의 "호스트 리소스 지표 수집"·"EC2 C git 체크아웃 전환" 항목 갱신
-- [ ] `docs/how-it-works.md`에 "서버 수치 수집과 임계점 감시" 절 추가 — actuator 노출 경로가 늘어나는 변경이라 STOP §6 대상
+- [x] `docs/decisions/009-observability-logging.md` 후속 작업의 "호스트 리소스 지표 수집"·"EC2 C git 체크아웃 전환" 항목 갱신
+- [x] `docs/how-it-works.md`에 "서버 수치 수집과 임계점 감시" 절 추가 — actuator 노출 경로가 늘어나는 변경이라 STOP §6 대상
 - [ ] `REMOVED` 항목: 삭제할 코드 없음 확인 (계획 철회만)
 
 **1주 관찰 (PR 1 배포 후)**
@@ -299,11 +299,11 @@ Grafana에서는 "알림 규칙(alert rule)"이라고 부른다. 각 규칙은 "
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | 운영 CPU·메모리 임계점 | [미정] | PR 1 배포 후 1주 관찰 → 사용자가 서버별 값 확정 |
-| A 메모리 | 확인 필요 | node_exporter는 약 20MB지만 A는 이미 swap을 쓴다. PR 1 배포 직후 메모리를 재고, 부족하면 사용자에게 보고 |
+| A 메모리 | 확인 (2026-10-22) | PR 1 배포 직후 실측. A: 908MB 중 사용 695MB·가용 212MB, 앱 323MB, node_exporter 7.7MB(상한 64MB). E: 가용 411MB, 리포터 92MB(상한 256MB), Prometheus 27MB(기동 직후). 1주 관찰 때 다시 잰다 |
 | cAdvisor가 Docker Desktop(macOS)에서 MySQL 컨테이너 수치를 내보내는지 | 확인 필요 | PR 2 시작 때 확인. 안 되면 대안을 사용자에게 묻는다 |
 | Grafana provisioning 파일의 env 치환 | 확정 | 2026-10-19 Grafana 10.4.2 로컬 실측 — `for`·`interval`·라벨·연락처 설정은 치환되고 계산식(`data.model`)은 치환되지 않는다. 그래서 임계점을 Prometheus 기록 규칙에 둔다(사용자 결정) |
 | 규칙별 연락처 지정 | 확정 | 2026-10-19 Grafana 10.4.2 로컬 실측 — 기능 스위치 `alertingSimplifiedRouting`가 꺼져 있으면 규칙에 적은 연락처가 무시되고 기본 연락처로 간다. 운영 C에 스위치를 켠다(사용자 결정) |
-| `리포터 중단` 알림 문구 | 확인 필요 | 운영 `tripfit-discord-alerts`에는 도메인 에러 알림용 맞춤 양식이 걸려 있어 이 알림 문구가 어색할 수 있다. PR 1 배포 때 테스트 전송으로 확인한다 |
+| `리포터 중단` 알림 문구 | 확인 (2026-10-22) — 어색함 | 운영에서 리포터를 멈춰 확인했다. `tripfit-discord-alerts` 양식이 `domain` 라벨을 쓰는데 이 규칙에는 없어서 메시지 앞에 `** 도메인 —`이 붙는다. 알림 자체는 발생·해제 모두 도착한다. 고칠지는 사용자 결정 대기 |
 | E 비용 | 확정 | t3.micro 1대 추가 (월 약 $7.5, 009와 같은 기준) + 공개 IPv4(Elastic IP) 월 약 $3.6 |
 
 ## 관련
@@ -316,6 +316,7 @@ Grafana에서는 "알림 규칙(alert rule)"이라고 부른다. 각 규칙은 "
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-10-22 | PR 1 운영 배포(PR #136) 후 검증 결과 반영 — 운영 검증 시나리오 7개 확인(남은 것: Prometheus가 멈춰도 앱 정상), A·E 메모리 실측, `리포터 중단` 문구 확인 결과 기록 |
 | 2026-10-19 | 운영 비밀값 관리 결정 반영(사용자 승인) — E·C 비밀값을 GitHub Secrets로 관리하고 별도 워크플로 `deploy-observability.yml`에 CI 배포 작업(`deploy-metrics`·`deploy-monitoring`, 바뀐 파일만·수동 실행 가능) 추가, 리포터 이미지는 CI가 GHCR에 올림, E Elastic IP, Grafana 관리자 비밀번호도 Secrets로 이전, GitHub Secrets 표 추가 |
 | 2026-10-19 | PR 1 구현 중 결정 반영(사용자 승인) — 임계점을 Prometheus 기록 규칙(`tripfit:threshold`)으로, Grafana 기능 스위치 `alertingSimplifiedRouting` 켜기, 수치 없음은 알림으로 처리, `리포터 중단` 알림 문구 확인 항목 추가 |
 | 2026-10-19 | 구현 순서 확정·문서 정리 — PR 1(운영 구축, 배포 전 가짜 알림 점검) → 1주 관찰 → PR 2(`#134` 머지 후 로컬 부하 검증). 운영에는 부하를 걸지 않는다. "Grafana 알림"을 "감시 규칙"으로 바꿔 Discord에 직접 보내지 않음을 명시(사용자 결정) |

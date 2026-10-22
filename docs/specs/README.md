@@ -151,7 +151,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#62** | trip-thumbnail-image (Draft) — 2026-08-02 재작성, 구 "OAuth 콘솔 설정값" 내용은 `#86`으로 이관 | Open |
 | **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
 | **#125** | terraform-iac-migration (Draft — 스펙 승인 대기) | Open · **출시 이후** · `priority: could` |
-| **#126** | add-prometheus · incident-ai-report (Approved — PR 1 구현 완료, PR 2 남음) | Open · **출시 이후** · `priority: could` |
+| **#126** | add-prometheus · incident-ai-report (Approved — PR 1 운영 배포 2026-10-22, 1주 관찰 · PR 2 남음) | Open · **출시 이후** · `priority: could` |
 | **#134** | external-api-bulkhead (Implemented — PR 전) | Open · **출시 이후** · `priority: could` |
 
 ## 완료 후
