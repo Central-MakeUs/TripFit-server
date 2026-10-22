@@ -69,7 +69,9 @@ tasks.withType(JavaCompile).configureEach {
 spotless {
 	java {
 		target 'src/**/*.java'
+		// download.eclipse.org 장애 시 CI가 포매터를 못 받아 배포가 막히므로 Eclipse 공식 미러에서 받는다 (#137)
 		eclipse('4.33').configFile('config/tripfit-java-format.xml')
+			.withP2Mirrors(['https://download.eclipse.org/': 'https://ftp.fau.de/eclipse/'])
 		removeUnusedImports()
 		trimTrailingWhitespace()
 		endWithNewline()
