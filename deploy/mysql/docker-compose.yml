@@ -37,5 +37,28 @@ services:
         loki-retries: "3"
         loki-batch-size: "400"
 
+  # 호스트 CPU·메모리 수집기 — EC2 E의 Prometheus가 9100으로 가져간다(보안 그룹에서 E만 허용).
+  # 스펙: docs/specs/cross-cutting/add-prometheus.md
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: tripfit-node-exporter
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=:9100
+    volumes:
+      - /:/host:ro,rslave
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   mysql_data:

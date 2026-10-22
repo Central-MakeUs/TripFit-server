@@ -14,3 +14,5 @@ out
 *.md
 docs
 .dev
+incident-reporter/build
+incident-reporter/.gradle

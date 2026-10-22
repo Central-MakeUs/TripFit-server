@@ -1,0 +1,3 @@
+// TripFit 앱 빌드와 섞이지 않도록 독립 프로젝트로 둔다(docs/specs/cross-cutting/incident-ai-report.md).
+// 저장소 루트의 Gradle wrapper로 실행한다: ../gradlew -p incident-reporter test
+rootProject.name = 'incident-reporter'

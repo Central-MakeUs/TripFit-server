@@ -1,0 +1,34 @@
+plugins {
+	id 'java'
+	id 'application'
+}
+
+group = 'com.tripfit'
+version = '0.0.1'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+// 서버 E(t3.micro)에서 Prometheus와 함께 돌아야 해서 프레임워크 없이 JDK 내장 HTTP 서버·클라이언트와 Jackson만 쓴다.
+dependencies {
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+	testImplementation platform('org.junit:junit-bom:5.11.4')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testImplementation 'org.assertj:assertj-core:3.26.3'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+	mainClass = 'com.tripfit.reporter.ReporterApplication'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

@@ -80,6 +80,7 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 VPC·SG·1→2 EC2 마이그레이션 심화: [`ec2-split-deployment.md`](../deploy/ec2-split-deployment.md).
 
 CI/CD: `.github/workflows/ci-cd.yml` — PR은 test, `main` push는 test → GHCR push → EC2 A deploy.
+관측성 서버(EC2 C Grafana·EC2 E Prometheus·AI 원인 리포터)는 `.github/workflows/deploy-observability.yml`이 관련 파일이 바뀐 `main` 반영 때만 따로 배포한다(`#126`).
 
 ## Specs
 

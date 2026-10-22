@@ -10,6 +10,8 @@
 
 > **EC2 D(Redis — refresh token 저장소 + 공휴일 캐시) 추가됨(2026-08-10)** — A/B/C와 같은 VPC·서브넷·키페어를 재사용하는 네 번째 인스턴스(`TP-redis`, `i-06fb8540484834192`). EC2 C와 달리 외부 도메인·HTTPS가 필요 없는 순수 내부 인프라라, 보안 그룹에서 6379를 EC2 A의 SG(`sg-app`, `TP-server`)에서만 허용하고 Elastic IP는 부여하지 않았다. 상세: [`docs/decisions/010-redis-infra.md`](../docs/decisions/010-redis-infra.md), 배포 절차: [`deploy/README.md`](README.md#ec2-d--redis-docsdecisions010-redis-infram)
 
+> **EC2 E(Prometheus + AI 원인 리포터) 추가됨(2026-10-19, #126)** — A~D와 같은 VPC·서브넷·키페어를 재사용하는 다섯 번째 인스턴스(`TP-metrics`, `i-0b2ffeefdb3fe200b`, Elastic IP `3.36.154.187`). 보안 그룹 `TP-metrics`는 22만 공개하고 9090·9095는 `TP-monitoring`(C)에서만 허용한다. A·B의 9100(node_exporter)과 C의 3100(Loki)은 E에서만 추가로 허용했다. 상세: [`deploy/README.md`](README.md#ec2-e--수치-수집--ai-원인-리포터-issue-126)
+
 ## 1. 목표 아키텍처
 
 ```mermaid

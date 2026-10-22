@@ -10,8 +10,11 @@
 #   docker compose up -d
 #   CERTBOT_EMAIL=... ../../scripts/init-letsencrypt.sh (DEPLOY_DIR=deploy/monitoring CERTBOT_DOMAIN=grafana.tripfit.online)
 #
-# 최초 설정:
-#   cp .env.example .env   # GRAFANA_ADMIN_PASSWORD 채우기
+# 배포: .github/workflows/deploy-observability.yml의 deploy-monitoring 작업이 GitHub Secrets 값을 환경 변수로 넣어 띄운다.
+# 서버의 .env는 만들거나 고치지 않는다(.claude/rules/deployment.md).
+# 아래 Secrets 값들은 "없으면 빈 값"으로 둔다. 빈 값 배포는 CI가 먼저 막고, 인증서 갱신 cron
+# (scripts/renew-letsencrypt.sh → docker compose run certbot)은 이 값 없이도 돌아야 하기 때문이다.
+# 그러니 C에서 손으로 `docker compose up`을 하지 말고 CI(수동 실행 가능)로만 배포한다.
 # =============================================================================
 services:
   nginx:
@@ -94,14 +97,25 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SERVER_DOMAIN: grafana.tripfit.online
       GF_SERVER_ROOT_URL: https://grafana.tripfit.online/
       TZ: Asia/Seoul
+      # 감시 규칙이 연락처를 규칙마다 직접 지정하려면 필요하다(grafana-provisioning/alerting/tripfit-watch.yaml).
+      GF_FEATURE_TOGGLES_ENABLE: alertingSimplifiedRouting
+      # 아래 값은 provisioning 파일의 $변수로 들어간다 — #126 임계점 감시(EC2 E Prometheus·AI 원인 리포터)
+      PROMETHEUS_URL: http://${PROMETHEUS_HOST:-}:9090
+      REPORTER_URL: http://${PROMETHEUS_HOST:-}:9095/alerts
+      REPORTER_TOKEN: ${REPORTER_TOKEN:-}
+      ENVIRONMENT_NAME: prod
+      WATCH_INTERVAL: 1m
+      WATCH_FOR_USAGE: 10m
+      WATCH_FOR_POOL: 5m
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana-provisioning/alerting:/etc/grafana/provisioning/alerting:ro
     depends_on:
       loki:
         condition: service_healthy

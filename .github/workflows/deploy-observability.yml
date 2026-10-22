@@ -1,0 +1,232 @@
+# EC2 E(Prometheus · AI 원인 리포터)와 EC2 C(Loki · Grafana) 배포 — Issue #126
+# 스펙: docs/specs/cross-cutting/add-prometheus.md "CI 배포" · "GitHub Secrets"
+# 앱(EC2 A) 테스트·배포는 ci-cd.yml이 맡고, 이 파일은 관측성 서버만 다룬다. 같은 파일에 두면 수동 실행 때
+# 기존 작업까지 돌기 때문에 분리했다. 비밀값은 GitHub Secrets에만 두고 서버 .env는 고치지 않는다.
+name: Deploy Observability
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "incident-reporter/**"
+      - "deploy/metrics/**"
+      - "deploy/monitoring/**"
+      - ".github/workflows/deploy-observability.yml"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 배포할 서버
+        type: choice
+        options: [all, metrics, monitoring]
+        default: all
+
+# 기본 권한은 읽기만 준다. GHCR에 이미지를 올리는 deploy-metrics만 packages 쓰기를 따로 받는다.
+permissions:
+  contents: read
+
+# 같은 서버에 배포가 겹치지 않게 한 번에 하나씩 돌린다.
+# GitHub는 대기 중인 실행을 최신 하나만 남기므로, 짧은 시간에 push가 셋 이상 몰리면 가운데 push의 변경 대상이
+# 빠질 수 있다. 그럴 때는 Actions 화면에서 target all로 수동 실행한다.
+concurrency:
+  group: deploy-observability
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  REPORTER_IMAGE_NAME: tripfit-incident-reporter
+
+jobs:
+  # 이번 push에서 바뀐 파일로 어느 서버를 배포할지 정한다. 수동 실행이면 고른 대상을 그대로 쓴다.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      metrics: ${{ steps.pick.outputs.metrics }}
+      monitoring: ${{ steps.pick.outputs.monitoring }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pick targets
+        id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ inputs.target }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT" == "workflow_dispatch" ]]; then
+            [[ "$TARGET" == all || "$TARGET" == metrics ]] && metrics=true || metrics=false
+            [[ "$TARGET" == all || "$TARGET" == monitoring ]] && monitoring=true || monitoring=false
+          elif [[ "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            # 비교할 이전 커밋이 없으면 둘 다 배포한다.
+            metrics=true
+            monitoring=true
+          else
+            changed="$(git diff --name-only "$BEFORE" "$SHA")"
+            grep -qE '^(incident-reporter/|deploy/metrics/|\.github/workflows/deploy-observability\.yml)' <<<"$changed" && metrics=true || metrics=false
+            grep -qE '^(deploy/monitoring/|\.github/workflows/deploy-observability\.yml)' <<<"$changed" && monitoring=true || monitoring=false
+          fi
+          echo "metrics=$metrics" >> "$GITHUB_OUTPUT"
+          echo "monitoring=$monitoring" >> "$GITHUB_OUTPUT"
+          echo "metrics=$metrics monitoring=$monitoring"
+
+  deploy-metrics:
+    needs: changes
+    # 수동 실행도 main에서만 운영에 배포한다. 다른 브랜치 코드로 이미지를 만들어 :latest를 덮어쓰지 않게 한다.
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.metrics == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Test incident-reporter
+        run: ./gradlew -p incident-reporter test --no-daemon
+
+      - name: Set image name (lowercase)
+        id: image
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "full=${{ env.REGISTRY }}/${owner}/${{ env.REPORTER_IMAGE_NAME }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push incident-reporter image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: incident-reporter/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image.outputs.full }}:${{ github.sha }}
+            ${{ steps.image.outputs.full }}:latest
+
+      - name: Deploy to EC2 E
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          REPORTER_IMAGE: ${{ steps.image.outputs.full }}:${{ github.sha }}
+          APP_PRIVATE_HOST: ${{ secrets.APP_PRIVATE_HOST }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          LOKI_HOST: ${{ secrets.LOKI_HOST }}
+          REPORTER_TOKEN: ${{ secrets.REPORTER_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        with:
+          host: ${{ secrets.EC2_E_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GHCR_PAT,GHCR_USERNAME,REPORTER_IMAGE,APP_PRIVATE_HOST,MYSQL_HOST,LOKI_HOST,REPORTER_TOKEN,GEMINI_API_KEY,GEMINI_MODEL,DISCORD_WEBHOOK_URL
+          script: |
+            set -euo pipefail
+            for name in GHCR_PAT REPORTER_IMAGE APP_PRIVATE_HOST MYSQL_HOST REPORTER_TOKEN GEMINI_API_KEY GEMINI_MODEL DISCORD_WEBHOOK_URL; do
+              if [[ -z "${!name:-}" ]]; then
+                echo "FAIL: GitHub Secret for ${name} is empty"
+                exit 1
+              fi
+            done
+            repo="$HOME/TripFit-server"
+            if [[ ! -d "$repo/.git" ]]; then
+              echo "FAIL: ${repo} is not a git checkout (deploy/README.md EC2 E 최초 설정)"
+              exit 1
+            fi
+            git -C "$repo" fetch --prune origin main
+            git -C "$repo" checkout -B main origin/main
+            docker logout ghcr.io 2>/dev/null || true
+            echo "$GHCR_PAT" | docker login ghcr.io -u "${GHCR_USERNAME:-${{ github.actor }}}" --password-stdin
+            cd "$repo/deploy/metrics"
+            export REPORTER_IMAGE REPORTER_TOKEN GEMINI_API_KEY GEMINI_MODEL DISCORD_WEBHOOK_URL
+            export APP_HOST="$APP_PRIVATE_HOST"
+            export DB_HOST="$MYSQL_HOST"
+            export LOKI_HOST="${LOKI_HOST:-}"
+            docker compose pull incident-reporter
+            docker compose up -d
+            docker image prune -af
+            for i in $(seq 1 24); do
+              if curl -fsS http://localhost:9090/-/ready >/dev/null 2>&1 && curl -fsS http://localhost:9095/metrics >/dev/null 2>&1; then
+                echo "OK prometheus + incident-reporter"
+                exit 0
+              fi
+              echo "wait ${i}/24"
+              sleep 5
+            done
+            echo "FAIL readiness timeout"
+            docker compose ps -a
+            docker logs tripfit-incident-reporter 2>&1 | tail -40 || true
+            docker logs tripfit-prometheus 2>&1 | tail -40 || true
+            exit 1
+
+  deploy-monitoring:
+    needs: changes
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.monitoring == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2 C
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          PROMETHEUS_HOST: ${{ secrets.PROMETHEUS_HOST }}
+          REPORTER_TOKEN: ${{ secrets.REPORTER_TOKEN }}
+        with:
+          host: ${{ secrets.EC2_C_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GRAFANA_ADMIN_PASSWORD,PROMETHEUS_HOST,REPORTER_TOKEN
+          script: |
+            set -euo pipefail
+            for name in GRAFANA_ADMIN_PASSWORD PROMETHEUS_HOST REPORTER_TOKEN; do
+              if [[ -z "${!name:-}" ]]; then
+                echo "FAIL: GitHub Secret for ${name} is empty"
+                exit 1
+              fi
+            done
+            repo="$HOME/TripFit-server"
+            if [[ ! -d "$repo/.git" ]]; then
+              echo "FAIL: ${repo} is not a git checkout (deploy/README.md EC2 C git 체크아웃 전환)"
+              exit 1
+            fi
+            git -C "$repo" fetch --prune origin main
+            git -C "$repo" checkout -B main origin/main
+            cd "$repo/deploy/monitoring"
+            export GRAFANA_ADMIN_PASSWORD PROMETHEUS_HOST REPORTER_TOKEN
+            # nginx.conf는 파일 단위 bind mount라 checkout 뒤에도 실행 중인 컨테이너가 구 파일을 본다(ci-cd.yml과 같은 이유).
+            # 새 설정을 먼저 검증하고, up 뒤 재시작해 반영한다.
+            docker compose run --rm --no-deps --entrypoint nginx nginx -t
+            docker compose up -d
+            docker restart tripfit-nginx
+            docker image prune -af
+            for i in $(seq 1 24); do
+              if curl -fsS http://localhost:3000/api/health >/dev/null 2>&1; then
+                if docker logs tripfit-grafana --since 3m 2>&1 | grep -iE 'provisioning.*(error|fail)'; then
+                  echo "FAIL Grafana provisioning error"
+                  exit 1
+                fi
+                echo "OK grafana"
+                exit 0
+              fi
+              echo "wait ${i}/24"
+              sleep 5
+            done
+            echo "FAIL grafana readiness timeout"
+            docker compose ps -a
+            docker logs tripfit-grafana 2>&1 | tail -60 || true
+            exit 1

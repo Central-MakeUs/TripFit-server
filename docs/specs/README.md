@@ -110,7 +110,8 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`openapi-response-schema-generics.md`](cross-cutting/openapi-response-schema-generics.md) | 도구 | **Approved** (이슈 미생성) | `SuccessResponse<T>` 응답 스키마가 스펙에 필드 노출 안 되는 문제 — `useReturnTypeSchema = true`로 해결 | api-contract-diff-ci |
 | [`social-integration-structured-logging.md`](cross-cutting/social-integration-structured-logging.md) | 도구 | Draft (`#65`) | 소셜 로그인(Google/Kakao/Apple)·Google Calendar 연동 구조화 JSON 로깅 — provider/action/httpStatus/providerErrorReason 필드, PII 마스킹 | google-calendar-oauth · auth-social-login |
 | [`terraform-iac-migration.md`](cross-cutting/terraform-iac-migration.md) | 무관 | Draft (`#125`) | 수동 생성된 AWS 인프라(EC2 4대·SG·EIP·Route 53)를 Terraform으로 1:1 import — `infra/terraform/`, S3+native lockfile state | decision 002·009·010 |
-| [`add-prometheus.md`](cross-cutting/add-prometheus.md) | 무관 | Draft (`#126`) | Prometheus 지표 수집 및 Grafana 연동 | decision 009 |
+| [`add-prometheus.md`](cross-cutting/add-prometheus.md) | 출시 이후 | **Approved** (`#126`, 2026-10-19 재작성) | `#126` 부품 ①② + 구현 순서 — 새 서버 EC2 E의 Prometheus로 앱·DB CPU·메모리·커넥션 풀 수집, Grafana 감시 규칙으로 임계점 판단. PR 1 운영 구축 → PR 2 로컬 부하 검증(`#134` 후) | decision 009 |
+| [`incident-ai-report.md`](cross-cutting/incident-ai-report.md) | 출시 이후 | **Approved** (`#126`) | `#126` 부품 ③ — 감시 규칙 호출 → 수치·로그·코드 수집 → 개인정보 가리기 → Gemini 원인 분석 → Discord 리포트 (순수 Java, EC2 E) | add-prometheus |
 | [`harness-track-gate-restructure.md`](cross-cutting/harness-track-gate-restructure.md) | 무관 | Draft (`#127`) | 에이전트 하네스를 3 트랙(기능·감사/리팩터·버그) × 4 게이트(리서치·승인·검증·회고)로 재구성 + `researcher`·`doc-reviewer` 서브에이전트와 `doc-writing.md` 문서 작성 규칙 신설 | — |
 | [`harness-component-rename.md`](cross-cutting/harness-component-rename.md) | 무관 | Draft (`#128`) | 하네스 구성요소 개명·분리 — `harness-*` → `core-*`/`tripfit-*`, 스킬·훅·에이전트 작명 규칙 통일, `core-guardrails`(STOP)/`core-workflow`(게이트) 분리 | harness-track-gate-restructure |
 | [`external-api-bulkhead.md`](cross-cutting/external-api-bulkhead.md) | 출시 이후 | **Implemented** (`#134`, PR 전) | 외부 API 장애 격리 — FCM 타임아웃·트랜잭션 분리·전용 실행기, Apple·Google 코드 교환 비동기화, 카카오 동시 호출 상한, k6·WireMock 부하 테스트 | notification · auth-social-login · google-login-revoke · apple-oauth-multi-audience · user-account-withdrawal |
@@ -150,7 +151,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | **#62** | trip-thumbnail-image (Draft) — 2026-08-02 재작성, 구 "OAuth 콘솔 설정값" 내용은 `#86`으로 이관 | Open |
 | **#86** | OAuth 콘솔 설정값 채우기 (구 #62 내용 이관) | **Closed** · 구 Release Gate(전부 완료) |
 | **#125** | terraform-iac-migration (Draft — 스펙 승인 대기) | Open · **출시 이후** · `priority: could` |
-| **#126** | add-prometheus (Draft) | Open |
+| **#126** | add-prometheus · incident-ai-report (Approved — PR 1 구현 완료, PR 2 남음) | Open · **출시 이후** · `priority: could` |
 | **#134** | external-api-bulkhead (Implemented — PR 전) | Open · **출시 이후** · `priority: could` |
 
 ## 완료 후

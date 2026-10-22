@@ -1,6 +1,6 @@
 # TripFit 배포 (`deploy/`)
 
-TripFit 서버의 로컬 개발 구동, EC2 4대 인프라 배포 절차, HTTPS 인증서 발급 및 운영 스크립트 실행법을 다루는 가이드다. 각 서버별 기동 순서, Let's Encrypt TLS 발급, CI/CD 자동 배포 흐름, 스토어 심사 전 OAuth 콘솔 등록 체크리스트를 설명한다. 상세 인프라 사양 및 환경 변수(GitHub Secrets) 전체 목록은 [`deploy/environment-reference.md`](environment-reference.md)를 참고한다.
+TripFit 서버의 로컬 개발 구동, EC2 5대 인프라 배포 절차, HTTPS 인증서 발급 및 운영 스크립트 실행법을 다루는 가이드다. 각 서버별 기동 순서, Let's Encrypt TLS 발급, CI/CD 자동 배포 흐름, 스토어 심사 전 OAuth 콘솔 등록 체크리스트를 설명한다. 상세 인프라 사양 및 환경 변수(GitHub Secrets) 전체 목록은 [`deploy/environment-reference.md`](environment-reference.md)를 참고한다.
 
 | 관련 문서 | 용도 |
 |-----------|------|
@@ -44,6 +44,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 | [`mysql/`](mysql/) | EC2 B | MySQL 8.0 전용 |
 | [`monitoring/`](monitoring/) | EC2 C | Loki(:3100) + Grafana(:3000) — A/B 컨테이너 로그 수집·조회 |
 | [`redis/`](redis/) | EC2 D | Redis(:6379) — refresh token 저장소 + 공휴일 캐시, `sg-app`에서만 접근 |
+| [`metrics/`](metrics/) | EC2 E | Prometheus(:9090) + AI 원인 리포터(:9095) — 앱·DB 수치 수집, 임계점 초과 시 AI 리포트를 Discord로 (#126) |
 | [`../docker-compose.yml`](../docker-compose.yml) | 로컬 | App build + MySQL (`--profile edge` 시 API Nginx) |
 
 상세 네트워크·SG: [`ec2-split-deployment.md`](ec2-split-deployment.md)
@@ -71,6 +72,12 @@ docker compose --profile app up -d --build
 cd deploy/mysql
 cp .env.example .env
 docker compose up -d
+```
+
+B에는 CI 배포가 없다. 호스트 수치 수집기(node_exporter, #126)는 비밀값이 없어서 B의 저장소(`~/TripFit-server`)를 main으로 맞춘 뒤 한 번만 띄운다. 9100은 보안 그룹에서 EC2 E만 허용한다.
+
+```bash
+cd ~/TripFit-server/deploy/mysql && git pull --ff-only && docker compose up -d node-exporter
 ```
 
 ### EC2 D — Redis (`docs/decisions/010-redis-infra.md`)
@@ -145,13 +152,22 @@ sudo touch /var/log/tripfit-certbot-renew.log && sudo chown ubuntu:ubuntu /var/l
 
 결정 근거: [`docs/decisions/009-observability-logging.md`](../docs/decisions/009-observability-logging.md) (Issue #77). A/B와 같은 VPC·서브넷·키페어 재사용, 별도 t3.micro. Elastic IP 보유(EC2 A와 동일 이유 — Grafana URL·SSH가 인스턴스 재시작에 흔들리지 않도록).
 
+**배포는 CI가 한다** — `.github/workflows/deploy-observability.yml`의 `deploy-monitoring` 작업이 `deploy/monitoring/`이 바뀐 main 반영 때(또는 Actions 화면의 수동 실행으로) C에 SSH로 접속해 `~/TripFit-server`를 main으로 맞추고, GitHub Secrets(`GRAFANA_ADMIN_PASSWORD`·`PROMETHEUS_HOST`·`REPORTER_TOKEN`)를 환경 변수로 넣어 `docker compose up -d`를 한다. C에서 손으로 `docker compose up`을 하지 않는다 — Secrets 값 없이 띄우면 Grafana가 Prometheus·리포터 주소 없이 재생성된다.
+
+**git 체크아웃 전환 (2026-10-19 준비, 첫 CI 배포 때 완료)** — C는 원래 `~/monitoring`에 파일을 직접 복사해 돌렸다. 2026-10-19에 `~/monitoring`의 파일이 main과 모두 같음을 확인하고 `~/TripFit-server`에 저장소를 받아 두었다. compose 프로젝트 이름이 두 폴더 모두 `monitoring`이라 첫 CI 배포가 같은 볼륨(대시보드·알림·로그·인증서)을 그대로 이어받는다. 첫 CI 배포가 성공하면 아래 두 가지를 한 번 한다.
+
 ```bash
-cd deploy/monitoring
-cp .env.example .env   # GRAFANA_ADMIN_PASSWORD 채우기
-docker compose up -d
+crontab -e   # 아래 한 줄로 바꾼다 — DEPLOY_DIR와 스크립트 경로가 저장소를 가리키게
 ```
 
-**HTTPS (EC2 A `deploy/app`와 동일 패턴 — nginx+certbot, Let's Encrypt)**
+```bash
+0 3 * * * DEPLOY_DIR=/home/ubuntu/TripFit-server/deploy/monitoring CERTBOT_DOMAIN=grafana.tripfit.online /home/ubuntu/TripFit-server/scripts/renew-letsencrypt.sh >> /var/log/tripfit-certbot-renew.log 2>&1
+```
+
+- 옛 `~/monitoring`·`~/scripts`는 확인용으로 남겨 두었다가, 전환 뒤 갱신 cron이 한 번 성공하면 지운다. 전환이 끝나면 이 "git 체크아웃 전환" 문단도 현행 설명으로 정리한다.
+- 갱신 cron은 `docker compose run certbot`만 하므로 Secrets 값이 필요 없다. 그래서 compose의 Secrets 값은 "없으면 빈 값"으로 두고, 빈 값 배포는 CI가 배포 전에 막는다.
+
+**HTTPS (EC2 A `deploy/app`와 동일 패턴 — nginx+certbot, Let's Encrypt)** — C를 처음 만들 때(2026-08-01) 쓴 최초 설치 절차다. 지금 C는 인증서 발급이 끝나 다시 할 일이 없다. C를 새로 만들어 다시 발급해야 할 때만, 아래 `docker compose up -d` 대신 CI 수동 실행(`deploy-observability.yml`, target `monitoring`)으로 스택을 띄운 뒤 인증서 발급 스크립트만 실행한다.
 
 ```bash
 export DEPLOY_DIR=$(pwd)/deploy/monitoring
@@ -162,9 +178,8 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
 ```
 
 - **스택**: `nginx`(:80/:443) → `grafana`(내부 `127.0.0.1:3000`만 바인딩, 공개 노출 없음), `certbot`(발급·갱신), `loki`(:3100, A/B가 push하는 대상 — 직접 브라우저 조회 대상 아님).
-- Route 53: `grafana.tripfit.online` A → EC2 C Elastic IP. SG는 22/80/443만 공개, 3100은 A/B SG로만 제한.
-- cron 갱신(A와 동일 스크립트, 도메인만 다름 — 로그 파일 사전 생성도 A와 동일): `0 3 * * * DEPLOY_DIR=/home/ubuntu/monitoring CERTBOT_DOMAIN=grafana.tripfit.online /home/ubuntu/scripts/renew-letsencrypt.sh >> /var/log/tripfit-certbot-renew.log 2>&1`
-- C는 git checkout이 없어 `scripts/renew-letsencrypt.sh`가 바뀌면 `~/scripts/`에 직접 복사해야 한다.
+- Route 53: `grafana.tripfit.online` A → EC2 C Elastic IP. SG는 22/80/443만 공개하고, 3100은 아래 "SG 3100" 줄을 따른다.
+- cron 갱신은 A와 같은 스크립트를 쓰고 도메인만 다르다(로그 파일 사전 생성도 A와 같음). 현행 cron 줄은 위 "git 체크아웃 전환"을 따른다.
 - **A/B 쪽 최초 1회 필수 작업** — Loki가 뜨기 전에 A·B에서 각각 실행해야 `docker compose up -d`가 `driver: loki`로 성공한다:
   ```bash
   docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
@@ -181,8 +196,20 @@ CERTBOT_EMAIL=codus5068@naver.com ../../scripts/init-letsencrypt.sh
     -H 'Content-Type: application/json' -d '{"role":"Viewer"}'
   ```
 - 기본 대시보드 "TripFit 서비스 로그 개요"(`uid: tripfit-overview`)가 홈 대시보드로 설정되어 있다 — 에러/경고 건수, nginx 4xx/5xx, app 에러·경고·전체 로그 스트림, nginx 오류 응답 로그. Explore 탭에서 직접 LogQL 조회도 가능.
-- **CI/CD 대상 아님** — `main` push 자동 배포는 EC2 A(app)만 다룬다. EC2 C는 위 명령으로 수동 배포·갱신.
-- 이 서버는 A/B와 달리 git 체크아웃이 아니라 `~/monitoring`·`~/scripts`에 파일을 직접 올린 상태 — 향후 git 체크아웃으로 전환 권장(009 후속 작업).
+- **#126 임계점 감시:** `grafana-provisioning/datasources/prometheus.yaml`(EC2 E Prometheus)과 `grafana-provisioning/alerting/tripfit-watch.yaml`(감시 규칙 6개·리포터 연락처)을 파일로 올린다. 규칙별 연락처 지정에 기능 스위치 `GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting`이 필요하다. 기존 에러 로그 알림 4개는 운영 Grafana에 API로 만든 그대로다. 상세: [`add-prometheus.md`](../docs/specs/cross-cutting/add-prometheus.md)
+- SG 3100은 A·B와 EC2 E(AI 원인 리포터의 로그 조회)에서만 허용한다.
+
+### EC2 E — 수치 수집 + AI 원인 리포터 (Issue #126)
+
+스펙: [`add-prometheus.md`](../docs/specs/cross-cutting/add-prometheus.md) · [`incident-ai-report.md`](../docs/specs/cross-cutting/incident-ai-report.md). 프로비저닝 2026-10-19 — `TP-metrics`(`i-0b2ffeefdb3fe200b`), A~D와 같은 VPC·서브넷·키페어(`TripFit-Keypair`), t3.micro, 디스크 16GB gp3, swap 1GB. Elastic IP `3.36.154.187`(CI SSH 접속용), private IP `172.31.43.92`.
+
+- **스택** (`deploy/metrics/docker-compose.yml`): `prometheus`(:9090, 보관 15일·최대 2GB) — A의 앱(`/actuator/prometheus`)·A/B의 node_exporter(:9100)·리포터를 수집한다. `incident-reporter`(:9095) — C의 Grafana 감시 규칙이 부르면 수치·로그·코드를 모아 Gemini로 분석해 Discord로 보낸다. 이미지는 CI가 GHCR에 올린 것을 받는다.
+- **보안 그룹 `TP-metrics`**: 22(SSH, CI 배포), 9090·9095는 `TP-monitoring`(C)에서만. E에서 나가는 수집은 A·B의 9100(각 SG에서 E만 허용)과 A nginx 80(`location = /actuator/prometheus`가 E private IP만 `allow`)으로 간다.
+- **배포는 CI가 한다** — `deploy-observability.yml`의 `deploy-metrics` 작업이 `incident-reporter/`·`deploy/metrics/`가 바뀐 main 반영 때(또는 수동 실행으로) 리포터 테스트 → 이미지 빌드·GHCR 업로드 → E에 SSH → `~/TripFit-server`를 main으로 맞춤 → Secrets를 환경 변수로 넣어 `docker compose up -d` → Prometheus·리포터 응답 확인까지 한다. 서버 `.env`는 만들지 않는다.
+- **최초 설정** (2026-10-19 완료, EC2 user data): Docker·compose·git 설치, `ubuntu`를 `docker` 그룹에 추가, swap 1GB, `~/TripFit-server` 저장소 받기, 운영자 SSH 공개키 추가. 다시 만들 때는 같은 순서를 따른다.
+- **리포터 저장소 사본**: 리포터는 의심 코드를 짚으려고 컨테이너 볼륨(`reporter_source`)에 저장소를 따로 받아 두고, 분석 직전마다 `git pull --ff-only`로 main에 맞춘다. 처음 분석할 때 자동으로 받는다.
+- **정상 동작 확인** (E에서): `curl -fsS localhost:9090/-/ready`(Prometheus) · `curl -fsS localhost:9095/metrics`(리포터) · Grafana Explore에서 Prometheus datasource로 `up` 조회 시 `tripfit-app`·`node-app`·`node-db`·`incident-reporter`가 1. CI 배포 작업도 앞의 두 개를 확인하고 끝난다.
+- **배포 전 로컬 점검**: `deploy/metrics/docker-compose.local.yml` — Prometheus·Loki·Grafana(운영과 같은 감시 규칙 파일)·리포터를 로컬에 띄우고 `./local/send-fake-alert.sh`로 가짜 알림을 보낸다(부하 없음). 값은 `local/.env`(커밋 제외)에 넣는다.
 
 ## 환경 변수 관리
 
@@ -258,7 +285,8 @@ keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore -
 
 `.github/workflows/ci-cd.yml` — `main` push → GHCR push → EC2 A deploy (app + nginx + certbot)
 deploy 시 **위 GitHub Secrets 전부가 app 컨테이너에 자동 주입**된다 — EC2 쪽 `.env` 유무와 무관하게 동작한다.
-**EC2 B(MySQL)·EC2 C(모니터링)는 이 파이프라인 밖** — 최초 설정·재배포 모두 수동(`deploy/mysql/`, `deploy/monitoring/` 절 참고).
+**EC2 C(모니터링)·EC2 E(수치·리포터)는 `.github/workflows/deploy-observability.yml`** — 관련 파일이 바뀐 main 반영 때만 돌고, Actions 화면에서 수동 실행(all·metrics·monitoring)도 할 수 있다. 앱 배포(`ci-cd.yml`)와 분리해 둔 이유는 수동 실행 때 앱 테스트·배포까지 돌지 않게 하기 위해서다.
+**EC2 B(MySQL)·EC2 D(Redis)는 파이프라인 밖** — 최초 설정·재배포 모두 수동(`deploy/mysql/`, `deploy/redis/` 절 참고).
 
 ## 검증 스크립트
 

@@ -1,11 +1,11 @@
 # Deployment Environment Reference
 
-TripFit 백엔드 배포 인프라의 도메인 DNS 매핑, EC2 4대 서버 구성, 그리고 애플리케이션 실행에 필요한 환경 변수(GitHub Actions Secrets) 전체 목록을 정의한 참조(SSOT) 문서다. 인프라 프로비저닝 및 환경 변수 추가·수정 시 이 문서를 기준으로 삼는다. 실제 배포 및 검증 절차는 [`deploy/README.md`](README.md)를 참고한다.
+TripFit 백엔드 배포 인프라의 도메인 DNS 매핑, EC2 5대 서버 구성, 그리고 애플리케이션 실행에 필요한 환경 변수(GitHub Actions Secrets) 전체 목록을 정의한 참조(SSOT) 문서다. 인프라 프로비저닝 및 환경 변수 추가·수정 시 이 문서를 기준으로 삼는다. 실제 배포 및 검증 절차는 [`deploy/README.md`](README.md)를 참고한다.
 
 ## 언제 이 문서를 보는가
 
 - 새로운 환경 변수(GitHub Secret)를 추가하거나 기존 키 값을 갱신할 때
-- EC2 인스턴스(A/B/C/D) 역할, 사설/공인 IP, 포트 및 보안 그룹(SG) 규칙을 점검할 때
+- EC2 인스턴스(A/B/C/D/E) 역할, 사설/공인 IP, 포트 및 보안 그룹(SG) 규칙을 점검할 때
 - 프론트엔드(Vercel)와 백엔드(EC2) 간의 도메인 및 DNS 매핑을 확인할 때
 
 ## 도메인 및 DNS 구조
@@ -30,7 +30,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 
 상세 결정 배경: [`docs/decisions/002-domain-split-vercel-api.md`](../docs/decisions/002-domain-split-vercel-api.md)
 
-## 서버 인프라 매핑 (EC2 A~D)
+## 서버 인프라 매핑 (EC2 A~E)
 
 | 경로 | 서버 | 사설 IP / 포트 | 역할 및 스택 |
 |---|---|---|---|
@@ -38,6 +38,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 | [`mysql/`](mysql/) | **EC2 B** | :3306 | MySQL 8.0 데이터베이스 전용 인스턴스 |
 | [`monitoring/`](monitoring/) | **EC2 C** | `172.31.38.217` / :3100, :3000 | Loki(로그 수집) + Grafana(대시보드) |
 | [`redis/`](redis/) | **EC2 D** | `172.31.38.246` / :6379 | Redis (refresh token 저장소 + 공휴일 캐시, `sg-app` 허용) |
+| [`metrics/`](metrics/) | **EC2 E** | `172.31.43.92` / :9090, :9095 (Elastic IP `3.36.154.187`) | Prometheus(수치 수집) + AI 원인 리포터 — 9090·9095는 `TP-monitoring`(C)에서만 허용 (#126) |
 | [`../docker-compose.yml`](../docker-compose.yml) | **로컬** | localhost:8080, :3306 | 로컬 개발 환경 (App build + MySQL) |
 
 상세 네트워크 및 보안 그룹: [`ec2-split-deployment.md`](ec2-split-deployment.md)
@@ -54,7 +55,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 
 ### 배포 인프라 및 CI/CD 전용 Secrets
 
-기존 SSH·이미지 Secrets(`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_DEPLOY_PATH`, `GHCR_PAT`, `GHCR_USERNAME`)는 CI/CD가 EC2 A에 접속하고 GHCR에서 도커 이미지를 pull받는 데 필수적으로 사용된다.
+기존 SSH·이미지 Secrets(`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_DEPLOY_PATH`, `GHCR_PAT`, `GHCR_USERNAME`)는 CI/CD가 EC2 A에 접속하고(`EC2_USER`·`EC2_SSH_KEY`·`GHCR_*`는 C·E 배포에도 쓴다 — 아래 "관측성 배포 Secrets") GHCR에서 도커 이미지를 pull받는 데 필수적으로 사용된다.
 
 | Secret 키 | 필수 | 설명 |
 |---|---|---|
@@ -101,6 +102,24 @@ NEXT_PUBLIC_API_BASE_URL=https://api.tripfit.online
 | `KAKAO_ADMIN_KEY` | ✅ (Kakao 시) | - | Kakao Developers Admin Key (탈퇴 시 unlink 호출용) |
 | `FIREBASE_CREDENTIALS_BASE64` | ✅ (알림 시) | - | Firebase 서비스 계정 JSON 전체 Base64 인코딩 값 |
 | `HOLIDAY_API_SERVICE_KEY` | ✅ (공휴일 시) | - | 특일 정보 API 인증키 (**Decoding 키**, 비어 있으면 공휴일 동기화만 skip) |
+
+### 관측성 배포 Secrets (EC2 C·E, #126)
+
+`.github/workflows/deploy-observability.yml`이 쓰는 Secrets다. 필수(✅) 값이 비어 있으면 배포 전에 그 자리에서 실패한다. `EC2_USER`·`EC2_SSH_KEY`·`GHCR_PAT`·`GHCR_USERNAME`은 위 표의 값을, `MYSQL_HOST`·`LOKI_HOST`·`DISCORD_WEBHOOK_URL`은 기존 값을 그대로 쓴다.
+
+| Secret 키 | 필수 | 쓰는 서버 | 설명 |
+|---|---|---|---|
+| `EC2_E_HOST` | ✅ | E | EC2 E Elastic IP — CI SSH 접속 대상 |
+| `EC2_C_HOST` | ✅ | C | EC2 C Elastic IP — CI SSH 접속 대상 |
+| `APP_PRIVATE_HOST` | ✅ | E | EC2 A private IP — Prometheus가 앱·A 호스트 수치를 가져갈 주소 |
+| `MYSQL_HOST` | ✅ | E | (재사용) EC2 B private IP — Prometheus의 DB 서버 수치 수집 대상 |
+| `LOKI_HOST` | | E | (재사용) EC2 C private IP — 리포터의 로그 조회 주소 |
+| `PROMETHEUS_HOST` | ✅ | C | EC2 E private IP — Grafana가 Prometheus·리포터를 부를 주소 |
+| `REPORTER_TOKEN` | ✅ | C·E | Grafana → 리포터 공유 토큰(무작위 값) |
+| `GEMINI_API_KEY` | ✅ | E | Gemini API 키(무료 등급, Google AI Studio 발급) |
+| `GEMINI_MODEL` | ✅ | E | 기본 모델 이름 — 현재 `gemini-3.6-flash`. 예비 모델은 compose에 고정(`gemini-3.5-flash-lite`) |
+| `DISCORD_WEBHOOK_URL` | ✅ | E | (재사용) 리포트를 보낼 기존 알림 채널 |
+| `GRAFANA_ADMIN_PASSWORD` | ✅ | C | Grafana 관리자 비밀번호 — 처음 설치할 때만 쓰이고 이미 쓰는 Grafana의 비밀번호는 바꾸지 않는다 |
 
 ### Fail-Fast 및 기본값 운영 규칙
 

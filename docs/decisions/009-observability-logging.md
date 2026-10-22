@@ -51,6 +51,6 @@
 - [x] `deploy/README.md`·`deploy/ec2-split-deployment.md`에 EC2 C 및 운영 절차 반영
 - [x] EC2 C Elastic IP — `54.116.62.227` 할당(2026-08-01), `grafana.tripfit.online` A 레코드 연결
 - [x] EC2 C HTTPS — nginx+certbot 추가(EC2 A와 동일 패턴), Let's Encrypt 발급 완료. Grafana는 `127.0.0.1:3000`만 바인딩, 공개 3000 포트는 닫음
-- [ ] (후속, 이번 범위 아님) Grafana Alerting → Discord 웹훅 실시간 에러 알림
-- [ ] (후속, 이번 범위 아님) 호스트 리소스(RAM/디스크/swap) 지표 수집 — Loki는 로그 전용이라 `docker logs`에 안 찍히는 OOM·swap 상황은 별도 파이프라인(Prometheus+node_exporter 또는 dmesg/journalctl용 Promtail) 필요. C에 1GB swap은 2026-08-01 우선 추가함(안전망)
-- [ ] (후속, 이번 범위 아님) EC2 C를 A/B처럼 git 체크아웃 기반으로 전환 — 현재 `~/monitoring`·`~/scripts`에 파일을 직접 scp한 상태
+- [x] Grafana Alerting → Discord 웹훅 실시간 에러 알림 — 2026-08-26. 도메인별 알림 규칙 4개(로그인 `auth` · 여행방 `trip` · 유저·구글캘린더 `user` · 알림 `notification`, 폴더 `TripFit 알림 규칙`)가 **최근 3시간 ERROR+WARN 로그 5건 이상**이면 발동한다. 평가 주기는 30분이다(조회 범위가 3시간이라 기본값 1분은 작은 서버에 부담만 줌). 연락처 `tripfit-discord-alerts`가 API 변경 CI 알림과 같은 Discord 채널로 보내며, 메시지는 🚨 발생 / ✅ 해제 + 도메인 한 줄 요약 + 대시보드 링크 양식이다. 대시보드와 마찬가지로 그라파나 HTTP API로 운영 서버에 직접 구성했고 레포에 provisioning 파일로 커밋되진 않았다(웹훅 URL은 비밀값이라 문서에도 남기지 않음)
+- [ ] (`#126`에서 진행 중 — 2026-10-19 EC2 E `TP-metrics`에 Prometheus, A·B에 node_exporter. 배포 후 완료 처리) 호스트 리소스(RAM/디스크/swap) 지표 수집 — Loki는 로그 전용이라 `docker logs`에 안 찍히는 OOM·swap 상황은 별도 파이프라인(Prometheus+node_exporter 또는 dmesg/journalctl용 Promtail) 필요. C에 1GB swap은 2026-08-01 우선 추가함(안전망)
+- [ ] (`#126`에서 진행 중 — 2026-10-19 C에 `~/TripFit-server` 저장소를 받아 두었고, 첫 CI 배포(`deploy-observability.yml`) 뒤 cron 경로를 바꾸면 완료) EC2 C를 A/B처럼 git 체크아웃 기반으로 전환 — 지금은 `~/monitoring`·`~/scripts`에 파일을 직접 복사한 상태로 운영 중

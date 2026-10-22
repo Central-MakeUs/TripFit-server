@@ -44,12 +44,19 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        # prometheus는 nginx가 EC2 E(Prometheus 서버) private IP만 허용한다(docs/specs/cross-cutting/add-prometheus.md)
+        include: health,prometheus
   endpoint:
     health:
       probes:
         enabled: true
       show-details: never
+  metrics:
+    distribution:
+      # AI 원인 리포터가 API별 p95 응답 시간을 계산할 수 있게 구간 몇 개만 둔다.
+      # 전체 히스토그램(percentiles-histogram)은 시계열이 크게 늘어 Prometheus 서버(t3.micro)에 부담이 된다.
+      slo:
+        http.server.requests: 100ms,300ms,1s,3s,10s
 
 springdoc:
   api-docs:

@@ -1,0 +1,10 @@
+# Prometheus(EC2 E) 연결. 주소는 compose 환경 변수 PROMETHEUS_URL로 받는다(로컬·운영 공통 파일).
+# uid는 감시 규칙(alerting/tripfit-watch.yaml)이 이 값을 가리키므로 바꾸지 않는다.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: tripfit-prometheus
+    type: prometheus
+    access: proxy
+    url: $PROMETHEUS_URL
+    isDefault: false
