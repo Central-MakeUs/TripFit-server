@@ -17,8 +17,9 @@
 push / PR → OpenApiSpecExportTest → oasdiff breaking → 있으면 Discord #frontend 알림만 발송
                                    → 없어도 트레일러·ErrorCode 신규/변경 있으면 별도 알림 발송(아래 "oasdiff가 못 보는 변경" 참고)
                                    → ErrorCode·@ApiResponse 불일치·권한 게이트 변경은 위 결과와 무관하게 항상 별도 확인
-                                                        → job은 항상 통과(CI 실패로 표시 안 함), deploy도 막지 않음
 ```
+
+변경 감지 결과는 Discord로 알립니다. main 이미지 발행은 테스트와 계약 검사 작업이 모두 성공한 뒤 시작합니다. OpenAPI 생성이나 도구 설치에 실패하면 이미지를 발행하지 않습니다.
 
 oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** 노출됩니다. oasdiff breaking check `id`가 80개+라 전부 한글 템플릿으로 매핑·유지보수하는 게 비현실적이고, 일부만 매핑하면 매핑 안 된 `id`만 영어로 남아 한 필드 안에서 한글·영어가 뒤섞이는 문제가 있어(2026-07-29 실제 사고) 아예 원문만 쓰기로 함(2026-07-29 amend). footer에는 이번 변경에 포함된 커밋 short SHA가 `Commit ID: 9e1c878, 6e9df7e`처럼 전부 나열됩니다.
 
@@ -26,7 +27,7 @@ oasdiff의 breaking-change 문구는 **번역 없이 영어 원문 그대로** �
 
 ### merge 시 알림이 안 오는 게 정상인 이유 — 중복 방지 로직
 
-`api-contract-check` job의 "Check breaking changes and notify Discord" 스텝은 `pull_request` 이벤트에서만 돌고, main으로의 merge push(커밋 메시지가 `Merge pull request #`로 시작)에서는 **의도적으로 skip**됩니다 — PR이 열릴 때 이미 같은 diff로 알림을 보냈으니 merge 시점에 또 보내면 중복이기 때문입니다. 즉 **알림은 PR을 열거나 업데이트하는 시점에 옵니다, merge 시점이 아닙니다.** PR 없이 로컬에서 직접 main에 push한 경우(#67 사고)는 이 휴리스틱이 걸리지 않아 알림이 나갑니다.
+기준 명세가 있으면 PR과 main push 모두 계약을 비교합니다. PR을 열거나 업데이트할 때, 또는 main에 직접 push할 때 알림 대상 변경을 발견하면 Discord로 보냅니다. GitHub의 PR 병합 커밋(메시지가 `Merge pull request #`로 시작)은 PR에서 이미 알렸으므로 비교 결과만 로그에 남깁니다.
 
 ### oasdiff가 못 보는 변경 — 트레일러·ErrorCode·권한 게이트 기반 2차 감지 (2026-07-30 amend, `#64` 사고)
 
@@ -112,5 +113,5 @@ GITHUB_SHA="$(git rev-parse HEAD)" \
 | `docs/api/openapi.json` | `main` 스냅샷 (자동 갱신, 손편집 금지) |
 | `docs/api/tripfit_app_icon.png` | Discord 알림 봇 아바타 — raw URL로 CI에서 참조 |
 | `src/test/java/.../OpenApiSpecExportTest.java` | 현재 코드 기준 스펙을 `build/openapi/openapi.json`으로 export |
-| `scripts/notify-api-breaking-change.sh` | oasdiff 실행 → breaking·필드 추가·(oasdiff 무변화 시) 트레일러·ErrorCode 신규/변경·(항상) ErrorCode·`@ApiResponse` 불일치·권한 게이트 변경이면 Discord 알림만 발송 (job은 항상 통과) |
+| `scripts/notify-api-breaking-change.sh` | oasdiff 실행 → breaking·필드 추가·(oasdiff 무변화 시) 트레일러·ErrorCode 신규/변경·(항상) ErrorCode·`@ApiResponse` 불일치·권한 게이트 변경이면 Discord 알림을 발송하며 변경 감지 자체는 성공으로 처리 |
 | `.github/workflows/ci-cd.yml` `api-contract-check` job | 위 과정을 CI에 연결 |

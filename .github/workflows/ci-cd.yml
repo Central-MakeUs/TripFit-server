@@ -62,17 +62,19 @@ jobs:
         run: ./gradlew test --tests "com.tripfit.tripfit.common.config.OpenApiSpecExportTest" --no-daemon
 
       - name: Install oasdiff
+        shell: bash
         run: curl -fsSL https://raw.githubusercontent.com/oasdiff/oasdiff/main/install.sh | sh
 
       - name: Fetch base spec from main
         id: base_spec
         run: |
-          if curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/main/docs/api/openapi.json" -o base-openapi.json; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false — 최초 실행, breaking 비교 스킵" >> "$GITHUB_OUTPUT"
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+          status=$(curl -sSL -o base-openapi.json -w '%{http_code}' \
+            "https://raw.githubusercontent.com/${{ github.repository }}/main/docs/api/openapi.json")
+          case "$status" in
+            200) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "기준 OpenAPI 조회 실패 (HTTP $status)" >&2; exit 1 ;;
+          esac
 
       - name: Determine commit range
         id: range
@@ -84,18 +86,11 @@ jobs:
           fi
 
       - name: Check breaking changes and notify Discord
-        # PR 병합(pull_request 이벤트)에서 이미 알림을 보낸 diff를 main push에서 또 보내면 중복이라 스킵한다.
-        # 단, PR 없이 브랜치를 로컬 merge 후 main에 직접 push한 경우(#67 사고 — pull_request 이벤트 자체가
-        # 없었음) 이 조건만으로는 알림이 영원히 안 나간다. GitHub PR "Create a merge commit" 병합은 항상
-        # "Merge pull request #N from ..." 형식 커밋 메시지를 남기므로(CONTRIBUTING.md Merge 정책 —
-        # Squash 금지), 그 패턴이 아닌 push는 PR을 거치지 않은 것으로 간주해 알림을 보낸다.
-        # (rebase merge처럼 팀 합의된 예외 전략을 쓰면 이 휴리스틱이 놓칠 수 있음 — 근본 해결은 main
-        # 브랜치 보호 규칙으로 직접 push 자체를 막는 것)
-        if: |
-          steps.base_spec.outputs.exists == 'true' &&
-          (github.event_name == 'pull_request' ||
-           (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'Merge pull request #')))
+        if: steps.base_spec.outputs.exists == 'true'
         env:
+          # PR에서 이미 알린 병합 커밋은 비교만 수행한다. 직접 push의 변경은 기존처럼 알린다.
+          DRY_RUN: >-
+            ${{ github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Merge pull request #') }}
           BASE_SPEC: base-openapi.json
           REVISED_SPEC: build/openapi/openapi.json
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -108,8 +103,8 @@ jobs:
         run: ./scripts/notify-api-breaking-change.sh
 
       - name: Refresh OpenAPI snapshot on main
-        # breaking 여부와 무관하게 main 상태를 그대로 기록 — deploy를 막지 않으므로 스냅샷도 항상 최신화
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # 계약 변경 알림 여부와 관계없이 main의 스냅샷을 갱신한다.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           jq . build/openapi/openapi.json > docs/api/openapi.json
           if git diff --quiet -- docs/api/openapi.json; then
@@ -123,7 +118,11 @@ jobs:
           # main에 동시 push가 겹치면 거부되므로 rebase 후 재시도(#4·#35 병합 사고 재발 방지)
           for i in 1 2 3 4 5; do
             if git push; then
-              break
+              exit 0
+            fi
+            if [[ "$i" == 5 ]]; then
+              echo "OpenAPI 스냅샷 push 실패 (5회 시도)" >&2
+              exit 1
             fi
             echo "push 거부됨(동시 push, 시도 ${i}/5) — main rebase 후 재시도"
             sleep $((i * 2))
@@ -131,7 +130,7 @@ jobs:
           done
 
   publish-image:
-    needs: test
+    needs: [test, api-contract-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:

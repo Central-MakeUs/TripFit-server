@@ -163,4 +163,4 @@ Must/Could 구분은 **이슈에 직접 붙는 `priority:` 라벨**로 표현한
 
 ## CI
 
-`workflows/ci-cd.yml` — PR·`main` push 시 test, `main` push 시 GHCR deploy.
+`workflows/ci-cd.yml` — PR과 `main` push에서 테스트와 API 계약 검사를 실행한다. `main` 이미지는 두 작업이 모두 성공한 뒤 GHCR에 발행한다.

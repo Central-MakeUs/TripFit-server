@@ -10,7 +10,7 @@
 
 ## 앱 배포하기
 
-GitHub Actions는 테스트를 통과한 `main` 커밋의 Linux x86_64 이미지를 SHA 태그로 발행한다. 발행 성공을 확인한 후 관리자 PC의 이 저장소에서 실행한다.
+GitHub Actions는 테스트와 API 계약 검사 작업을 모두 통과한 `main` 커밋의 Linux x86_64 이미지를 SHA 태그로 발행한다. 발행 성공을 확인한 후 관리자 PC의 이 저장소에서 실행한다.
 
 ```bash
 ./scripts/deploy-single.sh <고정 IPv4> <40자리 커밋 SHA>

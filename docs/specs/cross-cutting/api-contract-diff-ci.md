@@ -42,27 +42,22 @@ Breaking-Change-Reason: 프론트 요청으로 name → nickname 통일 (디자�
 
 ## 실패 처리 범위
 
-```
-test 통과 ──────────────▶ deploy (배포 진행)
-api-contract-check ─────▶ Discord 알림만 (job은 항상 통과, 배포도 막지 않음)
-```
+`test`와 `api-contract-check`는 병렬로 실행한다. `main`에 push하면 두 작업이 모두 성공한 뒤에만 `publish-image`가 해당 SHA의 이미지를 GHCR에 발행한다. 어느 한 작업이 실패하거나 취소되면 발행을 건너뛴다.
 
-- `api-contract-check`(신규 job)는 `test`/`deploy`와 **독립적으로 병렬 실행** — `deploy`의 `needs: test`는 변경하지 않음
-- breaking change가 있어도 `api-contract-check`는 **항상 통과(exit 0)** 한다 — Discord `#frontend` 알림만으로 충분하다는 판단(2026-07-29 amend, 아래 변경 이력). PR 목록·Actions 탭을 빨갛게 만들어 눈에 띄게 하는 대신, 알림 확인만으로 흐름을 끊지 않는다
-- job이 항상 통과하므로 GitHub 저장소 Required status checks에 `api-contract-check`를 추가해도 merge를 막는 효과가 없다 — merge 차단이 필요해지면 별도 메커니즘(리뷰 체크리스트 등)을 새로 설계해야 함
+PR과 main 직접 push에서 계약 변경을 발견하면 Discord로 알린다. GitHub의 PR 병합 커밋도 비교하되 중복 알림은 생략한다. 변경 발견 자체는 검사 성공으로 처리한다. OpenAPI 생성이나 검사 도구 설치 단계가 실패하면 계약 검사 작업도 실패한다. 운영 서버에 이미지를 적용하는 시점은 관리자가 결정한다.
 
 ## 요구사항
 
 ### Must Have
 
-- [ ] **OpenAPI 스펙 export**: `src/test/java/.../OpenApiSpecExportTest.java` 신규 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `@ActiveProfiles("test")`로 `/v3/api-docs`를 MockMvc 호출해 `build/openapi/openapi.json`에 기록. 새 Gradle 플러그인·실서버 기동·MySQL 불필요(H2 테스트 프로필 재사용, `SecurityConfig.java:69` `/v3/api-docs/**`는 이미 `permitAll`)
-- [ ] **base 스펙 조회**: `curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/docs/api/openapi.json` — public repo라 인증 불필요. 404(최초 실행, 파일 없음)면 breaking 비교를 스킵하고 안내 로그만 남김
-- [ ] **oasdiff CLI**: `oasdiff breaking base.json build/openapi/openapi.json --format json` 실행, exit code 1 = breaking 존재(공식 문서 확인). 정확한 JSON 필드 구조(경로·method·설명 텍스트 키 이름)는 구현 착수 시 실제 실행 결과로 확정 — 추측으로 파서 작성 안 함
-- [ ] **`.github/workflows/ci-cd.yml`에 신규 job `api-contract-check` 추가**: workflow-level 기존 트리거(`push: main`, `pull_request: main`) 그대로 재사용, `test`/`deploy`와 병렬(간섭 없음)
+- [ ] **OpenAPI 스펙 export**: `src/test/java/.../OpenApiSpecExportTest.java` — 테스트 프로필과 MySQL·Redis Testcontainers로 앱 컨텍스트를 기동하고 MockMvc로 `/v3/api-docs`를 호출해 `build/openapi/openapi.json`에 기록
+- [ ] **base 스펙 조회**: main의 `docs/api/openapi.json`을 공개 URL에서 읽는다. 404(최초 실행, 파일 없음)면 비교를 건너뛴다. 통신 오류와 그 밖의 실패 응답은 작업 실패로 처리한다
+- [ ] **oasdiff CLI**: `oasdiff breaking base.json build/openapi/openapi.json --format json` 실행, 검출한 변경을 JSON에서 읽어 알림에 반영. 명령 실행 오류는 작업 실패로 처리
+- [ ] **`.github/workflows/ci-cd.yml`에 신규 job `api-contract-check` 추가**: PR과 main push에서 `test`와 병렬 실행. main 이미지 발행은 두 작업의 성공에 의존
 - [ ] breaking change 감지 시:
   1. 커밋별로 순회하며 `Breaking-Change-Reason:` 트레일러 추출 — 값이 다음 줄로 wrap돼도(빈 줄·다른 `Key: value` 트레일러 전까지) 한 사유로 접어 합치고 짧은 SHA를 붙여 나열(없으면 안내문). NUL 구분 다중 레코드 방식은 BSD awk가 NUL 바이트를 못 다뤄 커밋 1개씩 순회하는 방식으로 구현(2026-07-29 amend)
   2. Discord embed 조립 후 `curl -X POST`로 `${{ secrets.DISCORD_WEBHOOK_URL }}`에 전송(이미 등록된 secret, 새 secret 불필요)
-  3. job은 항상 통과(`exit 0`) — Discord 알림만으로 충분하다는 판단(2026-07-29 amend, "실패 처리 범위" 절)
+  3. 변경 감지 단계는 통과(`exit 0`) — Discord 알림으로 전달(2026-07-29 amend, "실패 처리 범위" 절)
 - [ ] **Discord 메시지 구성**(embed): 제목 `🚨 API Breaking Change` · Repository/Branch/Commit/PR(있을 때만) · 발견된 변경(endpoint·method별 breaking 설명 목록) · 왜 변경했는가(트레일러, 없으면 안내문) · 프론트 작업 체크리스트(고정 텍스트: orval 재생성 / 타입 오류 확인 / 영향받는 API 수정) · GitHub 링크(PR 또는 커밋 + Actions 실행 링크)
 - [ ] non-breaking 변경만 있으면 Discord 알림 없이 조용히 통과
 - [ ] `push`(main)에서만: 위 단계 통과 후 `docs/api/openapi.json`을 최신 스펙으로 갱신·커밋(`git commit -m "Chore: OpenAPI 스펙 스냅샷 갱신 [skip ci]"`) — `[skip ci]`로 재트리거 방지
@@ -80,7 +75,7 @@ api-contract-check ─────▶ Discord 알림만 (job은 항상 통과, �
 - tRPC·모노레포 전환 — `decisions/002`로 이미 확정 배제 (재질문 금지 대상)
 - Pact 등 본격 contract test — 2인 규모 프로젝트에 과함(오버엔지니어링 판단, 2026-07-28 대화에서 배제 합의)
 - 프론트 저장소에 자동으로 이슈를 생성하는 `repository_dispatch` 연동 — 현재 Discord 알림으로 충분(2026-07-28 대화)
-- GitHub 저장소 Settings → Branches의 Required status check 등록 — job이 항상 통과하므로 이 스펙 범위에서는 의미가 없음(위 "실패 처리 범위" 참고 절)
+- GitHub 저장소 Settings → Branches의 Required status check 등록
 - `oasdiff/oasdiff-action`(마켓플레이스) 사용 — CLI 직접 사용으로 대체(위 "설계 변경 이력" 2번)
 
 ## API / 인터페이스
@@ -105,7 +100,7 @@ API 없음 — CI 인프라 변경.
 
 ### 엣지 · 실패
 
-- [ ] 필수 필드 삭제·타입 변경 등 breaking 변경 → `api-contract-check`는 통과(⛔ 아님) + Discord `#frontend` 채널에 알림 도착, `deploy`(push 케이스)는 그대로 진행됨을 확인
+- [ ] 필수 필드 삭제·타입 변경 등 breaking 변경 → `api-contract-check`는 통과(⛔ 아님) + Discord `#frontend` 채널에 알림 도착, main push에서 두 작업 성공 후 이미지 발행 확인
 - [ ] `Breaking-Change-Reason:` 트레일러가 없는 커밋만 있는 breaking PR → Discord 메시지의 "왜 변경했는가"가 안내문으로 채워짐(빈 값/하드코딩 아님)
 - [ ] `docs/api/openapi.json`이 아직 없는 최초 실행 → breaking 비교 스킵, 안내 로그만
 
@@ -119,7 +114,7 @@ API 없음 — CI 인프라 변경.
 
 - [ ] `./gradlew test` 통과 (기존 test job 영향 없음 확인)
 - [ ] `./gradlew build` 성공
-- [ ] `.github/workflows/ci-cd.yml`의 `api-contract-check`가 실제 PR·push에서 breaking/non-breaking 두 케이스 모두 의도대로 동작(Discord 알림 여부 포함), job은 항상 통과하고 `deploy`도 breaking 여부와 무관하게 정상 진행됨을 확인
+- [ ] `.github/workflows/ci-cd.yml`의 `api-contract-check`가 실제 PR·push에서 breaking/non-breaking 두 케이스 모두 의도대로 동작(Discord 알림 여부 포함), 변경 발견 여부와 관계없이 두 작업이 성공하면 main 이미지를 발행하는지 확인
 - [ ] `docs/api/openapi.json` 최초 시딩 커밋 완료
 - [ ] 사용법 문서(`docs/api/README.md` 등) 작성
 - [ ] OpenAPI/Swagger 반영 — 해당 없음(이 스펙 자체가 OpenAPI 활용 인프라)
@@ -136,6 +131,7 @@ API 없음 — CI 인프라 변경.
 
 | 날짜 | 변경 |
 |------|------|
+| 2026-11-24 | MODIFIED · main 이미지 발행에 테스트와 계약 검사 작업의 성공을 모두 요구한다. 계약 변경 알림 정책은 유지한다. 사용자 승인. |
 | 2026-08-03 | **Release Gate #65 콜아웃 제거** — `#5`·`#64`·`#86`(구 `#62`) 전부 Closed로 열려 있는 Release Gate 항목이 없어졌고, 메타 트래커 `#65`는 관측성 개선 스펙(`social-integration-structured-logging.md`)으로 재사용됨. `notify-api-breaking-change.sh`의 `is_gate_critical`·`gate_callout_field`·관련 embed 필드 전부 제거, `docs/api/README.md` 콜아웃 절도 삭제 |
 | 2026-07-29 | **Amend #2** — 실제 알림에서 발견된 2가지 버그 수정: (1) breaking 문구 한글 템플릿 매핑을 전부 제거하고 oasdiff 원문(영어)만 노출 — 매핑 안 된 id가 많아 한 필드 안에서 한글·영어가 뒤섞이던 문제. (2) `Breaking-Change-Reason:` 트레일러가 여러 줄로 wrap된 커밋에서 사유가 중간에 잘려 다른 커밋 사유와 뒤섞이던 버그 수정 — 커밋별로 순회하며 wrap된 값을 접어 합치고 짧은 SHA를 붙여 나열하도록 재구현 |
 | 2026-07-29 | **Amend** — breaking change 감지 시 `api-contract-check` job을 실패(`exit 1`) 처리하던 로직 제거, 항상 통과(`exit 0`)로 변경. Discord `#frontend` 알림만으로 충분하다는 판단(job 실패로 인한 CI 빨간불이 실질적 이득 없이 혼란만 유발). `notify-api-breaking-change.sh`·`docs/api/README.md` 동기화 |

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # oasdiff로 base/revised OpenAPI 스펙을 비교해 breaking change·non-breaking 필드 추가가 있으면
 # Discord #frontend 웹훅으로 알림을 보낸다. breaking change·필드 추가 어느 쪽이든 알림만 보내고
-# job은 항상 통과시킨다(CI를 실패로 표시하지 않음). 둘 다 없으면 조용히 통과한다.
+# 변경 감지 자체는 성공으로 처리한다. 검사 도구 실행 오류는 호출자에게 전달한다.
 # 필요 도구: oasdiff, jq, git, curl, perl (CI에서 사전 설치)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -11,7 +11,9 @@ cd "$ROOT_DIR"
 
 BASE_SPEC="${BASE_SPEC:?BASE_SPEC (base openapi.json 경로) is required}"
 REVISED_SPEC="${REVISED_SPEC:?REVISED_SPEC (revised openapi.json 경로) is required}"
-DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:?DISCORD_WEBHOOK_URL secret is required}"
+if [[ "${DRY_RUN:-false}" != "true" ]]; then
+  : "${DISCORD_WEBHOOK_URL:?DISCORD_WEBHOOK_URL secret is required}"
+fi
 GIT_RANGE="${GIT_RANGE:?GIT_RANGE (예: origin/main..HEAD) is required}"
 GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-TripFit-server}"
 GITHUB_SHA="${GITHUB_SHA:?GITHUB_SHA is required}"
