@@ -15,6 +15,7 @@ import com.tripfit.tripfit.notification.domain.UserDeviceToken;
 import com.tripfit.tripfit.notification.repository.UserDeviceTokenRepository;
 import com.tripfit.tripfit.trip.dto.CreateTripRequest;
 import com.tripfit.tripfit.trip.dto.PatchTripRequest;
+import com.tripfit.tripfit.trip.exception.TripErrorCode;
 import com.tripfit.tripfit.trip.membership.dto.JoinTripRequest;
 import com.tripfit.tripfit.trip.recommendation.dto.ConfirmTripRequest;
 import com.tripfit.tripfit.trip.repository.TripRepository;
@@ -157,22 +158,24 @@ class NotificationLockOrderIntegrationTest {
     assertThat(failures).as(describe(failures)).isEmpty();
   }
 
-  // 멤버가 일정 확인을 마치는 동안(방장에게 참여 완료 알림) 방장이 탈퇴한다. 탈퇴는 방장의 사용자 행과 여행방 행을 모두
-  // 고치고, 알림 이력 INSERT는 방장 사용자 행에 공유 잠금을 건다. 방장 탈퇴가 먼저 끝나면 방이 사라져 일정 확인이
-  // 업무 오류로 실패할 수 있으므로, 잠금 실패나 예상하지 못한 예외가 없는지만 본다.
+  // 두 요청은 같은 방과 멤버를 변경한다. 방장 탈퇴는 방을 삭제해야 하고, 탈퇴가 먼저 끝나면
+  // 멤버의 일정 확인은 방을 찾을 수 없다는 오류로 끝날 수 있다.
   @Test
   void activationAndOwnerWithdrawal_neverDeadlock() throws Exception {
-    List<Throwable> failures = new ArrayList<>();
     for (int i = 0; i < REPETITIONS; i++) {
       Room room = createRoom(3, 2);
-      failures.addAll(
-          runConcurrently(
-              () -> tripService.activateMembership(room.tripId(), room.members().get(0)),
-              () -> userWithdrawalService.withdraw(room.ownerId())));
+      List<Throwable> failures = runConcurrently(
+          () -> {
+            try {
+              tripService.activateMembership(room.tripId(), room.members().get(0));
+            } catch (TripFitException exception) {
+              assertThat(exception.getErrorCode()).isEqualTo(TripErrorCode.TRIP_NOT_FOUND);
+            }
+          },
+          () -> userWithdrawalService.withdraw(room.ownerId()));
+      assertThat(failures).as(describe(failures)).isEmpty();
+      assertThat(tripRepository.findByIdAndDeletedAtIsNull(room.tripId())).isEmpty();
     }
-    List<Throwable> unexpected =
-        failures.stream().filter(failure -> !(failure instanceof TripFitException)).toList();
-    assertThat(unexpected).as(describe(unexpected)).isEmpty();
   }
 
   private List<Throwable> runConcurrently(Runnable first, Runnable second) throws Exception {

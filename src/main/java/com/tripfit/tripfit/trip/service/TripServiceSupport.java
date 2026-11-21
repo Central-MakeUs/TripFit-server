@@ -183,6 +183,13 @@ public class TripServiceSupport {
         .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
   }
 
+  // 멤버 행을 변경하고 방 활동 시각을 갱신하는 요청은 방장 탈퇴와 같은 순서로 잠근다.
+  public Trip lockActiveTrip(UUID tripId) {
+    return tripRepository
+        .findByIdForUpdate(tripId)
+        .orElseThrow(() -> new TripFitException(TripErrorCode.TRIP_NOT_FOUND));
+  }
+
   public List<TripMember> listActiveMembersSortedByJoinedAt(UUID tripId) {
     return tripMemberRepository.findByTripIdAndDeletedAtIsNull(tripId).stream()
         .sorted(Comparator.comparing(TripMember::getJoinedAt))

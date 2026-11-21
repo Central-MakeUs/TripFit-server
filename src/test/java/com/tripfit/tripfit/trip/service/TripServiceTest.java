@@ -296,6 +296,7 @@ class TripServiceTest {
     TripMember joined =
         new TripMember(trip, owner, TripMemberRole.OWNER, TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(joined));
@@ -317,7 +318,7 @@ class TripServiceTest {
             TripMemberRole.OWNER,
             TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(pending));
 
@@ -330,6 +331,7 @@ class TripServiceTest {
   @Test
   void activateMembership_alreadyActive_idempotent() {
     TripMember active = tripMember(owner, TripMemberRole.OWNER);
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(active));
@@ -563,6 +565,7 @@ class TripServiceTest {
         new TripMember(
             trip, member, TripMemberRole.MEMBER, TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(pending));
@@ -583,6 +586,7 @@ class TripServiceTest {
         new TripMember(
             trip, owner, TripMemberRole.OWNER, TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(ownerPending));
@@ -600,6 +604,7 @@ class TripServiceTest {
         new TripMember(
             trip, member, TripMemberRole.MEMBER, TripMemberStatus.SCHEDULE_PENDING,
             LocalDateTime.now());
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(pending));
@@ -613,6 +618,7 @@ class TripServiceTest {
 
   @Test
   void activateMembership_alreadyActive_doesNotRepublishEvents() {
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(tripMember(member, TripMemberRole.MEMBER)));
@@ -868,6 +874,7 @@ class TripServiceTest {
   void removeMember_softDeletesMemberAndReturnsRemainingList() {
     TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
     TripMember target = tripMember(member, TripMemberRole.MEMBER);
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(target));
@@ -887,7 +894,7 @@ class TripServiceTest {
   @Test
   void removeMember_whenTargetIsOwner_throwsCannotRemoveOwner() {
     TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(ownerMembership));
 
@@ -899,7 +906,7 @@ class TripServiceTest {
 
   @Test
   void removeMember_whenTargetMissing_throwsNotFound() {
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.empty());
 
@@ -912,7 +919,7 @@ class TripServiceTest {
   @Test
   void removeMember_whenTripNotOngoing_throwsConflict() {
     ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
 
     assertThatThrownBy(() -> tripService.removeMember(TRIP_ID, OWNER_ID, MEMBER_ID))
         .isInstanceOf(TripFitException.class)
@@ -924,6 +931,7 @@ class TripServiceTest {
   void leaveTrip_softDeletesMembership_touchesLastActivity() {
     ReflectionTestUtils.setField(trip, "lastActivityAt", LocalDateTime.of(2026, 1, 1, 0, 0));
     TripMember target = tripMember(member, TripMemberRole.MEMBER);
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(target));
@@ -938,6 +946,7 @@ class TripServiceTest {
   void leaveTrip_whenTripConfirmedOrTerminated_stillSucceeds() {
     ReflectionTestUtils.setField(trip, "status", TripStatus.CONFIRMED);
     TripMember target = tripMember(member, TripMemberRole.MEMBER);
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(target));
@@ -950,7 +959,7 @@ class TripServiceTest {
   @Test
   void leaveTrip_whenCallerIsOwner_throwsOwnerCannotLeave() {
     TripMember ownerMembership = tripMember(owner, TripMemberRole.OWNER);
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, OWNER_ID))
         .thenReturn(Optional.of(ownerMembership));
 
@@ -963,7 +972,7 @@ class TripServiceTest {
 
   @Test
   void leaveTrip_whenCallerNotMember_throwsAccessDenied() {
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.empty());
 
@@ -975,7 +984,7 @@ class TripServiceTest {
 
   @Test
   void leaveTrip_whenTripNotFound_throwsNotFound() {
-    when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.empty());
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> tripService.leaveTrip(TRIP_ID, MEMBER_ID))
         .isInstanceOf(TripFitException.class)
@@ -996,7 +1005,9 @@ class TripServiceTest {
         tripMemberRepository
             .findByUser_IdAndRoleAndDeletedAtIsNull(MEMBER_ID, TripMemberRole.MEMBER))
         .thenReturn(List.of(membership1, membership2));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
+    when(tripRepository.findByIdForUpdate(tripId2)).thenReturn(Optional.of(trip2));
     when(tripRepository.findByIdAndDeletedAtIsNull(tripId2)).thenReturn(Optional.of(trip2));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(membership1));
@@ -1023,6 +1034,7 @@ class TripServiceTest {
         tripMemberRepository
             .findByUser_IdAndRoleAndDeletedAtIsNull(MEMBER_ID, TripMemberRole.MEMBER))
         .thenReturn(List.of(pending));
+    when(tripRepository.findByIdForUpdate(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripRepository.findByIdAndDeletedAtIsNull(TRIP_ID)).thenReturn(Optional.of(trip));
     when(tripMemberRepository.findByTripIdAndUserIdAndDeletedAtIsNull(TRIP_ID, MEMBER_ID))
         .thenReturn(Optional.of(pending));

@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
@@ -85,9 +86,12 @@ public class TripService {
     tripCommandService.leaveTrip(tripId, userId);
   }
 
+  @Transactional
   public void leaveAllActiveTripsAsMember(UUID userId) {
     for (UUID tripId : tripQueryService.listActiveTripIdsByRole(userId, TripMemberRole.MEMBER)) {
-      tripCommandService.leaveTrip(tripId, userId);
+      if (tripCommandService.lockActiveTripForWithdrawal(tripId)) {
+        tripCommandService.leaveTrip(tripId, userId);
+      }
     }
   }
 

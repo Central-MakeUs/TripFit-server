@@ -104,7 +104,7 @@ class TripCommandService {
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripDetailResponse activateMembership(UUID tripId, UUID userId) {
-    Trip trip = support.requireActiveTrip(tripId);
+    Trip trip = support.lockActiveTrip(tripId);
     TripMember membership = support.requireMembership(tripId, userId);
     if (membership.getStatus() != TripMemberStatus.ACTIVE) {
       requirePreScheduleCompleted(membership);
@@ -234,7 +234,9 @@ class TripCommandService {
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public TripMembersResponse removeMember(UUID tripId, UUID ownerId, UUID targetUserId) {
-    support.requireOwnedOngoingTrip(tripId, ownerId);
+    Trip trip = support.lockActiveTrip(tripId);
+    support.requireOwner(trip, ownerId);
+    support.requireOngoingForMutation(trip);
     TripMember target =
         tripMemberRepository
             .findByTripIdAndUserIdAndDeletedAtIsNull(tripId, targetUserId)
@@ -246,10 +248,15 @@ class TripCommandService {
     return tripMemberQueryService.listMembers(tripId, ownerId);
   }
 
+  // 탈퇴 목록을 읽은 뒤 방장이 방을 지웠으면 해당 방의 나가기와 활동 시각 갱신을 건너뛴다.
+  boolean lockActiveTripForWithdrawal(UUID tripId) {
+    return tripRepository.findByIdForUpdate(tripId).isPresent();
+  }
+
   @Transactional
   @TripActivity(tripIdParam = "tripId")
   public void leaveTrip(UUID tripId, UUID callerId) {
-    support.requireActiveTrip(tripId);
+    support.lockActiveTrip(tripId);
     TripMember membership = support.requireMembership(tripId, callerId);
     if (membership.getRole() == TripMemberRole.OWNER) {
       throw new TripFitException(TripErrorCode.TRIP_OWNER_CANNOT_LEAVE);

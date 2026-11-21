@@ -15,6 +15,10 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
 
   Optional<Trip> findByIdAndDeletedAtIsNull(UUID id);
 
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT t FROM Trip t WHERE t.id = :id AND t.deletedAt IS NULL")
+  Optional<Trip> findByIdForUpdate(@Param("id") UUID id);
+
   boolean existsByIdAndDeletedAtIsNull(UUID id);
 
   boolean existsByIdAndOwner_IdAndDeletedAtIsNull(UUID id, UUID ownerId);

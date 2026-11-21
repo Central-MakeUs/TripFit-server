@@ -25,7 +25,7 @@
 **정책 전면 수정(2026-07-24, `#47` hotfix, 기획자 확인 완료)**: 방 나가기·참여자 내보내기(`#20`)·방 삭제·회원 탈퇴 네 액션의 상태별 허용 조건을 정합성 있게 재정리하면서, 탈퇴 정책도 **차단 → 자동 cascade**로 뒤집힘.
 
 1. **진행 중 방 처리(확정)**: 탈퇴를 차단하지 않는다.
-   - **참여자(MEMBER)**: 참여 중인 모든 방(상태 무관, `ONGOING` 포함)에서 자동으로 나가기 처리([`trip-member-leave.md`](../trip/trip-member-leave.md) 로직 내부 재사용) 후 탈퇴 진행.
+   - **참여자(MEMBER)**: 참여 중인 모든 방(상태 무관, `ONGOING` 포함)에서 자동으로 나가기 처리([`trip-member-leave.md`](../trip/trip-member-leave.md) 로직 내부 재사용) 후 탈퇴 진행. 참여 방 목록을 읽은 뒤 방장이 먼저 방을 삭제하면 해당 방의 정리는 끝난 것으로 보고 다음 방을 처리한다.
    - **방장(OWNER)**: 소유한 모든 방(상태 무관, `ONGOING` 포함)을 자동으로 삭제(`deleteTrip()` 로직 재사용, soft delete) 후 탈퇴 진행. 기획자 근거: "방장이 탈퇴를 누르는 건 여행이 무산됐거나 더 이상 방을 유지할 필요가 없는 상황으로 볼 수 있다 — 탈퇴 전에 방 삭제를 유도하면 번거로운 절차만 추가된다."
    - `CANCELED` 상태는 `#48`에서 **enum 자체가 삭제 완료** — 더 이상 별도로 고려할 상태가 아님.
 2. **데이터 처리(확정, 변경 없음)**: 최초 "Hard delete"로 검토했으나, `Trip.owner_id`/`TripMember.user_id`가 `nullable=false` FK이고 `deleteTrip()`이 soft delete만 하므로(row 존속), User row를 진짜 hard delete하면 그 사람이 방장이었던 Trip(다른 참여자 포함)까지 연쇄 삭제해야 하는 충돌이 발견됨. 사용자 결정: **User도 다른 엔티티와 동일하게 Soft Delete 사용** — Trip·TripMember는 FK 그대로 두어 다른 참여자의 이력을 보존하고, 개인 전용 테이블(일정·구글 캘린더·리프레시 토큰)만 실제로 hard delete.
