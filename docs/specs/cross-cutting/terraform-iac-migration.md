@@ -18,10 +18,12 @@
 
 ### Must Have
 
-- [ ] 계정과 리전, 번들 가격, Free 플랜과 크레딧, API 권한을 확인한다. 승인 후 저장된 계획을 수동으로 적용한다.
-- [ ] 계정 불일치와 전체 공개 SSH를 차단한다. S3 state와 잠금은 새 계정으로 제한한다. state의 암호화 사본을 계정 밖에 보관한다.
-- [ ] `terraform fmt -check`, 백엔드 없이 `validate`, 계정 보호 및 포트 검증을 통과한다. 적용 후 `plan`에 변경이 없어야 한다.
-- [ ] 주소 출력과 재구축 절차를 #140에서 사용한다. 앱 비밀, DB 내용, DNS, GitHub Secrets는 Terraform 관리 대상에서 제외한다.
+11월 23일 운영 적용 기록과 로컬 검증 결과는 [인프라 작업 보고서](../../reports/2026-11-24-lightsail-terraform.md)에 있다.
+
+- [x] 계정과 리전, 번들 가격, Free 플랜과 크레딧, API 권한을 확인한다. 승인 후 저장된 계획을 수동으로 적용한다.
+- [x] 계정 불일치와 전체 공개 SSH를 차단한다. S3 state와 잠금은 새 계정으로 제한한다. state의 암호화 사본을 계정 밖에 보관한다.
+- [x] `terraform fmt -check`, 백엔드 없이 `validate`, 계정 보호 및 포트 검증을 통과한다. 적용 후 `plan`에 변경이 없어야 한다.
+- [x] 주소 출력과 재구축 절차를 #140에서 사용한다. 앱 비밀, DB 내용, DNS, GitHub Secrets는 Terraform 관리 대상에서 제외한다.
 
 ### Nice to Have
 
@@ -53,7 +55,7 @@
 
 ## 로컬 검증 결과
 
-Terraform 1.15.9 및 AWS provider 6.73.0에서 fmt와 양쪽 루트의 validate를 통과했다. 모의 테스트에서 2GB·IPv4·웹/관리 포트와 Lightsail의 RSA 공개키 조건을 검증했다. 로컬 STS가 다른 계정 ID를 반환했을 때 양쪽 provider가 실제 plan을 중단했다. 운영 계정에서의 백엔드 접근 및 적용 후 무변경 plan은 남아 있다.
+Terraform 1.15.9 및 AWS provider 6.73.0에서 fmt와 양쪽 루트의 validate를 통과했다. 모의 테스트에서 2GB·IPv4·웹/관리 포트와 Lightsail의 RSA 공개키 조건을 검증했다. 로컬 STS가 다른 계정 ID를 반환했을 때 양쪽 provider가 실제 plan을 중단했다. 이후 운영 계정에서 백엔드 접근과 두 루트의 무변경 계획을 확인했다.
 
 ## 변경 이력
 

@@ -14,16 +14,9 @@
 
 ## 시스템 구성
 
-```
-[tripfit.online]          [api.tripfit.online]
-  Vercel (React/Next)  ──HTTPS REST──▶  EC2 A: Nginx + Spring Boot (이 repo)
-       │                                        │
-       └─ Play / App Store (최종)                └─ EC2 B: MySQL (deploy/)
-```
-
-- **프론트**: Vercel — `tripfit.online` (별도 저장소, EC2 frontend 컨테이너 없음)
-- **API**: `https://api.tripfit.online` — 이 repo `deploy/app/`
-- 결정 근거: [`docs/decisions/002-domain-split-vercel-api.md`](../decisions/002-domain-split-vercel-api.md)
+- 웹 프론트엔드 `tripfit.online`은 별도 저장소에서 Vercel로 배포한다.
+- 앱과 웹은 HTTPS로 `api.tripfit.online`을 호출한다. Lightsail 한 대에서 Nginx가 Spring Boot로 요청을 전달하고, 앱은 내부 네트워크로 MySQL과 Redis에 연결한다. [배포 절차](../../deploy/README.md)
+- 도메인 분리 결정은 [ADR 002](../decisions/002-domain-split-vercel-api.md)에 기록했다.
 - 앱 패키징 기술(RN/Capacitor 등): **`[미정]`** — `docs/decisions/`에 기록
 - 이 repo의 `deploy/`는 **API 서버만**. 스토어 제출·앱 서명은 프론트 파이프라인
 

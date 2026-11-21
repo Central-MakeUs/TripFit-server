@@ -28,19 +28,15 @@
 ## 기술 스택
 
 - **Backend:** Java 21 · Spring Boot 4.1 · Spring Data JPA · Gradle
-- **Database:** MySQL 8.0 · Flyway · Testcontainers
+- **Database:** MySQL 8.0 · Flyway · Redis · Testcontainers
 - **Infrastructure:** Docker · GHCR · AWS EC2 · Nginx
 - **Testing / Quality:** JUnit 5 · ArchUnit · oasdiff
-- **Observability:** Prometheus · Grafana · Loki · node_exporter · Gemini API (AI 원인 리포트)
-- **AI Engineering:** Claude Code · Skills · Hooks · Subagents
+- **Observability:** Prometheus · Grafana · Loki
+- **AI Engineering:** Codex · Skills · Hooks · Subagents
 
 ## 아키텍처
 
-**프론트엔드(Vercel)와 백엔드(EC2)로 분리된 배포 아키텍처입니다.**
-
-<div align="center">
-  <img src="docs/images/architecture.png" alt="배포 아키텍처" width="100%">
-</div>
+프론트엔드는 Vercel에서 제공하고 API는 Lightsail 한 대에서 운영합니다. Nginx가 HTTPS 요청을 Spring Boot 앱에 전달하고, 앱은 서버 내부의 MySQL과 Redis에 연결합니다. [운영 배포 절차](deploy/README.md) · [기존 EC2 구성 이력](deploy/ec2-split-deployment.md)
 
 ## 프로젝트 구조
 
@@ -59,7 +55,7 @@ com.tripfit.tripfit
 
 이 프로젝트는 **AI Coding Agent가 실제 백엔드 코드를 작성하는 개발 환경에서 품질·안전성·API 계약을 보장하는 Engineering 시스템을 구축**한 사례입니다.
 
-상세한 하네스(Harness) 시스템 작동 원리는 [`docs/harness/README.md`](docs/harness/README.md) 및 [`docs/harness/architecture-diagrams.md`](docs/harness/architecture-diagrams.md)를 참고하세요.
+현재 Codex 작업 절차는 [AGENTS.md](AGENTS.md)에 있습니다. 아래 그림과 문서는 이 하네스를 처음 구축한 과정의 기록입니다. 당시 시스템의 작동 원리는 [`docs/harness/README.md`](docs/harness/README.md) 및 [`docs/harness/architecture-diagrams.md`](docs/harness/architecture-diagrams.md)를 참고하세요.
 
 ### 1. End-to-End Control Loop
 

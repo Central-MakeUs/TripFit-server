@@ -46,7 +46,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 | [`docs/how-it-works.md`](docs/how-it-works.md) | **"지금 이렇게 동작합니다"** — 쉬운 말로 쓴 현재 동작 요약(스펙 아님). 보안·아키텍처 로직 변경 시 같은 턴 갱신 |
 | [`docs/product/release-milestones.md`](docs/product/release-milestones.md) | **릴리즈 Milestone·priority 운영·판단** SSOT |
 | [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
-| [`deploy/README.md`](deploy/README.md) | **배포 SSOT** — Docker·EC2·검증 스크립트 |
+| [`deploy/README.md`](deploy/README.md) | **배포 SSOT** — Docker·Lightsail·검증 스크립트 |
 | [`.claude/rules/README.md`](.claude/rules/README.md) | TripFit 규칙과 작업별 적용 기준 |
 | [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) | **Git SSOT** — 브랜치·커밋·PR·PN 리뷰 |
 

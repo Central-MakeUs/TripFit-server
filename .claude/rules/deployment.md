@@ -26,7 +26,7 @@ paths:
 
 - **Flyway / Liquibase / SQL 마이그레이션 미사용·작성 금지.** Hibernate `ddl-auto`만 — 프로필별 값은 `architecture.md` SSOT.
 - **상용 보존 데이터 없음(dev).** 스키마 변경 시 엔티티를 최신 형태로만 두고 DB는 리셋(`docker compose down -v` 등). 구 스키마 호환·데이터 보존 마이그레이션 코드 금지. 상세: `core-guardrails.md` ⛔ DB 스키마 절.
-- prod `update`: 기동 시 엔티티 기준으로 스키마 자동 반영. 스키마 변경은 local/dev에서 검증 후 배포(필요 시 volume 재생성).
+- Lightsail의 `dev` 프로필은 `ddl-auto: update`로 기동 시 엔티티 기준으로 스키마를 반영한다. 스키마 변경은 local/dev에서 검증 후 배포(필요 시 volume 재생성).
 
 ## MySQL / JPA 주의
 
@@ -36,7 +36,7 @@ Entity 작성 시 지켜야 할 예약어·quoting 규칙은 `spring-boot-java.m
 
 운영 값은 권한 0600의 서버 `~/tripfit/shared/.env`에 전달한다. GitHub Actions는 이미지 발행과 검증을 담당한다. 새 앱 변수를 추가할 때는 공통 Compose 배선과 [환경 변수 목록](../../deploy/environment-reference.md) 또는 샘플을 함께 갱신하고 실제 배포 전 값이 있는지 확인한다.
 
-운영 장애 조사에서 AWS CLI는 `--profile tripfit`을 사용한다. 운영 로그와 DB는 읽기 전용으로 확인하고, 수정은 저장소와 배포 절차를 거친다.
+운영 장애 조사 전 [Terraform 안내](../../infra/terraform/README.md)에 따라 운영용 AWS 프로필을 선택하고 계정 ID를 확인한다. 운영 로그와 DB는 읽기 전용으로 확인하고, 수정은 저장소와 배포 절차를 거친다.
 
 ## 검증
 

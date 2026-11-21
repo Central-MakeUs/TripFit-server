@@ -41,6 +41,7 @@ docs/
 │   ├── mvp.md · platform.md · prd.md · glossary.md
 │   ├── design/ · business-rules/ · flows/
 ├── specs/                    ← 기능 스펙 — 목록 SSOT: specs/README.md
+├── reports/                  ← 작업별 결정·검증 결과·남은 확인 항목
 ├── decisions/                ← 아키텍처 결정 — 목록: decisions/README.md
 └── audits/                   ← 감사 기록 (코드 감사 + 문서 품질 감사) — 목록: audits/README.md
 ```
@@ -83,7 +84,7 @@ docs/
 | 패키지 레이아웃 | `architecture/package-layout.md` | 도메인별 패키지 디렉터리 |
 | 설정·프로필 | `architecture.md` | `application-{profile}.yml` |
 | 배포 절차 | [`../deploy/README.md`](../deploy/README.md) | `deploy/`, 루트 `docker-compose.yml` |
-| 환경 변수·인프라 | [`../deploy/environment-reference.md`](../deploy/environment-reference.md) | GitHub Secrets, EC2 인프라 |
+| 환경 변수·인프라 | [`../deploy/environment-reference.md`](../deploy/environment-reference.md) | Lightsail 운영 환경 변수와 배포 자격 증명 |
 | VPC·SG 심화 | [`../deploy/ec2-split-deployment.md`](../deploy/ec2-split-deployment.md) | AWS 인프라 (참고) |
 
 ERD는 **MySQL 8.0** 기준.
@@ -94,9 +95,9 @@ ERD는 **MySQL 8.0** 기준.
 |------|------|
 | [`AGENTS.md`](../AGENTS.md) | AI·개발자 프로젝트 지도 |
 | [`harness-engineering.md`](harness-engineering.md) | AI 하네스 엔지니어링 총정리 (구조·인시던트·수치) |
-| [`deploy/README.md`](../deploy/README.md) | Docker·EC2 배포 |
+| [`deploy/README.md`](../deploy/README.md) | Docker·Lightsail 배포 |
 | [`.dev/README.md`](../.dev/README.md) | 임시 작업 로그 (장기 문서는 여기로 이관) |
-| [`.claude/rules/README.md`](../.claude/rules/README.md) | Claude Code AI 규칙·스킬 |
+| [`.claude/rules/README.md`](../.claude/rules/README.md) | TripFit 프로젝트 규칙 |
 
 ## 스펙 작성
 

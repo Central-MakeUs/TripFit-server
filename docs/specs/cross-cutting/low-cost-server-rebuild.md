@@ -180,6 +180,8 @@ BR 변경 없음. 배포 축소로 제품 기능을 제거하지 않는다.
 
 ## 2026-11-23 운영 복구 및 E2E 검증 결과
 
+[배포와 복구 작업 보고서](../../reports/2026-11-24-single-server-rebuild.md)
+
 운영에 배포한 백엔드 커밋은 `cee44d8`이다. 배포와 재부팅, DNS 전환, 인증서 발급·시험 갱신 기록은 [서버 재구축 이슈 #140](https://github.com/Central-MakeUs/TripFit-server/issues/140)에 있다.
 
 | 환경 | 확인한 결과 |
