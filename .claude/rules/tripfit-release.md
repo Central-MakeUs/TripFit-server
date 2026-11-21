@@ -12,7 +12,7 @@
 
 **현재 상태·과거 항목 이력·이슈 번호 재사용 관행:** [`release-milestones.md` §4](../../docs/product/release-milestones.md#4-앱-배포심사-release-gate--milestonepriority와-무관)가 SSOT — 여기서 중복 서술하지 않는다. **새 Release Gate 항목 발견 시 새 이슈를 만들어**(생성 전 `core-workflow.md` "새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인" 절 적용) 그 문서 §4에 등록.
 
-**에이전트 행동:** 이 파일은 always-load이므로 매 세션 로드된다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 릴리즈 상태를 논의할 때, `release-milestones.md` §4에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
+**에이전트 행동:** 작업을 시작할 때 이 규칙을 읽는다. 인증·소셜로그인·배포·탈퇴 관련 파일을 다루거나 릴리즈 상태를 논의할 때, `release-milestones.md` §4에 열린 Release Gate 항목이 있으면 **먼저 묻지 않아도 짧게 리마인드**한다.
 
 **금지:** Release Gate 항목을 `출시 이후`로 분류
 

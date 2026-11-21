@@ -47,7 +47,7 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 | [`docs/product/release-milestones.md`](docs/product/release-milestones.md) | **릴리즈 Milestone·priority 운영·판단** SSOT |
 | [`docs/README.md`](docs/README.md) | **문서 SSOT** — 기획·아키텍처·스펙 인덱스 |
 | [`deploy/README.md`](deploy/README.md) | **배포 SSOT** — Docker·EC2·검증 스크립트 |
-| [`.claude/rules/README.md`](.claude/rules/README.md) | Claude Code 규칙·스킬·훅 |
+| [`.claude/rules/README.md`](.claude/rules/README.md) | TripFit 규칙과 작업별 적용 기준 |
 | [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) | **Git SSOT** — 브랜치·커밋·PR·PN 리뷰 |
 
 ## Product Context
@@ -60,20 +60,16 @@ TripFit 백엔드 API 서버. AI 에이전트가 작업할 때 참고하는 프�
 - DB 설계는 `docs/architecture/erd.md` 참조
 - UI·도메인 출처: `docs/product/design/figma-wireframe-v1.md` (Figma Wireframe v1)
 
-## Workflow
+## Codex 워크플로
 
-1. **계획** — 큰 기능은 Plan 모드 또는 `specify` 스킬로 `docs/specs/`에 스펙 작성
-2. **승인** — 스펙 확인 후 구현
-3. **실행** — Agent 모드, 필요 시 `Task` 서브에이전트 (`explore`, `shell`)
-4. **검증** — `./gradlew test` 통과, 변경 범위 최소화
-
-## Workflow Tools (Claude Code)
-
-에이전트는 Claude Code 네이티브 기능(Plan Mode, `Agent` 서브에이전트, `preflight`/`code-review`/`simplify` 스킬)으로 작업 단계를 나눈다.
-
-- **문서·스펙·Approved 계약**은 `.claude/rules/core-guardrails.md` ⛔가 다른 어떤 워크플로 도구보다 **우선**
-- **기능 스펙 작성**은 Plan Mode가 아니라 `.claude/skills/specify/`가 SSOT
-- 도구 매핑·우선순위: `.claude/rules/core-tools.md` · [`.claude/rules/README.md`](.claude/rules/README.md)
+- 작업 전에 [TripFit 규칙 목록](.claude/rules/README.md)의 공통 규칙과 해당 경로의 규칙을 읽는다. Approved 스펙·결정·문서의 값이나 계약이 충돌하면 작업을 멈추고 확인한다.
+- 기능·DB·인증·다파일 변경은 `superchaeyeons:write-spec`으로 스펙을 작성하고 승인 후 구현한다. 후속 이슈 분리에도 같은 스킬을 쓰며 TripFit의 스펙·이슈 양식은 [local-track-issues](.agents/skills/local-track-issues/SKILL.md)를 따른다.
+- 버그는 `superchaeyeons:fix-bug`, 무손실 리팩터는 `superchaeyeons:refactor-safely`, 완료 검증은 `superchaeyeons:verify-work`, 하네스 회고는 `superchaeyeons:improve-harness`를 사용한다.
+- 기능 스펙은 [TripFit 스펙 양식](docs/templates/spec-template.md)을 사용한다. 무손실 리팩터는 도메인 하나씩 [감사 체크리스트](docs/templates/audit-checklist.md)와 [감사 양식](docs/templates/audit-template.md)을 적용하고, `OpenApiSpecExportTest`로 내보낸 계약을 기준 스냅샷과 대조해 차이가 0인지 확인한다.
+- Java를 편집하면 `./gradlew spotlessApply -PspotlessIdeHook=<수정한 Java 파일의 절대경로>`로 해당 파일을 포맷한다. 커밋할 때는 저장소의 Git 훅이 스테이징한 변경을 다시 검사한다.
+- 조사·테스트·문서 리뷰 역할은 [.codex/agents/](.codex/agents/)에 있다. Java·API·DB 변경의 별도 리뷰에는 [Spring 리뷰 기준](.claude/rules/spring-review.md)을 적용한다.
+- 공통 설정은 [.claude/harness.conf](.claude/harness.conf), 실제 Gradle·기동 명령은 [scripts/dev.conf](scripts/dev.conf)에 있다. Codex에서 테스트는 공통 설정의 `TEST_CMD`를 프로젝트 루트에서 단독 실행한다.
+- Codex가 승인 대상으로 분류하는 작업은 플러그인의 `scripts/check-codex-approval.py`로 사전 검사하고 구체적인 변경에 대한 승인을 확인한다. PR을 만들 때는 [기존 PR 템플릿](.github/pull_request_template.md)을 사용한다.
 
 ## Commands
 

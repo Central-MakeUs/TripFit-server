@@ -17,7 +17,7 @@
 - **문서 품질 규칙의 빈칸 (2026-09-03 [toss/technical-writing](https://github.com/toss/technical-writing) 검토 후 확인)** — 현재 규칙 체계는 `core-reporting.md`(채팅·보고, 독자=비전공자)와 `java-comments.md`(코드 주석, 독자=서버 개발자)를 덮지만, **`docs/*.md` 본문 자체의 작성 규칙은 없다**. 문서 118개·17,027줄이 쌓인 시점에 이 빈칸을 메웠다.
   - 실측 진단: `####`(H4) 사용이 3곳(파일 2개)뿐이라 "한 페이지에 하나만" 원칙은 이미 지켜지고 있고, `glossary.md`가 용어 SSOT 역할을 하고 있다. 반면 **H1 바로 아래 개요가 없는 문서가 19개**이며 그중 18개가 `audits/`다 — 개별 문서가 아니라 `audit-template.md`를 고쳐야 하는 구조적 문제.
   - **라이선스 주의:** 해당 저장소는 CC BY-NC-SA 4.0이다. 원칙·체크리스트 아이디어는 참고하되 **문장을 그대로 옮기지 않는다** — 우리 문맥으로 재작성하고 출처만 링크한다.
-- 관련 문서: [`.claude/rules/core-workflow.md`](../../../.claude/rules/core-workflow.md) · [`.claude/rules/core-tools.md`](../../../.claude/rules/core-tools.md) · [`.claude/rules/README.md`](../../../.claude/rules/README.md)
+- 관련 문서: [`.claude/rules/core-workflow.md`](../../../.claude/rules/core-workflow.md) · [`.claude/rules/core-tools.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/rules/core-tools.md) · [`.claude/rules/README.md`](../../../.claude/rules/README.md)
 
 ## 요구사항
 

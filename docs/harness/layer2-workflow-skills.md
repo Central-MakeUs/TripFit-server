@@ -1,5 +1,7 @@
 # Layer 2 — Workflow Enforcement (승인 게이트가 있는 반복 워크플로)
 
+> Claude Code를 사용하던 시기의 설계 기록이다. 현재 개발 절차는 [AGENTS.md](../../AGENTS.md)를 따른다.
+
 > 분류: **skill** (`.claude/skills/*/SKILL.md`) · 강제 수단: 절차 + 사용자 승인 게이트 · 대응 다이어그램: "Layer 2: safe-refactor 플로우"
 
 ## 1. 기본 사항
@@ -12,12 +14,12 @@
 
 | 스킬 | 사이클 위치 | 파일 | 트리거 | 산출물 | 승인 게이트 |
 |---|---|---|---|---|---|
-| `specify` | **A 트랙** | [`.claude/skills/specify/SKILL.md`](../../.claude/skills/specify/SKILL.md) + `references/spec-template.md` | 새 API·엔티티·인증 흐름, DB 스키마 변경, 3파일+ 리팩터 | `docs/specs/{domain}/{feature}.md` | **있음** (Approved 전 구현 금지) |
-| `safe-refactor` | **B 트랙** | [`.claude/skills/safe-refactor/SKILL.md`](../../.claude/skills/safe-refactor/SKILL.md) + `references/audit-checklist.md`·`audit-template.md` | 기존 코드 아키텍처 감사·무손실 리팩터 | `docs/audits/{domain}/audit.md` · `refactor-log.md` | **있음** (감사·구현 각각) |
-| `debug` | **C 트랙** | [`.claude/skills/debug/SKILL.md`](../../.claude/skills/debug/SKILL.md) | 버그 리포트·테스트 실패 | 없음(조사 절차) | 없음 |
-| `preflight` | **G3 게이트** | [`.claude/skills/preflight/SKILL.md`](../../.claude/skills/preflight/SKILL.md) | "완료/통과" 선언 직전 | 없음(검증 절차) | 없음 |
-| `defer` | **G4 게이트** | [`.claude/skills/defer/SKILL.md`](../../.claude/skills/defer/SKILL.md) | 「다른 이슈로 빼」 | Draft 스펙 + 스펙 amend + (확인 후) 이슈 | **있음** (이슈 생성 전) |
-| `retro` | **G4 게이트** | [`.claude/skills/retro/SKILL.md`](../../.claude/skills/retro/SKILL.md) | 작업 완료 후 회고·「이번에 배운 거 정리」 | `docs/audits/harness-retro.md` append | **있음** (파일 기록 전 · 규칙 반영 전 2단계) |
+| `specify` | **A 트랙** | [`.claude/skills/specify/SKILL.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/skills/specify/SKILL.md) + `references/spec-template.md` | 새 API·엔티티·인증 흐름, DB 스키마 변경, 3파일+ 리팩터 | `docs/specs/{domain}/{feature}.md` | **있음** (Approved 전 구현 금지) |
+| `safe-refactor` | **B 트랙** | [`.claude/skills/safe-refactor/SKILL.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/skills/safe-refactor/SKILL.md) + `references/audit-checklist.md`·`audit-template.md` | 기존 코드 아키텍처 감사·무손실 리팩터 | `docs/audits/{domain}/audit.md` · `refactor-log.md` | **있음** (감사·구현 각각) |
+| `debug` | **C 트랙** | [`.claude/skills/debug/SKILL.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/skills/debug/SKILL.md) | 버그 리포트·테스트 실패 | 없음(조사 절차) | 없음 |
+| `preflight` | **G3 게이트** | [`.claude/skills/preflight/SKILL.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/skills/preflight/SKILL.md) | "완료/통과" 선언 직전 | 없음(검증 절차) | 없음 |
+| `defer` | **G4 게이트** | [`.claude/skills/defer/SKILL.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/skills/defer/SKILL.md) | 「다른 이슈로 빼」 | Draft 스펙 + 스펙 amend + (확인 후) 이슈 | **있음** (이슈 생성 전) |
+| `retro` | **G4 게이트** | [`.claude/skills/retro/SKILL.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/skills/retro/SKILL.md) | 작업 완료 후 회고·「이번에 배운 거 정리」 | `docs/audits/harness-retro.md` append | **있음** (파일 기록 전 · 규칙 반영 전 2단계) |
 
 **`retro`만 메인 컨텍스트에서 돕니다 (2026-09-04 신설):** 다른 스킬과 달리 이 스킬은 서브에이전트나 `context: fork`로 돌리면 **망가집니다** — 회고의 입력이 세션 대화 이력 자체인데, 서브에이전트는 그 이력에 접근할 수 없고 트랜스크립트 파일 경로도 공식 규약이 아닙니다. `safe-refactor`이 self-grading 편향을 피하려 일부러 컨텍스트를 격리하는 것과 정확히 **반대 방향**입니다. 같은 저장소 안에서 "격리가 이득인 작업"과 "격리가 손해인 작업"이 갈린다는 게 이 스킬의 설계 포인트입니다.
 

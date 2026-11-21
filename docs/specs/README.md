@@ -23,8 +23,8 @@
 
 ## 작성 방법
 
-1. `specify` 스킬 사용 (또는 Plan Mode)
-2. 템플릿: [`.claude/skills/specify/references/spec-template.md`](../../.claude/skills/specify/references/spec-template.md)
+1. `superchaeyeons:write-spec` 스킬 사용
+2. 템플릿: [`docs/templates/spec-template.md`](../templates/spec-template.md)
 3. 파일명: kebab-case — 예) `trip-room-create.md` (접미사 `mvp`, `phase`, `p2` 금지), 대응 도메인 폴더에 저장
 4. 상단 메타는 H1 바로 아래 **인용구 3줄**(`> 상태:` / `> MVP:` / `> 관련 BR:`) — 템플릿과 동일. YAML frontmatter는 쓰지 않는다(2026-09-03 통일: 53개 중 51개가 인용구를 쓰고 있었고, 스펙 frontmatter를 읽는 도구가 없어 형식만 갈라져 있었다)
 5. 사용자 승인 후 구현 시작

@@ -50,7 +50,7 @@
 |--------|------|------|------|
 | | | | |
 
-요청/응답 예시 — envelope **초안**: [`docs/architecture/api-response.md`](../../../../docs/architecture/api-response.md) (프론트 합의 전)
+요청/응답 예시 — envelope **초안**: [`docs/architecture/api-response.md`](../architecture/api-response.md) (프론트 합의 전)
 
 성공 (단순):
 

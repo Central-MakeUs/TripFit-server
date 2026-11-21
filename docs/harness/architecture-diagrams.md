@@ -1,5 +1,7 @@
 # TripFit AI-Native Harness 다이어그램 모음
 
+> Claude Code를 사용하던 시기의 설계 기록이다. 현재 개발 절차는 [AGENTS.md](../../AGENTS.md)를 따른다.
+
 실제 [Eraser.io 워크스페이스](https://app.eraser.io/workspace/HmuAgWuJ2vS9ZvsDOv8u)에 반영되어 있는 다이어그램 코드 모음입니다.
 [Eraser.io](https://app.eraser.io/)에서 빈 캔버스를 열고 좌측 텍스트 에디터에 원하는 블록을 그대로 붙여넣으면 깔끔하게 렌더링됩니다.
 

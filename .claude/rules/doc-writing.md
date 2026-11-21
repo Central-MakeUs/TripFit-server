@@ -65,7 +65,7 @@ paths:
 | `docs/harness-engineering.md`·`docs/harness/` | 설명 | 하네스가 왜 이렇게 됐는지 |
 | `docs/specs/` | 작업 산출물(설계) | `spec-template.md` |
 | `docs/audits/{domain}/` | 작업 산출물(코드 감사) | `audit-template.md` |
-| `docs/audits/harness-retro.md` | 작업 산출물(하네스 회고) | 규칙·스킬·에이전트·훅이 놓친 것을 쌓는 백로그 — 도메인 축이 아니라 `audits/` 루트에 둠 (`retro` 스킬 산출물) |
+| `docs/audits/harness-retro-codex.md` | 작업 산출물(하네스 회고) | 규칙·스킬·에이전트·훅이 놓친 것을 쌓는 백로그 — 도메인 축이 아니라 `audits/` 루트에 둠 (`improve-harness` 스킬 산출물) |
 | `deploy/README.md` | 문제 해결 | 배포·HTTPS 발급·롤백 절차 (2026-09-03 env 표를 아래로 분리) |
 | `deploy/environment-reference.md` | 참조 | GitHub Secrets·EC2 인프라·환경 변수 표 |
 
@@ -148,7 +148,7 @@ paths:
 
 ## 검증 (G3 문서 품질 게이트)
 
-**새 문서를 만들었거나 기존 문서를 50줄 이상 고쳤으면** `doc-reviewer` 서브에이전트([`.claude/agents/doc-reviewer.md`](../agents/doc-reviewer.md))로 확인한다. 오타·한 줄 수정은 대상이 아니다.
+**새 문서를 만들었거나 기존 문서를 50줄 이상 고쳤으면** `doc-reviewer` 서브에이전트([`.codex/agents/doc-reviewer.toml`](../../.codex/agents/doc-reviewer.toml))로 확인한다. 오타·한 줄 수정은 대상이 아니다.
 
 지적의 심각도 기준(무엇이 "반드시 고칠 것"이고 무엇이 "고치면 좋을 것"인지)은 그 에이전트 문서의 "심각도 판정 기준" 절에 있다 — 같은 문서를 두 번 리뷰해도 결과가 흔들리지 않게 하기 위한 고정 등급이다.
 

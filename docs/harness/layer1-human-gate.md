@@ -1,5 +1,7 @@
 # Layer 1 — Human Gate (AI가 멈추고 사람에게 묻는 지점)
 
+> Claude Code를 사용하던 시기의 설계 기록이다. 현재 개발 절차는 [AGENTS.md](../../AGENTS.md)를 따른다.
+
 > 분류: **rule** (`.claude/rules/`) · 강제 수단: 프롬프트(소프트 가드레일) · 대응 다이어그램: "Layer 1: Human Gate"
 
 ## 1. 기본 사항
@@ -12,14 +14,14 @@
 
 | 파일 | 분류 | 로딩 방식 | 담당 |
 |---|---|---|---|
-| [`CLAUDE.md`](../../CLAUDE.md) | rule (진입점) | 세션 시작 시 항상 | `@AGENTS.md` import + Claude Code 전용 보충 |
+| [`CLAUDE.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/CLAUDE.md) | rule (진입점) | 세션 시작 시 항상 | `@AGENTS.md` import + Claude Code 전용 보충 |
 | [`AGENTS.md`](../../AGENTS.md) | rule (프로젝트 지도) | 세션 시작 시 항상 | 기술 스택·컨벤션·경로 맵 |
 | [`.claude/rules/core-guardrails.md`](../../.claude/rules/core-guardrails.md) | rule (**코어**) | 세션 시작 시 항상 | ⛔ STOP §1~§6 · 금지 요약 |
 | [`.claude/rules/core-workflow.md`](../../.claude/rules/core-workflow.md) | rule (**코어**) | 세션 시작 시 항상 | 3 트랙 × 4 게이트 사이클 · 구현 중 지킬 것 |
 | [`.claude/rules/core-scope.md`](../../.claude/rules/core-scope.md) | rule | 세션 시작 시 항상 | priority(must/could) 단정 금지 · `[미정]` 처리 |
 | [`.claude/rules/tripfit-release.md`](../../.claude/rules/tripfit-release.md) | rule (**저장소 고유**) | 세션 시작 시 항상 | Release Gate · 일정 용어 · 도메인·배포 확정 사항 |
 | [`.claude/rules/core-followup.md`](../../.claude/rules/core-followup.md) | rule | 세션 시작 시 항상 | 후속 제안 · Defer · ERD 개선 제안 |
-| [`.claude/rules/core-tools.md`](../../.claude/rules/core-tools.md) | rule | 세션 시작 시 항상 | 도구 우선순위·트랙×게이트→도구 매핑 |
+| [`.claude/rules/core-tools.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/rules/core-tools.md) | rule | 세션 시작 시 항상 | 도구 우선순위·트랙×게이트→도구 매핑 |
 | [`.claude/rules/core-reporting.md`](../../.claude/rules/core-reporting.md) | rule | 세션 시작 시 항상 | 사용자 보고는 쉬운 말로 (코드 주석은 제외) |
 | `spring-boot-java.md` · `openapi-conventions.md` · `java-comments.md` | rule | **`**/*.java` 접근 시에만** | Java 레이어·`@Schema`·주석 스타일 |
 | `client-platform.md` | rule | **controller/service 접근 시에만** | 클라이언트 계약·인증 전제 |

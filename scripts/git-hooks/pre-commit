@@ -4,6 +4,14 @@ set -eu
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+# 삭제는 허용하고, 추가·수정·이동한 마이그레이션 파일은 커밋 전에 차단한다.
+git diff --cached --name-only -z --diff-filter=ACMRT | python3 -c '
+import os, re, sys
+for name in sys.stdin.buffer.read().split(b"\0"):
+    if b"/db/migration/" in b"/" + name or re.search(rb"(?:^|/)(?:V[0-9]+(?:\.[0-9]+)*|R)__[^/]*\.sql$", name):
+        sys.exit(f"TripFit은 DB 마이그레이션 파일을 커밋하지 않습니다: {os.fsdecode(name)}")
+'
+
 # src/가 stage에 없으면 Spotless 생략 — build.gradle·docs 등 인프라-only 커밋 보호
 # core.quotepath=false: 파일명에 비ASCII(한글 등)가 있어도 이스케이프 없이 그대로 받음 —
 # 이스케이프된 문자열은 아래 -e 체크·git add pathspec과 매칭되지 않아 조용히 누락됨

@@ -30,11 +30,13 @@ paths:
 
 ## MySQL / JPA 주의
 
-Entity 작성 시 지켜야 할 예약어·quoting 규칙은 `spring-boot-java.md` Entity Conventions로 이동(`**/*.java` 저장 시 자동 로드되도록 — 이 파일은 Docker/배포 파일에만 스코프돼 Entity 편집만으로는 로드되지 않음).
+Entity 작성 시 지켜야 할 예약어·quoting 규칙은 `spring-boot-java.md` Entity Conventions에 있다.
 
 ## 환경변수 관리
 
 운영 값은 권한 0600의 서버 `~/tripfit/shared/.env`에 전달한다. GitHub Actions는 이미지 발행과 검증을 담당한다. 새 앱 변수를 추가할 때는 공통 Compose 배선과 [환경 변수 목록](../../deploy/environment-reference.md) 또는 샘플을 함께 갱신하고 실제 배포 전 값이 있는지 확인한다.
+
+운영 장애 조사에서 AWS CLI는 `--profile tripfit`을 사용한다. 운영 로그와 DB는 읽기 전용으로 확인하고, 수정은 저장소와 배포 절차를 거친다.
 
 ## 검증
 

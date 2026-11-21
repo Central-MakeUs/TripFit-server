@@ -1,5 +1,7 @@
 # Layer 3 — Deterministic Guardrails (LLM이 개입하지 않는 강제 통제)
 
+> Claude Code를 사용하던 시기의 설계 기록이다. 현재 개발 절차는 [AGENTS.md](../../AGENTS.md)를 따른다.
+
 > 분류: **hook** (`.claude/settings.json` + `.claude/hooks/*.sh`) · 강제 수단: **shell exit code** · 대응 다이어그램: "Layer 3: Deterministic Guardrails"
 
 ## 1. 기본 사항
@@ -14,12 +16,12 @@ Layer 1(규칙)·Layer 2(스킬)는 결국 **에이전트가 읽고 따라줘야
 
 | 훅 | 파일 | 이벤트 | 매처 | 동작 |
 |---|---|---|---|---|
-| 위험 명령 차단 | [`.claude/hooks/deny-dangerous-bash.sh`](../../.claude/hooks/deny-dangerous-bash.sh) | `PreToolUse` | `Bash` | **exit 2 (차단)** |
-| Breaking-Change 경고 | [`.claude/hooks/warn-breaking-change.sh`](../../.claude/hooks/warn-breaking-change.sh) | `PreToolUse` | `Bash` | **항상 exit 0** (advisory) |
-| DB 마이그레이션 차단 | [`.claude/hooks/deny-db-migration.sh`](../../.claude/hooks/deny-db-migration.sh) | `PreToolUse` | `Write\|Edit` | **exit 2 (차단)** |
-| Java 자동 포맷 | [`.claude/hooks/auto-format-java.sh`](../../.claude/hooks/auto-format-java.sh) | `PostToolUse` | `Edit\|Write` | **항상 exit 0** (non-blocking) |
+| 위험 명령 차단 | [`.claude/hooks/deny-dangerous-bash.sh`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/hooks/deny-dangerous-bash.sh) | `PreToolUse` | `Bash` | **exit 2 (차단)** |
+| Breaking-Change 경고 | [`.claude/hooks/warn-breaking-change.sh`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/hooks/warn-breaking-change.sh) | `PreToolUse` | `Bash` | **항상 exit 0** (advisory) |
+| DB 마이그레이션 차단 | [`.claude/hooks/deny-db-migration.sh`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/hooks/deny-db-migration.sh) | `PreToolUse` | `Write\|Edit` | **exit 2 (차단)** |
+| Java 자동 포맷 | [`.claude/hooks/auto-format-java.sh`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/hooks/auto-format-java.sh) | `PostToolUse` | `Edit\|Write` | **항상 exit 0** (non-blocking) |
 
-등록 위치: [`.claude/settings.json`](../../.claude/settings.json) (팀 공통, 버전 관리됨)
+등록 위치: [`.claude/settings.json`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/settings.json) (팀 공통, 버전 관리됨)
 
 **파일명이 강도를 말합니다 (2026-09-04 `#128`에서 규칙화):** 차단은 `deny-`, 경고는 `warn-`, 자동 실행은 `auto-`. 이전 이름(`block-dangerous.sh`·`format-java.sh`)은 그 훅이 커밋을 막는지 그냥 도와주는지를 파일명만 보고 알 수 없었습니다. 아래 fail-closed / fail-open 비대칭이 이름에 그대로 드러나도록 맞춘 것입니다 — `deny-`는 exit 2로 막고, `warn-`은 무조건 exit 0입니다.
 

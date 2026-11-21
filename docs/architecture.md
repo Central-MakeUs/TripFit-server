@@ -83,4 +83,4 @@ CI는 테스트와 API 계약을 검사한다. main의 테스트가 통과하면
 
 ## Specs
 
-기능 설계: `docs/specs/{feature-name}.md` — `.claude/skills/specify` 템플릿 참고.
+기능 설계: `docs/specs/{feature-name}.md` — `docs/templates/spec-template.md` 참고.

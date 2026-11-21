@@ -1,6 +1,6 @@
 # Audit Checklist
 
-`safe-refactor` 스킬의 1단계(Audit) 서브에이전트 프롬프트에 그대로 포함하는 점검 항목 15개. 절대 원칙·A/B/C/D 분류·산출물 포맷은 [`SKILL.md`](../SKILL.md)·[`audit-template.md`](audit-template.md)가 SSOT — 여기서는 중복하지 않는다.
+TripFit에서 `superchaeyeons:refactor-safely`로 한 도메인을 감사할 때 사용하는 점검 항목 15개다. 결과는 [감사 템플릿](audit-template.md)에 기록한다.
 
 ## 1. 중복 코드 제거
 

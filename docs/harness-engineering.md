@@ -1,5 +1,7 @@
 # AI 하네스 엔지니어링 기록 (TripFit-server)
 
+> Claude Code를 사용하던 시기의 설계 기록이다. 현재 개발 절차는 [AGENTS.md](../AGENTS.md)를 따른다.
+
 CMC 개발자 세션·부스 질의 대비, **이 저장소에서 AI 코딩 에이전트(Claude Code)를 어떻게 통제하며 개발했는지**를 한 파일에 모은 기록입니다. "바이브 코딩"(AI에게 맡기고 결과만 확인)이 아니라 **하네스 엔지니어링**(AI의 실행 경로 자체를 문서·규칙·훅으로 제한해 일관된 결과를 강제)을 지향했다는 근거를 실제 파일·커밋·인시던트로 남깁니다.
 
 다른 문서와의 관계: 이 파일은 **서술형 총정리**이고, 실제로 에이전트가 참조하는 SSOT는 각 절에서 링크하는 원본 파일들입니다(`AGENTS.md`, `.claude/rules/`, `.claude/skills/`, `docs/specs/` 등). 여기 내용이 원본과 어긋나면 원본이 맞습니다 — 이 파일도 코드처럼 드리프트될 수 있습니다.
@@ -129,7 +131,7 @@ push/PR → OpenApiSpecExportTest → oasdiff breaking (스키마 diff)
 
 ## 12. 외부 도구 채택 기준 — 안 쓰기로 한 것도 기록
 
-Superpowers 같은 서드파티 플러그인(`brainstorming`, `writing-plans`, `systematic-debugging` 등)을 도입할지 2026-07-23에 감사했습니다. 결론은 **미채택** — Claude Code 기본 기능(Plan Mode, `Agent` 서브에이전트, `code-review`/`simplify` 스킬)으로 이미 충분히 대체되고, 유일한 gap이었던 `systematic-debugging`도 자체 `debug` 스킬로 충분해 플러그인 설치 비용을 정당화하지 못했습니다. "기능이 있다는 이유만으로 쓴다"를 명시적 배제 조건으로 못 박아 둔 게 핵심 — 도구 자체보다 **도구를 안 쓰기로 한 판단 근거를 기록**하는 게 이 저장소의 스타일입니다. SSOT: [`.claude/rules/core-tools.md`](../.claude/rules/core-tools.md).
+Superpowers 같은 서드파티 플러그인(`brainstorming`, `writing-plans`, `systematic-debugging` 등)을 도입할지 2026-07-23에 감사했습니다. 결론은 **미채택** — Claude Code 기본 기능(Plan Mode, `Agent` 서브에이전트, `code-review`/`simplify` 스킬)으로 이미 충분히 대체되고, 유일한 gap이었던 `systematic-debugging`도 자체 `debug` 스킬로 충분해 플러그인 설치 비용을 정당화하지 못했습니다. "기능이 있다는 이유만으로 쓴다"를 명시적 배제 조건으로 못 박아 둔 게 핵심 — 도구 자체보다 **도구를 안 쓰기로 한 판단 근거를 기록**하는 게 이 저장소의 스타일입니다. SSOT: [`.claude/rules/core-tools.md`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/rules/core-tools.md).
 
 ## 13. 숫자로 보는 활용도
 

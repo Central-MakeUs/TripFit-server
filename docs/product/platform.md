@@ -188,7 +188,7 @@ provider별 **별도 URL**(`/auth/kakao`, `/auth/google` 등)은 사용하지 �
 | `specs/auth-apple-server-notifications.md` | Apple 계정 변경 S2S webhook |
 | `decisions/001-auth-mobile-token-verification.md` | 모바일 토큰 검증 + JWT (안 B) |
 | `decisions/004-auth-token-rotation.md` | RTR + Redis 확정 |
-| `.claude/rules/client-platform.md` | API·인증 작업 시 자동 규칙 |
+| `.claude/rules/client-platform.md` | API·인증 작업 시 적용하는 규칙 |
 
 ## 미정 항목
 

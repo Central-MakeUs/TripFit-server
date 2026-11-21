@@ -17,3 +17,8 @@ docs
 
 # 단일 서버 로컬 검증용 자격 증명
 .local-state/
+.codex/harness-state/
+.codex/corrections/
+.codex/polish/
+.claude/worktrees/
+.claude/settings.local.json

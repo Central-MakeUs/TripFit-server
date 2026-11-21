@@ -1,0 +1,8 @@
+
+[marketplaces."superchaeyeons"]
+source_type = "git"
+source = "https://github.com/chhezue/Superchaeyeons.git"
+ref = "main"
+
+[plugins."superchaeyeons@superchaeyeons"]
+enabled = true

@@ -1,5 +1,7 @@
 # 하네스 레이어별 상세 (`docs/harness/`)
 
+> Claude Code를 사용하던 시기의 설계 기록이다. 현재 개발 절차는 [AGENTS.md](../../AGENTS.md)를 따른다.
+
 [`docs/harness-engineering.md`](../harness-engineering.md)가 **"왜 이렇게 만들었나"의 서술형 총정리**라면, 이 폴더는 각 레이어가 **"언제 발동해서 어떤 파일의 어떤 부분을 읽고 어떻게 동작하는가"**를 실행 흐름 단위로 푼 문서입니다. 발표·면접에서 한 레이어를 깊게 파고들 때 이 파일들을 봅니다.
 
 최종 포트폴리오 다이어그램인 [`architecture-diagrams.md`](architecture-diagrams.md)의 **"관심사 분리(Separation of Concerns)"** 계층과 파일별 대응 관계는 다음과 같습니다.
@@ -46,7 +48,7 @@ Probabilistic Layer   Human Decision Layer  Deterministic Layer   Mechanical Ver
 
 ### 1순위 — Deterministic Layer (L3): agent-type → command-type 훅 전환
 
-**왜 1순위인가:** "AI로 만들었다가 실패해서 결정론적 스크립트로 바꿨다"는 서사는 AI를 실제로 굴려본 사람만 가질 수 있습니다. LLM 기반 훅이 "절대 막지 마라"는 명시적 지시에도 커밋을 차단한 사고를 겪고, *advisory는 판단이 아니라 불변식이므로 LLM에 맡기면 안 된다*는 결론에 도달한 과정이 [`warn-breaking-change.sh`](../../.claude/hooks/warn-breaking-change.sh) 상단 주석에 코드로 남아 있습니다.
+**왜 1순위인가:** "AI로 만들었다가 실패해서 결정론적 스크립트로 바꿨다"는 서사는 AI를 실제로 굴려본 사람만 가질 수 있습니다. LLM 기반 훅이 "절대 막지 마라"는 명시적 지시에도 커밋을 차단한 사고를 겪고, *advisory는 판단이 아니라 불변식이므로 LLM에 맡기면 안 된다*는 결론에 도달한 과정이 [`warn-breaking-change.sh`](https://github.com/Central-MakeUs/TripFit-server/blob/1ba554aece6124ecb28812b8a501bc460371c558/.claude/hooks/warn-breaking-change.sh) 상단 주석에 코드로 남아 있습니다.
 
 **차별점:** 대부분의 "AI 활용" 사례는 AI를 더 많이 쓰는 방향입니다. 이건 **AI를 덜 쓰기로 한 판단**이고, 그 경계를 비용 기준으로 그었습니다.
 

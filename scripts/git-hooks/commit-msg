@@ -18,3 +18,9 @@ if ! printf '%s' "$first_line" | grep -Eq '^(Feat|Fix|Refactor|Docs|Chore|Test):
 	echo "  받은 첫 줄: ${first_line}" >&2
 	exit 1
 fi
+
+# 계약 후보가 있으면 실제 커밋 본문의 트레일러를 확인한다. 경고는 커밋을 막지 않는다.
+if ! git diff --cached --quiet -- ':(glob)**/dto/**/*.java' ':(glob)**/domain/**/*.java' ':(glob)**/*Controller.java' ':(glob)**/ErrorCode.java' &&
+    ! git interpret-trailers --parse "$msg_file" | grep -Eq '^Breaking-Change-Reason:[[:space:]]*[^[:space:]]'; then
+    echo "API 계약 후보 파일이 변경됐습니다. 프론트 대응이 필요하면 커밋 본문에 Breaking-Change-Reason: 사유를 적으세요." >&2
+fi

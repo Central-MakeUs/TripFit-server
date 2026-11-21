@@ -4,7 +4,7 @@
 
 작업을 **어떤 순서로** 진행하는지(트랙 1개 선택 → 게이트 4개 통과)는 `core-workflow.md`가 담당한다.
 
-**형제 규칙:** `core-workflow.md` · `core-scope.md` · `core-followup.md` · `core-tools.md` · `tripfit-release.md`
+**형제 규칙:** `core-workflow.md` · `core-scope.md` · `core-followup.md` · `tripfit-release.md`
 Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 
 ## ⛔ STOP (모든 규칙보다 우선)

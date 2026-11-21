@@ -4,7 +4,7 @@
 
 **⛔ `core-guardrails.md`가 이 문서보다 우선한다** — 게이트를 진행하는 것보다 중단·질문이 먼저다.
 
-**형제 규칙:** `core-guardrails.md` · `core-scope.md` · `core-followup.md` · `core-tools.md` · `tripfit-release.md`
+**형제 규칙:** `core-guardrails.md` · `core-scope.md` · `core-followup.md` · `tripfit-release.md`
 Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 
 ## 사이클 — 3 트랙 × 4 게이트
@@ -14,9 +14,9 @@ Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 ```
 진입(트랙 분류) → G1 리서치 → G2 승인 → 구현 → G3 검증 → G4 회고
                     │
-                    ├─ A 트랙: 기능·API·DB        → specify
-                    ├─ B 트랙: 감사·무손실 리팩터  → safe-refactor
-                    └─ C 트랙: 버그·테스트 실패    → debug
+                    ├─ A 트랙: 기능·API·DB        → write-spec
+                    ├─ B 트랙: 감사·무손실 리팩터  → refactor-safely
+                    └─ C 트랙: 버그·테스트 실패    → fix-bug
 ```
 
 **⛔ STOP은 모든 게이트보다 우선한다** — 게이트를 진행하는 것보다 **중단·질문이 먼저**다.
@@ -29,9 +29,9 @@ Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 
 | 트랙 | 언제 | 진입 |
 |------|------|------|
-| **A. 기능** | 새 기능·API·엔티티·정책 변경 | DB·인증·3파일+ → `specify` → `docs/specs/` → **승인 후** 구현 · 그 외 → `AGENTS.md` + 관련 `docs/product/` 확인 후 바로 구현 |
-| **B. 감사·리팩터** | 기존 코드 품질 개선 (API 계약·비즈니스 로직 불변) | `safe-refactor` — 도메인 1개씩, 매 단계 승인 |
-| **C. 버그** | 버그 리포트·`./gradlew test` 실패 | `debug` — 재현 → 원인 분리 → 최소 수정 |
+| **A. 기능** | 새 기능·API·엔티티·정책 변경 | DB·인증·3파일+ → `write-spec` → `docs/specs/` → **승인 후** 구현 · 그 외 → `AGENTS.md` + 관련 `docs/product/` 확인 후 바로 구현 |
+| **B. 감사·리팩터** | 기존 코드 품질 개선 (API 계약·비즈니스 로직 불변) | `refactor-safely` — 도메인 1개씩, 매 단계 승인 |
+| **C. 버그** | 버그 리포트·`./gradlew test` 실패 | `fix-bug` — 재현 → 원인 분리 → 최소 수정 |
 
 4. 문서 확인 순서: `AGENTS.md` → `docs/architecture.md` → `docs/product/release-milestones.md` → `docs/product/platform.md` → `docs/decisions/002-domain-split-vercel-api.md` → `docs/product/mvp.md`
 
@@ -48,7 +48,7 @@ Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 
 ⚠️ **이 저장소 고유 함정:** Spring Boot **4.1.0** — 웹 예제 대다수가 3.x 기준이라 그대로 쓰면 깨진다. `docs.spring.io`는 **최신 stable이면 버전 경로가 버전 없는 URL로 리다이렉트되므로 URL로 버전을 고정할 수 없다**(2026-09-03 실측). 도착 페이지 상단의 버전 표시를 확인하고, 우리 버전과 다르면 **로컬 jar·BOM 실물로 교차 확인**한다.
 
-**도구 선택:** 2개 이상 문서를 비교해야 하면 **`researcher` 서브에이전트**([`.claude/agents/researcher.md`](../agents/researcher.md) — 소스 우선순위·출력 포맷 SSOT), 단일 페이지 확인이면 인라인 `WebFetch`(서브에이전트 오버헤드가 더 큼).
+**도구 선택:** 여러 외부 문서를 대조할 때 Codex의 `researcher` 역할을 사용한다. 단일 문서는 직접 확인한다.
 
 ## G2. 승인 게이트 — 사람이 끊는 지점
 
@@ -63,7 +63,7 @@ Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 **⚠️ 새 이슈·새 브랜치·새 PR 생성은 항상 먼저 확인** (2026-08-04 사용자 결정, 2026-08-05 PR까지 확장)
 
 - **규칙:** `gh issue create` · 새 작업 브랜치 분기(`git checkout -b` 등) · `gh pr create`는 사용자가 이미 명시적으로 요청한 경우가 아니면 **실행 전 채팅으로 먼저 묻는다.** "이슈 번호 없는 브랜치 금지"(CONTRIBUTING) 같은 형식 규칙과 별개로, **만들지 여부 자체**를 임의 판단하지 않는다.
-- **적용 지점:** `defer` 스킬의 `gh issue create` 단계, G4의 PR 생성 단계 등 이슈·브랜치·PR을 만들 수 있는 **모든** 지점.
+- **적용 지점:** `write-spec` 스킬의 `gh issue create` 단계, G4의 PR 생성 단계 등 이슈·브랜치·PR을 만들 수 있는 **모든** 지점.
 - **승인 범위:** **커밋 승인이 PR 승인을 포함하지 않는다.** 구현·커밋까지 요청받았어도 "PR까지 올려줘"를 별도로 확인받지 않았다면 PR 생성 전에 다시 묻는다.
 
 ## 구현 — 코딩 중 지킬 것
@@ -80,21 +80,21 @@ Java·ErrorCode 상세: `spring-boot-java.md` · Git: `.github/CONTRIBUTING.md`
 
 ## G3. 검증 게이트 — "완료" 보고 전
 
-절차 SSOT: [`preflight` 스킬](../skills/preflight/SKILL.md). 자기 보고를 믿지 않고 **기계적으로** 확인한다.
+절차 SSOT: `superchaeyeons:verify-work`. 자기 보고를 믿지 않고 **기계적으로** 확인한다.
 
 - 변경 요약 + `./gradlew test` — 실행 없이 "통과했을 것"이라고 보고 금지
 - 스펙·이슈 완료 기준을 **실제 코드**와 대조 (STOP §1.5 — 문서 문구만 보고 단정 금지)
 - **API 추가·변경:** `docs/` 동기화 + 관련 GitHub 이슈 (`gh issue view` → `gh issue edit`) + STOP §5 대상이면 커밋에 `Breaking-Change-Reason:` 트레일러 포함 확인 + `oasdiff`로 의도한 diff만 있는지 확인
 - **보안·아키텍처 성격 변경:** STOP §6 대상(토큰·세션·결제·개인정보 저장 방식 등)이면 `docs/how-it-works.md` 해당 절 갱신 확인
 - **레거시 재점검:** 이번 변경이 대체한 구 경로·상수·문서 ‘현행’ 문구가 남았는지 확인 후 **삭제/amend**. 요청 밖·정책 무관 dead code만 언급. **정책 불일치·교체 잔존 → STOP §4 삭제**
-- **문서 품질:** 새 문서를 만들었거나 기존 문서를 **50줄 이상** 고쳤으면 **`doc-reviewer` 서브에이전트**([`.claude/agents/doc-reviewer.md`](../agents/doc-reviewer.md), 기준 SSOT: `doc-writing.md`). 오타·한 줄 수정은 대상 아님 — 문체는 exit code로 판정할 수 없어 **advisory**(훅 아님)
-- **Java 변경 리뷰:** Java를 **3파일 이상**·API·DB 범위로 고쳤으면 **`spring-reviewer` 서브에이전트**([`.claude/agents/spring-reviewer.md`](../agents/spring-reviewer.md), 기준 SSOT: `spring-boot-java.md`). 트랜잭션 경계·N+1·ErrorCode/`@TripActivity` 누락처럼 **ArchUnit이 잡지 못하는** 결함이 대상이다 — 한 줄·단일 파일 수정은 대상 아님
-- **규모 게이트:** Must Have급(3파일+·API·DB)이면 `code-review` 또는 `simplify`를 서브에이전트 컨텍스트에서 한 번 더 — self-grading 편향 회피
+- **문서 품질:** 새 문서를 만들었거나 기존 문서를 **50줄 이상** 고쳤으면 **`doc-reviewer` 서브에이전트**([`.codex/agents/doc-reviewer.toml`](../../.codex/agents/doc-reviewer.toml), 기준 SSOT: `doc-writing.md`). 오타·한 줄 수정은 대상 아님 — 문체는 exit code로 판정할 수 없어 **advisory**(훅 아님)
+- **Java 변경 리뷰:** Java를 **3파일 이상**·API·DB 범위로 고쳤으면 **별도 Codex 리뷰**([Spring 리뷰 기준](spring-review.md), 기준 SSOT: `spring-boot-java.md`). 트랜잭션 경계·N+1·ErrorCode/`@TripActivity` 누락처럼 **ArchUnit이 잡지 못하는** 결함이 대상이다 — 한 줄·단일 파일 수정은 대상 아님
+- **규모 게이트:** Must Have급(3파일+·API·DB)이면 Codex에서 별도 컨텍스트로 코드 리뷰를 한 번 더 — self-grading 편향 회피
 
 ## G4. 회고 게이트 — 남길 것 남기기
 
-- **프로젝트 문서 갱신 점검 (매 작업 필수):** 이번 작업에서 새로 확정된 설계 결정·컨벤션·자주 틀리기 쉬운 함정이 있으면 `AGENTS.md`/`CLAUDE.md` 또는 해당 `.claude/rules/*.md` 갱신이 필요한지 검토한다. 필요하면 구체적 수정안을 사용자에게 제안한다 — **자동 갱신 금지, 승인 후 반영.** 아래 "같은 실수 2회+" 문턱과 별개로 **매 작업 종료 시** 확인 대상이며, 새로 배운 게 없으면 조용히 스킵한다(보고에 언급 불필요)
-- 같은 실수 2회+ → `.claude/rules/` 추가 **제안** (자동 추가 금지) — 절차는 **`retro` 스킬**([`.claude/skills/retro/SKILL.md`](../skills/retro/SKILL.md)), 승인 후 `docs/audits/harness-retro.md`에 후보로 append. 코드·설계 개선은 여기가 아니라 `core-followup.md` 💡 후속 제안 담당
+- **프로젝트 문서 갱신 점검 (매 작업 필수):** 이번 작업에서 새로 확정된 설계 결정·컨벤션·자주 틀리기 쉬운 함정이 있으면 `AGENTS.md` 또는 해당 `.claude/rules/*.md` 갱신이 필요한지 검토한다. 필요하면 구체적 수정안을 사용자에게 제안한다 — **자동 갱신 금지, 승인 후 반영.** 아래 "같은 실수 2회+" 문턱과 별개로 **매 작업 종료 시** 확인 대상이며, 새로 배운 게 없으면 조용히 스킵한다(보고에 언급 불필요)
+- 같은 실수 2회+ → `.claude/rules/` 추가 **제안** (자동 추가 금지) — 절차는 `superchaeyeons:improve-harness` 스킬, 승인 후 `docs/audits/harness-retro-codex.md`에 후보로 append. 코드·설계 개선은 여기가 아니라 `core-followup.md` 💡 후속 제안 담당
 - **트랙별 기록:** B 트랙은 `docs/audits/{domain}/refactor-log.md`에 반영 이력 append
 - Entity·스키마 후 ERD 개선 → `core-followup.md` 💡 ERD
 - Must Have급 완료 / 사용자 요청 시 후속 제안 → `core-followup.md`
