@@ -1,0 +1,125 @@
+# 로컬 검증과 운영 오버레이가 공유하는 단일 서버 구성.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    mem_limit: 512m
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --binlog-expire-logs-seconds=86400
+      - --max_connections=200
+      - --innodb-buffer-pool-size=134217728
+      - --performance-schema=OFF
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-tripfit}
+      MYSQL_USER: ${SPRING_DATASOURCE_USERNAME:?app DB user is required}
+      MYSQL_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?app DB password is required}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -h 127.0.0.1 -u "$$MYSQL_USER" "$$MYSQL_DATABASE" -Nse "SELECT 1" >/dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 96m
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - 'exec redis-server --requirepass "$$REDIS_PASSWORD" --save "" --appendonly no --maxmemory 64mb --maxmemory-policy noeviction'
+    healthcheck:
+      test: ["CMD-SHELL", 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -qx PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging: *logging
+
+  app:
+    image: ${GHCR_IMAGE:?GHCR_IMAGE is required}
+    restart: unless-stopped
+    mem_limit: 768m
+    ports:
+      - "127.0.0.1:${APP_PORT:-18081}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx384m -XX:MaxMetaspaceSize=192m -XX:ReservedCodeCacheSize=64m -XX:MaxDirectMemorySize=64m
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-tripfit}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?app DB user is required}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?app DB password is required}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900}
+      JWT_REFRESH_EXPIRATION_DAYS: ${JWT_REFRESH_EXPIRATION_DAYS:-30}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID_IOS: ${GOOGLE_CLIENT_ID_IOS:-}
+      GOOGLE_CLIENT_ID_ANDROID: ${GOOGLE_CLIENT_ID_ANDROID:-}
+      GOOGLE_CALENDAR_CLIENT_ID: ${GOOGLE_CALENDAR_CLIENT_ID:-}
+      GOOGLE_CALENDAR_CLIENT_SECRET: ${GOOGLE_CALENDAR_CLIENT_SECRET:-}
+      SOCIAL_TOKEN_AES_KEY: ${SOCIAL_TOKEN_AES_KEY:-}
+      APPLE_BUNDLE_ID: ${APPLE_BUNDLE_ID:-}
+      APPLE_SERVICE_ID: ${APPLE_SERVICE_ID:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
+      KAKAO_ADMIN_KEY: ${KAKAO_ADMIN_KEY:-}
+      FIREBASE_CREDENTIALS_BASE64: ${FIREBASE_CREDENTIALS_BASE64:-}
+      HOLIDAY_API_SERVICE_KEY: ${HOLIDAY_API_SERVICE_KEY:-}
+      TZ: Asia/Seoul
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+    logging: *logging
+
+  gateway:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    mem_limit: 32m
+    ports:
+      - "127.0.0.1:${NGINX_HTTP_PORT:-18080}:80"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/snippets:/etc/nginx/snippets:ro
+      - ./nginx:/etc/nginx/conf.d:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging: *logging
+
+volumes:
+  mysql_data:

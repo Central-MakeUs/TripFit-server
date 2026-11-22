@@ -1,0 +1,31 @@
+# Use together with docker-compose.yml under the fixed tripfit-production project.
+services:
+  app:
+    ports: !reset []
+    environment:
+      COOKIE_DOMAIN: tripfit.online
+      COOKIE_SECURE: "true"
+
+  gateway:
+    ports: !override
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+    volumes:
+      - ./nginx/production:/etc/nginx/conf.d:ro
+      - ./nginx/tls/https.conf:/etc/nginx/tripfit/https.conf:ro
+      - ${DEPLOY_STATE_DIR:?}/tls-enabled:/etc/nginx/tls-enabled:ro
+      - ${DEPLOY_STATE_DIR:?}/letsencrypt:/etc/letsencrypt:ro
+      - ${DEPLOY_STATE_DIR:?}/acme:/var/www/certbot:ro
+
+  certbot:
+    image: certbot/certbot:v4.2.0
+    profiles: ["tls"]
+    mem_limit: 192m
+    volumes:
+      - ${DEPLOY_STATE_DIR:?}/letsencrypt:/etc/letsencrypt
+      - ${DEPLOY_STATE_DIR:?}/acme:/var/www/certbot
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

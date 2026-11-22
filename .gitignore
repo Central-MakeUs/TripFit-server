@@ -77,3 +77,6 @@ $RECYCLE.BIN/
 *.class
 *.war
 *.ear
+
+# 단일 서버 로컬 검증용 자격 증명
+.local-state/
