@@ -1,0 +1,26 @@
+name: Terraform Check
+
+on:
+  pull_request:
+    paths: ['infra/terraform/**', '.github/workflows/terraform-check.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.9
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false -lockfile=readonly
+      - run: terraform validate
+      - run: terraform test
+      - run: terraform -chdir=bootstrap init -backend=false -input=false -lockfile=readonly
+      - run: terraform -chdir=bootstrap validate
