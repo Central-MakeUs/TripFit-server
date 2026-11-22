@@ -115,6 +115,7 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`harness-track-gate-restructure.md`](cross-cutting/harness-track-gate-restructure.md) | 무관 | Draft (`#127`) | 에이전트 하네스를 3 트랙(기능·감사/리팩터·버그) × 4 게이트(리서치·승인·검증·회고)로 재구성 + `researcher`·`doc-reviewer` 서브에이전트와 `doc-writing.md` 문서 작성 규칙 신설 | — |
 | [`harness-component-rename.md`](cross-cutting/harness-component-rename.md) | 무관 | Draft (`#128`) | 하네스 구성요소 개명·분리 — `harness-*` → `core-*`/`tripfit-*`, 스킬·훅·에이전트 작명 규칙 통일, `core-guardrails`(STOP)/`core-workflow`(게이트) 분리 | harness-track-gate-restructure |
 | [`external-api-bulkhead.md`](cross-cutting/external-api-bulkhead.md) | 출시 이후 | **Implemented** (`#134`, PR 전) | 외부 API 장애 격리 — FCM 타임아웃·트랜잭션 분리·전용 실행기, Apple·Google 코드 교환 비동기화, 카카오 동시 호출 상한, k6·WireMock 부하 테스트 | notification · auth-social-login · google-login-revoke · apple-oauth-multi-audience · user-account-withdrawal |
+| [`low-cost-server-rebuild.md`](cross-cutting/low-cost-server-rebuild.md) | MVP 출시 | Approved (`#140`, 운영 전환) | 데이터 복원 없이 단일 서버 재구축 · 모니터링 4종 제외 · Lightsail 후보·비용·계정 준비·검증 계획 | #125 생성 및 DNS 권한 확인 |
 
 **구현 순서 (MVP 출시):** uuid → schedule-unified(#11) → calendar(#17) → trip-room(#12) → recommendation API 껍데기(#13) → recommendation 계산 로직(#50)
 
