@@ -110,7 +110,6 @@ recommendation(추천)은 `trip/` 패키지 안에 flat하게 있어(별도 최�
 | [`openapi-response-schema-generics.md`](cross-cutting/openapi-response-schema-generics.md) | 도구 | **Approved** (이슈 미생성) | `SuccessResponse<T>` 응답 스키마가 스펙에 필드 노출 안 되는 문제 — `useReturnTypeSchema = true`로 해결 | api-contract-diff-ci |
 | [`social-integration-structured-logging.md`](cross-cutting/social-integration-structured-logging.md) | 도구 | Draft (`#65`) | 소셜 로그인(Google/Kakao/Apple)·Google Calendar 연동 구조화 JSON 로깅 — provider/action/httpStatus/providerErrorReason 필드, PII 마스킹 | google-calendar-oauth · auth-social-login |
 | [`terraform-iac-migration.md`](cross-cutting/terraform-iac-migration.md) | 무관 | Approved (`#125`) | 신규 Lightsail 단일 서버 생성 · 계정별 S3 state | #140 운영 배포 선행 |
-| [`low-cost-server-rebuild.md`](cross-cutting/low-cost-server-rebuild.md) | MVP 출시 | Approved (`#140`, 운영 전환) | 데이터 복원 없이 단일 서버 재구축 · 모니터링 4종 제외 · Lightsail 후보·비용·계정 준비·검증 계획 | #125 생성 및 DNS 권한 확인 |
 | [`add-prometheus.md`](cross-cutting/add-prometheus.md) | 출시 이후 | 이력 (#126) | EC2 Prometheus·Grafana 운영 구성. #140 단일 서버 배포에서 제외 | decision 009 |
 | [`incident-ai-report.md`](cross-cutting/incident-ai-report.md) | 출시 이후 | 이력 (#126) | 기존 AI 장애 리포터 스펙. #140 단일 서버 배포에서 제외 | add-prometheus |
 | [`harness-track-gate-restructure.md`](cross-cutting/harness-track-gate-restructure.md) | 무관 | Draft (`#127`) | 에이전트 하네스를 3 트랙(기능·감사/리팩터·버그) × 4 게이트(리서치·승인·검증·회고)로 재구성 + `researcher`·`doc-reviewer` 서브에이전트와 `doc-writing.md` 문서 작성 규칙 신설 | — |
