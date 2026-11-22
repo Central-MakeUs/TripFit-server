@@ -14,7 +14,7 @@ main  ←  {type}/{issue-number}-{description}
 
 | 항목 | 규칙 |
 |------|------|
-| **기본 브랜치** | `main` — merge 시 CI test + GHCR deploy |
+| **기본 브랜치** | `main` — merge 시 CI 테스트와 GHCR 이미지 발행 |
 | **작업 브랜치** | `main`에서 분기, PR로 `main`에 merge |
 | **네이밍** | `{type}/{issue-number}-{description}` |
 | **type** | `feat`, `fix`, `chore`, `docs`, `refactor`, `test` (브랜치명은 소문자) |

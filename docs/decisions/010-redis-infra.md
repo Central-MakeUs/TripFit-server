@@ -1,5 +1,7 @@
 # 010 — Redis 인프라 (신규 EC2 D)
 
+> 배포 이력: #140 단일 서버 전환 전의 구성을 설명한다. 현행 배포 설정은 [배포 안내](../../deploy/README.md)를 따른다.
+
 - **상태:** 확정
 - **날짜:** 2026-08-08
 - **관련:** [`004-auth-token-rotation.md`](004-auth-token-rotation.md), [`docs/specs/auth/auth-token-rotation.md`](../specs/auth/auth-token-rotation.md), Issue **#4**
