@@ -1,0 +1,7 @@
+# Copy as backend.local.tf in each root before switching to S3 storage.
+terraform {
+  backend "s3" {
+    use_lockfile = true
+    encrypt      = true
+  }
+}
