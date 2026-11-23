@@ -14,5 +14,6 @@ out
 *.md
 docs
 .dev
-incident-reporter/build
-incident-reporter/.gradle
+
+# 단일 서버 로컬 검증용 자격 증명
+.local-state/

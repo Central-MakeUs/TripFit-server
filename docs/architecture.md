@@ -45,14 +45,14 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 
 - `src/main/resources/application.yml` — 공통 (DataSource driver, Hikari)
 - 프로필별: `application-{local|dev|test}.yml`
-- 민감 정보: 환경 변수 — `.env` (git 제외), EC2에서는 `deploy/*/.env`
+- 민감 정보: 환경 변수 — `.env` (git 제외), Lightsail에서는 `~/tripfit/shared/.env`
 - **Flyway / SQL 마이그레이션 미사용·작성 금지** — 스키마는 JPA 엔티티(최신 하나) + Hibernate `ddl-auto`. **상용 보존 데이터 없음** → DB 리셋 허용. (`.claude/rules/core-guardrails.md`)
-- **`dev` = 유일한 실제 배포 환경** (`api.tripfit.online`, EC2). 별도 `prod` 프로필·환경은 없음 — `application-prod.yml`은 실제로 활성화된 적 없는 죽은 설정이라 삭제했다. Swagger는 `dev`에서도 계속 노출.
+- **`dev` = 유일한 실제 배포 환경** (`api.tripfit.online`, Lightsail 전환). 별도 `prod` 프로필·환경은 없음 — `application-prod.yml`은 실제로 활성화된 적 없는 죽은 설정이라 삭제했다. Swagger는 `dev`에서도 계속 노출.
 
 | 프로필 | 용도 | ddl-auto |
 |--------|------|----------|
 | local | IDE / 로컬 MySQL | update |
-| dev | Docker·EC2 (**실제 배포 환경**) | update |
+| dev | Docker·Lightsail (**배포 대상**) | update |
 | test | `./gradlew test` (MySQL 8, Testcontainers) | create-drop |
 
 배포·검증 절차: [`deploy/README.md`](../deploy/README.md) (SSOT). 에이전트 배포 규칙: `.claude/rules/deployment.md`.
@@ -71,16 +71,15 @@ JSON envelope: [`architecture/api-response.md`](architecture/api-response.md) (�
 
 - ERD: [erd.md](architecture/erd.md) — MVP 핵심: `users`, `regular_schedule`, `personal_schedule`, `trip`, `trip_member`, `recommendation`
 - **런타임 DB: MySQL 8.0** — snake_case 단수형 테이블명, Soft Delete (`deleted_at`), **PK/FK = UUID v4 (`CHAR(36)`)**
-- **Redis (EC2 D)** — RDB가 아닌 키-값 저장소. refresh token(`auth:refresh:*`, 구 `refresh_token` 테이블을 2026-09-15 대체)과 공휴일 캐시(`holiday:kr:*`)를 담는다. 키 목록은 [erd.md](architecture/erd.md) Redis 절, 인프라는 [`010-redis-infra.md`](decisions/010-redis-infra.md)
+- **Redis (내부 컨테이너)** — RDB가 아닌 키-값 저장소. refresh token(`auth:refresh:*`, 구 `refresh_token` 테이블을 2026-09-15 대체)과 공휴일 캐시(`holiday:kr:*`)를 담는다. 키 목록은 [erd.md](architecture/erd.md) Redis 절, 인프라는 [`010-redis-infra.md`](decisions/010-redis-infra.md)
 - 엔티티: `common/domain/` (베이스), 슬라이스 `domain/` (비즈니스), `repository/` (기술 영속화)
 
 ## Deployment
 
 운영 절차·환경변수·검증 스크립트는 [`deploy/README.md`](../deploy/README.md)가 SSOT입니다.
-VPC·SG·1→2 EC2 마이그레이션 심화: [`ec2-split-deployment.md`](../deploy/ec2-split-deployment.md).
+새 단일 Lightsail 배포 설정은 Nginx·앱·MySQL·Redis를 같은 서버에서 실행한다. 최초 AWS 적용 및 공개 전환은 #140에서 추적한다. DB와 Redis는 Compose 내부 네트워크를 쓴다. 기존 EC2의 역할은 [배포 이력](../deploy/ec2-split-deployment.md)에 있다.
 
-CI/CD: `.github/workflows/ci-cd.yml` — PR은 test, `main` push는 test → GHCR push → EC2 A deploy.
-관측성 서버(EC2 C Grafana·EC2 E Prometheus·AI 원인 리포터)는 `.github/workflows/deploy-observability.yml`이 관련 파일이 바뀐 `main` 반영 때만 따로 배포한다(`#126`).
+CI는 테스트와 API 계약을 검사한다. main의 테스트가 통과하면 GHCR에 이미지를 발행하고 관리자가 지정한 커밋을 수동 배포한다.
 
 ## Specs
 

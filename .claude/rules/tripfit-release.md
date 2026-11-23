@@ -43,6 +43,6 @@
 | 도메인 | 호스팅 | 이 repo |
 |--------|--------|---------|
 | `tripfit.online` | Vercel (프론트) | **없음** — `FRONTEND_IMAGE`·frontend 컨테이너 금지 |
-| `api.tripfit.online` | EC2 Nginx + Spring Boot | `deploy/app/`, `deploy/nginx/` |
+| `api.tripfit.online` | Lightsail Nginx + Spring Boot | `deploy/single/`, `deploy/nginx/` |
 
 API: `https://api.tripfit.online` · SSOT: `docs/decisions/002-domain-split-vercel-api.md`, `deploy/README.md`

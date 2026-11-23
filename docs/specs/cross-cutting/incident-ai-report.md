@@ -1,5 +1,7 @@
 # 장애 알림 AI 원인 리포터
 
+> 배포 이력: #140 단일 서버 전환 전의 구성을 설명한다. 현행 배포 설정은 [배포 안내](../../../deploy/README.md)를 따른다.
+
 > 상태: **Approved** (2026-10-19 — `#126`)
 > MVP: Out of scope (Milestone `출시 이후` · `priority: could`)
 > 관련 BR: 해당 없음
